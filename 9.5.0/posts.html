@@ -1,0 +1,3006 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Posts – Ibis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<script src="site_libs/quarto-search/autocomplete-preset-algolia.umd.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./logo.svg" rel="icon" type="image/svg+xml">
+<script src="site_libs/quarto-listing/list.min.js"></script>
+<script src="site_libs/quarto-listing/quarto-listing.js"></script>
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-e67ff5f79a98c6389aa7c0b9e6712459.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-14475e581903c9a7e5ed069634c08d5c.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-12c8c4cf821d2fd1848e951be45237d8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "algolia": {
+    "application-id": "TNU9HG3L41",
+    "search-only-api-key": "26350948d1961209df16d9717a7e01d6",
+    "index-name": "prod_ibis",
+    "analytics-events": true,
+    "show-logo": true,
+    "libDir": "site_libs"
+  },
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.5.1/dist/algoliasearch-lite.umd.js"></script>
+
+
+<script type="text/javascript">
+var ALGOLIA_INSIGHTS_SRC = "https://cdn.jsdelivr.net/npm/search-insights/dist/search-insights.iife.min.js";
+!function(e,a,t,n,s,i,c){e.AlgoliaAnalyticsObject=s,e[s]=e[s]||function(){
+(e[s].queue=e[s].queue||[]).push(arguments)},i=a.createElement(t),c=a.getElementsByTagName(t)[0],
+i.async=1,i.src=n,c.parentNode.insertBefore(i,c)
+}(window,document,"script",ALGOLIA_INSIGHTS_SRC,"aa");
+</script>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@algolia/autocomplete-plugin-algolia-insights">
+
+</script>
+<script>
+
+  window.document.addEventListener("DOMContentLoaded", function (_event) {
+    const listingTargetEl = window.document.querySelector('#listing-listing .list');
+    if (!listingTargetEl) {
+      // No listing discovered, do not attach.
+      return; 
+    }
+
+    const options = {
+      valueNames: ['listing-title','listing-author','listing-date','listing-image','listing-description','listing-categories',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
+      page: 18,
+    pagination: { item: "<li class='page-item'><a class='page page-link' href='#'></a></li>" },
+      searchColumns: ["listing-title","listing-author","listing-date","listing-image","listing-description","listing-categories"],
+    };
+
+    window['quarto-listings'] = window['quarto-listings'] || {};
+    window['quarto-listings']['listing-listing'] = new List('listing-listing', options);
+
+    if (window['quarto-listing-loaded']) {
+      window['quarto-listing-loaded']();
+    }
+  });
+
+  window.addEventListener('hashchange',() => {
+    if (window['quarto-listing-loaded']) {
+      window['quarto-listing-loaded']();
+    }
+  })
+  </script>
+<script data-goatcounter="https://ibis.goatcounter.com/count" async="" src="//gc.zgo.at/count.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles.css">
+<link rel="alternate" type="application/rss+xml" title="Ibis" href="posts.xml" data-external="1"><meta property="og:title" content="Posts – Ibis">
+<meta property="og:image" content="https://ibis-project.org/logo.png">
+<meta property="og:site_name" content="Ibis">
+<meta property="og:image:height" content="756">
+<meta property="og:image:width" content="756">
+<meta name="twitter:title" content="Posts – Ibis">
+<meta name="twitter:image" content="https://ibis-project.org/logo.png">
+<meta name="twitter:image-height" content="756">
+<meta name="twitter:image-width" content="756">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="./logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="./install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Browser</li>
+        <li>
+    <a class="dropdown-item" href="./tutorials/browser/repl.html">
+ <span class="dropdown-text">JupyterLite console</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Cloud Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="./tutorials/cloud-data-platforms/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./tutorials/cloud-data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Open Source Software</li>
+        <li>
+    <a class="dropdown-item" href="./tutorials/open-source-software/apache-flink/0_setup.html">
+ <span class="dropdown-text">Apache Flink</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="./why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./concepts/composable-ecosystem.html">
+ <span class="dropdown-text">Composable data ecosystem</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./concepts/datatypes.html">
+ <span class="dropdown-text">Datatypes and Datashapes</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./concepts/user-testimonials.html">
+ <span class="dropdown-text">User testimonials</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./concepts/who.html">
+ <span class="dropdown-text">Who supports Ibis?</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="./backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/exasol.html">
+ <span class="dropdown-text">Exasol</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/flink.html">
+ <span class="dropdown-text">Flink</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/risingwave.html">
+ <span class="dropdown-text">RisingWave</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Support</li>
+        <li>
+    <a class="dropdown-item" href="./backends/support/matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./backends/support/operations.html">
+ <span class="dropdown-text">Operations</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="./how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="./how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/input-output/duckdb-parquet.html">
+ <span class="dropdown-text">Read parquet files with Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/input-output/gcs_duckdb.html">
+ <span class="dropdown-text">Loading Google Cloud Storage files with DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="./how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/analytics/imdb.html">
+ <span class="dropdown-text">Analyze IMDB data using Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="./how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/visualization/graphs.html">
+ <span class="dropdown-text">GraphViz + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="./how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/extending/streaming.html">
+ <span class="dropdown-text">Ibis for streaming</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./how-to/extending/unbound_expression.html">
+ <span class="dropdown-text">Write and execute unbound expressions</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="./reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="./reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="./reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/aggregate-udfs.html">
+ <span class="dropdown-text">Aggregate UDFs (experimental)</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="./reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="./reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Cursed Knowledge</li>
+        <li>
+    <a class="dropdown-item" href="./reference/cursed_knowledge.html">
+ <span class="dropdown-text">Cursed Knowledge</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./posts.html" aria-current="page"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./presentations.html"> 
+<span class="menu-text">Presentations</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="./contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./contribute/04_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./contribute/05_reference.html">
+ <span class="dropdown-text">Test class reference</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        
+    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(47)</span></div><div class="category" data-category="arrays">arrays <span class="quarto-category-count">(2)</span></div><div class="category" data-category="benchmark">benchmark <span class="quarto-category-count">(2)</span></div><div class="category" data-category="bigquery">bigquery <span class="quarto-category-count">(4)</span></div><div class="category" data-category="blog">blog <span class="quarto-category-count">(44)</span></div><div class="category" data-category="case study">case study <span class="quarto-category-count">(5)</span></div><div class="category" data-category="chat">chat <span class="quarto-category-count">(1)</span></div><div class="category" data-category="clickhouse">clickhouse <span class="quarto-category-count">(1)</span></div><div class="category" data-category="cloud">cloud <span class="quarto-category-count">(2)</span></div><div class="category" data-category="community">community <span class="quarto-category-count">(4)</span></div><div class="category" data-category="continuous integration">continuous integration <span class="quarto-category-count">(1)</span></div><div class="category" data-category="data analysis">data analysis <span class="quarto-category-count">(1)</span></div><div class="category" data-category="data engineering">data engineering <span class="quarto-category-count">(7)</span></div><div class="category" data-category="datafusion">datafusion <span class="quarto-category-count">(3)</span></div><div class="category" data-category="dbt">dbt <span class="quarto-category-count">(1)</span></div><div class="category" data-category="dogfood">dogfood <span class="quarto-category-count">(1)</span></div><div class="category" data-category="duckdb">duckdb <span class="quarto-category-count">(15)</span></div><div class="category" data-category="ecosystem">ecosystem <span class="quarto-category-count">(4)</span></div><div class="category" data-category="feature engineering">feature engineering <span class="quarto-category-count">(2)</span></div><div class="category" data-category="flink">flink <span class="quarto-category-count">(2)</span></div><div class="category" data-category="geospatial">geospatial <span class="quarto-category-count">(2)</span></div><div class="category" data-category="hamilton">hamilton <span class="quarto-category-count">(1)</span></div><div class="category" data-category="io">io <span class="quarto-category-count">(3)</span></div><div class="category" data-category="kedro">kedro <span class="quarto-category-count">(1)</span></div><div class="category" data-category="llms">llms <span class="quarto-category-count">(2)</span></div><div class="category" data-category="machine learning">machine learning <span class="quarto-category-count">(2)</span></div><div class="category" data-category="new feature">new feature <span class="quarto-category-count">(5)</span></div><div class="category" data-category="pandas">pandas <span class="quarto-category-count">(1)</span></div><div class="category" data-category="performance">performance <span class="quarto-category-count">(3)</span></div><div class="category" data-category="polars">polars <span class="quarto-category-count">(3)</span></div><div class="category" data-category="portability">portability <span class="quarto-category-count">(2)</span></div><div class="category" data-category="productivity">productivity <span class="quarto-category-count">(3)</span></div><div class="category" data-category="puzzle">puzzle <span class="quarto-category-count">(1)</span></div><div class="category" data-category="release">release <span class="quarto-category-count">(7)</span></div><div class="category" data-category="risingwave">risingwave <span class="quarto-category-count">(1)</span></div><div class="category" data-category="roadmap">roadmap <span class="quarto-category-count">(1)</span></div><div class="category" data-category="serious">serious <span class="quarto-category-count">(1)</span></div><div class="category" data-category="shiny">shiny <span class="quarto-category-count">(1)</span></div><div class="category" data-category="sneak peek">sneak peek <span class="quarto-category-count">(2)</span></div><div class="category" data-category="snowflake">snowflake <span class="quarto-category-count">(3)</span></div><div class="category" data-category="sqlmesh">sqlmesh <span class="quarto-category-count">(1)</span></div><div class="category" data-category="stream processing">stream processing <span class="quarto-category-count">(1)</span></div><div class="category" data-category="streaming">streaming <span class="quarto-category-count">(1)</span></div><div class="category" data-category="substrait">substrait <span class="quarto-category-count">(1)</span></div><div class="category" data-category="time series">time series <span class="quarto-category-count">(1)</span></div><div class="category" data-category="unix">unix <span class="quarto-category-count">(1)</span></div><div class="category" data-category="web-scale">web-scale <span class="quarto-category-count">(1)</span></div><div class="category" data-category="window functions">window functions <span class="quarto-category-count">(1)</span></div></div></div>
+<!-- main -->
+<main class="content column-page-left" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Posts</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-left">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+
+
+
+
+<div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
+<div class="listing-actions-group">
+   <div class="input-group input-group-sm quarto-listing-sort">
+     <span class="input-group-text"><i class="bi bi-sort-down"></i></span>
+     <select id="listing-listing-sort" class="form-select" aria-label="Order By" onchange="window['quarto-listings']['listing-listing'].sort(this.options[this.selectedIndex].value, { order: this.options[this.selectedIndex].getAttribute('data-direction')})">
+       <option value="" disabled="" selected="" hidden="">Order By</option>
+       <option value="index" data-direction="asc">Default</option>
+         <option value="listing-title" data-direction="asc">
+          Title
+        </option>
+         <option value="listing-date-sort" data-direction="asc">
+          Date - Oldest
+        </option>
+         <option value="listing-date-sort" data-direction="desc">
+          Date - Newest
+        </option>
+         <option value="listing-author" data-direction="asc">
+          Author
+        </option>
+     </select>
+  </div>
+    <div class="input-group input-group-sm quarto-listing-filter">
+      <span class="input-group-text"><i class="bi bi-search"></i></span>
+      <input type="text" class="search form-control" placeholder="Filter">
+    </div>
+</div>
+<div class="list grid quarto-listing-cols-3">
+<div class="g-col-1" data-index="0" data-categories="clickhouse,shiny" data-listing-date-sort="1725336000000" data-listing-file-modified-sort="1733426150077" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="7" data-listing-word-count-sort="1346">
+<a href="./posts/better-pypi-stats/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="./posts/better-pypi-stats/thumbnail.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Better PyPI stats with Python
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('clickhouse'); return false;">
+clickhouse
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('shiny'); return false;">
+shiny
+</div>
+</div>
+<div class="card-text listing-description">
+<strong><em>Ibis + ClickHouse + Shiny for Python = better PyPI stats.</em></strong>
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Cody Peterson
+</div>
+<div class="listing-date">
+Sep 3, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="1" data-categories="blog,pandas,community" data-listing-date-sort="1724644800000" data-listing-file-modified-sort="1733426150080" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="651">
+<a href="./posts/farewell-pandas/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Farewell pandas, and thanks for all the fish.
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('pandas'); return false;">
+pandas
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('community'); return false;">
+community
+</div>
+</div>
+<div class="card-text listing-description">
+<strong>TL; DR</strong>: we are deprecating the <code>pandas</code> and <code>dask</code> backends and will be removing them in version 10.0.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Gil Forsyth
+</div>
+<div class="listing-date">
+Aug 26, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="2" data-categories="blog,duckdb,machine learning,feature engineering" data-listing-date-sort="1724299200000" data-listing-file-modified-sort="1733426150087" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="24" data-listing-word-count-sort="4709">
+<a href="./posts/ibisml/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Using IbisML and DuckDB for a Kaggle competition: credit risk model stability
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('machine learning'); return false;">
+machine learning
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('feature engineering'); return false;">
+feature engineering
+</div>
+</div>
+<div class="card-text listing-description">
+In this post, we’ll demonstrate how to use Ibis and IbisML end-to-end for the credit risk model stability Kaggle competition.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Jiting Xu
+</div>
+<div class="listing-date">
+Aug 22, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="3" data-categories="benchmark,duckdb,datafusion,polars" data-listing-date-sort="1720411200000" data-listing-file-modified-sort="1733426150023" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3293">
+<a href="./posts/1tbc/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="./posts/1tbc/ibis-duckdb-sort.gif" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Querying 1TB on a laptop with Python dataframes
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('benchmark'); return false;">
+benchmark
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('datafusion'); return false;">
+datafusion
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('polars'); return false;">
+polars
+</div>
+</div>
+<div class="card-text listing-description">
+<strong><em>TPC-H benchmark at <code>sf=1024</code> via DuckDB, DataFusion, and Polars on a MacBook Pro with 96GiB of RAM.</em></strong>
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Cody Peterson
+</div>
+<div class="listing-date">
+Jul 8, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="4" data-categories="benchmark,duckdb,datafusion,polars" data-listing-date-sort="1719201600000" data-listing-file-modified-sort="1733426150080" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="29" data-listing-word-count-sort="5621">
+<a href="./posts/ibis-bench/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="./posts/ibis-bench/figure1.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis benchmarking: DuckDB, DataFusion, Polars
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('benchmark'); return false;">
+benchmark
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('datafusion'); return false;">
+datafusion
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('polars'); return false;">
+polars
+</div>
+</div>
+<div class="card-text listing-description">
+<em>The best benchmark is your own workload on your own data</em>.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Cody Peterson
+</div>
+<div class="listing-date">
+Jun 24, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="5" data-categories="blog,new feature,snowflake" data-listing-date-sort="1718769600000" data-listing-file-modified-sort="1733426150087" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="730">
+<a href="./posts/run-on-snowflake/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis - Now flying on Snowflake
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('new feature'); return false;">
+new feature
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('snowflake'); return false;">
+snowflake
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis allows you to push down compute operations on your data where it lives, with the performance being as powerful as the backend you’re connected to. But what happens if…<em></em>
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud, Tyler White
+</div>
+<div class="listing-date">
+Jun 19, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="6" data-categories="blog,sqlmesh,data engineering" data-listing-date-sort="1716264000000" data-listing-file-modified-sort="1732218091232" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="203">
+<a href="./posts/sqlmesh-ibis/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="./posts/sqlmesh-ibis/thumbnail.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Unlocking data insights with Ibis and SQLMesh
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('sqlmesh'); return false;">
+sqlmesh
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('data engineering'); return false;">
+data engineering
+</div>
+</div>
+<div class="card-text listing-description">
+Have you ever needed to learn new dialects of database languages as a data scientist or struggled with the differences between database languages? Does your company manage…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Chloe He
+</div>
+<div class="listing-date">
+May 21, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="7" data-categories="release,blog" data-listing-date-sort="1714536000000" data-listing-file-modified-sort="1732218091218" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="7" data-listing-word-count-sort="1337">
+<a href="./posts/ibis-version-9.0.0-release/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img src="posts/ibis-version-9.0.0-release/index_files/figure-html/cell-16-output-1.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis 9.0: SQLGlot-ification
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('release'); return false;">
+release
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis 9.0 wraps up “the big refactor”, completing the transition from SQLAlchemy to SQLGlot and drastically simplifying the codebase. This is a big step toward stabilized…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Ibis team
+</div>
+<div class="listing-date">
+May 1, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="8" data-categories="blog,data analysis,puzzle" data-listing-date-sort="1712894400000" data-listing-file-modified-sort="1732218091235" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3" data-listing-word-count-sort="591">
+<a href="./posts/varchar-in-a-haystack/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="./posts/varchar-in-a-haystack/thumbnail.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Varchar in a haystack
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('data analysis'); return false;">
+data analysis
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('puzzle'); return false;">
+puzzle
+</div>
+</div>
+<div class="card-text listing-description">
+You’re a data analyst, and a new ticket landed in your queue.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Tyler White
+</div>
+<div class="listing-date">
+Apr 12, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="9" data-categories="blog,hamilton,data engineering,feature engineering" data-listing-date-sort="1712030400000" data-listing-file-modified-sort="1732218091212" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1989">
+<a href="./posts/hamilton-ibis/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="./posts/hamilton-ibis/thumbnail.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Portable dataflows with Ibis and Hamilton
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('hamilton'); return false;">
+hamilton
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('data engineering'); return false;">
+data engineering
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('feature engineering'); return false;">
+feature engineering
+</div>
+</div>
+<div class="card-text listing-description">
+This post showcases how Ibis and Hamilton enable dataflows that span execution over SQL and Python. Ibis is a portable dataframe library to write procedural data…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Thierry Jean
+</div>
+<div class="listing-date">
+Apr 2, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="10" data-categories="blog,serious,web-scale,unix" data-listing-date-sort="1711944000000" data-listing-file-modified-sort="1732218091235" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5" data-listing-word-count-sort="992">
+<a href="./posts/unix-backend/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Scaling to infinity and beyond: the Unix backend
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('serious'); return false;">
+serious
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('web-scale'); return false;">
+web-scale
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('unix'); return false;">
+unix
+</div>
+</div>
+<div class="card-text listing-description">
+We’re happy to announce a new Ibis backend built on the world’s best known web scale technology: Unix pipes.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Apr 1, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="11" data-categories="blog,snowflake,io,productivity" data-listing-date-sort="1709701200000" data-listing-file-modified-sort="1732218091218" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="379">
+<a href="./posts/into-snowflake/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Snow IO: loading data from other DBs into Snowflake
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('snowflake'); return false;">
+snowflake
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('io'); return false;">
+io
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('productivity'); return false;">
+productivity
+</div>
+</div>
+<div class="card-text listing-description">
+We’ve blogged about Snowflake IO before, in the context of getting local files into Snowflake as fast as possible.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Mar 6, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="12" data-categories="blog,data engineering,duckdb" data-listing-date-sort="1709182800000" data-listing-file-modified-sort="1732218091242" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5" data-listing-word-count-sort="834">
+<a href="./posts/wow-analysis/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="./posts/wow-analysis/thumbnail.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Analysis of World of Warcraft data
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('data engineering'); return false;">
+data engineering
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+</div>
+<div class="card-text listing-description">
+I grew up playing games, and with the recent re-release of World of Warcraft Classic, it seems like a perfect time to analyze some in-game data!
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Tyler White
+</div>
+<div class="listing-date">
+Feb 29, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="13" data-categories="blog,flink,risingwave,streaming" data-listing-date-sort="1708923600000" data-listing-file-modified-sort="1733426150087" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="11" data-listing-word-count-sort="2022">
+<a href="./posts/unified-stream-batch/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Stream-batch unification through Ibis
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('flink'); return false;">
+flink
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('risingwave'); return false;">
+risingwave
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('streaming'); return false;">
+streaming
+</div>
+</div>
+<div class="card-text listing-description">
+One of my focuses in the past 10 months has been to implement the Flink backend for Ibis. I was working with Apache Flink and building a feature engineering tool, and we…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Chloe He
+</div>
+<div class="listing-date">
+Feb 26, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="14" data-categories="blog,llms,duckdb" data-listing-date-sort="1708578000000" data-listing-file-modified-sort="1732218091202" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2288">
+<a href="./posts/duckdb-for-rag/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="./posts/duckdb-for-rag/thumbnail.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Using DuckDB + Ibis for RAG
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('llms'); return false;">
+llms
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+</div>
+<div class="card-text listing-description">
+In this post, we’ll demonstrate traditional retrieval-augmented generation (RAG) with DuckDB and OpenAI via Ibis and discuss the pros and cons. Notice that because Ibis is…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Cody Peterson
+</div>
+<div class="listing-date">
+Feb 22, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="15" data-categories="blog,duckdb,community" data-listing-date-sort="1708405200000" data-listing-file-modified-sort="1732218091235" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="618">
+<a href="./posts/why-duckdb/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Why is DuckDB the default backend for Ibis?
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('community'); return false;">
+community
+</div>
+</div>
+<div class="card-text listing-description">
+Occasionally people ask us why DuckDB is the default backend.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Feb 20, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="16" data-categories="blog,roadmap,community" data-listing-date-sort="1707973200000" data-listing-file-modified-sort="1732218091228" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="8" data-listing-word-count-sort="1587">
+<a href="./posts/roadmap-2024-H1/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="./posts/roadmap-2024-H1/commits.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis project 2024 roadmap
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('roadmap'); return false;">
+roadmap
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('community'); return false;">
+community
+</div>
+</div>
+<div class="card-text listing-description">
+Welcome to the first public roadmap for the Ibis project! If you aren’t familiar with the background of Ibis or who supports it nowadays, we recommend reading why Voltron…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Cody Peterson
+</div>
+<div class="listing-date">
+Feb 15, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="17" data-categories="blog,flink,stream processing" data-listing-date-sort="1707714000000" data-listing-file-modified-sort="1733426150080" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3416">
+<a href="./posts/flink-announcement/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis goes real-time! Introducing the new Flink backend for Ibis
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('flink'); return false;">
+flink
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('stream processing'); return false;">
+stream processing
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis 8.0 marks the official release of the Apache Flink backend for Ibis. Ibis users can now manipulate data across streaming and batch contexts using the same interface.…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Deepyaman Datta
+</div>
+<div class="listing-date">
+Feb 12, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="18" data-categories="release,blog" data-listing-date-sort="1707714000000" data-listing-file-modified-sort="1732218091218" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5" data-listing-word-count-sort="911">
+<a href="./posts/ibis-version-8.0.0-release/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis 8.0: streaming and more!
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('release'); return false;">
+release
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis 8.0 marks the first release of stream processing backends in Ibis! This enhances the composable data ecosystem vision by allowing users to implement data transformation…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Ibis team
+</div>
+<div class="listing-date">
+Feb 12, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="19" data-categories="blog" data-listing-date-sort="1707368400000" data-listing-file-modified-sort="1732218091238" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="9" data-listing-word-count-sort="1602">
+<a href="./posts/why-voda-supports-ibis/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" data-src="./posts/why-voda-supports-ibis/standards.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Why Voltron Data supports Ibis
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+</div>
+<div class="card-text listing-description">
+The Ibis project is an independently governed open source community project to build and maintain <strong>the portable Python dataframe library</strong>. Ibis has contributors across a range…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Cody Peterson + Ian Cook
+</div>
+<div class="listing-date">
+Feb 8, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="20" data-categories="blog,llms,duckdb" data-listing-date-sort="1707109200000" data-listing-file-modified-sort="1732218091218" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3503">
+<a href="./posts/lms-for-data/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" data-src="./posts/lms-for-data/thumbnail.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Using language models for data
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('llms'); return false;">
+llms
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+</div>
+<div class="card-text listing-description">
+This post will give an overview of how (large) language models (LMs) fit into data engineering, data analyst, and data science workflows.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Cody Peterson
+</div>
+<div class="listing-date">
+Feb 5, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="21" data-categories="blog,kedro,data engineering" data-listing-date-sort="1706677200000" data-listing-file-modified-sort="1727445699262" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="1" data-listing-word-count-sort="108">
+<a href="./posts/kedro-ibis/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Building scalable data pipelines with Kedro
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('kedro'); return false;">
+kedro
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('data engineering'); return false;">
+data engineering
+</div>
+</div>
+<div class="card-text listing-description">
+Kedro is a toolbox for production-ready data science. It is an open-source Python framework like Ibis, and together you can bring the portability and scale of Ibis to the…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Cody
+</div>
+<div class="listing-date">
+Jan 31, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="22" data-categories="blog,duckdb,bigquery,case study" data-listing-date-sort="1706158800000" data-listing-file-modified-sort="1732218091215" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="57" data-listing-word-count-sort="11317">
+<a href="./posts/ibis-analytics/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" data-src="./posts/ibis-analytics/thumbnail.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Modern, hybrid, open analytics
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('bigquery'); return false;">
+bigquery
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('case study'); return false;">
+case study
+</div>
+</div>
+<div class="card-text listing-description">
+As a Python data user, I’ve wanted a more modular, composable, and scalable ecosystem. <em>I think it’s here</em>. Wes McKinney released pandas c.&nbsp;2009 to bring dataframes into…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Cody
+</div>
+<div class="listing-date">
+Jan 25, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="23" data-categories="blog,duckdb,polars,datafusion,portability" data-listing-date-sort="1705899600000" data-listing-file-modified-sort="1727445699122" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1167">
+<a href="./posts/1brc/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Using one Python dataframe API to take the billion row challenge with DuckDB, Polars, and DataFusion
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('polars'); return false;">
+polars
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('datafusion'); return false;">
+datafusion
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('portability'); return false;">
+portability
+</div>
+</div>
+<div class="card-text listing-description">
+This is an implementation of the The One Billion Row Challenge:
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Cody
+</div>
+<div class="listing-date">
+Jan 22, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="24" data-categories="arrays,bigquery,blog,cloud,duckdb,portability" data-listing-date-sort="1705640400000" data-listing-file-modified-sort="1727445699218" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="7" data-listing-word-count-sort="1318">
+<a href="./posts/backend-agnostic-arrays/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Backend agnostic arrays
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('arrays'); return false;">
+arrays
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('bigquery'); return false;">
+bigquery
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('cloud'); return false;">
+cloud
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('portability'); return false;">
+portability
+</div>
+</div>
+<div class="card-text listing-description">
+This is a redux of a previous post showing Ibis’s portability in action.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Jan 19, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="25" data-categories="blog,duckdb,geospatial" data-listing-date-sort="1705381200000" data-listing-file-modified-sort="1727445699258" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="640">
+<a href="./posts/ibis-duckdb-geospatial-dev-guru/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Geospatial analysis with Ibis and DuckDB (redux)
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('geospatial'); return false;">
+geospatial
+</div>
+</div>
+<div class="card-text listing-description">
+Spatial Dev Guru wrote a great tutorial that walks you through a step-by-step geospatial analysis of bike sharing data using DuckDB.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Naty Clementi and Gil Forsyth
+</div>
+<div class="listing-date">
+Jan 16, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="26" data-categories="blog,chat,community" data-listing-date-sort="1704344400000" data-listing-file-modified-sort="1727445699288" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="237">
+<a href="./posts/zulip/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Announcing Zulip for Ibis community chat
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('chat'); return false;">
+chat
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('community'); return false;">
+community
+</div>
+</div>
+<div class="card-text listing-description">
+The Ibis project has moved to Zulip for its community chat! We’ve been testing it out for a few months and are happy with the results. From the Zulip repository’s README:
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Ibis team
+</div>
+<div class="listing-date">
+Jan 4, 2024
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="27" data-categories="blog,case study,ecosystem,performance" data-listing-date-sort="1702270800000" data-listing-file-modified-sort="1727445699278" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="787">
+<a href="./posts/pydata-performance-part2/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis versus X: Performance across the ecosystem part 2
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('case study'); return false;">
+case study
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('ecosystem'); return false;">
+ecosystem
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('performance'); return false;">
+performance
+</div>
+</div>
+<div class="card-text listing-description">
+<strong>TL; DR</strong>: Ibis supports both Polars and DataFusion. Both backends are have about the same runtime performance, and lag far behind DuckDB on this workload. There’s negligible…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Dec 11, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="28" data-categories="blog,duckdb,geospatial" data-listing-date-sort="1701925200000" data-listing-file-modified-sort="1741814485289" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5" data-listing-word-count-sort="890">
+<a href="./posts/ibis-duckdb-geospatial/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis + DuckDB geospatial: a match made on Earth
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('geospatial'); return false;">
+geospatial
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis now has support for DuckDB geospatial functions!
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Naty Clementi
+</div>
+<div class="listing-date">
+Dec 7, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="29" data-categories="blog,case study,ecosystem,performance" data-listing-date-sort="1701838800000" data-listing-file-modified-sort="1727445699278" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2534">
+<a href="./posts/pydata-performance/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis versus X: Performance across the ecosystem part 1
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('case study'); return false;">
+case study
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('ecosystem'); return false;">
+ecosystem
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('performance'); return false;">
+performance
+</div>
+</div>
+<div class="card-text listing-description">
+<strong>TL; DR</strong>: Ibis has a lot of great backends. They’re all good at different things. For working with local data, it’s hard to beat DuckDB on feature set and performance.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Dec 6, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="30" data-categories="blog,dbt,data engineering" data-listing-date-sort="1700802000000" data-listing-file-modified-sort="1727445699222" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5" data-listing-word-count-sort="965">
+<a href="./posts/dbt-ibis/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+dbt-ibis: Write your dbt models using Ibis
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('dbt'); return false;">
+dbt
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('data engineering'); return false;">
+data engineering
+</div>
+</div>
+<div class="card-text listing-description">
+dbt has revolutionized how transformations are orchestrated and managed within modern data warehouses. Initially released in 2016, dbt quickly gained traction within the…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Stefan Binder
+</div>
+<div class="listing-date">
+Nov 24, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="31" data-categories="blog" data-listing-date-sort="1700024400000" data-listing-file-modified-sort="1727445699278" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1099">
+<a href="./posts/querying-pypi-metadata-compiled-languages/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="posts/querying-pypi-metadata-compiled-languages/upstream_plot.png" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Querying every file in every release on the Python Package Index (redux)
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+</div>
+<div class="card-text listing-description">
+Seth Larson wrote a great blog post on querying a PyPI dataset to look for trends in the use of memory-safe languages in Python.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Gil Forsyth
+</div>
+<div class="listing-date">
+Nov 15, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="32" data-categories="blog,bigquery,arrays,cloud" data-listing-date-sort="1694491200000" data-listing-file-modified-sort="1727445699222" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5" data-listing-word-count-sort="893">
+<a href="./posts/bigquery-arrays/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Working with arrays in Google BigQuery
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('bigquery'); return false;">
+bigquery
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('arrays'); return false;">
+arrays
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('cloud'); return false;">
+cloud
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis and BigQuery have worked well together for years.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Sep 12, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="33" data-categories="blog,snowflake,io,productivity" data-listing-date-sort="1693454400000" data-listing-file-modified-sort="1727445699282" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3" data-listing-word-count-sort="445">
+<a href="./posts/snowflake-io/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Icy IO: loading local files with Snowflake
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('snowflake'); return false;">
+snowflake
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('io'); return false;">
+io
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('productivity'); return false;">
+productivity
+</div>
+</div>
+<div class="card-text listing-description">
+It can be challenging to load local files into Snowflake from Python.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Aug 31, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="34" data-categories="release,blog" data-listing-date-sort="1690948800000" data-listing-file-modified-sort="1732218091235" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5" data-listing-word-count-sort="960">
+<a href="./posts/v6.1.0-release/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="posts/v6.1.0-release/index_files/figure-html/cell-9-output-1.png" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis v6.1.0
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('release'); return false;">
+release
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis 6.1.0 is a minor release that includes new features, backend improvements, bug fixes, documentation improvements, and refactors. We are excited to see further adoption…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Ibis team
+</div>
+<div class="listing-date">
+Aug 2, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="35" data-categories="release,blog" data-listing-date-sort="1688356800000" data-listing-file-modified-sort="1732218091218" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="714">
+<a href="./posts/ibis-version-6.0.0-release/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis v6.0.0
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('release'); return false;">
+release
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis 6.0.0 adds the Oracle backend, revamped UDF support, and many new features. This release also includes a number of refactors, bug fixes, and performance improvements.…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Ibis team
+</div>
+<div class="listing-date">
+Jul 3, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="36" data-categories="blog,case study,machine learning,ecosystem,new feature" data-listing-date-sort="1687838400000" data-listing-file-modified-sort="1727445699282" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="672">
+<a href="./posts/torch/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="posts/torch/index_files/figure-html/cell-11-output-1.png" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis on 🔥: Supercharge Your Workflow with DuckDB and PyTorch
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('case study'); return false;">
+case study
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('machine learning'); return false;">
+machine learning
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('ecosystem'); return false;">
+ecosystem
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('new feature'); return false;">
+new feature
+</div>
+</div>
+<div class="card-text listing-description">
+In this blog post we show how to leverage ecosystem tools to build an end-to-end ML pipeline using Ibis, DuckDB and PyTorch.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Jun 27, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="37" data-categories="blog,data engineering,case study,duckdb,performance" data-listing-date-sort="1679630400000" data-listing-file-modified-sort="1741814485288" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2436">
+<a href="./posts/campaign-finance/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Exploring campaign finance data
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('data engineering'); return false;">
+data engineering
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('case study'); return false;">
+case study
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('performance'); return false;">
+performance
+</div>
+</div>
+<div class="card-text listing-description">
+Hi! My name is Nick Crews, and I’m a data engineer that looks at public campaign finance data.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Nick Crews
+</div>
+<div class="listing-date">
+Mar 24, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="38" data-categories="blog,io,new feature,sneak peek" data-listing-date-sort="1678338000000" data-listing-file-modified-sort="1733426150087" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="397">
+<a href="./posts/ibis-to-file/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis sneak peek: writing to files
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('io'); return false;">
+io
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('new feature'); return false;">
+new feature
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('sneak peek'); return false;">
+sneak peek
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis 5.0 is coming soon and will offer new functionality and fixes to users. To enhance clarity around this process, we’re sharing a sneak peek into what we’re working on.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Kae Suarez
+</div>
+<div class="listing-date">
+Mar 9, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="39" data-categories="blog,new feature,sneak peek" data-listing-date-sort="1678251600000" data-listing-file-modified-sort="1727445699258" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="263">
+<a href="./posts/ibis-examples/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="posts/ibis-examples/tab_complete.png" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis sneak peek: examples
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('new feature'); return false;">
+new feature
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('sneak peek'); return false;">
+sneak peek
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis has been moving quickly to provide a powerful but easy-to-use interface for interacting with analytical engines. However, as we’re approaching the 5.0 release of Ibis…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Kae Suarez
+</div>
+<div class="listing-date">
+Mar 8, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="40" data-categories="blog,new feature,productivity,duckdb" data-listing-date-sort="1677474000000" data-listing-file-modified-sort="1733426150087" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3" data-listing-word-count-sort="570">
+<a href="./posts/selectors/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Maximizing productivity with selectors
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('new feature'); return false;">
+new feature
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('productivity'); return false;">
+productivity
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+</div>
+<div class="card-text listing-description">
+Before Ibis 5.0 it’s been challenging to concisely express whole-table operations with ibis. Happily this is no longer the case in ibis 5.0.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Feb 27, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="41" data-categories="blog,substrait,ecosystem,duckdb" data-listing-date-sort="1675227600000" data-listing-file-modified-sort="1727445699262" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="9" data-listing-word-count-sort="1761">
+<a href="./posts/ibis_substrait_to_duckdb/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis + Substrait + DuckDB
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('substrait'); return false;">
+substrait
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('ecosystem'); return false;">
+ecosystem
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('duckdb'); return false;">
+duckdb
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis strives to provide a consistent interface for interacting with a multitude of different analytical execution engines, most of which (but not all) speak some dialect of…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Gil Forsyth
+</div>
+<div class="listing-date">
+Feb 1, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="42" data-categories="blog,bigquery,continuous integration,data engineering,dogfood" data-listing-date-sort="1673240400000" data-listing-file-modified-sort="1741814485289" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1901">
+<a href="./posts/ci-analysis/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="posts/ci-analysis/index_files/figure-html/cell-22-output-1.png" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Analysis of Ibis’s CI performance
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('bigquery'); return false;">
+bigquery
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('continuous integration'); return false;">
+continuous integration
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('data engineering'); return false;">
+data engineering
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('dogfood'); return false;">
+dogfood
+</div>
+</div>
+<div class="card-text listing-description">
+This notebook takes you through an analysis of Ibis’s CI data using ibis on top of Google BigQuery.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Phillip Cloud
+</div>
+<div class="listing-date">
+Jan 9, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="43" data-categories="release,blog" data-listing-date-sort="1673240400000" data-listing-file-modified-sort="1732218091218" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="299">
+<a href="./posts/ibis-version-4.0.0-release/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis v4.0.0
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('release'); return false;">
+release
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis 4.0 has officially been released as the latest version of the package. This release includes several new backends, improved functionality, and some major internal…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Patrick Clarke
+</div>
+<div class="listing-date">
+Jan 9, 2023
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="44" data-categories="blog,window functions,time series" data-listing-date-sort="1662696000000" data-listing-file-modified-sort="1741814485289" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1894">
+<a href="./posts/ffill-and-bfill-using-ibis/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+<code>ffill</code> and <code>bfill</code> using Ibis
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('window functions'); return false;">
+window functions
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('time series'); return false;">
+time series
+</div>
+</div>
+<div class="card-text listing-description">
+Suppose you have a table of data mapping events and dates to values, and that this data contains gaps in values.
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Patrick Clarke
+</div>
+<div class="listing-date">
+Sep 9, 2022
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="45" data-categories="release,blog" data-listing-date-sort="1658721600000" data-listing-file-modified-sort="1732218091198" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5" data-listing-word-count-sort="847">
+<a href="./posts/Ibis-version-3.1.0-release/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="logo.svg" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis v3.1.0
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('release'); return false;">
+release
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+</div>
+<div class="card-text listing-description">
+Ibis 3.1 has officially been released as the latest version of the package. With this release comes new convenience features, increased backend operation coverage and a…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Marlene Mhangami
+</div>
+<div class="listing-date">
+Jul 25, 2022
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+<div class="g-col-1" data-index="46" data-categories="release,blog" data-listing-date-sort="1650859200000" data-listing-file-modified-sort="1727445699215" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1146">
+<a href="./posts/Ibis-version-3.0.0-release/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top"><img data-src="posts/Ibis-version-3.0.0-release/matrix.png" style="height: 150px;"  class="thumbnail-image card-img"/></p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Ibis v3.0.0
+</h5>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('release'); return false;">
+release
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('blog'); return false;">
+blog
+</div>
+</div>
+<div class="card-text listing-description">
+The latest version of Ibis, version 3.0.0, has just been released! This post highlights some of the new features, breaking changes, and performance improvements that come…
+</div>
+<div class="card-attribution card-text-small justify">
+<div class="listing-author">
+Marlene Mhangami
+</div>
+<div class="listing-date">
+Apr 25, 2022
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+</div>
+<div class="listing-no-matching d-none">
+No matching items
+</div>
+<nav id="listing-pagination" class="listing-pagination" aria-label="Page Navigation">
+  <ul class="pagination"></ul>
+</nav>
+</div><a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/ibis-project\.org");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    <div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/posts.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

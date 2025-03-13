@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<link href="../logo.svg" rel="icon" type="image/svg+xml">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-68b329da9893e34099c7d8ad5cb9c940.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-14475e581903c9a7e5ed069634c08d5c.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+  <meta name="generator" content="quarto-1.6.9">
+
+  <meta name="author" content="Chloe He">
+  <meta name="author" content="Phillip Cloud">
+  <meta name="dcterms.date" content="2024-04-24">
+  <title>Ibis – Ibis @ LinkedIn</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/reveal.css">
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+      }
+    pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+    div.sourceCode
+      { color: #b3b1ad; background-color: #0a0e14; }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span { color: #b3b1ad; } /* Normal */
+    code span.al { color: #ff3333; background-color: #2a0f15; font-weight: bold; } /* Alert */
+    code span.an { color: #e6b673; } /* Annotation */
+    code span.at { color: #59c2ff; } /* Attribute */
+    code span.bn { color: #e6b450; } /* BaseN */
+    code span.bu { color: #95e6cb; } /* BuiltIn */
+    code span.cf { color: #ff8f40; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #95e6cb; } /* Char */
+    code span.cn { color: #ffee99; } /* Constant */
+    code span.co { color: #626a73; font-style: italic; } /* Comment */
+    code span.cv { color: #ffee99; } /* CommentVar */
+    code span.do { color: #626a73; } /* Documentation */
+    code span.dt { color: #ff8f40; } /* DataType */
+    code span.dv { color: #e6b450; } /* DecVal */
+    code span.er { color: #ff3333; text-decoration: underline; } /* Error */
+    code span.ex { color: #59c2ff; font-weight: bold; } /* Extension */
+    code span.fl { color: #e6b450; } /* Float */
+    code span.fu { color: #ffb454; } /* Function */
+    code span.im { color: #c2d94c; } /* Import */
+    code span.in { color: #e6b450; } /* Information */
+    code span.kw { color: #ff8f40; font-weight: bold; } /* Keyword */
+    code span.op { color: #f29668; } /* Operator */
+    code span.ot { color: #39bae6; } /* Other */
+    code span.pp { color: #f07178; } /* Preprocessor */
+    code span.re { color: #59c2ff; background-color: #173649; } /* RegionMarker */
+    code span.sc { color: #95e6cb; } /* SpecialChar */
+    code span.ss { color: #95e6cb; } /* SpecialString */
+    code span.st { color: #c2d94c; } /* String */
+    code span.va { color: #39bae6; } /* Variable */
+    code span.vs { color: #c2d94c; } /* VerbatimString */
+    code span.wa { color: #f07178; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/theme/quarto-ef473a3278b5ede60c636ef469970ec0.css">
+  <link href="../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <style type="text/css">
+
+  .callout {
+    margin-top: 1em;
+    margin-bottom: 1em;  
+    border-radius: .25rem;
+  }
+
+  .callout.callout-style-simple { 
+    padding: 0em 0.5em;
+    border-left: solid #acacac .3rem;
+    border-right: solid 1px silver;
+    border-top: solid 1px silver;
+    border-bottom: solid 1px silver;
+    display: flex;
+  }
+
+  .callout.callout-style-default {
+    border-left: solid #acacac .3rem;
+    border-right: solid 1px silver;
+    border-top: solid 1px silver;
+    border-bottom: solid 1px silver;
+  }
+
+  .callout .callout-body-container {
+    flex-grow: 1;
+  }
+
+  .callout.callout-style-simple .callout-body {
+    font-size: 1rem;
+    font-weight: 400;
+  }
+
+  .callout.callout-style-default .callout-body {
+    font-size: 0.9rem;
+    font-weight: 400;
+  }
+
+  .callout.callout-titled.callout-style-simple .callout-body {
+    margin-top: 0.2em;
+  }
+
+  .callout:not(.callout-titled) .callout-body {
+      display: flex;
+  }
+
+  .callout:not(.no-icon).callout-titled.callout-style-simple .callout-content {
+    padding-left: 1.6em;
+  }
+
+  .callout.callout-titled .callout-header {
+    padding-top: 0.2em;
+    margin-bottom: -0.2em;
+  }
+
+  .callout.callout-titled .callout-title  p {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+    
+  .callout.callout-titled.callout-style-simple .callout-content  p {
+    margin-top: 0;
+  }
+
+  .callout.callout-titled.callout-style-default .callout-content  p {
+    margin-top: 0.7em;
+  }
+
+  .callout.callout-style-simple div.callout-title {
+    border-bottom: none;
+    font-size: .9rem;
+    font-weight: 600;
+    opacity: 75%;
+  }
+
+  .callout.callout-style-default  div.callout-title {
+    border-bottom: none;
+    font-weight: 600;
+    opacity: 85%;
+    font-size: 0.9rem;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+  }
+
+  .callout.callout-style-default div.callout-content {
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+  }
+
+  .callout.callout-style-simple .callout-icon::before {
+    height: 1rem;
+    width: 1rem;
+    display: inline-block;
+    content: "";
+    background-repeat: no-repeat;
+    background-size: 1rem 1rem;
+  }
+
+  .callout.callout-style-default .callout-icon::before {
+    height: 0.9rem;
+    width: 0.9rem;
+    display: inline-block;
+    content: "";
+    background-repeat: no-repeat;
+    background-size: 0.9rem 0.9rem;
+  }
+
+  .callout-title {
+    display: flex
+  }
+    
+  .callout-icon::before {
+    margin-top: 1rem;
+    padding-right: .5rem;
+  }
+
+  .callout.no-icon::before {
+    display: none !important;
+  }
+
+  .callout.callout-titled .callout-body > .callout-content > :last-child {
+    padding-bottom: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  .callout.callout-titled .callout-icon::before {
+    margin-top: .5rem;
+    padding-right: .5rem;
+  }
+
+  .callout:not(.callout-titled) .callout-icon::before {
+    margin-top: 1rem;
+    padding-right: .5rem;
+  }
+
+  /* Callout Types */
+
+  div.callout-note {
+    border-left-color: #4582ec !important;
+  }
+
+  div.callout-note .callout-icon::before {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAAEU0lEQVRYCcVXTWhcVRQ+586kSUMMxkyaElstCto2SIhitS5Ek8xUKV2poatCcVHtUlFQk8mbaaziwpWgglJwVaquitBOfhQXFlqlzSJpFSpIYyXNjBNiTCck7x2/8/LeNDOZxDuEkgOXe++553zfefee+/OYLOXFk3+1LLrRdiO81yNqZ6K9cG0P3MeFaMIQjXssE8Z1JzLO9ls20MBZX7oG8w9GxB0goaPrW5aNMp1yOZIa7Wv6o2ykpLtmAPs/vrG14Z+6d4jpbSKuhdcSyq9wGMPXjonwmESXrriLzFGOdDBLB8Y6MNYBu0dRokSygMA/mrun8MGFN3behm6VVAwg4WR3i6FvYK1T7MHo9BK7ydH+1uurECoouk5MPRyVSBrBHMYwVobG2aOXM07sWrn5qgB60rc6mcwIDJtQrnrEr44kmy+UO9r0u9O5/YbkS9juQckLed3DyW2XV/qWBBB3ptvI8EUY3I9p/67OW+g967TNr3Sotn3IuVlfMLVnsBwH4fsnebJvyGm5GeIUA3jljERmrv49SizPYuq+z7c2H/jlGC+Ghhupn/hcapqmcudB9jwJ/3jvnvu6vu5lVzF1fXyZuZZ7U8nRmVzytvT+H3kilYvH09mLWrQdwFSsFEsxFVs5fK7A0g8gMZjbif4ACpKbjv7gNGaD8bUrlk8x+KRflttr22JEMRUbTUwwDQScyzPgedQHZT0xnx7ujw2jfVfExwYHwOsDTjLdJ2ebmeQIlJ7neo41s/DrsL3kl+W2lWvAga0tR3zueGr6GL78M3ifH0rGXrBC2aAR8uYcIA5gwV8zIE8onoh8u0Fca/ciF7j1uOzEnqcIm59sEXoGc0+z6+H45V1CvAvHcD7THztu669cnp+L0okAeIc6zjbM/24LgGM1gZk7jnRu1aQWoU9sfUOuhrmtaPIO3YY1KLLWZaEO5TKUbMY5zx8W9UJ6elpLwKXbsaZ4EFl7B4bMtDv0iRipKoDQT2sNQI9b1utXFdYisi+wzZ/ri/1m7QfDgEuvgUUEIJPq3DhX/5DWNqIXDOweC2wvIR90Oq3lDpdMIgD2r0dXvGdsEW5H6x6HLRJYU7C69VefO1x8Gde1ZFSJLfWS1jbCnhtOPxmpfv2LXOA2Xk2tvnwKKPFuZ/oRmwBwqRQDcKNeVQkYcOjtWVBuM/JuYw5b6isojIkYxyYAFn5K7ZBF10fea52y8QltAg6jnMqNHFBmGkQ1j+U43HMi2xMar1Nv0zGsf1s8nUsmUtPOOrbFIR8bHFDMB5zL13Gmr/kGlCkUzedTzzmzsaJXhYawnA3UmARpiYj5ooJZiUoxFRtK3X6pgNPv+IZVPcnwbOl6f+aBaO1CNvPW9n9LmCp01nuSaTRF2YxHqZ8DYQT6WsXT+RD6eUztwYLZ8rM+rcPxamv1VQzFUkzFXvkiVrySGQgJNvXHJAxiU3/NwiC03rSf05VBaPtu/Z7/B8Yn/w7eguloAAAAAElFTkSuQmCC');
+  }
+
+  div.callout-note.callout-style-default .callout-title {
+    background-color: #dae6fb
+  }
+
+  div.callout-important {
+    border-left-color: #d9534f !important;
+  }
+
+  div.callout-important .callout-icon::before {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAAEKklEQVRYCcVXTWhcVRS+575MJym48A+hSRFr00ySRQhURRfd2HYjk2SSTokuBCkU2o0LoSKKraKIBTcuFCoidGFD08nkBzdREbpQ1EDNIv8qSGMFUboImMSZd4/f9zJv8ibJMC8xJQfO3HPPPef7zrvvvnvviIkpC9nsw0UttFunbUhpFzFtarSd6WJkStVMw5xyVqYTvkwfzuf/5FgtkVoB0729j1rjXwThS7Vio+Mo6DNnvLfahoZ+i/o32lULuJ3NNiz7q6+pyAUkJaFF6JwaM2lUJlV0MlnQn5aTRbEu0SEqHUa0A4AdiGuB1kFXRfVyg5d87+Dg4DL6m2TLAub60ilj7A1Ec4odSAc8X95sHh7+ZRPCFo6Fnp7HfU/fBng/hi10CjCnWnJjsxvDNxWw0NfV6Rv5GgP3I3jGWXumdTD/3cbEOP2ZbOZp69yniG3FQ9z1jD7bnBu9Fc2tKGC2q+uAJOQHBDRiZX1x36o7fWBs7J9ownbtO+n0/qWkvW7UPIfc37WgT6ZGR++EOJyeQDSb9UB+DZ1G6DdLDzyS+b/kBCYGsYgJbSQHuThGKRcw5xdeQf8YdNHsc6ePXrlSYMBuSIAFTGAtQo+VuALo4BX83N190NWZWbynBjhOHsmNfFWLeL6v+ynsA58zDvvAC8j5PkbOcXCMg2PZFk3q8MjI7WAG/Dp9AwP7jdGBOOQkAvlFUB+irtm16I1Zw9YBcpGTGXYmk3kQIC/Cds55l+iMI3jqhjAuaoe+am2Jw5GT3Nbz3CkE12NavmzN5+erJW7046n/CH1RO/RVa8lBLozXk9uqykkGAyRXLWlLv5jyp4RFsG5vGVzpDLnIjTWgnRy2Rr+tDKvRc7Y8AyZq10jj8DqXdnIRNtFZb+t/ZRtXcDiVnzpqx8mPcDWxgARUqx0W1QB9MeUZiNrV4qP+Ehc+BpNgATsTX8ozYKL2NtFYAHc84fG7ndxUPr+AR/iQSns7uSUufAymwDOb2+NjK27lEFocm/EE2WpyIy/Hi66MWuMKJn8RvxIcj87IM5Vh9663ziW36kR0HNenXuxmfaD8JC7tfKbrhFr7LiZCrMjrzTeGx+PmkosrkNzW94ObzwocJ7A1HokLolY+AvkTiD/q1H0cN48c5EL8Crkttsa/AXQVDmutfyku0E7jShx49XqV3MFK8IryDhYVbj7Sj2P2eBxwcXoe8T8idsKKPRcnZw1b+slFTubwUwhktrfnAt7J++jwQtLZcm3sr9LQrjRzz6cfMv9aLvgmnAGvpoaGLxM4mAEaLV7iAzQ3oU0IvD5x9ix3yF2RAAuYAOO2f7PEFWCXZ4C9Pb2UsgDeVnFSpbFK7/IWu7TPTvBqzbGdCHOJQSxiEjt6IyZmxQyEJHv6xyQsYk//moVFsN2zP6fRImjfq7/n/wFDguUQFNEwugAAAABJRU5ErkJggg==');
+  }
+
+  div.callout-important.callout-style-default .callout-title {
+    background-color: #f7dddc
+  }
+
+  div.callout-warning {
+    border-left-color: #f0ad4e !important;
+  }
+
+  div.callout-warning .callout-icon::before {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAAETklEQVRYCeVWW2gcVRg+58yaTUnizqbipZeX4uWhBEniBaoUX1Ioze52t7sRq6APio9V9MEaoWlVsFasRq0gltaAPuxms8lu0gcviE/FFOstVbSIxgcv6SU7EZqmdc7v9+9mJtNks51NTUH84ed889/PP+cmxP+d5FIbMJmNbpREu4WUkiTtCicKny0l1pIKmBzovF2S+hIJHX8iEu3hZJ5lNZGqyRrGSIQpq15AzF28jgpeY6yk6GVdrfFqdrD6Iw+QlB8g0YS2g7dyQmXM/IDhBhT0UCiRf59lfqmmDvzRt6kByV/m4JjtzuaujMUM2c5Z2d6JdKrRb3K2q6mA+oYVz8JnDdKPmmNthzkAk/lN63sYPgevrguc72aZX/L9C6x09GYyxBgCX4NlvyGUHOKELlm5rXeR1kchuChJt4SSwyddZRXgvwMGvYo4QSlk3/zkHD8UHxwVJA6zjZZqP8v8kK8OWLnIZtLyCAJagYC4rTGW/9Pqj92N/c+LUaAj27movwbi19tk/whRCIE7Q9vyI6yvRpftAKVTdUjOW40X3h5OXsKCdmFcx0xlLJoSuQngnrJe7Kcjm4OMq9FlC7CMmScQANuNvjfP3PjGXDBaUQmbp296S5L4DrpbrHN1T87ZVEZVCzg1FF0Ft+dKrlLukI+/c9ENo+TvlTDbYFvuKPtQ9+l052rXrgKoWkDAFnvh0wTOmYn8R5f4k/jN/fZiCM1tQx9jQQ4ANhqG4hiL0qIFTGViG9DKB7GYzgubnpofgYRwO+DFjh0Zin2m4b/97EDkXkc+f6xYAPX0KK2I/7fUQuwzuwo/L3AkcjugPNixC8cHf0FyPjWlItmLxWw4Ou9YsQCr5fijMGoD/zpdRy95HRysyXA74MWOnscpO4j2y3HAVisw85hX5+AFBRSHt4ShfLFkIMXTqyKFc46xdzQM6XbAi702a7sy04J0+feReMFKp5q9esYLCqAZYw/k14E/xcLLsFElaornTuJB0svMuJINy8xkIYuL+xPAlWRceH6+HX7THJ0djLUom46zREu7tTkxwmf/FdOZ/sh6Q8qvEAiHpm4PJ4a/doJe0gH1t+aHRgCzOvBvJedEK5OFE5jpm4AGP2a8Dxe3gGJ/pAutug9Gp6he92CsSsWBaEcxGx0FHytmIpuqGkOpldqNYQK8cSoXvd+xLxXADw0kf6UkJNFtdo5MOgaLjiQOQHcn+A6h5NuL2s0qsC2LOM75PcF3yr5STuBSAcGG+meA14K/CI21HcS4LBT6tv0QAh8Dr5l93AhZzG5ZJ4VxAqdZUEl9z7WJ4aN+svMvwHHL21UKTd1mqvChH7/Za5xzXBBKrUcB0TQ+Ulgkfbi/H/YT5EptrGzsEK7tR1B7ln9BBwckYfMiuSqklSznIuoIIOM42MQO+QnduCoFCI0bpkzjCjddHPN/F+2Yu+sd9bKNpVwHhbS3LluK/0zgfwD0xYI5dXuzlQAAAABJRU5ErkJggg==');
+  }
+
+  div.callout-warning.callout-style-default .callout-title {
+    background-color: #fcefdc
+  }
+
+  div.callout-tip {
+    border-left-color: #02b875 !important;
+  }
+
+  div.callout-tip .callout-icon::before {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAADr0lEQVRYCe1XTWgTQRj9ZjZV8a9SPIkKgj8I1bMHsUWrqYLVg4Ue6v9BwZOxSYsIerFao7UiUryIqJcqgtpimhbBXoSCVxUFe9CTiogUrUp2Pt+3aUI2u5vdNh4dmMzOzHvvezuz8xNFM0mjnbXaNu1MvFWRXkXEyE6aYOYJpdW4IXuA4r0fo8qqSMDBU0v1HJUgVieAXxzCsdE/YJTdFcVIZQNMyhruOMJKXYFoLfIfIvVIMWdsrd+Rpd86ZmyzzjJmLStqRn0v8lzkb4rVIXvnpScOJuAn2ACC65FkPzEdEy4TPWRLJ2h7z4cArXzzaOdKlbOvKKX25Wl00jSnrwVxAg3o4dRxhO13RBSdNvH0xSARv3adTXbBdTf64IWO2vH0LT+cv4GR1DJt+DUItaQogeBX/chhbTBxEiZ6gftlDNXTrvT7co4ub5A6gp9HIcHvzTa46OS5fBeP87Qm0fQkr4FsYgVQ7Qg+ZayaDg9jhg1GkWj8RG6lkeSacrrHgDaxdoBiZPg+NXV/KifMuB6//JmYH4CntVEHy/keA6x4h4CU5oFy8GzrBS18cLJMXcljAKB6INjWsRcuZBWVaS3GDrqB7rdapVIeA+isQ57Eev9eCqzqOa81CY05VLd6SamW2wA2H3SiTbnbSxmzfp7WtKZkqy4mdyAlGx7ennghYf8voqp9cLSgKdqNfa6RdRsAAkPwRuJZNbpByn+RrJi1RXTwdi8RQF6ymDwGMAtZ6TVE+4uoKh+MYkcLsT0Hk8eAienbiGdjJHZTpmNjlbFJNKDVAp2fJlYju6IreQxQ08UJDNYdoLSl6AadO+fFuCQqVMB1NJwPm69T04Wv5WhfcWyfXQB+wXRs1pt+nCknRa0LVzSA/2B+a9+zQJadb7IyyV24YAxKp2Jqs3emZTuNnKxsah+uabKbMk7CbTgJx/zIgQYErIeTKRQ9yD9wxVof5YolPHqaWo7TD6tJlh7jQnK5z2n3+fGdggIOx2kaa2YI9QWarc5Ce1ipNWMKeSG4DysFF52KBmTNMmn5HqCFkwy34rDg05gDwgH3bBi+sgFhN/e8QvRn8kbamCOhgrZ9GJhFDgfcMHzFb6BAtjKpFhzTjwv1KCVuxHvCbsSiEz4CANnj84cwHdFXAbAOJ4LTSAawGWFn5tDhLMYz6nWeU2wJfIhmIJBefcd/A5FWQWGgrWzyORZ3Q6HuV+Jf0Bj+BTX69fm1zWgK7By1YTXchFDORywnfQ7GpzOo6S+qECrsx2ifVQAAAABJRU5ErkJggg==');
+  }
+
+  div.callout-tip.callout-style-default .callout-title {
+    background-color: #ccf1e3
+  }
+
+  div.callout-caution {
+    border-left-color: #fd7e14 !important;
+  }
+
+  div.callout-caution .callout-icon::before {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAACV0lEQVRYCdVWzWoUQRCuqp2ICBLJXgITZL1EfQDBW/bkzUMUD7klD+ATSHBEfAIfQO+iXsWDxJsHL96EHAwhgzlkg8nBg25XWb0zIb0zs9muYYWkoKeru+vn664fBqElyZNuyh167NXJ8Ut8McjbmEraKHkd7uAnAFku+VWdb3reSmRV8PKSLfZ0Gjn3a6Xlcq9YGb6tADjn+lUfTXtVmaZ1KwBIvFI11rRXlWlatwIAAv2asaa9mlB9wwygiDX26qaw1yYPzFXg2N1GgG0FMF8Oj+VIx7E/03lHx8UhvYyNZLN7BwSPgekXXLribw7w5/c8EF+DBK5idvDVYtEEwMeYefjjLAdEyQ3M9nfOkgnPTEkYU+sxMq0BxNR6jExrAI31H1rzvLEfRIdgcv1XEdj6QTQAS2wtstEALLG1yEZ3QhH6oDX7ExBSFEkFINXH98NTrme5IOaaA7kIfiu2L8A3qhH9zRbukdCqdsA98TdElyeMe5BI8Rs2xHRIsoTSSVFfCFCWGPn9XHb4cdobRIWABNf0add9jakDjQJpJ1bTXOJXnnRXHRf+dNL1ZV1MBRCXhMbaHqGI1JkKIL7+i8uffuP6wVQAzO7+qVEbF6NbS0LJureYcWXUUhH66nLR5rYmva+2tjRFtojkM2aD76HEGAD3tPtKM309FJg5j/K682ywcWJ3PASCcycH/22u+Bh7Aa0ehM2Fu4z0SAE81HF9RkB21c5bEn4Dzw+/qNOyXr3DCTQDMBOdhi4nAgiFDGCinIa2owCEChUwD8qzd03PG+qdW/4fDzjUMcE1ZpIAAAAASUVORK5CYII=');
+  }
+
+  div.callout-caution.callout-style-default .callout-title {
+    background-color: #ffe5d0
+  }
+
+  </style>
+  <style type="text/css">
+    .reveal div.sourceCode {
+      margin: 0;
+      overflow: auto;
+    }
+    .reveal div.hanging-indent {
+      margin-left: 1em;
+      text-indent: -1em;
+    }
+    .reveal .slide:not(.center) {
+      height: 100%;
+    }
+    .reveal .slide.scrollable {
+      overflow-y: auto;
+    }
+    .reveal .footnotes {
+      height: 100%;
+      overflow-y: auto;
+    }
+    .reveal .slide .absolute {
+      position: absolute;
+      display: block;
+    }
+    .reveal .footnotes ol {
+      counter-reset: ol;
+      list-style-type: none; 
+      margin-left: 0;
+    }
+    .reveal .footnotes ol li:before {
+      counter-increment: ol;
+      content: counter(ol) ". "; 
+    }
+    .reveal .footnotes ol li > p:first-child {
+      display: inline-block;
+    }
+    .reveal .slide ul,
+    .reveal .slide ol {
+      margin-bottom: 0.5em;
+    }
+    .reveal .slide ul li,
+    .reveal .slide ol li {
+      margin-top: 0.4em;
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide ul[role="tablist"] li {
+      margin-bottom: 0;
+    }
+    .reveal .slide ul li > *:first-child,
+    .reveal .slide ol li > *:first-child {
+      margin-block-start: 0;
+    }
+    .reveal .slide ul li > *:last-child,
+    .reveal .slide ol li > *:last-child {
+      margin-block-end: 0;
+    }
+    .reveal .slide .columns:nth-child(3) {
+      margin-block-start: 0.8em;
+    }
+    .reveal blockquote {
+      box-shadow: none;
+    }
+    .reveal .tippy-content>* {
+      margin-top: 0.2em;
+      margin-bottom: 0.7em;
+    }
+    .reveal .tippy-content>*:last-child {
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide > img.stretch.quarto-figure-center,
+    .reveal .slide > img.r-stretch.quarto-figure-center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-left,
+    .reveal .slide > img.r-stretch.quarto-figure-left  {
+      display: block;
+      margin-left: 0;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-right,
+    .reveal .slide > img.r-stretch.quarto-figure-right  {
+      display: block;
+      margin-left: auto;
+      margin-right: 0; 
+    }
+  </style>
+  <script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+  <script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+  <link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+  
+  <script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+<meta property="og:title" content="Ibis @ LinkedIn – Ibis">
+<meta property="og:description" content="Portable Python DataFrames">
+<meta property="og:image" content="https://ibis-project.org/presentations/logo.png">
+<meta property="og:site_name" content="Ibis">
+<meta name="twitter:title" content="Ibis @ LinkedIn – Ibis">
+<meta name="twitter:description" content="Portable Python DataFrames">
+<meta name="twitter:image" content="https://ibis-project.org/presentations/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body class="quarto-dark">
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide" class="quarto-title-block center">
+  <h1 class="title">Ibis @ LinkedIn</h1>
+  <p class="subtitle">Portable Python DataFrames</p>
+
+<div class="quarto-title-authors">
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+Chloe He 
+</div>
+</div>
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+Phillip Cloud 
+</div>
+</div>
+</div>
+
+  <p class="date">2024-04-24</p>
+</section>
+<section id="who" class="title-slide slide level1 center" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h1>Who</h1>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p>Phillip Cloud</p>
+<ul>
+<li>Principal engineer at Voltron Data</li>
+<li>Python analytics for 10+ years</li>
+<li>Open source</li>
+<li>Tech lead for Ibis</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p>Chloe He</p>
+<ul>
+<li>Founding engineer at Claypot → Senior engineer at Voltron Data</li>
+<li>Infrastructure for real-time ML</li>
+<li>Ibis streaming</li>
+</ul>
+</div></div>
+</section>
+
+<section>
+<section id="what" class="title-slide slide level1 center" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h1>What</h1>
+
+</section>
+<section id="ibis-is-a-python-library-for" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Ibis is a Python library for:</h2>
+<ul>
+<li>Exploratory data analysis</li>
+<li>General analytics</li>
+<li>Data engineering</li>
+<li>ML preprocessing</li>
+<li>Library: (e.g., <a href="https://github.com/googleapis/python-bigquery-dataframes">Google BigFrames</a>)</li>
+<li>Build your own … Ibis (??)</li>
+</ul>
+<div class="fragment">
+<div class="r-fit-text">
+<p>💡 Development to production with few rewrites</p>
+</div>
+</div>
+</section></section>
+<section>
+<section id="examples" class="title-slide slide level1 center" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h1>Examples</h1>
+
+</section>
+<section id="examples-1" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Examples</h2>
+<p><a href="https://ibis-project.org/tutorials/getting_started" class="uri">https://ibis-project.org/tutorials/getting_started</a></p>
+<div class="panel-tabset">
+<ul id="tabset-1" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-1-1">Raw data</a></li><li><a href="#tabset-1-2">Aggregated penguins</a></li><li><a href="#tabset-1-3">Mean-centered numerics</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1">
+<div id="243cb4ea" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a></a><span class="im">from</span> ibis.interactive <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb1-2"><a></a></span>
+<span id="cb1-3"><a></a>penguins <span class="op">=</span> ibis.examples.penguins.fetch()</span>
+<span id="cb1-4"><a></a>penguins</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.7</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3750</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.5</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.4</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">186</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3800</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.0</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3250</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │          <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │        <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">36.7</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.3</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3450</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3650</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.9</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.8</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3625</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.2</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4675</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">34.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.1</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3475</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">42.0</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.2</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4250</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
+</pre>
+</div>
+</div>
+</div>
+<div id="tabset-1-2">
+<div id="1509d114" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(</span>
+<span id="cb2-2"><a></a>    n<span class="op">=</span>penguins.count(),</span>
+<span id="cb2-3"><a></a>    avg_bill_mm<span class="op">=</span>penguins.bill_length_mm.mean(),</span>
+<span id="cb2-4"><a></a>    med_flipper_mm<span class="op">=</span>penguins.flipper_length_mm.median()</span>
+<span id="cb2-5"><a></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="2">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species   </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> n     </span>┃<span style="font-weight: bold"> avg_bill_mm </span>┃<span style="font-weight: bold"> med_flipper_mm </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>     │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │
+├───────────┼───────────┼───────┼─────────────┼────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">52</span> │   <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.950980</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">191.0</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">44</span> │   <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.975000</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">189.5</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">56</span> │   <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.501786</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190.0</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │   <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">124</span> │   <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">47.504878</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">216.0</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Chinstrap</span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">68</span> │   <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">48.833824</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">196.0</span> │
+└───────────┴───────────┴───────┴─────────────┴────────────────┘
+</pre>
+</div>
+</div>
+</div>
+<div id="tabset-1-3">
+<div id="5b880a62" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a></a>cols <span class="op">=</span> {</span>
+<span id="cb3-2"><a></a>    c: penguins[c] <span class="op">-</span> penguins[c].mean()</span>
+<span id="cb3-3"><a></a>    <span class="cf">for</span> c <span class="kw">in</span> penguins.columns</span>
+<span id="cb3-4"><a></a>    <span class="cf">if</span> penguins[c].<span class="bu">type</span>().is_numeric() <span class="kw">and</span> c <span class="op">!=</span> <span class="st">"year"</span></span>
+<span id="cb3-5"><a></a>}</span>
+<span id="cb3-6"><a></a>expr <span class="op">=</span> penguins.group_by(<span class="st">"species"</span>).mutate(<span class="op">**</span>cols).head(<span class="dv">5</span>)</span>
+<span id="cb3-7"><a></a>expr</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="3">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island </span>┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>           │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>     │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.404878</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.782114</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-6.186992</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-576.01626</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-3.004878</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.282114</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-3.186992</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-226.01626</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2009</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.195122</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.882114</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-7.186992</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-626.01626</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.495122</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.217886</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.813008</span> │   <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">623.98374</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.095122</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.482114</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-2.186992</span> │   <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">323.98374</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+└─────────┴────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section></section>
+<section>
+<section id="lets-talk-about-sql" class="title-slide slide level1 center" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h1>Let’s talk about SQL</h1>
+
+</section>
+<section id="sql" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>SQL</h2>
+<div class="r-stack">
+<div class="fragment">
+<div id="7ebea94d" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a></a>cols <span class="op">=</span> {</span>
+<span id="cb4-2"><a></a>    c: penguins[c] <span class="op">-</span> penguins[c].mean()</span>
+<span id="cb4-3"><a></a>    <span class="cf">for</span> c <span class="kw">in</span> penguins.columns</span>
+<span id="cb4-4"><a></a>    <span class="cf">if</span> penguins[c].<span class="bu">type</span>().is_numeric() <span class="kw">and</span> c <span class="op">!=</span> <span class="st">"year"</span></span>
+<span id="cb4-5"><a></a>}</span>
+<span id="cb4-6"><a></a>expr <span class="op">=</span> penguins.group_by(<span class="st">"species"</span>).mutate(<span class="op">**</span>cols).head(<span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="fragment fade-in-then-semi-out">
+<div id="d4a1ffd3" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a></a>ibis.to_sql(expr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display cell-output-markdown" data-execution_count="5">
+<div class="sourceCode" id="cb6"><pre class="sourceCode numberSource sql number-lines code-with-copy"><code class="sourceCode sql"><span id="cb6-1"><a></a><span class="kw">SELECT</span></span>
+<span id="cb6-2"><a></a>  <span class="ot">"t0"</span>.<span class="ot">"species"</span>,</span>
+<span id="cb6-3"><a></a>  <span class="ot">"t0"</span>.<span class="ot">"island"</span>,</span>
+<span id="cb6-4"><a></a>  <span class="ot">"t0"</span>.<span class="ot">"bill_length_mm"</span> <span class="op">-</span> <span class="fu">AVG</span>(<span class="ot">"t0"</span>.<span class="ot">"bill_length_mm"</span>) <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="ot">"t0"</span>.<span class="ot">"species"</span> <span class="kw">ROWS</span> <span class="kw">BETWEEN</span> <span class="kw">UNBOUNDED</span> <span class="kw">PRECEDING</span> <span class="kw">AND</span> <span class="kw">UNBOUNDED</span> <span class="kw">FOLLOWING</span>) <span class="kw">AS</span> <span class="ot">"bill_length_mm"</span>,</span>
+<span id="cb6-5"><a></a>  <span class="ot">"t0"</span>.<span class="ot">"bill_depth_mm"</span> <span class="op">-</span> <span class="fu">AVG</span>(<span class="ot">"t0"</span>.<span class="ot">"bill_depth_mm"</span>) <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="ot">"t0"</span>.<span class="ot">"species"</span> <span class="kw">ROWS</span> <span class="kw">BETWEEN</span> <span class="kw">UNBOUNDED</span> <span class="kw">PRECEDING</span> <span class="kw">AND</span> <span class="kw">UNBOUNDED</span> <span class="kw">FOLLOWING</span>) <span class="kw">AS</span> <span class="ot">"bill_depth_mm"</span>,</span>
+<span id="cb6-6"><a></a>  <span class="ot">"t0"</span>.<span class="ot">"flipper_length_mm"</span> <span class="op">-</span> <span class="fu">AVG</span>(<span class="ot">"t0"</span>.<span class="ot">"flipper_length_mm"</span>) <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="ot">"t0"</span>.<span class="ot">"species"</span> <span class="kw">ROWS</span> <span class="kw">BETWEEN</span> <span class="kw">UNBOUNDED</span> <span class="kw">PRECEDING</span> <span class="kw">AND</span> <span class="kw">UNBOUNDED</span> <span class="kw">FOLLOWING</span>) <span class="kw">AS</span> <span class="ot">"flipper_length_mm"</span>,</span>
+<span id="cb6-7"><a></a>  <span class="ot">"t0"</span>.<span class="ot">"body_mass_g"</span> <span class="op">-</span> <span class="fu">AVG</span>(<span class="ot">"t0"</span>.<span class="ot">"body_mass_g"</span>) <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="ot">"t0"</span>.<span class="ot">"species"</span> <span class="kw">ROWS</span> <span class="kw">BETWEEN</span> <span class="kw">UNBOUNDED</span> <span class="kw">PRECEDING</span> <span class="kw">AND</span> <span class="kw">UNBOUNDED</span> <span class="kw">FOLLOWING</span>) <span class="kw">AS</span> <span class="ot">"body_mass_g"</span>,</span>
+<span id="cb6-8"><a></a>  <span class="ot">"t0"</span>.<span class="ot">"sex"</span>,</span>
+<span id="cb6-9"><a></a>  <span class="ot">"t0"</span>.<span class="ot">"year"</span></span>
+<span id="cb6-10"><a></a><span class="kw">FROM</span> <span class="ot">"penguins"</span> <span class="kw">AS</span> <span class="ot">"t0"</span></span>
+<span id="cb6-11"><a></a><span class="kw">LIMIT</span> <span class="dv">5</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="fragment">
+<p><img data-src="./sure.gif"></p>
+</div>
+</div>
+</section></section>
+<section>
+<section id="back-to-examples" class="title-slide slide level1 center" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h1>Back to examples…</h1>
+
+</section>
+<section id="ibis-analytics" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2><code>ibis-analytics</code></h2>
+<p><a href="https://ibis-analytics.streamlit.app" class="uri">https://ibis-analytics.streamlit.app</a></p>
+<iframe class="streamlit-app-inner" width="100%" height="75%" src="https://ibis-analytics.streamlit.app/?embedded=true"></iframe>
+</section></section>
+<section>
+<section id="why" class="title-slide slide level1 center" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h1>Why?</h1>
+
+</section>
+<section id="dataframe-lore" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>DataFrame lore</h2>
+<ul>
+<li>DataFrames appear in the <code>S</code> programming language, which evolves into the <code>R</code> <del>calculator</del> programming language.</li>
+<li><code>pandas</code> perfects the DataFrame in Python … or did it?</li>
+<li>Dozens of Python DataFrame libraries appear and disappear…</li>
+<li>pandas is the de facto standard for Python DataFrames. It still doesn’t scale.</li>
+<li>Leads to data scientists throwing code over the wall to engineers.</li>
+<li>What if <strong>Ibis</strong> were a new <a href="https://xkcd.com/927/">standard</a>?</li>
+</ul>
+</section>
+<section id="the-legal-dept-requires-this-slide" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>The legal dept requires this slide</h2>
+
+<img data-src="./standards.png" class="r-stretch"></section>
+<section id="ibis-origins" class="slide level2" data-transition="fade" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Ibis origins</h2>
+<p>from <a href="https://wesmckinney.com/blog/apache-arrow-pandas-internals/">Apache Arrow and the “10 Things I Hate About pandas”</a> by Wes McKinney</p>
+<blockquote>
+<p>…in 2015, I started the Ibis project…to create a pandas-friendly deferred expression system for static analysis and compilation [of] these types of [query planned, multicore execution] operations. Since an efficient multithreaded in-memory engine for pandas was not available when I started Ibis, I instead focused on building compilers for SQL engines (Impala, PostgreSQL, SQLite), similar to the R dplyr package. Phillip Cloud from the pandas core team has been actively working on Ibis with me for quite a long time.</p>
+</blockquote>
+</section>
+<section id="two-world-problem" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Two world problem</h2>
+<h3 id="what-does-ibis-solve">What does Ibis solve?</h3>
+<div>
+<div class="columns">
+<div class="column">
+<p>SQL:</p>
+<ul>
+<li>databases &amp; tables</li>
+<li>analytics</li>
+<li>metrics</li>
+<li>dashboards</li>
+</ul>
+</div><div class="column">
+<p>Python:</p>
+<ul>
+<li>files &amp; DataFrames</li>
+<li>data science</li>
+<li>statistics</li>
+<li>notebooks</li>
+</ul>
+</div></div>
+</div>
+</section>
+<section id="section" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2></h2>
+
+<img data-src="../logo.svg" class="quarto-figure quarto-figure-center r-stretch"><div class="r-fit-text">
+<p><strong><em>Ibis bridges the gap.</em></strong></p>
+</div>
+</section>
+<section id="bridging-the-gap" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Bridging the gap</h2>
+<div class="panel-tabset">
+<ul id="tabset-2" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-2-1">DuckDB</a></li><li><a href="#tabset-2-2">DataFusion</a></li><li><a href="#tabset-2-3">ClickHouse</a></li><li><a href="#tabset-2-4">Polars</a></li><li><a href="#tabset-2-5">BigQuery</a></li><li><a href="#tabset-2-6">Snowflake</a></li><li><a href="#tabset-2-7">Oracle</a></li><li><a href="#tabset-2-8">Spark</a></li><li><a href="#tabset-2-9">Trino</a></li><li><a href="#tabset-2-10">Flink</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1">
+<div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a></a><span class="im">import</span> ibis</span>
+<span id="cb7-2"><a></a></span>
+<span id="cb7-3"><a></a>con <span class="op">=</span> ibis.duckdb.<span class="ex">connect</span>()</span>
+<span id="cb7-4"><a></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb7-5"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(count<span class="op">=</span>ibis._.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>An embeddable, zero-dependency, C++ SQL database engine.</p>
+</div>
+<div id="tabset-2-2">
+<div class="sourceCode" id="cb8"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a></a><span class="im">import</span> ibis</span>
+<span id="cb8-2"><a></a></span>
+<span id="cb8-3"><a></a>con <span class="op">=</span> ibis.datafusion.<span class="ex">connect</span>()</span>
+<span id="cb8-4"><a></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb8-5"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(count<span class="op">=</span>ibis._.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A Rust SQL query engine.</p>
+</div>
+<div id="tabset-2-3">
+<div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a></a><span class="im">import</span> ibis</span>
+<span id="cb9-2"><a></a></span>
+<span id="cb9-3"><a></a>con <span class="op">=</span> ibis.clickhouse.<span class="ex">connect</span>()</span>
+<span id="cb9-4"><a></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb9-5"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(count<span class="op">=</span>ibis._.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A C++ column-oriented database management system.</p>
+</div>
+<div id="tabset-2-4">
+<div class="sourceCode" id="cb10"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a></a><span class="im">import</span> ibis</span>
+<span id="cb10-2"><a></a></span>
+<span id="cb10-3"><a></a>con <span class="op">=</span> ibis.polars.<span class="ex">connect</span>()</span>
+<span id="cb10-4"><a></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb10-5"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(count<span class="op">=</span>ibis._.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A Rust DataFrame library.</p>
+</div>
+<div id="tabset-2-5">
+<div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a></a><span class="im">import</span> ibis</span>
+<span id="cb11-2"><a></a></span>
+<span id="cb11-3"><a></a>con <span class="op">=</span> ibis.bigquery.<span class="ex">connect</span>()</span>
+<span id="cb11-4"><a></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb11-5"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(count<span class="op">=</span>ibis._.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A serverless, highly scalable, and cost-effective cloud data warehouse.</p>
+</div>
+<div id="tabset-2-6">
+<div class="sourceCode" id="cb12"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a></a><span class="im">import</span> ibis</span>
+<span id="cb12-2"><a></a></span>
+<span id="cb12-3"><a></a>con <span class="op">=</span> ibis.snowflake.<span class="ex">connect</span>()</span>
+<span id="cb12-4"><a></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb12-5"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(count<span class="op">=</span>ibis._.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A cloud data platform.</p>
+</div>
+<div id="tabset-2-7">
+<div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a></a><span class="im">import</span> ibis</span>
+<span id="cb13-2"><a></a></span>
+<span id="cb13-3"><a></a>con <span class="op">=</span> ibis.oracle.<span class="ex">connect</span>()</span>
+<span id="cb13-4"><a></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb13-5"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(count<span class="op">=</span>ibis._.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A relational database management system.</p>
+</div>
+<div id="tabset-2-8">
+<div class="sourceCode" id="cb14"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a></a><span class="im">import</span> ibis</span>
+<span id="cb14-2"><a></a></span>
+<span id="cb14-3"><a></a>con <span class="op">=</span> ibis.pyspark.<span class="ex">connect</span>()</span>
+<span id="cb14-4"><a></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb14-5"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(count<span class="op">=</span>ibis._.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A unified analytics engine for large-scale data processing.</p>
+</div>
+<div id="tabset-2-9">
+<div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a></a><span class="im">import</span> ibis</span>
+<span id="cb15-2"><a></a></span>
+<span id="cb15-3"><a></a>con <span class="op">=</span> ibis.trino.<span class="ex">connect</span>()</span>
+<span id="cb15-4"><a></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb15-5"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(count<span class="op">=</span>ibis._.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A distributed SQL query engine.</p>
+</div>
+<div id="tabset-2-10">
+<div class="sourceCode" id="cb16"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a></a><span class="im">import</span> ibis</span>
+<span id="cb16-2"><a></a></span>
+<span id="cb16-3"><a></a>con <span class="op">=</span> ibis.flink.<span class="ex">connect</span>()</span>
+<span id="cb16-4"><a></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb16-5"><a></a>penguins.group_by(<span class="st">"species"</span>, <span class="st">"island"</span>).agg(count<span class="op">=</span>ibis._.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A distributed streaming and batch SQL analytics engine.</p>
+</div>
+</div>
+</div>
+</section></section>
+<section>
+<section id="how-does-ibis-work" class="title-slide slide level1 center" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h1>How does Ibis work?</h1>
+<p>This is going to be very fast 🏃💨. I will happily answer questions about it 😂.</p>
+</section>
+<section id="engineering-themes" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Engineering themes</h2>
+<ul>
+<li>Immutability</li>
+<li>Type checking</li>
+<li>Separation of concerns</li>
+<li>Extensibility</li>
+<li>Focus on end-user experience</li>
+<li>Avoid common denominator trap</li>
+<li>Scale up <strong>and</strong> down</li>
+</ul>
+<aside class="notes">
+<p>Avoid common denominator trap</p>
+<p>Simply don’t require that every backend implement every API we expose. “A majority”, though not hard and fast.</p>
+<p>UDFs</p>
+<ul>
+<li>Supported in many backends</li>
+<li>Layers of extensibility</li>
+</ul>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="components-expressions" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Components: expressions</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p><strong>Expressions</strong>: <em>interface</em></p>
+<ul>
+<li><code>StringScalar</code>, <code>IntegerColumn</code>, <code>Table</code></li>
+<li><code>.sum()</code>, <code>.split()</code>, <code>.join()</code></li>
+<li>No knowledge of specific operation</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p><strong>Operations</strong>: <em>implementation</em></p>
+<ul>
+<li>Specific action: e.g., <code>StringSplit</code></li>
+<li>Inputs + output dtype, shape</li>
+<li>Used for compiler dispatch</li>
+</ul>
+</div></div>
+<div class="fragment">
+<!-- -->
+<h3 id="other-goodies">Other goodies</h3>
+<ul>
+<li>Type system</li>
+<li>Pattern matching</li>
+<li>Graph manipulation/traversal</li>
+</ul>
+</div>
+<div class="fragment r-fit-text">
+<p><strong>Goal</strong>: separate API from implementation.</p>
+</div>
+</section>
+<section id="components-expressions-1" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Components: expressions</h2>
+<div id="693632e6" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a></a><span class="im">from</span> ibis.expr.visualize <span class="im">import</span> to_graph</span>
+<span id="cb17-2"><a></a></span>
+<span id="cb17-3"><a></a>expr <span class="op">=</span> penguins.group_by(<span class="st">"species"</span>).agg(</span>
+<span id="cb17-4"><a></a>    avg_bill_mm<span class="op">=</span>_.bill_length_mm.mean()</span>
+<span id="cb17-5"><a></a>)</span>
+<span id="cb17-6"><a></a></span>
+<span id="cb17-7"><a></a>to_graph(expr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+
+</div>
+<img data-src="linkedin-meetup-2024-04-24_files/figure-revealjs/cell-7-output-1.svg" class="quarto-figure quarto-figure-center r-stretch"></section>
+<section id="components-compiler" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Components: compiler</h2>
+<div class="sourceCode" id="cb18"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a></a>expr <span class="op">=</span> penguins.group_by(<span class="st">"species"</span>).agg(</span>
+<span id="cb18-2"><a></a>    avg_bill_mm<span class="op">=</span>_.bill_length_mm.mean()</span>
+<span id="cb18-3"><a></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="r-hstack semi-fade-out">
+<div class="fragment">
+<div class="cell" data-reveal="true" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class=""><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph BT
+  classDef white color:white;
+
+  %% graph definition
+  DatabaseTable --&gt; species
+  DatabaseTable --&gt; bill_length_mm
+  bill_length_mm --&gt; Mean
+  species --&gt; Aggregate
+  Mean --&gt; Aggregate
+
+  %% style
+  class DatabaseTable white;
+  class species white;
+  class bill_length_mm white;
+  class Mean white;
+  class Aggregate white;
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</div>
+<div class="fragment">
+<div class="cell" data-reveal="true" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class=""><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph BT
+  classDef white color:white;
+
+  DatabaseTable2[DatabaseTable] --&gt; species2[species]
+  species2 --&gt; bill_length_mm2[bill_length_mm]
+  bill_length_mm2 --&gt; Mean2[Mean]
+  Mean2 --&gt; Aggregate2[Aggregate]
+
+  %% style
+  class DatabaseTable2 white;
+  class species2 white;
+  class bill_length_mm2 white;
+  class Mean2 white;
+  class Aggregate2 white;
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</div>
+<div class="r-stack">
+<div class="fragment">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="./compile.png" class="quarto-figure quarto-figure-center" style="width:70.0%;height:70.0%"></p>
+</figure>
+</div>
+</div>
+<div class="fragment">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="./magic.gif" class="quarto-figure quarto-figure-center"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="components-compiler-1" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Components: compiler</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="./compile.png" class="quarto-figure quarto-figure-center"></p>
+</figure>
+</div>
+</div><div class="column" style="width:50%;">
+<ul>
+<li>Rewrite operations</li>
+<li>Bottom up compile storing intermediate outputs</li>
+<li>Handoff output to sqlglot</li>
+</ul>
+<div id="fd128c0c" class="cell" data-execution_count="7">
+<div class="cell-output cell-output-display cell-output-markdown" data-execution_count="7">
+<div class="sourceCode" id="cb19"><pre class="sourceCode numberSource sql number-lines code-with-copy"><code class="sourceCode sql"><span id="cb19-1"><a></a><span class="kw">SELECT</span></span>
+<span id="cb19-2"><a></a>  <span class="ot">"t0"</span>.<span class="ot">"species"</span>,</span>
+<span id="cb19-3"><a></a>  <span class="fu">AVG</span>(<span class="ot">"t0"</span>.<span class="ot">"bill_length_mm"</span>) <span class="kw">AS</span> <span class="ot">"avg_bill_mm"</span></span>
+<span id="cb19-4"><a></a><span class="kw">FROM</span> <span class="ot">"penguins"</span> <span class="kw">AS</span> <span class="ot">"t0"</span></span>
+<span id="cb19-5"><a></a><span class="kw">GROUP</span> <span class="kw">BY</span></span>
+<span id="cb19-6"><a></a>  <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+</div></div>
+</section>
+<section id="components-drivers" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Components: drivers</h2>
+
+<img data-src="./handoff.png" class="quarto-figure quarto-figure-center r-stretch"><h3 id="drivers">Drivers</h3>
+<ul>
+<li>We have SQL at this point</li>
+<li>Send to DB via DBAPI: <code>cursor.execute(ibis_generated_sql)</code></li>
+<li>(Heavily) massage the output</li>
+</ul>
+</section></section>
+<section>
+<section id="ibis-streaming" class="title-slide slide level1 center" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h1>Ibis + Streaming</h1>
+
+</section>
+<section id="growth-of-streaming" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Growth of streaming</h2>
+<ul>
+<li>Over 70% of Fortune 500 companies have adopted Kafka</li>
+<li>54% of Databricks’ customers are using Spark Structured Streaming</li>
+<li>The stream processing market is expected to grow at a compound annual growth rate (CAGR) of 21.5% from 2022 to 2028 (IDC)</li>
+</ul>
+
+<img data-src="./growth.png" class="quarto-figure quarto-figure-center r-stretch"></section>
+<section id="batch-and-streaming" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Batch and streaming</h2>
+<div class="cell" data-reveal="true" data-fig-width="20" data-fig-height="10" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class=""><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph LR
+  subgraph " "
+    direction LR
+    A[data] --&gt; B[batch processing] &amp; C[stream processing] --&gt; D[downstream]
+  end
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<div class="fragment">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="./engines.png" class="quarto-figure quarto-figure-center" style="width:60.0%"></p>
+</figure>
+</div>
+</div>
+</section>
+<section id="in-the-machine-learning-world" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>In the machine learning world…</h2>
+<div class="fragment">
+<div class="cell" data-reveal="true" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class=""><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph TB
+  proddata --&gt; sampled
+  model --&gt; prodpipeline
+
+  subgraph "local env"
+    sampled[sampled data] --&gt; local[local experimentation]
+    local &lt;--&gt; iterate
+    local --&gt; model[finally, we have a production-ready model!]
+  end
+
+  subgraph "prod env"
+    proddata[production data] --&gt; prodpipeline[production pipelines]
+  end
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="local-experimentation-to-production-image" class="slide level2">
+<h2></h2>
+
+<img data-src="./throwing.png" class="r-stretch"></section>
+<section id="in-the-machine-learning-world-1" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>In the machine learning world…</h2>
+<div class="cell" data-reveal="true" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class=""><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph TB
+  proddata --&gt; sampled
+  model -- "code rewrite" --&gt; prodpipeline
+
+  linkStyle 1 color:white;
+
+  subgraph "local env"
+    sampled[sampled data] --&gt; local[local experimentation]
+    local &lt;--&gt; iterate
+    local --&gt; model[finally, we have a production-ready model!]
+  end
+
+  subgraph "prod env"
+    proddata[production data] --&gt; prodpipeline[production pipelines]
+  end
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</section>
+<section id="a-real-world-example" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>A real-world example</h2>
+<div class="r-hstack">
+<div class="fragment" style="margin-right: 300px;">
+<p>pandas</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a></a><span class="cf">return</span> (</span>
+<span id="cb20-2"><a></a>    clicks_df</span>
+<span id="cb20-3"><a></a>    .groupby([<span class="st">"user"</span>])</span>
+<span id="cb20-4"><a></a>    .rolling(<span class="st">"1h"</span>)</span>
+<span id="cb20-5"><a></a>    .size()</span>
+<span id="cb20-6"><a></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="fragment">
+<p>Flink SQL</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode numberSource sql number-lines code-with-copy"><code class="sourceCode sql"><span id="cb21-1"><a></a><span class="kw">SELECT</span></span>
+<span id="cb21-2"><a></a>  <span class="fu">user</span>,</span>
+<span id="cb21-3"><a></a>  <span class="fu">COUNT</span>(url) <span class="kw">OVER</span> (</span>
+<span id="cb21-4"><a></a>    <span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="fu">user</span></span>
+<span id="cb21-5"><a></a>    <span class="kw">ORDER</span> <span class="kw">BY</span> click_time</span>
+<span id="cb21-6"><a></a>    <span class="kw">RANGE</span> <span class="kw">BETWEEN</span></span>
+<span id="cb21-7"><a></a>      <span class="dt">INTERVAL</span> <span class="st">'1'</span> <span class="kw">HOUR</span> <span class="kw">PRECEDING</span></span>
+<span id="cb21-8"><a></a>      <span class="kw">AND</span> <span class="kw">CURRENT</span> <span class="kw">ROW</span></span>
+<span id="cb21-9"><a></a>  ) <span class="kw">AS</span> one_hour_user_click_cnt</span>
+<span id="cb21-10"><a></a><span class="kw">FROM</span> clicks</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+</section>
+<section id="code-rewrites" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Code rewrites</h2>
+<div>
+<ul>
+<li class="fragment">From batch to streaming</li>
+<li class="fragment">From local experimentation to production</li>
+<li class="fragment">Backfilling a streaming feature on a batch backing table</li>
+<li class="fragment">…</li>
+</ul>
+</div>
+<aside class="notes">
+<p>Examples for each</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="the-solution" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>The solution…</h2>
+<div class="fragment">
+<p>Stream-batch unified API</p>
+<ul>
+<li>Flink SQL</li>
+<li>Spark DataFrame API</li>
+<li>…</li>
+</ul>
+</div>
+</section>
+<section id="stream-batch-unification" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Stream-batch unification</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p>pandas</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a></a><span class="cf">return</span> (</span>
+<span id="cb22-2"><a></a>    clicks_df</span>
+<span id="cb22-3"><a></a>    .groupby([<span class="st">"user"</span>])</span>
+<span id="cb22-4"><a></a>    .rolling(<span class="st">"1h"</span>)</span>
+<span id="cb22-5"><a></a>    .size()</span>
+<span id="cb22-6"><a></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div><div class="column" style="width:50%;">
+<p>Flink SQL</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode numberSource sql number-lines code-with-copy"><code class="sourceCode sql"><span id="cb23-1"><a></a><span class="kw">SELECT</span></span>
+<span id="cb23-2"><a></a>  <span class="fu">user</span>,</span>
+<span id="cb23-3"><a></a>  <span class="fu">COUNT</span>(url) <span class="kw">OVER</span> (</span>
+<span id="cb23-4"><a></a>    <span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="fu">user</span></span>
+<span id="cb23-5"><a></a>    <span class="kw">ORDER</span> <span class="kw">BY</span> click_time</span>
+<span id="cb23-6"><a></a>    <span class="kw">RANGE</span> <span class="kw">BETWEEN</span></span>
+<span id="cb23-7"><a></a>      <span class="dt">INTERVAL</span> <span class="st">'1'</span> <span class="kw">HOUR</span> <span class="kw">PRECEDING</span></span>
+<span id="cb23-8"><a></a>      <span class="kw">AND</span> <span class="kw">CURRENT</span> <span class="kw">ROW</span></span>
+<span id="cb23-9"><a></a>  ) <span class="kw">AS</span> one_hour_user_click_cnt</span>
+<span id="cb23-10"><a></a><span class="kw">FROM</span> clicks</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div></div>
+<div class="fragment">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="./arrow.png" class="quarto-figure quarto-figure-center" style="width:5.0%"></p>
+</figure>
+</div>
+</div>
+<div class="fragment">
+<p>Ibis</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a></a>agged <span class="op">=</span> clicks.select(</span>
+<span id="cb24-2"><a></a>    _.user,</span>
+<span id="cb24-3"><a></a>    one_hour_user_click_cnt<span class="op">=</span>_.url.count().over(</span>
+<span id="cb24-4"><a></a>        <span class="bu">range</span><span class="op">=</span>(<span class="op">-</span>ibis.interval(hour<span class="op">=</span><span class="dv">1</span>), <span class="dv">0</span>),</span>
+<span id="cb24-5"><a></a>        group_by<span class="op">=</span>_.user,</span>
+<span id="cb24-6"><a></a>        order_by<span class="op">=</span>_.click_time,</span>
+<span id="cb24-7"><a></a>    ),</span>
+<span id="cb24-8"><a></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="but-its-hard" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>But it’s hard…</h2>
+<div>
+<ul>
+<li class="fragment">Streaming is different
+<ul>
+<li class="fragment">Time semantics</li>
+<li class="fragment">Long-running queries</li>
+<li class="fragment">Sources and sinks</li>
+<li class="fragment">…</li>
+</ul></li>
+<li class="fragment">Less established standards in streaming syntax</li>
+</ul>
+</div>
+</section>
+<section id="ibis-streaming-today" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Ibis streaming today</h2>
+<ul>
+<li>Flink backend and RisingWave backend launched in Ibis 8.0</li>
+<li>Introduction of watermarks, windowed aggregations, etc in Ibis</li>
+</ul>
+</section>
+<section id="whats-next" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>What’s next?</h2>
+<ul>
+<li>Expand support of streaming operations and syntax</li>
+<li>Continuously iterate on a stream-batch unified API</li>
+<li>More streaming backends (Spark Structured Streaming)</li>
+</ul>
+</section>
+<section id="towards-composable-data-systems" class="slide level2">
+<h2>Towards composable data systems</h2>
+<div class="columns">
+<div class="column" style="width:40%;">
+<p><img data-src="./cds_manifesto.png"></p>
+</div><div class="column" style="width:15%;">
+
+</div><div class="column" style="width:40%;">
+<p><img data-src="./cds.png"></p>
+</div></div>
+</section>
+<section id="try-it-out-now" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Try it out now!</h2>
+<div class="panel-tabset">
+<ul id="tabset-3" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-3-1">Local installation</a></li><li><a href="#tabset-3-2">😬 Ibis in the browser 😬</a></li></ul>
+<div class="tab-content">
+<div id="tabset-3-1">
+<p>Install:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><a></a><span class="ex">pip</span> install <span class="st">'ibis-framework[duckdb]'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then run:</p>
+<div id="f8f1841c" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a></a><span class="im">from</span> ibis.interactive <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb26-2"><a></a></span>
+<span id="cb26-3"><a></a>t <span class="op">=</span> ibis.examples.penguins.fetch()</span>
+<span id="cb26-4"><a></a>t.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="8">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.7</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3750</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.5</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.4</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">186</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3800</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.0</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3250</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │          <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │        <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">36.7</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.3</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3450</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+└─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
+</pre>
+</div>
+</div>
+</div>
+<div id="tabset-3-2">
+<iframe src="../jupyterlite/repl/?toolbar=1&amp;theme=JupyterLab+Night&amp;kernel=python&amp;code=%pip+install+numpy+pandas+tzdata&amp;code=import+pyodide_js%2C+pathlib%2C+js&amp;code=await+pyodide_js.loadPackage(&quot;https%3A%2F%2Fstorage.googleapis.com%2Fibis-wasm-wheels%2Fpyarrow-16.0.0.dev2661%2Bg9bddb87fd-cp311-cp311-emscripten_3_1_46_wasm32.whl&quot;)&amp;code=pathlib.Path(&quot;penguins.csv&quot;).write_text(await+(await+js.fetch(&quot;https%3A%2F%2Fstorage.googleapis.com%2Fibis-tutorial-data%2Fpenguins.csv&quot;)).text())&amp;code=del+pyodide_js%2C+pathlib%2C+js&amp;code=%clear&amp;code=%pip+install+'ibis-framework[duckdb]'&amp;code=from+ibis.interactive+import+*&amp;code=penguins+%3D+ibis.read_csv(&quot;penguins.csv&quot;)&amp;code=penguins.head()" class="jupyterlite-console" width="100%" height="500px">
+</iframe>
+</div>
+</div>
+</div>
+</section>
+<section id="questions" class="slide level2" data-background-image="./qrcode.svg" data-background-size="5%" data-background-position="96% 96%">
+<h2>Questions?</h2>
+<h3 id="where-to-find-us">Where to find us</h3>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p>Phillip</p>
+<ul>
+<li><a href="https://www.linkedin.com/in/phillip-cloud/">LinkedIn (phillip-cloud)</a></li>
+<li><a href="https://github.com/cpcloud">GitHub (<span class="citation" data-cites="cpcloud">@cpcloud</span>)</a></li>
+<li><a href="https://twitter.com/cpcloudy">Twitter (<span class="citation" data-cites="cpcloudy">@cpcloudy</span>)</a></li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p>Chloe</p>
+<ul>
+<li><a href="https://www.linkedin.com/in/chloe-he">LinkedIn (chloe-he)</a></li>
+<li><a href="https://github.com/chloeh13q">GitHub (<span class="citation" data-cites="chloeh13q">@chloeh13q</span>)</a></li>
+</ul>
+</div></div>
+<h3 id="links">Links</h3>
+<ul>
+<li>GitHub: <a href="https://github.com/ibis-project/ibis" class="uri">https://github.com/ibis-project/ibis</a></li>
+<li>Site: <a href="https://ibis-project.org" class="uri">https://ibis-project.org</a></li>
+<li>Installation: <a href="https://ibis-project.org/install" class="uri">https://ibis-project.org/install</a></li>
+<li>Tutorial: <a href="https://ibis-project.org/tutorials/getting_started" class="uri">https://ibis-project.org/tutorials/getting_started</a></li>
+<li>This talk: <a href="https://ibis-project.org/presentations/linkedin-meetup-2024-04-24" class="uri">https://ibis-project.org/presentations/linkedin-meetup-2024-04-24</a></li>
+</ul>
+
+<div class="quarto-auto-generated-content">
+<p><img src="../logo.svg" class="slide-logo"></p>
+<div class="footer footer-default">
+<p><a href="https://ibis-project.org/presentations/linkedin-meetup-2024-04-24" class="uri">https://ibis-project.org/presentations/linkedin-meetup-2024-04-24</a></p>
+</div>
+</div>
+</section></section>
+    </div>
+  </div>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script>
+  <script src="../site_libs/revealjs/dist/reveal.js"></script>
+  <!-- reveal.js plugins -->
+  <script src="../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="../site_libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="../site_libs/revealjs/plugin/quarto-support/support.js"></script>
+  
+
+  <script src="../site_libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="../site_libs/revealjs/plugin/search/search.js"></script>
+  <script src="../site_libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="../site_libs/revealjs/plugin/math/math.js"></script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://revealjs.com/config/
+      Reveal.initialize({
+'controlsAuto': true,
+'previewLinksAuto': false,
+'pdfSeparateFragments': false,
+'autoAnimateEasing': "ease",
+'autoAnimateDuration': 1,
+'autoAnimateUnmatched': true,
+'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.togglePdfExport(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
+'smaller': true,
+ 
+        // Display controls in the bottom right corner
+        controls: false,
+
+        // Help the user learn the controls by providing hints, for example by
+        // bouncing the down arrow when they first encounter a vertical slide
+        controlsTutorial: false,
+
+        // Determines where controls appear, "edges" or "bottom-right"
+        controlsLayout: 'edges',
+
+        // Visibility rule for backwards navigation arrows; "faded", "hidden"
+        // or "visible"
+        controlsBackArrows: 'faded',
+
+        // Display a presentation progress bar
+        progress: true,
+
+        // Display the page number of the current slide
+        slideNumber: false,
+
+        // 'all', 'print', or 'speaker'
+        showSlideNumber: 'all',
+
+        // Add the current slide number to the URL hash so that reloading the
+        // page/copying the URL will return you to the same slide
+        hash: true,
+
+        // Start with 1 for the hash rather than 0
+        hashOneBasedIndex: false,
+
+        // Flags if we should monitor the hash and change slides accordingly
+        respondToHashChanges: true,
+
+        // Push each slide change to the browser history
+        history: true,
+
+        // Enable keyboard shortcuts for navigation
+        keyboard: true,
+
+        // Enable the slide overview mode
+        overview: true,
+
+        // Disables the default reveal.js slide layout (scaling and centering)
+        // so that you can use custom CSS layout
+        disableLayout: false,
+
+        // Vertical centering of slides
+        center: false,
+
+        // Enables touch navigation on devices with touch input
+        touch: true,
+
+        // Loop the presentation
+        loop: false,
+
+        // Change the presentation direction to be RTL
+        rtl: false,
+
+        // see https://revealjs.com/vertical-slides/#navigation-mode
+        navigationMode: 'linear',
+
+        // Randomizes the order of slides each time the presentation loads
+        shuffle: false,
+
+        // Turns fragments on and off globally
+        fragments: true,
+
+        // Flags whether to include the current fragment in the URL,
+        // so that reloading brings you to the same fragment position
+        fragmentInURL: false,
+
+        // Flags if the presentation is running in an embedded mode,
+        // i.e. contained within a limited portion of the screen
+        embedded: false,
+
+        // Flags if we should show a help overlay when the questionmark
+        // key is pressed
+        help: true,
+
+        // Flags if it should be possible to pause the presentation (blackout)
+        pause: true,
+
+        // Flags if speaker notes should be visible to all viewers
+        showNotes: false,
+
+        // Global override for autoplaying embedded media (null/true/false)
+        autoPlayMedia: null,
+
+        // Global override for preloading lazy-loaded iframes (null/true/false)
+        preloadIframes: null,
+
+        // Number of milliseconds between automatically proceeding to the
+        // next slide, disabled when set to 0, this value can be overwritten
+        // by using a data-autoslide attribute on your slides
+        autoSlide: 0,
+
+        // Stop auto-sliding after user input
+        autoSlideStoppable: true,
+
+        // Use this method for navigation when auto-sliding
+        autoSlideMethod: null,
+
+        // Specify the average time in seconds that you think you will spend
+        // presenting each slide. This is used to show a pacing timer in the
+        // speaker view
+        defaultTiming: null,
+
+        // Enable slide navigation via mouse wheel
+        mouseWheel: false,
+
+        // The display mode that will be used to show slides
+        display: 'block',
+
+        // Hide cursor if inactive
+        hideInactiveCursor: true,
+
+        // Time before the cursor is hidden (in ms)
+        hideCursorTime: 5000,
+
+        // Opens links in an iframe preview overlay
+        previewLinks: true,
+
+        // Transition style (none/fade/slide/convex/concave/zoom)
+        transition: 'none',
+
+        // Transition speed (default/fast/slow)
+        transitionSpeed: 'default',
+
+        // Transition style for full page slide backgrounds
+        // (none/fade/slide/convex/concave/zoom)
+        backgroundTransition: 'none',
+
+        // Number of slides away from the current that are visible
+        viewDistance: 3,
+
+        // Number of slides away from the current that are visible on mobile
+        // devices. It is advisable to set this to a lower number than
+        // viewDistance in order to save resources.
+        mobileViewDistance: 2,
+
+        // The "normal" size of the presentation, aspect ratio will be preserved
+        // when the presentation is scaled to fit different resolutions. Can be
+        // specified using percentage units.
+        width: 1050,
+
+        height: 700,
+
+        // Factor of the display size that should remain empty around the content
+        margin: 0.1,
+
+        math: {
+          mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',
+          config: 'TeX-AMS_HTML-full',
+          tex2jax: {
+            inlineMath: [['\\(','\\)']],
+            displayMath: [['\\[','\\]']],
+            balanceBraces: true,
+            processEscapes: false,
+            processRefs: true,
+            processEnvironments: true,
+            preview: 'TeX',
+            skipTags: ['script','noscript','style','textarea','pre','code'],
+            ignoreClass: 'tex2jax_ignore',
+            processClass: 'tex2jax_process'
+          },
+        },
+
+        // reveal.js plugins
+        plugins: [QuartoLineHighlight, PdfExport, RevealMenu, QuartoSupport,
+
+          RevealMath,
+          RevealNotes,
+          RevealSearch,
+          RevealZoom
+        ]
+      });
+    </script>
+    <script id="quarto-html-after-body" type="application/javascript">
+    window.document.addEventListener("DOMContentLoaded", function (event) {
+      const toggleBodyColorMode = (bsSheetEl) => {
+        const mode = bsSheetEl.getAttribute("data-mode");
+        const bodyEl = window.document.querySelector("body");
+        if (mode === "dark") {
+          bodyEl.classList.add("quarto-dark");
+          bodyEl.classList.remove("quarto-light");
+        } else {
+          bodyEl.classList.add("quarto-light");
+          bodyEl.classList.remove("quarto-dark");
+        }
+      }
+      const toggleBodyColorPrimary = () => {
+        const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+        if (bsSheetEl) {
+          toggleBodyColorMode(bsSheetEl);
+        }
+      }
+      toggleBodyColorPrimary();  
+      const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+      tabsets.forEach(function(tabset) {
+        const tabby = new Tabby('#' + tabset.id);
+      });
+      const isCodeAnnotation = (el) => {
+        for (const clz of el.classList) {
+          if (clz.startsWith('code-annotation-')) {                     
+            return true;
+          }
+        }
+        return false;
+      }
+      const onCopySuccess = function(e) {
+        // button target
+        const button = e.trigger;
+        // don't keep focus
+        button.blur();
+        // flash "checked"
+        button.classList.add('code-copy-button-checked');
+        var currentTitle = button.getAttribute("title");
+        button.setAttribute("title", "Copied!");
+        let tooltip;
+        if (window.bootstrap) {
+          button.setAttribute("data-bs-toggle", "tooltip");
+          button.setAttribute("data-bs-placement", "left");
+          button.setAttribute("data-bs-title", "Copied!");
+          tooltip = new bootstrap.Tooltip(button, 
+            { trigger: "manual", 
+              customClass: "code-copy-button-tooltip",
+              offset: [0, -8]});
+          tooltip.show();    
+        }
+        setTimeout(function() {
+          if (tooltip) {
+            tooltip.hide();
+            button.removeAttribute("data-bs-title");
+            button.removeAttribute("data-bs-toggle");
+            button.removeAttribute("data-bs-placement");
+          }
+          button.setAttribute("title", currentTitle);
+          button.classList.remove('code-copy-button-checked');
+        }, 1000);
+        // clear code selection
+        e.clearSelection();
+      }
+      const getTextToCopy = function(trigger) {
+          const codeEl = trigger.previousElementSibling.cloneNode(true);
+          for (const childEl of codeEl.children) {
+            if (isCodeAnnotation(childEl)) {
+              childEl.remove();
+            }
+          }
+          return codeEl.innerText;
+      }
+      const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+        text: getTextToCopy
+      });
+      clipboard.on('success', onCopySuccess);
+      if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+        // For code content inside modals, clipBoardJS needs to be initialized with a container option
+        // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+        const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+          text: getTextToCopy,
+          container: window.document.getElementById('quarto-embedded-source-code-modal')
+        });
+        clipboardModal.on('success', onCopySuccess);
+      }
+        var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+        var mailtoRegex = new RegExp(/^mailto:/);
+          var filterRegex = new RegExp("https:\/\/ibis-project\.org");
+        var isInternal = (href) => {
+            return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+        }
+        // Inspect non-navigation links and adorn them if external
+     	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+        for (var i=0; i<links.length; i++) {
+          const link = links[i];
+          if (!isInternal(link.href)) {
+            // undo the damage that might have been done by quarto-nav.js in the case of
+            // links that we want to consider external
+            if (link.dataset.originalHref !== undefined) {
+              link.href = link.dataset.originalHref;
+            }
+          }
+        }
+      function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+        const config = {
+          allowHTML: true,
+          maxWidth: 500,
+          delay: 100,
+          arrow: false,
+          appendTo: function(el) {
+              return el.closest('section.slide') || el.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'light-border',
+          placement: 'bottom-start',
+        };
+        if (contentFn) {
+          config.content = contentFn;
+        }
+        if (onTriggerFn) {
+          config.onTrigger = onTriggerFn;
+        }
+        if (onUntriggerFn) {
+          config.onUntrigger = onUntriggerFn;
+        }
+          config['offset'] = [0,0];
+          config['maxWidth'] = 700;
+        window.tippy(el, config); 
+      }
+      const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+      for (var i=0; i<noterefs.length; i++) {
+        const ref = noterefs[i];
+        tippyHover(ref, function() {
+          // use id or data attribute instead here
+          let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+          try { href = new URL(href).hash; } catch {}
+          const id = href.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note) {
+            return note.innerHTML;
+          } else {
+            return "";
+          }
+        });
+      }
+          let selectedAnnoteEl;
+          const selectorForAnnotation = ( cell, annotation) => {
+            let cellAttr = 'data-code-cell="' + cell + '"';
+            let lineAttr = 'data-code-annotation="' +  annotation + '"';
+            const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+            return selector;
+          }
+          const selectCodeLines = (annoteEl) => {
+            const doc = window.document;
+            const targetCell = annoteEl.getAttribute("data-target-cell");
+            const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+            const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+            const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+            const lineIds = lines.map((line) => {
+              return targetCell + "-" + line;
+            })
+            let top = null;
+            let height = null;
+            let parent = null;
+            if (lineIds.length > 0) {
+                //compute the position of the single el (top and bottom and make a div)
+                const el = window.document.getElementById(lineIds[0]);
+                top = el.offsetTop;
+                height = el.offsetHeight;
+                parent = el.parentElement.parentElement;
+              if (lineIds.length > 1) {
+                const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+                const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+                height = bottom - top;
+              }
+              if (top !== null && height !== null && parent !== null) {
+                // cook up a div (if necessary) and position it 
+                let div = window.document.getElementById("code-annotation-line-highlight");
+                if (div === null) {
+                  div = window.document.createElement("div");
+                  div.setAttribute("id", "code-annotation-line-highlight");
+                  div.style.position = 'absolute';
+                  parent.appendChild(div);
+                }
+                div.style.top = top - 2 + "px";
+                div.style.height = height + 4 + "px";
+                div.style.left = 0;
+                let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+                if (gutterDiv === null) {
+                  gutterDiv = window.document.createElement("div");
+                  gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                  gutterDiv.style.position = 'absolute';
+                  const codeCell = window.document.getElementById(targetCell);
+                  const gutter = codeCell.querySelector('.code-annotation-gutter');
+                  gutter.appendChild(gutterDiv);
+                }
+                gutterDiv.style.top = top - 2 + "px";
+                gutterDiv.style.height = height + 4 + "px";
+              }
+              selectedAnnoteEl = annoteEl;
+            }
+          };
+          const unselectCodeLines = () => {
+            const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+            elementsIds.forEach((elId) => {
+              const div = window.document.getElementById(elId);
+              if (div) {
+                div.remove();
+              }
+            });
+            selectedAnnoteEl = undefined;
+          };
+            // Handle positioning of the toggle
+        window.addEventListener(
+          "resize",
+          throttle(() => {
+            elRect = undefined;
+            if (selectedAnnoteEl) {
+              selectCodeLines(selectedAnnoteEl);
+            }
+          }, 10)
+        );
+        function throttle(fn, ms) {
+        let throttle = false;
+        let timer;
+          return (...args) => {
+            if(!throttle) { // first call gets through
+                fn.apply(this, args);
+                throttle = true;
+            } else { // all the others get throttled
+                if(timer) clearTimeout(timer); // cancel #2
+                timer = setTimeout(() => {
+                  fn.apply(this, args);
+                  timer = throttle = false;
+                }, ms);
+            }
+          };
+        }
+          const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+          for (let i=0; i<annoteTargets.length; i++) {
+            const annoteTarget = annoteTargets[i];
+            const targetCell = annoteTarget.getAttribute("data-target-cell");
+            const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+            const contentFn = () => {
+              const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+              if (content) {
+                const tipContent = content.cloneNode(true);
+                tipContent.classList.add("code-annotation-tip-content");
+                return tipContent.outerHTML;
+              }
+            }
+            const config = {
+              allowHTML: true,
+              content: contentFn,
+              onShow: (instance) => {
+                selectCodeLines(instance.reference);
+                instance.reference.classList.add('code-annotation-active');
+                window.tippy.hideAll();
+              },
+              onHide: (instance) => {
+                unselectCodeLines();
+                instance.reference.classList.remove('code-annotation-active');
+              },
+              maxWidth: 300,
+              delay: [50, 0],
+              duration: [200, 0],
+              offset: [5, 10],
+              arrow: true,
+              appendTo: function(el) {
+                return el.parentElement.parentElement.parentElement;
+              },
+              interactive: true,
+              interactiveBorder: 10,
+              theme: 'light-border',
+              placement: 'right',
+              popperOptions: {
+                modifiers: [
+                {
+                  name: 'flip',
+                  options: {
+                    flipVariations: false, // true by default
+                    allowedAutoPlacements: ['right'],
+                    fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+                  },
+                },
+                {
+                  name: 'preventOverflow',
+                  options: {
+                    mainAxis: false,
+                    altAxis: false
+                  }
+                }
+                ]        
+              }      
+            };
+            window.tippy(annoteTarget, config); 
+          }
+      const findCites = (el) => {
+        const parentEl = el.parentElement;
+        if (parentEl) {
+          const cites = parentEl.dataset.cites;
+          if (cites) {
+            return {
+              el,
+              cites: cites.split(' ')
+            };
+          } else {
+            return findCites(el.parentElement)
+          }
+        } else {
+          return undefined;
+        }
+      };
+      var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+      for (var i=0; i<bibliorefs.length; i++) {
+        const ref = bibliorefs[i];
+        const citeInfo = findCites(ref);
+        if (citeInfo) {
+          tippyHover(citeInfo.el, function() {
+            var popup = window.document.createElement('div');
+            citeInfo.cites.forEach(function(cite) {
+              var citeDiv = window.document.createElement('div');
+              citeDiv.classList.add('hanging-indent');
+              citeDiv.classList.add('csl-entry');
+              var biblioDiv = window.document.getElementById('ref-' + cite);
+              if (biblioDiv) {
+                citeDiv.innerHTML = biblioDiv.innerHTML;
+              }
+              popup.appendChild(citeDiv);
+            });
+            return popup.innerHTML;
+          });
+        }
+      }
+    });
+    </script>
+    
+
+</body></html>

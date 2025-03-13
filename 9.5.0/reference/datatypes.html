@@ -1,0 +1,2560 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>datatypes – Ibis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<script src="../site_libs/quarto-search/autocomplete-preset-algolia.umd.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../logo.svg" rel="icon" type="image/svg+xml">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e67ff5f79a98c6389aa7c0b9e6712459.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-14475e581903c9a7e5ed069634c08d5c.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-12c8c4cf821d2fd1848e951be45237d8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "algolia": {
+    "application-id": "TNU9HG3L41",
+    "search-only-api-key": "26350948d1961209df16d9717a7e01d6",
+    "index-name": "prod_ibis",
+    "analytics-events": true,
+    "show-logo": true,
+    "libDir": "site_libs"
+  },
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.5.1/dist/algoliasearch-lite.umd.js"></script>
+
+
+<script type="text/javascript">
+var ALGOLIA_INSIGHTS_SRC = "https://cdn.jsdelivr.net/npm/search-insights/dist/search-insights.iife.min.js";
+!function(e,a,t,n,s,i,c){e.AlgoliaAnalyticsObject=s,e[s]=e[s]||function(){
+(e[s].queue=e[s].queue||[]).push(arguments)},i=a.createElement(t),c=a.getElementsByTagName(t)[0],
+i.async=1,i.src=n,c.parentNode.insertBefore(i,c)
+}(window,document,"script",ALGOLIA_INSIGHTS_SRC,"aa");
+</script>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@algolia/autocomplete-plugin-algolia-insights">
+
+</script>
+<script data-goatcounter="https://ibis.goatcounter.com/count" async="" src="//gc.zgo.at/count.js"></script>
+
+
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="Ibis">
+<meta property="og:description" content="the portable Python dataframe library">
+<meta property="og:image" content="https://ibis-project.org/reference/logo.png">
+<meta property="og:site_name" content="Ibis">
+<meta name="twitter:title" content="Ibis">
+<meta name="twitter:description" content="the portable Python dataframe library">
+<meta name="twitter:image" content="https://ibis-project.org/reference/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="../install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Browser</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/browser/repl.html">
+ <span class="dropdown-text">JupyterLite console</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Cloud Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/cloud-data-platforms/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/cloud-data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Open Source Software</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/open-source-software/apache-flink/0_setup.html">
+ <span class="dropdown-text">Apache Flink</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="../why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/composable-ecosystem.html">
+ <span class="dropdown-text">Composable data ecosystem</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/datatypes.html">
+ <span class="dropdown-text">Datatypes and Datashapes</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/user-testimonials.html">
+ <span class="dropdown-text">User testimonials</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/who.html">
+ <span class="dropdown-text">Who supports Ibis?</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="../backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/exasol.html">
+ <span class="dropdown-text">Exasol</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/flink.html">
+ <span class="dropdown-text">Flink</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/risingwave.html">
+ <span class="dropdown-text">RisingWave</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Support</li>
+        <li>
+    <a class="dropdown-item" href="../backends/support/matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/support/operations.html">
+ <span class="dropdown-text">Operations</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/duckdb-parquet.html">
+ <span class="dropdown-text">Read parquet files with Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/gcs_duckdb.html">
+ <span class="dropdown-text">Loading Google Cloud Storage files with DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/imdb.html">
+ <span class="dropdown-text">Analyze IMDB data using Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/graphs.html">
+ <span class="dropdown-text">GraphViz + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/streaming.html">
+ <span class="dropdown-text">Ibis for streaming</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/unbound_expression.html">
+ <span class="dropdown-text">Write and execute unbound expressions</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="../reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="../reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/aggregate-udfs.html">
+ <span class="dropdown-text">Aggregate UDFs (experimental)</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="../reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Cursed Knowledge</li>
+        <li>
+    <a class="dropdown-item" href="../reference/cursed_knowledge.html">
+ <span class="dropdown-text">Cursed Knowledge</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../posts.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../presentations.html"> 
+<span class="menu-text">Presentations</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="../contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/04_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/05_reference.html">
+ <span class="dropdown-text">Test class reference</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/datatypes.html">Type system</a></li><li class="breadcrumb-item"><a href="../reference/datatypes.html">Data types</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Expression API</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Table expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/selectors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Column selectors</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-generic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generic expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-numeric.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Numeric and Boolean expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-strings.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">String expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-temporal.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Temporal expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-collections.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Collection expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-geospatial.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Geospatial expressions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Type system</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/datatypes.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Data types</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/schemas.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Schemas</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">UDFs</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/scalar-udfs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Scalar UDFs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/aggregate-udfs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Aggregate UDFs (experimental)</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Connection APIs</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/connection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Top-level connection APIs</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Configuration</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/Interactive.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Interactive</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/Options.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Options</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/Repr.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Repr</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/SQL.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SQL</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Cursed Knowledge</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/cursed_knowledge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Cursed Knowledge</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#ibis.dtype" id="toc-ibis.dtype" class="nav-link active" data-scroll-target="#ibis.dtype">dtype</a>
+  <ul class="collapse">
+  <li><a href="#parameters" id="toc-parameters" class="nav-link" data-scroll-target="#parameters">Parameters</a></li>
+  <li><a href="#examples" id="toc-examples" class="nav-link" data-scroll-target="#examples">Examples</a></li>
+  </ul></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType" id="toc-ibis.expr.datatypes.core.DataType" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType">DataType</a>
+  <ul class="collapse">
+  <li><a href="#attributes" id="toc-attributes" class="nav-link" data-scroll-target="#attributes">Attributes</a></li>
+  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a>
+  <ul class="collapse">
+  <li><a href="#ibis.expr.datatypes.core.DataType.castable" id="toc-ibis.expr.datatypes.core.DataType.castable" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.castable">castable</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.from_numpy" id="toc-ibis.expr.datatypes.core.DataType.from_numpy" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.from_numpy">from_numpy</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.from_pandas" id="toc-ibis.expr.datatypes.core.DataType.from_pandas" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.from_pandas">from_pandas</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.from_polars" id="toc-ibis.expr.datatypes.core.DataType.from_polars" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.from_polars">from_polars</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.from_pyarrow" id="toc-ibis.expr.datatypes.core.DataType.from_pyarrow" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.from_pyarrow">from_pyarrow</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_array" id="toc-ibis.expr.datatypes.core.DataType.is_array" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_array">is_array</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_binary" id="toc-ibis.expr.datatypes.core.DataType.is_binary" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_binary">is_binary</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_boolean" id="toc-ibis.expr.datatypes.core.DataType.is_boolean" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_boolean">is_boolean</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_date" id="toc-ibis.expr.datatypes.core.DataType.is_date" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_date">is_date</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_decimal" id="toc-ibis.expr.datatypes.core.DataType.is_decimal" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_decimal">is_decimal</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_enum" id="toc-ibis.expr.datatypes.core.DataType.is_enum" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_enum">is_enum</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_float16" id="toc-ibis.expr.datatypes.core.DataType.is_float16" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_float16">is_float16</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_float32" id="toc-ibis.expr.datatypes.core.DataType.is_float32" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_float32">is_float32</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_float64" id="toc-ibis.expr.datatypes.core.DataType.is_float64" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_float64">is_float64</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_floating" id="toc-ibis.expr.datatypes.core.DataType.is_floating" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_floating">is_floating</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_geospatial" id="toc-ibis.expr.datatypes.core.DataType.is_geospatial" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_geospatial">is_geospatial</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_inet" id="toc-ibis.expr.datatypes.core.DataType.is_inet" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_inet">is_inet</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_int16" id="toc-ibis.expr.datatypes.core.DataType.is_int16" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_int16">is_int16</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_int32" id="toc-ibis.expr.datatypes.core.DataType.is_int32" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_int32">is_int32</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_int64" id="toc-ibis.expr.datatypes.core.DataType.is_int64" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_int64">is_int64</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_int8" id="toc-ibis.expr.datatypes.core.DataType.is_int8" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_int8">is_int8</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_integer" id="toc-ibis.expr.datatypes.core.DataType.is_integer" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_integer">is_integer</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_interval" id="toc-ibis.expr.datatypes.core.DataType.is_interval" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_interval">is_interval</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_json" id="toc-ibis.expr.datatypes.core.DataType.is_json" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_json">is_json</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_linestring" id="toc-ibis.expr.datatypes.core.DataType.is_linestring" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_linestring">is_linestring</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_macaddr" id="toc-ibis.expr.datatypes.core.DataType.is_macaddr" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_macaddr">is_macaddr</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_map" id="toc-ibis.expr.datatypes.core.DataType.is_map" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_map">is_map</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_multilinestring" id="toc-ibis.expr.datatypes.core.DataType.is_multilinestring" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_multilinestring">is_multilinestring</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_multipoint" id="toc-ibis.expr.datatypes.core.DataType.is_multipoint" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_multipoint">is_multipoint</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_multipolygon" id="toc-ibis.expr.datatypes.core.DataType.is_multipolygon" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_multipolygon">is_multipolygon</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_nested" id="toc-ibis.expr.datatypes.core.DataType.is_nested" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_nested">is_nested</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_null" id="toc-ibis.expr.datatypes.core.DataType.is_null" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_null">is_null</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_numeric" id="toc-ibis.expr.datatypes.core.DataType.is_numeric" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_numeric">is_numeric</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_point" id="toc-ibis.expr.datatypes.core.DataType.is_point" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_point">is_point</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_polygon" id="toc-ibis.expr.datatypes.core.DataType.is_polygon" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_polygon">is_polygon</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_primitive" id="toc-ibis.expr.datatypes.core.DataType.is_primitive" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_primitive">is_primitive</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_signed_integer" id="toc-ibis.expr.datatypes.core.DataType.is_signed_integer" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_signed_integer">is_signed_integer</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_string" id="toc-ibis.expr.datatypes.core.DataType.is_string" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_string">is_string</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_struct" id="toc-ibis.expr.datatypes.core.DataType.is_struct" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_struct">is_struct</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_temporal" id="toc-ibis.expr.datatypes.core.DataType.is_temporal" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_temporal">is_temporal</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_time" id="toc-ibis.expr.datatypes.core.DataType.is_time" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_time">is_time</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_timestamp" id="toc-ibis.expr.datatypes.core.DataType.is_timestamp" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_timestamp">is_timestamp</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_uint16" id="toc-ibis.expr.datatypes.core.DataType.is_uint16" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_uint16">is_uint16</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_uint32" id="toc-ibis.expr.datatypes.core.DataType.is_uint32" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_uint32">is_uint32</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_uint64" id="toc-ibis.expr.datatypes.core.DataType.is_uint64" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_uint64">is_uint64</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_uint8" id="toc-ibis.expr.datatypes.core.DataType.is_uint8" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_uint8">is_uint8</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_unknown" id="toc-ibis.expr.datatypes.core.DataType.is_unknown" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_unknown">is_unknown</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_unsigned_integer" id="toc-ibis.expr.datatypes.core.DataType.is_unsigned_integer" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_unsigned_integer">is_unsigned_integer</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_uuid" id="toc-ibis.expr.datatypes.core.DataType.is_uuid" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_uuid">is_uuid</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.is_variadic" id="toc-ibis.expr.datatypes.core.DataType.is_variadic" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.is_variadic">is_variadic</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.to_numpy" id="toc-ibis.expr.datatypes.core.DataType.to_numpy" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.to_numpy">to_numpy</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.to_pandas" id="toc-ibis.expr.datatypes.core.DataType.to_pandas" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.to_pandas">to_pandas</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.to_polars" id="toc-ibis.expr.datatypes.core.DataType.to_polars" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.to_polars">to_polars</a></li>
+  <li><a href="#ibis.expr.datatypes.core.DataType.to_pyarrow" id="toc-ibis.expr.datatypes.core.DataType.to_pyarrow" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.DataType.to_pyarrow">to_pyarrow</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#ibis.expr.datatypes.core.Array" id="toc-ibis.expr.datatypes.core.Array" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Array">Array</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Binary" id="toc-ibis.expr.datatypes.core.Binary" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Binary">Binary</a>
+  <ul class="collapse">
+  <li><a href="#notes" id="toc-notes" class="nav-link" data-scroll-target="#notes">Notes</a></li>
+  </ul></li>
+  <li><a href="#ibis.expr.datatypes.core.Boolean" id="toc-ibis.expr.datatypes.core.Boolean" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Boolean">Boolean</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Date" id="toc-ibis.expr.datatypes.core.Date" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Date">Date</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Decimal" id="toc-ibis.expr.datatypes.core.Decimal" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Decimal">Decimal</a>
+  <ul class="collapse">
+  <li><a href="#attributes-1" id="toc-attributes-1" class="nav-link" data-scroll-target="#attributes-1">Attributes</a></li>
+  </ul></li>
+  <li><a href="#ibis.expr.datatypes.core.Float16" id="toc-ibis.expr.datatypes.core.Float16" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Float16">Float16</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Float32" id="toc-ibis.expr.datatypes.core.Float32" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Float32">Float32</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Float64" id="toc-ibis.expr.datatypes.core.Float64" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Float64">Float64</a></li>
+  <li><a href="#ibis.expr.datatypes.core.INET" id="toc-ibis.expr.datatypes.core.INET" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.INET">INET</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Int16" id="toc-ibis.expr.datatypes.core.Int16" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Int16">Int16</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Int32" id="toc-ibis.expr.datatypes.core.Int32" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Int32">Int32</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Int64" id="toc-ibis.expr.datatypes.core.Int64" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Int64">Int64</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Int8" id="toc-ibis.expr.datatypes.core.Int8" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Int8">Int8</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Interval" id="toc-ibis.expr.datatypes.core.Interval" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Interval">Interval</a>
+  <ul class="collapse">
+  <li><a href="#attributes-2" id="toc-attributes-2" class="nav-link" data-scroll-target="#attributes-2">Attributes</a></li>
+  </ul></li>
+  <li><a href="#ibis.expr.datatypes.core.JSON" id="toc-ibis.expr.datatypes.core.JSON" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.JSON">JSON</a>
+  <ul class="collapse">
+  <li><a href="#attributes-3" id="toc-attributes-3" class="nav-link" data-scroll-target="#attributes-3">Attributes</a></li>
+  </ul></li>
+  <li><a href="#ibis.expr.datatypes.core.LineString" id="toc-ibis.expr.datatypes.core.LineString" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.LineString">LineString</a></li>
+  <li><a href="#ibis.expr.datatypes.core.MACADDR" id="toc-ibis.expr.datatypes.core.MACADDR" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.MACADDR">MACADDR</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Map" id="toc-ibis.expr.datatypes.core.Map" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Map">Map</a></li>
+  <li><a href="#ibis.expr.datatypes.core.MultiLineString" id="toc-ibis.expr.datatypes.core.MultiLineString" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.MultiLineString">MultiLineString</a></li>
+  <li><a href="#ibis.expr.datatypes.core.MultiPoint" id="toc-ibis.expr.datatypes.core.MultiPoint" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.MultiPoint">MultiPoint</a></li>
+  <li><a href="#ibis.expr.datatypes.core.MultiPolygon" id="toc-ibis.expr.datatypes.core.MultiPolygon" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.MultiPolygon">MultiPolygon</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Null" id="toc-ibis.expr.datatypes.core.Null" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Null">Null</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Point" id="toc-ibis.expr.datatypes.core.Point" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Point">Point</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Polygon" id="toc-ibis.expr.datatypes.core.Polygon" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Polygon">Polygon</a></li>
+  <li><a href="#ibis.expr.datatypes.core.String" id="toc-ibis.expr.datatypes.core.String" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.String">String</a>
+  <ul class="collapse">
+  <li><a href="#notes-1" id="toc-notes-1" class="nav-link" data-scroll-target="#notes-1">Notes</a></li>
+  </ul></li>
+  <li><a href="#ibis.expr.datatypes.core.Struct" id="toc-ibis.expr.datatypes.core.Struct" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Struct">Struct</a>
+  <ul class="collapse">
+  <li><a href="#methods-1" id="toc-methods-1" class="nav-link" data-scroll-target="#methods-1">Methods</a>
+  <ul class="collapse">
+  <li><a href="#ibis.expr.datatypes.core.Struct.from_tuples" id="toc-ibis.expr.datatypes.core.Struct.from_tuples" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Struct.from_tuples">from_tuples</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Struct.names" id="toc-ibis.expr.datatypes.core.Struct.names" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Struct.names">names</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Struct.types" id="toc-ibis.expr.datatypes.core.Struct.types" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Struct.types">types</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#ibis.expr.datatypes.core.Time" id="toc-ibis.expr.datatypes.core.Time" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Time">Time</a></li>
+  <li><a href="#ibis.expr.datatypes.core.Timestamp" id="toc-ibis.expr.datatypes.core.Timestamp" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Timestamp">Timestamp</a>
+  <ul class="collapse">
+  <li><a href="#attributes-4" id="toc-attributes-4" class="nav-link" data-scroll-target="#attributes-4">Attributes</a></li>
+  <li><a href="#methods-2" id="toc-methods-2" class="nav-link" data-scroll-target="#methods-2">Methods</a>
+  <ul class="collapse">
+  <li><a href="#ibis.expr.datatypes.core.Timestamp.from_unit" id="toc-ibis.expr.datatypes.core.Timestamp.from_unit" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.Timestamp.from_unit">from_unit</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#ibis.expr.datatypes.core.UInt16" id="toc-ibis.expr.datatypes.core.UInt16" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.UInt16">UInt16</a></li>
+  <li><a href="#ibis.expr.datatypes.core.UInt32" id="toc-ibis.expr.datatypes.core.UInt32" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.UInt32">UInt32</a></li>
+  <li><a href="#ibis.expr.datatypes.core.UInt64" id="toc-ibis.expr.datatypes.core.UInt64" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.UInt64">UInt64</a></li>
+  <li><a href="#ibis.expr.datatypes.core.UInt8" id="toc-ibis.expr.datatypes.core.UInt8" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.UInt8">UInt8</a></li>
+  <li><a href="#ibis.expr.datatypes.core.UUID" id="toc-ibis.expr.datatypes.core.UUID" class="nav-link" data-scroll-target="#ibis.expr.datatypes.core.UUID">UUID</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/reference/datatypes.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/datatypes.html">Type system</a></li><li class="breadcrumb-item"><a href="../reference/datatypes.html">Data types</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Data types</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Scalar and column data types</p>
+<section id="ibis.dtype" class="level1">
+<h1>dtype</h1>
+<p><code>ibis.dtype(value, nullable=True)</code></p>
+<p>Create a DataType object.</p>
+<section id="parameters" class="level2">
+<h2 class="anchored" data-anchor-id="parameters">Parameters</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>value</code></td>
+<td><a href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></td>
+<td>The object to coerce to an Ibis DataType. Supported inputs include strings, python type annotations, numpy dtypes, pandas dtypes, and pyarrow types.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>nullable</code></td>
+<td><code>bool</code></td>
+<td>Whether the type should be nullable. Defaults to True.</td>
+<td><code>True</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples" class="level2">
+<h2 class="anchored" data-anchor-id="examples">Examples</h2>
+<div id="e2a3c339" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.dtype(<span class="st">"int32"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="2">
+<pre><code>Int32(nullable=True)</code></pre>
+</div>
+</div>
+<div id="4e562338" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.dtype(<span class="st">"array&lt;float&gt;"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="5">
+<pre><code>Array(value_type=Float64(nullable=True), nullable=True)</code></pre>
+</div>
+</div>
+<p>DataType objects may also be created from Python types:</p>
+<div id="c9abcd3a" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.dtype(<span class="bu">int</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="8">
+<pre><code>Int64(nullable=True)</code></pre>
+</div>
+</div>
+<div id="a655999a" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.dtype(<span class="bu">list</span>[<span class="bu">float</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="11">
+<pre><code>Array(value_type=Float64(nullable=True), nullable=True)</code></pre>
+</div>
+</div>
+<p>Or other type systems, like numpy/pandas/pyarrow types:</p>
+<div id="afc6c48f" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> pyarrow <span class="im">as</span> pa</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.dtype(pa.int32())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="14">
+<pre><code>Int32(nullable=True)</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="ibis.expr.datatypes.core.DataType" class="level1">
+<h1>DataType</h1>
+<p><code>DataType(self, **kwargs)</code></p>
+<p>Base class for all data types.</p>
+<p>Instances are immutable.</p>
+<section id="attributes" class="level2">
+<h2 class="anchored" data-anchor-id="attributes">Attributes</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.name">name</a></td>
+<td>Return the name of the data type.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="methods" class="level2">
+<h2 class="anchored" data-anchor-id="methods">Methods</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.castable">castable</a></td>
+<td>Check whether this type is castable to another.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.from_numpy">from_numpy</a></td>
+<td>Return the equivalent ibis datatype.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.from_pandas">from_pandas</a></td>
+<td>Return the equivalent ibis datatype.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.from_polars">from_polars</a></td>
+<td>Return the equivalent ibis datatype.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.from_pyarrow">from_pyarrow</a></td>
+<td>Return the equivalent ibis datatype.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_array">is_array</a></td>
+<td>Return True if an instance of an Array type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_binary">is_binary</a></td>
+<td>Return True if an instance of a Binary type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_boolean">is_boolean</a></td>
+<td>Return True if an instance of a Boolean type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_date">is_date</a></td>
+<td>Return True if an instance of a Date type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_decimal">is_decimal</a></td>
+<td>Return True if an instance of a Decimal type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_enum">is_enum</a></td>
+<td>Return True if an instance of an Enum type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_float16">is_float16</a></td>
+<td>Return True if an instance of a Float16 type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_float32">is_float32</a></td>
+<td>Return True if an instance of a Float32 type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_float64">is_float64</a></td>
+<td>Return True if an instance of a Float64 type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_floating">is_floating</a></td>
+<td>Return True if an instance of any Floating type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_geospatial">is_geospatial</a></td>
+<td>Return True if an instance of a Geospatial type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_inet">is_inet</a></td>
+<td>Return True if an instance of an Inet type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_int16">is_int16</a></td>
+<td>Return True if an instance of an Int16 type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_int32">is_int32</a></td>
+<td>Return True if an instance of an Int32 type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_int64">is_int64</a></td>
+<td>Return True if an instance of an Int64 type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_int8">is_int8</a></td>
+<td>Return True if an instance of an Int8 type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_integer">is_integer</a></td>
+<td>Return True if an instance of any Integer type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_interval">is_interval</a></td>
+<td>Return True if an instance of an Interval type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_json">is_json</a></td>
+<td>Return True if an instance of a JSON type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_linestring">is_linestring</a></td>
+<td>Return True if an instance of a LineString type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_macaddr">is_macaddr</a></td>
+<td>Return True if an instance of a MACADDR type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_map">is_map</a></td>
+<td>Return True if an instance of a Map type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_multilinestring">is_multilinestring</a></td>
+<td>Return True if an instance of a MultiLineString type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_multipoint">is_multipoint</a></td>
+<td>Return True if an instance of a MultiPoint type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_multipolygon">is_multipolygon</a></td>
+<td>Return True if an instance of a MultiPolygon type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_nested">is_nested</a></td>
+<td>Return true if an instance of any nested (Array/Map/Struct) type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_null">is_null</a></td>
+<td>Return true if an instance of a Null type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_numeric">is_numeric</a></td>
+<td>Return true if an instance of a Numeric type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_point">is_point</a></td>
+<td>Return true if an instance of a Point type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_polygon">is_polygon</a></td>
+<td>Return true if an instance of a Polygon type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_primitive">is_primitive</a></td>
+<td>Return true if an instance of a Primitive type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_signed_integer">is_signed_integer</a></td>
+<td>Return true if an instance of a SignedInteger type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_string">is_string</a></td>
+<td>Return true if an instance of a String type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_struct">is_struct</a></td>
+<td>Return true if an instance of a Struct type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_temporal">is_temporal</a></td>
+<td>Return true if an instance of a Temporal type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_time">is_time</a></td>
+<td>Return true if an instance of a Time type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_timestamp">is_timestamp</a></td>
+<td>Return true if an instance of a Timestamp type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_uint16">is_uint16</a></td>
+<td>Return true if an instance of a UInt16 type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_uint32">is_uint32</a></td>
+<td>Return true if an instance of a UInt32 type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_uint64">is_uint64</a></td>
+<td>Return true if an instance of a UInt64 type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_uint8">is_uint8</a></td>
+<td>Return true if an instance of a UInt8 type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_unknown">is_unknown</a></td>
+<td>Return true if an instance of an Unknown type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_unsigned_integer">is_unsigned_integer</a></td>
+<td>Return true if an instance of an UnsignedInteger type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_uuid">is_uuid</a></td>
+<td>Return true if an instance of a UUID type.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.is_variadic">is_variadic</a></td>
+<td>Return true if an instance of a Variadic type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.to_numpy">to_numpy</a></td>
+<td>Return the equivalent numpy datatype.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.to_pandas">to_pandas</a></td>
+<td>Return the equivalent pandas datatype.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.DataType.to_polars">to_polars</a></td>
+<td>Return the equivalent polars datatype.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.DataType.to_pyarrow">to_pyarrow</a></td>
+<td>Return the equivalent pyarrow datatype.</td>
+</tr>
+</tbody>
+</table>
+<section id="ibis.expr.datatypes.core.DataType.castable" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.castable">castable</h3>
+<p><code>castable(to, **kwargs)</code></p>
+<p>Check whether this type is castable to another.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.from_numpy" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.from_numpy">from_numpy</h3>
+<p><code>from_numpy(numpy_type, nullable=True)</code></p>
+<p>Return the equivalent ibis datatype.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.from_pandas" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.from_pandas">from_pandas</h3>
+<p><code>from_pandas(pandas_type, nullable=True)</code></p>
+<p>Return the equivalent ibis datatype.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.from_polars" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.from_polars">from_polars</h3>
+<p><code>from_polars(polars_type, nullable=True)</code></p>
+<p>Return the equivalent ibis datatype.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.from_pyarrow" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.from_pyarrow">from_pyarrow</h3>
+<p><code>from_pyarrow(arrow_type, nullable=True)</code></p>
+<p>Return the equivalent ibis datatype.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_array" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_array">is_array</h3>
+<p><code>is_array()</code></p>
+<p>Return True if an instance of an Array type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_binary" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_binary">is_binary</h3>
+<p><code>is_binary()</code></p>
+<p>Return True if an instance of a Binary type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_boolean" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_boolean">is_boolean</h3>
+<p><code>is_boolean()</code></p>
+<p>Return True if an instance of a Boolean type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_date" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_date">is_date</h3>
+<p><code>is_date()</code></p>
+<p>Return True if an instance of a Date type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_decimal" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_decimal">is_decimal</h3>
+<p><code>is_decimal()</code></p>
+<p>Return True if an instance of a Decimal type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_enum" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_enum">is_enum</h3>
+<p><code>is_enum()</code></p>
+<p>Return True if an instance of an Enum type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_float16" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_float16">is_float16</h3>
+<p><code>is_float16()</code></p>
+<p>Return True if an instance of a Float16 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_float32" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_float32">is_float32</h3>
+<p><code>is_float32()</code></p>
+<p>Return True if an instance of a Float32 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_float64" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_float64">is_float64</h3>
+<p><code>is_float64()</code></p>
+<p>Return True if an instance of a Float64 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_floating" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_floating">is_floating</h3>
+<p><code>is_floating()</code></p>
+<p>Return True if an instance of any Floating type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_geospatial" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_geospatial">is_geospatial</h3>
+<p><code>is_geospatial()</code></p>
+<p>Return True if an instance of a Geospatial type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_inet" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_inet">is_inet</h3>
+<p><code>is_inet()</code></p>
+<p>Return True if an instance of an Inet type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_int16" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_int16">is_int16</h3>
+<p><code>is_int16()</code></p>
+<p>Return True if an instance of an Int16 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_int32" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_int32">is_int32</h3>
+<p><code>is_int32()</code></p>
+<p>Return True if an instance of an Int32 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_int64" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_int64">is_int64</h3>
+<p><code>is_int64()</code></p>
+<p>Return True if an instance of an Int64 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_int8" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_int8">is_int8</h3>
+<p><code>is_int8()</code></p>
+<p>Return True if an instance of an Int8 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_integer" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_integer">is_integer</h3>
+<p><code>is_integer()</code></p>
+<p>Return True if an instance of any Integer type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_interval" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_interval">is_interval</h3>
+<p><code>is_interval()</code></p>
+<p>Return True if an instance of an Interval type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_json" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_json">is_json</h3>
+<p><code>is_json()</code></p>
+<p>Return True if an instance of a JSON type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_linestring" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_linestring">is_linestring</h3>
+<p><code>is_linestring()</code></p>
+<p>Return True if an instance of a LineString type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_macaddr" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_macaddr">is_macaddr</h3>
+<p><code>is_macaddr()</code></p>
+<p>Return True if an instance of a MACADDR type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_map" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_map">is_map</h3>
+<p><code>is_map()</code></p>
+<p>Return True if an instance of a Map type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_multilinestring" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_multilinestring">is_multilinestring</h3>
+<p><code>is_multilinestring()</code></p>
+<p>Return True if an instance of a MultiLineString type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_multipoint" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_multipoint">is_multipoint</h3>
+<p><code>is_multipoint()</code></p>
+<p>Return True if an instance of a MultiPoint type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_multipolygon" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_multipolygon">is_multipolygon</h3>
+<p><code>is_multipolygon()</code></p>
+<p>Return True if an instance of a MultiPolygon type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_nested" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_nested">is_nested</h3>
+<p><code>is_nested()</code></p>
+<p>Return true if an instance of any nested (Array/Map/Struct) type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_null" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_null">is_null</h3>
+<p><code>is_null()</code></p>
+<p>Return true if an instance of a Null type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_numeric" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_numeric">is_numeric</h3>
+<p><code>is_numeric()</code></p>
+<p>Return true if an instance of a Numeric type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_point" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_point">is_point</h3>
+<p><code>is_point()</code></p>
+<p>Return true if an instance of a Point type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_polygon" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_polygon">is_polygon</h3>
+<p><code>is_polygon()</code></p>
+<p>Return true if an instance of a Polygon type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_primitive" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_primitive">is_primitive</h3>
+<p><code>is_primitive()</code></p>
+<p>Return true if an instance of a Primitive type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_signed_integer" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_signed_integer">is_signed_integer</h3>
+<p><code>is_signed_integer()</code></p>
+<p>Return true if an instance of a SignedInteger type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_string" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_string">is_string</h3>
+<p><code>is_string()</code></p>
+<p>Return true if an instance of a String type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_struct" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_struct">is_struct</h3>
+<p><code>is_struct()</code></p>
+<p>Return true if an instance of a Struct type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_temporal" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_temporal">is_temporal</h3>
+<p><code>is_temporal()</code></p>
+<p>Return true if an instance of a Temporal type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_time" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_time">is_time</h3>
+<p><code>is_time()</code></p>
+<p>Return true if an instance of a Time type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_timestamp" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_timestamp">is_timestamp</h3>
+<p><code>is_timestamp()</code></p>
+<p>Return true if an instance of a Timestamp type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_uint16" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_uint16">is_uint16</h3>
+<p><code>is_uint16()</code></p>
+<p>Return true if an instance of a UInt16 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_uint32" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_uint32">is_uint32</h3>
+<p><code>is_uint32()</code></p>
+<p>Return true if an instance of a UInt32 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_uint64" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_uint64">is_uint64</h3>
+<p><code>is_uint64()</code></p>
+<p>Return true if an instance of a UInt64 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_uint8" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_uint8">is_uint8</h3>
+<p><code>is_uint8()</code></p>
+<p>Return true if an instance of a UInt8 type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_unknown" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_unknown">is_unknown</h3>
+<p><code>is_unknown()</code></p>
+<p>Return true if an instance of an Unknown type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_unsigned_integer" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_unsigned_integer">is_unsigned_integer</h3>
+<p><code>is_unsigned_integer()</code></p>
+<p>Return true if an instance of an UnsignedInteger type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_uuid" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_uuid">is_uuid</h3>
+<p><code>is_uuid()</code></p>
+<p>Return true if an instance of a UUID type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.is_variadic" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.is_variadic">is_variadic</h3>
+<p><code>is_variadic()</code></p>
+<p>Return true if an instance of a Variadic type.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.to_numpy" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.to_numpy">to_numpy</h3>
+<p><code>to_numpy()</code></p>
+<p>Return the equivalent numpy datatype.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.to_pandas" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.to_pandas">to_pandas</h3>
+<p><code>to_pandas()</code></p>
+<p>Return the equivalent pandas datatype.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.to_polars" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.to_polars">to_polars</h3>
+<p><code>to_polars()</code></p>
+<p>Return the equivalent polars datatype.</p>
+</section>
+<section id="ibis.expr.datatypes.core.DataType.to_pyarrow" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.DataType.to_pyarrow">to_pyarrow</h3>
+<p><code>to_pyarrow()</code></p>
+<p>Return the equivalent pyarrow datatype.</p>
+</section>
+</section>
+</section>
+<section id="ibis.expr.datatypes.core.Array" class="level1">
+<h1>Array</h1>
+<p><code>Array(self, **kwargs)</code></p>
+<p>Array values.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Binary" class="level1">
+<h1>Binary</h1>
+<p><code>Binary(self, **kwargs)</code></p>
+<p>A type representing a sequence of bytes.</p>
+<section id="notes" class="level2">
+<h2 class="anchored" data-anchor-id="notes">Notes</h2>
+<p>Some databases treat strings and blobs of equally, and some do not.</p>
+<p>For example, Impala doesn’t make a distinction between string and binary types but PostgreSQL has a <code>TEXT</code> type and a <code>BYTEA</code> type which are distinct types that have different behavior.</p>
+</section>
+</section>
+<section id="ibis.expr.datatypes.core.Boolean" class="level1">
+<h1>Boolean</h1>
+<p><code>Boolean(self, **kwargs)</code></p>
+<p><a href="https://docs.python.org/3/library/constants.html#True"><code>True</code></a> or <a href="https://docs.python.org/3/library/constants.html#False"><code>False</code></a> values.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Date" class="level1">
+<h1>Date</h1>
+<p><code>Date(self, **kwargs)</code></p>
+<p>Date values.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Decimal" class="level1">
+<h1>Decimal</h1>
+<p><code>Decimal(self, precision=None, scale=None, **kwargs)</code></p>
+<p>Fixed-precision decimal values.</p>
+<section id="attributes-1" class="level2">
+<h2 class="anchored" data-anchor-id="attributes-1">Attributes</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.Decimal.precision">precision</a></td>
+<td>The number of decimal places values of this type can hold.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.Decimal.scale">scale</a></td>
+<td>The number of values after the decimal point.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.datatypes.core.Float16" class="level1">
+<h1>Float16</h1>
+<p><code>Float16(self, **kwargs)</code></p>
+<p>16-bit floating point numbers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Float32" class="level1">
+<h1>Float32</h1>
+<p><code>Float32(self, **kwargs)</code></p>
+<p>32-bit floating point numbers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Float64" class="level1">
+<h1>Float64</h1>
+<p><code>Float64(self, **kwargs)</code></p>
+<p>64-bit floating point numbers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.INET" class="level1">
+<h1>INET</h1>
+<p><code>INET(self, **kwargs)</code></p>
+<p>IP addresses.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Int16" class="level1">
+<h1>Int16</h1>
+<p><code>Int16(self, **kwargs)</code></p>
+<p>Signed 16-bit integers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Int32" class="level1">
+<h1>Int32</h1>
+<p><code>Int32(self, **kwargs)</code></p>
+<p>Signed 32-bit integers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Int64" class="level1">
+<h1>Int64</h1>
+<p><code>Int64(self, **kwargs)</code></p>
+<p>Signed 64-bit integers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Int8" class="level1">
+<h1>Int8</h1>
+<p><code>Int8(self, **kwargs)</code></p>
+<p>Signed 8-bit integers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Interval" class="level1">
+<h1>Interval</h1>
+<p><code>Interval(self, **kwargs)</code></p>
+<p>Interval values.</p>
+<section id="attributes-2" class="level2">
+<h2 class="anchored" data-anchor-id="attributes-2">Attributes</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.Interval.resolution">resolution</a></td>
+<td>The interval unit’s name.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.Interval.unit">unit</a></td>
+<td>The time unit of the interval.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.datatypes.core.JSON" class="level1">
+<h1>JSON</h1>
+<p><code>JSON(self, **kwargs)</code></p>
+<p>JSON values.</p>
+<section id="attributes-3" class="level2">
+<h2 class="anchored" data-anchor-id="attributes-3">Attributes</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.JSON.binary">binary</a></td>
+<td>True if JSON is stored as binary, e.g., JSONB in PostgreSQL.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.datatypes.core.LineString" class="level1">
+<h1>LineString</h1>
+<p><code>LineString(self, **kwargs)</code></p>
+<p>A sequence of 2 or more points.</p>
+</section>
+<section id="ibis.expr.datatypes.core.MACADDR" class="level1">
+<h1>MACADDR</h1>
+<p><code>MACADDR(self, **kwargs)</code></p>
+<p>Media Access Control (MAC) address of a network interface.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Map" class="level1">
+<h1>Map</h1>
+<p><code>Map(self, **kwargs)</code></p>
+<p>Associative array values.</p>
+</section>
+<section id="ibis.expr.datatypes.core.MultiLineString" class="level1">
+<h1>MultiLineString</h1>
+<p><code>MultiLineString(self, **kwargs)</code></p>
+<p>A set of one or more line strings.</p>
+</section>
+<section id="ibis.expr.datatypes.core.MultiPoint" class="level1">
+<h1>MultiPoint</h1>
+<p><code>MultiPoint(self, **kwargs)</code></p>
+<p>A set of one or more points.</p>
+</section>
+<section id="ibis.expr.datatypes.core.MultiPolygon" class="level1">
+<h1>MultiPolygon</h1>
+<p><code>MultiPolygon(self, **kwargs)</code></p>
+<p>A set of one or more polygons.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Null" class="level1">
+<h1>Null</h1>
+<p><code>Null(self, **kwargs)</code></p>
+<p>Null values.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Point" class="level1">
+<h1>Point</h1>
+<p><code>Point(self, **kwargs)</code></p>
+<p>A point described by two coordinates.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Polygon" class="level1">
+<h1>Polygon</h1>
+<p><code>Polygon(self, **kwargs)</code></p>
+<p>A set of one or more closed line strings.</p>
+<p>The first line string represents the shape (external ring) and the rest represent holes in that shape (internal rings).</p>
+</section>
+<section id="ibis.expr.datatypes.core.String" class="level1">
+<h1>String</h1>
+<p><code>String(self, **kwargs)</code></p>
+<p>A type representing a string.</p>
+<section id="notes-1" class="level2">
+<h2 class="anchored" data-anchor-id="notes-1">Notes</h2>
+<p>Because of differences in the way different backends handle strings, we cannot assume that strings are UTF-8 encoded.</p>
+</section>
+</section>
+<section id="ibis.expr.datatypes.core.Struct" class="level1">
+<h1>Struct</h1>
+<p><code>Struct(self, **kwargs)</code></p>
+<p>Structured values.</p>
+<section id="methods-1" class="level2">
+<h2 class="anchored" data-anchor-id="methods-1">Methods</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.Struct.from_tuples">from_tuples</a></td>
+<td>Construct a <code>Struct</code> type from pairs.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.Struct.names">names</a></td>
+<td>Return the names of the struct’s fields.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.Struct.types">types</a></td>
+<td>Return the types of the struct’s fields.</td>
+</tr>
+</tbody>
+</table>
+<section id="ibis.expr.datatypes.core.Struct.from_tuples" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.Struct.from_tuples">from_tuples</h3>
+<p><code>from_tuples(pairs, nullable=True)</code></p>
+<p>Construct a <code>Struct</code> type from pairs.</p>
+<section id="parameters-1" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-1">Parameters</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>pairs</code></td>
+<td><a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a>[<a href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<code>str</code>, <code>str</code> | <a href="../reference/datatypes.html#ibis.expr.datatypes.core.DataType">DataType</a>]]</td>
+<td>An iterable of pairs of field name and type</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>nullable</code></td>
+<td><code>bool</code></td>
+<td>Whether the type is nullable</td>
+<td><code>True</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns" class="level4">
+<h4 class="anchored" data-anchor-id="returns">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="../reference/datatypes.html#ibis.expr.datatypes.core.Struct">Struct</a></td>
+<td>Struct data type instance</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.datatypes.core.Struct.names" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.Struct.names">names</h3>
+<p><code>names()</code></p>
+<p>Return the names of the struct’s fields.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Struct.types" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.Struct.types">types</h3>
+<p><code>types()</code></p>
+<p>Return the types of the struct’s fields.</p>
+</section>
+</section>
+</section>
+<section id="ibis.expr.datatypes.core.Time" class="level1">
+<h1>Time</h1>
+<p><code>Time(self, **kwargs)</code></p>
+<p>Time values.</p>
+</section>
+<section id="ibis.expr.datatypes.core.Timestamp" class="level1">
+<h1>Timestamp</h1>
+<p><code>Timestamp(self, **kwargs)</code></p>
+<p>Timestamp values.</p>
+<section id="attributes-4" class="level2">
+<h2 class="anchored" data-anchor-id="attributes-4">Attributes</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.Timestamp.scale">scale</a></td>
+<td>The scale of the timestamp if known.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.datatypes.core.Timestamp.timezone">timezone</a></td>
+<td>The timezone of values of this type.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.Timestamp.unit">unit</a></td>
+<td>Return the unit of the timestamp.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="methods-2" class="level2">
+<h2 class="anchored" data-anchor-id="methods-2">Methods</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#ibis.expr.datatypes.core.Timestamp.from_unit">from_unit</a></td>
+<td>Return a timestamp type with the given unit and timezone.</td>
+</tr>
+</tbody>
+</table>
+<section id="ibis.expr.datatypes.core.Timestamp.from_unit" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.datatypes.core.Timestamp.from_unit">from_unit</h3>
+<p><code>from_unit(unit, timezone=None, nullable=True)</code></p>
+<p>Return a timestamp type with the given unit and timezone.</p>
+</section>
+</section>
+</section>
+<section id="ibis.expr.datatypes.core.UInt16" class="level1">
+<h1>UInt16</h1>
+<p><code>UInt16(self, **kwargs)</code></p>
+<p>Unsigned 16-bit integers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.UInt32" class="level1">
+<h1>UInt32</h1>
+<p><code>UInt32(self, **kwargs)</code></p>
+<p>Unsigned 32-bit integers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.UInt64" class="level1">
+<h1>UInt64</h1>
+<p><code>UInt64(self, **kwargs)</code></p>
+<p>Unsigned 64-bit integers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.UInt8" class="level1">
+<h1>UInt8</h1>
+<p><code>UInt8(self, **kwargs)</code></p>
+<p>Unsigned 8-bit integers.</p>
+</section>
+<section id="ibis.expr.datatypes.core.UUID" class="level1">
+<h1>UUID</h1>
+<p><code>UUID(self, **kwargs)</code></p>
+<p>A 128-bit number used to identify information in computer systems.</p>
+
+
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/ibis-project\.org");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/reference/datatypes.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

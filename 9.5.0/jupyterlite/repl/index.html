@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>REPLite</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="Description" content="WASM powered Jupyter running in the browser." />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link
+      id="jupyter-lite-main"
+      rel="preload"
+      href="../build/repl/bundle.js?_=01a17dc"
+      main="index"
+      as="script"
+    />
+    <script
+      id="jupyter-config-data"
+      type="application/json"
+      data-jupyter-lite-root=".."
+    >
+      {}
+    </script>
+    <script>
+      (async function () {
+        const { pathname, origin, search, hash } = window.location;
+        if (pathname.match(/(index.html|\/?)$/) == null) {
+          window.location.href = `${origin}${pathname}/${search}${hash}`;
+          return;
+        }
+        await import(
+          '../config-utils.js?_=01a17dc'
+        );
+      }.call(this));
+    </script>
+  </head>
+  <body data-notebook="repl"></body>
+</html>

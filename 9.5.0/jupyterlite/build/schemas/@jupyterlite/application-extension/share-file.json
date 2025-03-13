@@ -1,0 +1,16 @@
+{
+  "title": "File Browser Download",
+  "description": "File Browser Download settings.",
+  "jupyter.lab.menus": {
+    "context": [
+      {
+        "command": "filebrowser:download",
+        "selector": ".jp-DirListing-item[data-isdir=\"false\"]",
+        "rank": 9
+      }
+    ]
+  },
+  "properties": {},
+  "additionalProperties": false,
+  "type": "object"
+}

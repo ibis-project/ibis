@@ -1,0 +1,4067 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>pyspark – Ibis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<script src="../site_libs/quarto-search/autocomplete-preset-algolia.umd.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../logo.svg" rel="icon" type="image/svg+xml">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e67ff5f79a98c6389aa7c0b9e6712459.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-14475e581903c9a7e5ed069634c08d5c.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-12c8c4cf821d2fd1848e951be45237d8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "algolia": {
+    "application-id": "TNU9HG3L41",
+    "search-only-api-key": "26350948d1961209df16d9717a7e01d6",
+    "index-name": "prod_ibis",
+    "analytics-events": true,
+    "show-logo": true,
+    "libDir": "site_libs"
+  },
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.5.1/dist/algoliasearch-lite.umd.js"></script>
+
+
+<script type="text/javascript">
+var ALGOLIA_INSIGHTS_SRC = "https://cdn.jsdelivr.net/npm/search-insights/dist/search-insights.iife.min.js";
+!function(e,a,t,n,s,i,c){e.AlgoliaAnalyticsObject=s,e[s]=e[s]||function(){
+(e[s].queue=e[s].queue||[]).push(arguments)},i=a.createElement(t),c=a.getElementsByTagName(t)[0],
+i.async=1,i.src=n,c.parentNode.insertBefore(i,c)
+}(window,document,"script",ALGOLIA_INSIGHTS_SRC,"aa");
+</script>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@algolia/autocomplete-plugin-algolia-insights">
+
+</script>
+<script data-goatcounter="https://ibis.goatcounter.com/count" async="" src="//gc.zgo.at/count.js"></script>
+
+
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="Ibis">
+<meta property="og:description" content="the portable Python dataframe library">
+<meta property="og:image" content="https://ibis-project.org/backends/logo.png">
+<meta property="og:site_name" content="Ibis">
+<meta name="twitter:title" content="Ibis">
+<meta name="twitter:description" content="the portable Python dataframe library">
+<meta name="twitter:image" content="https://ibis-project.org/backends/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="../install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Browser</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/browser/repl.html">
+ <span class="dropdown-text">JupyterLite console</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Cloud Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/cloud-data-platforms/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/cloud-data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Open Source Software</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/open-source-software/apache-flink/0_setup.html">
+ <span class="dropdown-text">Apache Flink</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="../why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/composable-ecosystem.html">
+ <span class="dropdown-text">Composable data ecosystem</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/datatypes.html">
+ <span class="dropdown-text">Datatypes and Datashapes</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/user-testimonials.html">
+ <span class="dropdown-text">User testimonials</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/who.html">
+ <span class="dropdown-text">Who supports Ibis?</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="../backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/exasol.html">
+ <span class="dropdown-text">Exasol</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/flink.html">
+ <span class="dropdown-text">Flink</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/risingwave.html">
+ <span class="dropdown-text">RisingWave</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Support</li>
+        <li>
+    <a class="dropdown-item" href="../backends/support/matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/support/operations.html">
+ <span class="dropdown-text">Operations</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/duckdb-parquet.html">
+ <span class="dropdown-text">Read parquet files with Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/gcs_duckdb.html">
+ <span class="dropdown-text">Loading Google Cloud Storage files with DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/imdb.html">
+ <span class="dropdown-text">Analyze IMDB data using Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/graphs.html">
+ <span class="dropdown-text">GraphViz + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/streaming.html">
+ <span class="dropdown-text">Ibis for streaming</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/unbound_expression.html">
+ <span class="dropdown-text">Write and execute unbound expressions</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="../reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="../reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/aggregate-udfs.html">
+ <span class="dropdown-text">Aggregate UDFs (experimental)</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="../reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Cursed Knowledge</li>
+        <li>
+    <a class="dropdown-item" href="../reference/cursed_knowledge.html">
+ <span class="dropdown-text">Cursed Knowledge</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../posts.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../presentations.html"> 
+<span class="menu-text">Presentations</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="../contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/04_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/05_reference.html">
+ <span class="dropdown-text">Test class reference</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../backends/pyspark.html">PySpark</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/bigquery.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">BigQuery</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/clickhouse.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ClickHouse</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/dask.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Dask</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/datafusion.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">DataFusion</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/druid.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Druid</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/duckdb.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">DuckDB</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/exasol.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Exasol</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/flink.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flink</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/impala.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Impala</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/mssql.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MSSQL</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/mysql.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MySQL</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/oracle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Oracle</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/pandas.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">pandas</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/polars.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Polars</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/postgresql.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">PostgreSQL</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/pyspark.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">PySpark</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/risingwave.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">RisingWave</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/snowflake.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Snowflake</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/sqlite.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SQLite</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/trino.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Trino</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Support</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/support/matrix.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Operation support matrix</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/support/operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Operations</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#install" id="toc-install" class="nav-link active" data-scroll-target="#install">Install</a></li>
+  <li><a href="#connect" id="toc-connect" class="nav-link" data-scroll-target="#connect">Connect</a>
+  <ul class="collapse">
+  <li><a href="#ibis.pyspark.connect" id="toc-ibis.pyspark.connect" class="nav-link" data-scroll-target="#ibis.pyspark.connect"><code>ibis.pyspark.connect</code></a></li>
+  <li><a href="#connection-parameters" id="toc-connection-parameters" class="nav-link" data-scroll-target="#connection-parameters">Connection Parameters</a></li>
+  <li><a href="#ibis.connect-url-format" id="toc-ibis.connect-url-format" class="nav-link" data-scroll-target="#ibis.connect-url-format"><code>ibis.connect</code> URL format</a></li>
+  </ul></li>
+  <li><a href="#ibis.backends.pyspark.Backend" id="toc-ibis.backends.pyspark.Backend" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend"><code>pyspark.Backend</code></a>
+  <ul class="collapse">
+  <li><a href="#ibis.backends.pyspark.Backend.compile" id="toc-ibis.backends.pyspark.Backend.compile" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.compile">compile</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.compute_stats" id="toc-ibis.backends.pyspark.Backend.compute_stats" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.compute_stats">compute_stats</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.connect" id="toc-ibis.backends.pyspark.Backend.connect" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.connect">connect</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.create_database" id="toc-ibis.backends.pyspark.Backend.create_database" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.create_database">create_database</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.create_table" id="toc-ibis.backends.pyspark.Backend.create_table" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.create_table">create_table</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.create_view" id="toc-ibis.backends.pyspark.Backend.create_view" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.create_view">create_view</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.disconnect" id="toc-ibis.backends.pyspark.Backend.disconnect" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.disconnect">disconnect</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.drop_database" id="toc-ibis.backends.pyspark.Backend.drop_database" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.drop_database">drop_database</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.drop_table" id="toc-ibis.backends.pyspark.Backend.drop_table" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.drop_table">drop_table</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.drop_view" id="toc-ibis.backends.pyspark.Backend.drop_view" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.drop_view">drop_view</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.execute" id="toc-ibis.backends.pyspark.Backend.execute" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.execute">execute</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.from_connection" id="toc-ibis.backends.pyspark.Backend.from_connection" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.from_connection">from_connection</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.get_schema" id="toc-ibis.backends.pyspark.Backend.get_schema" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.get_schema">get_schema</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.has_operation" id="toc-ibis.backends.pyspark.Backend.has_operation" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.has_operation">has_operation</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.insert" id="toc-ibis.backends.pyspark.Backend.insert" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.insert">insert</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.list_catalogs" id="toc-ibis.backends.pyspark.Backend.list_catalogs" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.list_catalogs">list_catalogs</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.list_databases" id="toc-ibis.backends.pyspark.Backend.list_databases" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.list_databases">list_databases</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.list_tables" id="toc-ibis.backends.pyspark.Backend.list_tables" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.list_tables">list_tables</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.raw_sql" id="toc-ibis.backends.pyspark.Backend.raw_sql" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.raw_sql">raw_sql</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.read_csv" id="toc-ibis.backends.pyspark.Backend.read_csv" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.read_csv">read_csv</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.read_csv_dir" id="toc-ibis.backends.pyspark.Backend.read_csv_dir" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.read_csv_dir">read_csv_dir</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.read_delta" id="toc-ibis.backends.pyspark.Backend.read_delta" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.read_delta">read_delta</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.read_json" id="toc-ibis.backends.pyspark.Backend.read_json" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.read_json">read_json</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.read_json_dir" id="toc-ibis.backends.pyspark.Backend.read_json_dir" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.read_json_dir">read_json_dir</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.read_kafka" id="toc-ibis.backends.pyspark.Backend.read_kafka" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.read_kafka">read_kafka</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.read_parquet" id="toc-ibis.backends.pyspark.Backend.read_parquet" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.read_parquet">read_parquet</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.read_parquet_dir" id="toc-ibis.backends.pyspark.Backend.read_parquet_dir" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.read_parquet_dir">read_parquet_dir</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.reconnect" id="toc-ibis.backends.pyspark.Backend.reconnect" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.reconnect">reconnect</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.register" id="toc-ibis.backends.pyspark.Backend.register" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.register">register</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.register_options" id="toc-ibis.backends.pyspark.Backend.register_options" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.register_options">register_options</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.rename_table" id="toc-ibis.backends.pyspark.Backend.rename_table" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.rename_table">rename_table</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.sql" id="toc-ibis.backends.pyspark.Backend.sql" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.sql">sql</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.table" id="toc-ibis.backends.pyspark.Backend.table" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.table">table</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_csv" id="toc-ibis.backends.pyspark.Backend.to_csv" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_csv">to_csv</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_csv_dir" id="toc-ibis.backends.pyspark.Backend.to_csv_dir" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_csv_dir">to_csv_dir</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_delta" id="toc-ibis.backends.pyspark.Backend.to_delta" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_delta">to_delta</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_kafka" id="toc-ibis.backends.pyspark.Backend.to_kafka" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_kafka">to_kafka</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_pandas" id="toc-ibis.backends.pyspark.Backend.to_pandas" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_pandas">to_pandas</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_pandas_batches" id="toc-ibis.backends.pyspark.Backend.to_pandas_batches" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_pandas_batches">to_pandas_batches</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_parquet" id="toc-ibis.backends.pyspark.Backend.to_parquet" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_parquet">to_parquet</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_parquet_dir" id="toc-ibis.backends.pyspark.Backend.to_parquet_dir" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_parquet_dir">to_parquet_dir</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_polars" id="toc-ibis.backends.pyspark.Backend.to_polars" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_polars">to_polars</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_pyarrow" id="toc-ibis.backends.pyspark.Backend.to_pyarrow" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_pyarrow">to_pyarrow</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_pyarrow_batches" id="toc-ibis.backends.pyspark.Backend.to_pyarrow_batches" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_pyarrow_batches">to_pyarrow_batches</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.to_torch" id="toc-ibis.backends.pyspark.Backend.to_torch" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.to_torch">to_torch</a></li>
+  <li><a href="#ibis.backends.pyspark.Backend.truncate_table" id="toc-ibis.backends.pyspark.Backend.truncate_table" class="nav-link" data-scroll-target="#ibis.backends.pyspark.Backend.truncate_table">truncate_table</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/backends/pyspark.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">PySpark</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><a href="https://spark.apache.org/docs/latest/api/python">https://spark.apache.org/docs/latest/api/python</a></p>
+<p><img src="https://img.shields.io/badge/memtables-native-green?style=flat-square.png" class="img-fluid"> <img src="https://img.shields.io/badge/inputs-PySpark%20SQL%20tables%20%7C%20CSV%20%7C%20Delta%20Lake%20%7C%20Parquet-blue?style=flat-square.png" class="img-fluid"> <img src="https://img.shields.io/badge/outputs-PySpark%20SQL%20tables%20%7C%20Delta%20Lake%20%7C%20pandas%20%7C%20PyArrow-orange?style=flat-square.png" class="img-fluid"></p>
+<section id="install" class="level2">
+<h2 class="anchored" data-anchor-id="install">Install</h2>
+<p>Install Ibis and dependencies for the PySpark backend:</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" aria-current="page"><code>pip</code></a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false"><code>conda</code></a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false"><code>mamba</code></a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<p>Install with the <code>pyspark</code> extra:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="st">'ibis-framework[pyspark]'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And connect:</p>
+<div class="sourceCode" id="annotated-cell-7"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-7-1"><a href="#annotated-cell-7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="annotated-cell-7-2"><a href="#annotated-cell-7-2" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-7" data-target-annotation="1">1</button><span id="annotated-cell-7-3" class="code-annotation-target"><a href="#annotated-cell-7-3" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.pyspark.<span class="ex">connect</span>()</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-7" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-7" data-code-lines="3" data-code-annotation="1">Adjust connection parameters as needed.</span>
+</dd>
+</dl>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<p>Install for PySpark:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> conda-forge ibis-pyspark</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And connect:</p>
+<div class="sourceCode" id="annotated-cell-9"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-9-1"><a href="#annotated-cell-9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="annotated-cell-9-2"><a href="#annotated-cell-9-2" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="1">1</button><span id="annotated-cell-9-3" class="code-annotation-target"><a href="#annotated-cell-9-3" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.pyspark.<span class="ex">connect</span>()</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-9" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-9" data-code-lines="3" data-code-annotation="1">Adjust connection parameters as needed.</span>
+</dd>
+</dl>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<p>Install for PySpark:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> install <span class="at">-c</span> conda-forge ibis-pyspark</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And connect:</p>
+<div class="sourceCode" id="annotated-cell-11"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-11-1"><a href="#annotated-cell-11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="annotated-cell-11-2"><a href="#annotated-cell-11-2" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-11" data-target-annotation="1">1</button><span id="annotated-cell-11-3" class="code-annotation-target"><a href="#annotated-cell-11-3" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.pyspark.<span class="ex">connect</span>()</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-11" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-11" data-code-lines="3" data-code-annotation="1">Adjust connection parameters as needed.</span>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+</section>
+<section id="connect" class="level2">
+<h2 class="anchored" data-anchor-id="connect">Connect</h2>
+<section id="ibis.pyspark.connect" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.pyspark.connect"><code>ibis.pyspark.connect</code></h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.pyspark.<span class="ex">connect</span>(session<span class="op">=</span>session)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>ibis.pyspark.connect</code> is a thin wrapper around <a href="#ibis.backends.pyspark.Backend.do_connect"><code>ibis.backends.pyspark.Backend.do_connect</code></a>.</p>
+</div>
+</div>
+</section>
+<section id="connection-parameters" class="level3">
+<h3 class="anchored" data-anchor-id="connection-parameters">Connection Parameters</h3>
+<section id="ibis.backends.pyspark.Backend.do_connect" class="level4">
+<h4 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.do_connect">do_connect</h4>
+<p><code>do_connect(self, session=None, mode='batch', **kwargs)</code></p>
+<p>Create a PySpark <code>Backend</code> for use with Ibis.</p>
+<section id="parameters" class="level5">
+<h5 class="anchored" data-anchor-id="parameters">Parameters</h5>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 3%">
+<col style="width: 6%">
+<col style="width: 86%">
+<col style="width: 3%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>session</code></td>
+<td>SparkSession | None</td>
+<td>A <code>SparkSession</code> instance.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>mode</code></td>
+<td>ConnectionMode</td>
+<td>Can be either “batch” or “streaming”. If “batch”, every source, sink, and query executed within this connection will be interpreted as a batch workload. If “streaming”, every source, sink, and query executed within this connection will be interpreted as a streaming workload.</td>
+<td><code>'batch'</code></td>
+</tr>
+<tr class="odd">
+<td><code>kwargs</code></td>
+<td></td>
+<td>Additional keyword arguments used to configure the SparkSession.</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples" class="level5">
+<h5 class="anchored" data-anchor-id="examples">Examples</h5>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">from</span> pyspark.sql <span class="im">import</span> SparkSession</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> session <span class="op">=</span> SparkSession.builder.getOrCreate()</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.pyspark.<span class="ex">connect</span>(session)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>ibis.backends.pyspark.Backend at <span class="dv">0</span><span class="er">x</span>...<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+</section>
+<section id="ibis.connect-url-format" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.connect-url-format"><code>ibis.connect</code> URL format</h3>
+<p>In addition to <code>ibis.pyspark.connect</code>, you can also connect to PySpark by passing a properly-formatted PySpark connection URL to <code>ibis.connect</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.<span class="ex">connect</span>(<span class="ss">f"pyspark://</span><span class="sc">{</span>warehouse<span class="op">-</span><span class="bu">dir</span><span class="sc">}</span><span class="ss">?spark.app.name=CountingSheep&amp;spark.master=local[2]"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend" class="level2">
+<h2 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend"><code>pyspark.Backend</code></h2>
+<section id="ibis.backends.pyspark.Backend.compile" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.compile">compile</h3>
+<p><code>compile(self, expr, limit=None, params=None, pretty=False)</code></p>
+<p>Compile an Ibis expression to a SQL string.</p>
+</section>
+<section id="ibis.backends.pyspark.Backend.compute_stats" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.compute_stats">compute_stats</h3>
+<p><code>compute_stats(self, name, database=None, noscan=False)</code></p>
+<p>Issue a <code>COMPUTE STATISTICS</code> command for a given table.</p>
+<section id="parameters-1" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-1">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 10%">
+<col style="width: 70%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Table name</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Database name</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>noscan</code></td>
+<td>bool</td>
+<td>If <code>True</code>, collect only basic statistics for the table (number of rows, size in bytes).</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.connect" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.connect">connect</h3>
+<p><code>connect(self, *args, **kwargs)</code></p>
+<p>Connect to the database.</p>
+<section id="parameters-2" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-2">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 10%">
+<col style="width: 7%">
+<col style="width: 72%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>*args</code></td>
+<td></td>
+<td>Mandatory connection parameters, see the docstring of <code>do_connect</code> for details.</td>
+<td><code>()</code></td>
+</tr>
+<tr class="even">
+<td><code>**kwargs</code></td>
+<td></td>
+<td>Extra connection parameters, see the docstring of <code>do_connect</code> for details.</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="notes" class="level4">
+<h4 class="anchored" data-anchor-id="notes">Notes</h4>
+<p>This creates a new backend instance with saved <code>args</code> and <code>kwargs</code>, then calls <code>reconnect</code> and finally returns the newly created and connected backend instance.</p>
+</section>
+<section id="returns" class="level4">
+<h4 class="anchored" data-anchor-id="returns">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>BaseBackend</td>
+<td>An instance of the backend</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.create_database" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.create_database">create_database</h3>
+<p><code>create_database(self, name, *, catalog=None, path=None, force=False)</code></p>
+<p>Create a new Spark database.</p>
+<section id="parameters-3" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-3">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 18%">
+<col style="width: 61%">
+<col style="width: 10%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Database name</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>catalog</code></td>
+<td>str | None</td>
+<td>Catalog to create database in (defaults to <code>current_catalog</code>)</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>path</code></td>
+<td>str | Path | None</td>
+<td>Path where to store the database data; otherwise uses Spark default</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>force</code></td>
+<td>bool</td>
+<td>Whether to append <code>IF NOT EXISTS</code> to the database creation SQL</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.create_table" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.create_table">create_table</h3>
+<p><code>create_table(self, name, obj=None, *, schema=None, database=None, temp=None, overwrite=False, format='parquet')</code></p>
+<p>Create a new table in Spark.</p>
+<section id="parameters-4" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-4">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 4%">
+<col style="width: 26%">
+<col style="width: 64%">
+<col style="width: 4%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Name of the new table.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>obj</code></td>
+<td>ir.Table | pd.DataFrame | pa.Table | pl.DataFrame | pl.LazyFrame | None</td>
+<td>If passed, creates table from <code>SELECT</code> statement results</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>schema</code></td>
+<td>sch.SchemaLike | None</td>
+<td>Mutually exclusive with <code>obj</code>, creates an empty table with a schema</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Database name To specify a table in a separate catalog, you can pass in the catalog and database as a string <code>"catalog.database"</code>, or as a tuple of strings <code>("catalog", "database")</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>temp</code></td>
+<td>bool | None</td>
+<td>Whether the new table is temporary (unsupported)</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>overwrite</code></td>
+<td>bool</td>
+<td>If <code>True</code>, overwrite existing data</td>
+<td><code>False</code></td>
+</tr>
+<tr class="odd">
+<td><code>format</code></td>
+<td>str</td>
+<td>Format of the table on disk</td>
+<td><code>'parquet'</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-1" class="level4">
+<h4 class="anchored" data-anchor-id="returns-1">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Table</td>
+<td>The newly created table.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-1" class="level4">
+<h4 class="anchored" data-anchor-id="examples-1">Examples</h4>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> con.create_table(<span class="st">"new_table_name"</span>, table_expr)  <span class="co"># quartodoc: +SKIP</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.create_view" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.create_view">create_view</h3>
+<p><code>create_view(self, name, obj, *, database=None, overwrite=False)</code></p>
+<p>Create a temporary Spark view from a table expression.</p>
+<section id="parameters-5" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-5">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 13%">
+<col style="width: 59%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>View name</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>obj</code></td>
+<td>ir.Table</td>
+<td>Expression to use for the view</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Database name</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>overwrite</code></td>
+<td>bool</td>
+<td>Replace an existing view of the same name if it exists</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-2" class="level4">
+<h4 class="anchored" data-anchor-id="returns-2">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Table</td>
+<td>The created view</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.disconnect" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.disconnect">disconnect</h3>
+<p><code>disconnect(self)</code></p>
+<p>Close the connection to the backend.</p>
+</section>
+<section id="ibis.backends.pyspark.Backend.drop_database" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.drop_database">drop_database</h3>
+<p><code>drop_database(self, name, *, catalog=None, force=False)</code></p>
+<p>Drop a Spark database.</p>
+<section id="parameters-6" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-6">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 10%">
+<col style="width: 70%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Database name</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>catalog</code></td>
+<td>str | None</td>
+<td>Catalog containing database to drop (defaults to <code>current_catalog</code>)</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>force</code></td>
+<td>bool</td>
+<td>If False, Spark throws exception if database is not empty or database does not exist</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.drop_table" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.drop_table">drop_table</h3>
+<p><code>drop_table(self, name, database=None, force=False)</code></p>
+<p>Drop a table.</p>
+<section id="parameters-7" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-7">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 12%">
+<col style="width: 64%">
+<col style="width: 11%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Name of the table to drop.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Name of the database where the table exists, if not the default.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>force</code></td>
+<td>bool</td>
+<td>If <code>False</code>, an exception is raised if the table does not exist.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.drop_view" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.drop_view">drop_view</h3>
+<p><code>drop_view(self, name, *, database=None, schema=None, force=False)</code></p>
+<p>Drop a view.</p>
+<section id="parameters-8" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-8">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 12%">
+<col style="width: 63%">
+<col style="width: 11%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Name of the view to drop.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Name of the database where the view exists, if not the default.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>force</code></td>
+<td>bool</td>
+<td>If <code>False</code>, an exception is raised if the view does not exist.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.execute" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.execute">execute</h3>
+<p><code>execute(self, expr, params=None, limit='default', **kwargs)</code></p>
+<p>Execute an expression.</p>
+</section>
+<section id="ibis.backends.pyspark.Backend.from_connection" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.from_connection">from_connection</h3>
+<p><code>from_connection(cls, session, mode='batch', **kwargs)</code></p>
+<p>Create a PySpark <code>Backend</code> from an existing <code>SparkSession</code> instance.</p>
+<section id="parameters-9" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-9">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 3%">
+<col style="width: 5%">
+<col style="width: 87%">
+<col style="width: 3%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>session</code></td>
+<td>SparkSession</td>
+<td>A <code>SparkSession</code> instance.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>mode</code></td>
+<td>ConnectionMode</td>
+<td>Can be either “batch” or “streaming”. If “batch”, every source, sink, and query executed within this connection will be interpreted as a batch workload. If “streaming”, every source, sink, and query executed within this connection will be interpreted as a streaming workload.</td>
+<td><code>'batch'</code></td>
+</tr>
+<tr class="odd">
+<td><code>kwargs</code></td>
+<td></td>
+<td>Additional keyword arguments used to configure the SparkSession.</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.get_schema" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.get_schema">get_schema</h3>
+<p><code>get_schema(self, table_name, *, catalog=None, database=None)</code></p>
+<p>Return a Schema object for the indicated table and database.</p>
+<section id="parameters-10" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-10">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 15%">
+<col style="width: 53%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>table_name</code></td>
+<td>str</td>
+<td>Table name. May be fully qualified</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>catalog</code></td>
+<td>str | None</td>
+<td>Catalog to use</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Database to use to get the active database.</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-3" class="level4">
+<h4 class="anchored" data-anchor-id="returns-3">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Schema</td>
+<td>An ibis schema</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.has_operation" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.has_operation">has_operation</h3>
+<p><code>has_operation(cls, operation)</code></p>
+<p>Return whether the backend implements support for <code>operation</code>.</p>
+<section id="parameters-11" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-11">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 15%">
+<col style="width: 22%">
+<col style="width: 47%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>operation</code></td>
+<td>type[ops.Value]</td>
+<td>A class corresponding to an operation.</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-4" class="level4">
+<h4 class="anchored" data-anchor-id="returns-4">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>bool</td>
+<td>Whether the backend implements the operation.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-2" class="level4">
+<h4 class="anchored" data-anchor-id="examples-2">Examples</h4>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis.expr.operations <span class="im">as</span> ops</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.sqlite.has_operation(ops.ArrayIndex)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="va">False</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.postgres.has_operation(ops.ArrayIndex)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.insert" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.insert">insert</h3>
+<p><code>insert(self, table_name, obj, schema=None, database=None, overwrite=False)</code></p>
+<p>Insert data into a table.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Ibis does not use the word <code>schema</code> to refer to database hierarchy.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A collection of <code>table</code> is referred to as a <code>database</code>. A collection of <code>database</code> is referred to as a <code>catalog</code>.</p>
+<p>These terms are mapped onto the corresponding features in each backend (where available), regardless of whether the backend itself uses the same terminology.</p>
+</div>
+</div>
+<section id="parameters-12" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-12">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 4%">
+<col style="width: 13%">
+<col style="width: 77%">
+<col style="width: 3%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>table_name</code></td>
+<td>str</td>
+<td>The name of the table to which data needs will be inserted</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>obj</code></td>
+<td>pd.DataFrame | ir.Table | list | dict</td>
+<td>The source data or expression to insert</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td><code>schema</code></td>
+<td>str | None</td>
+<td>[deprecated] The name of the schema that the table is located in</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Name of the attached database that the table is located in. For backends that support multi-level table hierarchies, you can pass in a dotted string path like <code>"catalog.database"</code> or a tuple of strings like <code>("catalog", "database")</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>overwrite</code></td>
+<td>bool</td>
+<td>If <code>True</code> then replace existing contents of table</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.list_catalogs" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.list_catalogs">list_catalogs</h3>
+<p><code>list_catalogs(self, like=None)</code></p>
+<p>List existing catalogs in the current connection.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Ibis does not use the word <code>schema</code> to refer to database hierarchy.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A collection of <code>table</code> is referred to as a <code>database</code>. A collection of <code>database</code> is referred to as a <code>catalog</code>.</p>
+<p>These terms are mapped onto the corresponding features in each backend (where available), regardless of whether the backend itself uses the same terminology.</p>
+</div>
+</div>
+<section id="parameters-13" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-13">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 7%">
+<col style="width: 12%">
+<col style="width: 68%">
+<col style="width: 10%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>like</code></td>
+<td>str | None</td>
+<td>A pattern in Python’s regex format to filter returned database names.</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-5" class="level4">
+<h4 class="anchored" data-anchor-id="returns-5">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 88%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>list[str]</td>
+<td>The catalog names that exist in the current connection, that match the <code>like</code> pattern if provided.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.list_databases" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.list_databases">list_databases</h3>
+<p><code>list_databases(self, like=None, catalog=None)</code></p>
+<p>List existing databases in the current connection.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Ibis does not use the word <code>schema</code> to refer to database hierarchy.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A collection of <code>table</code> is referred to as a <code>database</code>. A collection of <code>database</code> is referred to as a <code>catalog</code>.</p>
+<p>These terms are mapped onto the corresponding features in each backend (where available), regardless of whether the backend itself uses the same terminology.</p>
+</div>
+</div>
+<section id="parameters-14" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-14">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 11%">
+<col style="width: 69%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>like</code></td>
+<td>str | None</td>
+<td>A pattern in Python’s regex format to filter returned database names.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>catalog</code></td>
+<td>str | None</td>
+<td>The catalog to list databases from. If <code>None</code>, the current catalog is searched.</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-6" class="level4">
+<h4 class="anchored" data-anchor-id="returns-6">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 88%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>list[str]</td>
+<td>The database names that exist in the current connection, that match the <code>like</code> pattern if provided.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.list_tables" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.list_tables">list_tables</h3>
+<p><code>list_tables(self, like=None, database=None)</code></p>
+<p>List the tables in the database.</p>
+<section id="parameters-15" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-15">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 3%">
+<col style="width: 4%">
+<col style="width: 88%">
+<col style="width: 3%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>like</code></td>
+<td>str | None</td>
+<td>A pattern to use for listing tables.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Database to list tables from. Default behavior is to show tables in the current catalog and database. To specify a table in a separate catalog, you can pass in the catalog and database as a string <code>"catalog.database"</code>, or as a tuple of strings <code>("catalog", "database")</code>.</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.raw_sql" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.raw_sql">raw_sql</h3>
+<p><code>raw_sql(self, query, **kwargs)</code></p>
+</section>
+<section id="ibis.backends.pyspark.Backend.read_csv" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.read_csv">read_csv</h3>
+<p><code>read_csv(self, source_list, table_name=None, **kwargs)</code></p>
+<p>Register a CSV file as a table in the current database.</p>
+<section id="parameters-16" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-16">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 15%">
+<col style="width: 73%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>source_list</code></td>
+<td>str | list[str] | tuple[str]</td>
+<td>The data source(s). May be a path to a file or directory of CSV files, or an iterable of CSV files.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a random generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to PySpark loading function. https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.csv.html</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-7" class="level4">
+<h4 class="anchored" data-anchor-id="returns-7">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ir.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.read_csv_dir" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.read_csv_dir">read_csv_dir</h3>
+<p><code>read_csv_dir(self, path, table_name=None, watermark=None, **kwargs)</code></p>
+<p>Register a CSV directory as a table in the current database.</p>
+<section id="parameters-17" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-17">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 8%">
+<col style="width: 80%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>path</code></td>
+<td>str | Path</td>
+<td>The data source.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a random generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>watermark</code></td>
+<td>Watermark | None</td>
+<td>Watermark strategy for the table.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to PySpark loading function. https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.csv.html</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-8" class="level4">
+<h4 class="anchored" data-anchor-id="returns-8">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ir.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.read_delta" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.read_delta">read_delta</h3>
+<p><code>read_delta(self, path, table_name=None, **kwargs)</code></p>
+<p>Register a Delta Lake table as a table in the current database.</p>
+<section id="parameters-18" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-18">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 7%">
+<col style="width: 6%">
+<col style="width: 80%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>path</code></td>
+<td>str | Path</td>
+<td>The path to the Delta Lake table.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a random generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to PySpark. https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.load.html</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-9" class="level4">
+<h4 class="anchored" data-anchor-id="returns-9">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ir.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.read_json" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.read_json">read_json</h3>
+<p><code>read_json(self, source_list, table_name=None, **kwargs)</code></p>
+<p>Register a JSON file as a table in the current database.</p>
+<section id="parameters-19" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-19">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 10%">
+<col style="width: 77%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>source_list</code></td>
+<td>str | Sequence[str]</td>
+<td>The data source(s). May be a path to a file or directory of JSON files, or an iterable of JSON files.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a random generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to PySpark loading function. https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.json.html</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-10" class="level4">
+<h4 class="anchored" data-anchor-id="returns-10">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ir.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.read_json_dir" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.read_json_dir">read_json_dir</h3>
+<p><code>read_json_dir(self, path, table_name=None, watermark=None, **kwargs)</code></p>
+<p>Register a JSON file as a table in the current database.</p>
+<section id="parameters-20" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-20">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 8%">
+<col style="width: 80%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>path</code></td>
+<td>str | Path</td>
+<td>The data source. A directory of JSON files.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a random generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>watermark</code></td>
+<td>Watermark | None</td>
+<td>Watermark strategy for the table.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to PySpark loading function. https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.json.html</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-11" class="level4">
+<h4 class="anchored" data-anchor-id="returns-11">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ir.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.read_kafka" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.read_kafka">read_kafka</h3>
+<p><code>read_kafka(self, table_name=None, *, watermark=None, auto_parse=False, schema=None, options=None)</code></p>
+<p>Register a Kafka topic as a table.</p>
+<section id="parameters-21" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-21">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 77%">
+<col style="width: 4%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a sequentially generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>watermark</code></td>
+<td>Watermark | None</td>
+<td>Watermark strategy for the table.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>auto_parse</code></td>
+<td>bool</td>
+<td>Whether to parse Kafka messages automatically. If <code>False</code>, the source is read as binary keys and values. If <code>True</code>, the key is discarded and the value is parsed using the provided schema.</td>
+<td><code>False</code></td>
+</tr>
+<tr class="even">
+<td><code>schema</code></td>
+<td>sch.Schema | None</td>
+<td>Schema of the value of the Kafka messages.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>options</code></td>
+<td>Mapping[str, str] | None</td>
+<td>Additional arguments passed to PySpark as .option(“key”, “value”). https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-12" class="level4">
+<h4 class="anchored" data-anchor-id="returns-12">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ir.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.read_parquet" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.read_parquet">read_parquet</h3>
+<p><code>read_parquet(self, path, table_name=None, **kwargs)</code></p>
+<p>Register a parquet file as a table in the current database.</p>
+<section id="parameters-22" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-22">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 6%">
+<col style="width: 80%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>path</code></td>
+<td>str | Path</td>
+<td>The data source. May be a path to a file or directory of parquet files.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a random generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to PySpark. https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.parquet.html</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-13" class="level4">
+<h4 class="anchored" data-anchor-id="returns-13">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ir.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.read_parquet_dir" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.read_parquet_dir">read_parquet_dir</h3>
+<p><code>read_parquet_dir(self, path, table_name=None, watermark=None, schema=None, **kwargs)</code></p>
+<p>Register a parquet file as a table in the current database.</p>
+<section id="parameters-23" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-23">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 9%">
+<col style="width: 79%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>path</code></td>
+<td>str | Path</td>
+<td>The data source. A directory of parquet files.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a random generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>watermark</code></td>
+<td>Watermark | None</td>
+<td>Watermark strategy for the table.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>schema</code></td>
+<td>sch.Schema | None</td>
+<td>Schema of the parquet source.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to PySpark. https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.parquet.html</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-14" class="level4">
+<h4 class="anchored" data-anchor-id="returns-14">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ir.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.reconnect" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.reconnect">reconnect</h3>
+<p><code>reconnect(self)</code></p>
+<p>Reconnect to the database already configured with connect.</p>
+</section>
+<section id="ibis.backends.pyspark.Backend.register" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.register">register</h3>
+<p><code>register(self, source, table_name=None, **kwargs)</code></p>
+<p>Register a data source as a table in the current database.</p>
+<section id="parameters-24" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-24">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 12%">
+<col style="width: 70%">
+<col style="width: 7%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>source</code></td>
+<td>str | Path | Any</td>
+<td>The data source(s). May be a path to a file or directory of parquet/csv files, or an iterable of CSV files.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a random generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>**kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to PySpark loading functions for CSV or parquet.</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-15" class="level4">
+<h4 class="anchored" data-anchor-id="returns-15">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ir.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.register_options" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.register_options">register_options</h3>
+<p><code>register_options(cls)</code></p>
+<p>Register custom backend options.</p>
+</section>
+<section id="ibis.backends.pyspark.Backend.rename_table" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.rename_table">rename_table</h3>
+<p><code>rename_table(self, old_name, new_name)</code></p>
+<p>Rename an existing table.</p>
+<section id="parameters-25" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-25">Parameters</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>old_name</code></td>
+<td>str</td>
+<td>The old name of the table.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>new_name</code></td>
+<td>str</td>
+<td>The new name of the table.</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.sql" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.sql">sql</h3>
+<p><code>sql(self, query, schema=None, dialect=None)</code></p>
+</section>
+<section id="ibis.backends.pyspark.Backend.table" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.table">table</h3>
+<p><code>table(self, name, schema=None, database=None)</code></p>
+<p>Construct a table expression.</p>
+<section id="parameters-26" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-26">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 40%">
+<col style="width: 30%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Table name</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>schema</code></td>
+<td>str | None</td>
+<td>[deprecated] Schema name</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>database</code></td>
+<td>tuple[str, str] | str | None</td>
+<td>Database name</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-16" class="level4">
+<h4 class="anchored" data-anchor-id="returns-16">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Table</td>
+<td>Table expression</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_csv" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_csv">to_csv</h3>
+<p><code>to_csv(self, expr, path, *, params=None, **kwargs)</code></p>
+<p>Write the results of executing the given expression to a CSV file.</p>
+<p>This method is eager and will execute the associated expression immediately.</p>
+<section id="parameters-27" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-27">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 8%">
+<col style="width: 29%">
+<col style="width: 52%">
+<col style="width: 10%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Table</td>
+<td>The ibis expression to execute and persist to CSV.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>path</code></td>
+<td>str | Path</td>
+<td>The data source. A string or Path to the CSV file.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to pyarrow.csv.CSVWriter</td>
+<td><code>{}</code></td>
+</tr>
+<tr class="odd">
+<td><code>https</code></td>
+<td></td>
+<td></td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_csv_dir" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_csv_dir">to_csv_dir</h3>
+<p><code>to_csv_dir(self, expr, path, params=None, limit=None, options=None)</code></p>
+<p>Write the results of executing the given expression to a CSV directory.</p>
+<section id="parameters-28" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-28">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 20%">
+<col style="width: 66%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Expr</td>
+<td>The ibis expression to execute and persist to CSV.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>path</code></td>
+<td>str | Path</td>
+<td>The data source. A string or Path to the CSV directory.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>options</code></td>
+<td>Mapping[str, str] | None</td>
+<td>Additional keyword arguments passed to pyspark.sql.streaming.DataStreamWriter</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-17" class="level4">
+<h4 class="anchored" data-anchor-id="returns-17">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 76%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>StreamingQuery | None</td>
+<td>Returns a Pyspark StreamingQuery object if in streaming mode, otherwise None</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_delta" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_delta">to_delta</h3>
+<p><code>to_delta(self, expr, path, params=None, limit=None, **kwargs)</code></p>
+<p>Write the results of executing the given expression to a Delta Lake table.</p>
+<p>This method is eager and will execute the associated expression immediately.</p>
+<section id="parameters-29" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-29">Parameters</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Table</td>
+<td>The ibis expression to execute and persist to a Delta Lake table.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>path</code></td>
+<td>str | Path</td>
+<td>The data source. A string or Path to the Delta Lake table.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>**kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to <a href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html">pyspark.sql.DataFrameWriter</a>.</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_kafka" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_kafka">to_kafka</h3>
+<p><code>to_kafka(self, expr, *, auto_format=False, options=None, params=None, limit='default')</code></p>
+<p>Write the results of executing the given expression to a Kafka topic.</p>
+<p>This method does not return outputs. Streaming queries are run continuously in the background.</p>
+<section id="parameters-30" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-30">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 11%">
+<col style="width: 76%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Expr</td>
+<td>The ibis expression to execute and persist to a Kafka topic.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>auto_format</code></td>
+<td>bool</td>
+<td>Whether to format the Kafka messages before writing. If <code>False</code>, the output is written as-is. If <code>True</code>, the output is converted into JSON and written as the value of the Kafka messages.</td>
+<td><code>False</code></td>
+</tr>
+<tr class="odd">
+<td><code>options</code></td>
+<td>Mapping[str, str] | None</td>
+<td>PySpark Kafka write arguments. https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>params</code></td>
+<td>Mapping | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>limit</code></td>
+<td>str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>'default'</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-18" class="level4">
+<h4 class="anchored" data-anchor-id="returns-18">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>StreamingQuery</td>
+<td>A Pyspark StreamingQuery object</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_pandas" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_pandas">to_pandas</h3>
+<p><code>to_pandas(self, expr, *, params=None, limit=None, **kwargs)</code></p>
+<p>Execute an Ibis expression and return a pandas <code>DataFrame</code>, <code>Series</code>, or scalar.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This method is a wrapper around <code>execute</code>.</p>
+</div>
+</div>
+<section id="parameters-31" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-31">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 20%">
+<col style="width: 67%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Expr</td>
+<td>Ibis expression to execute.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Keyword arguments</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_pandas_batches" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_pandas_batches">to_pandas_batches</h3>
+<p><code>to_pandas_batches(self, expr, *, params=None, limit=None, chunk_size=1000000, **kwargs)</code></p>
+<p>Execute an Ibis expression and return an iterator of pandas <code>DataFrame</code>s.</p>
+<section id="parameters-32" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-32">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 7%">
+<col style="width: 19%">
+<col style="width: 65%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Expr</td>
+<td>Ibis expression to execute.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>chunk_size</code></td>
+<td>int</td>
+<td>Maximum number of rows in each returned <code>DataFrame</code> batch. This may have no effect depending on the backend.</td>
+<td><code>1000000</code></td>
+</tr>
+<tr class="odd">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Keyword arguments</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-19" class="level4">
+<h4 class="anchored" data-anchor-id="returns-19">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Iterator[pd.DataFrame]</td>
+<td>An iterator of pandas <code>DataFrame</code>s.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_parquet" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_parquet">to_parquet</h3>
+<p><code>to_parquet(self, expr, path, *, params=None, **kwargs)</code></p>
+<p>Write the results of executing the given expression to a parquet file.</p>
+<p>This method is eager and will execute the associated expression immediately.</p>
+<section id="parameters-33" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-33">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 27%">
+<col style="width: 54%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Table</td>
+<td>The ibis expression to execute and persist to parquet.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>path</code></td>
+<td>str | Path</td>
+<td>The data source. A string or Path to the parquet file.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>**kwargs</code></td>
+<td>Any</td>
+<td>Additional keyword arguments passed to pyarrow.parquet.ParquetWriter</td>
+<td><code>{}</code></td>
+</tr>
+<tr class="odd">
+<td><code>https</code></td>
+<td></td>
+<td></td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_parquet_dir" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_parquet_dir">to_parquet_dir</h3>
+<p><code>to_parquet_dir(self, expr, path, params=None, limit=None, options=None)</code></p>
+<p>Write the results of executing the given expression to a parquet directory.</p>
+<section id="parameters-34" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-34">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 20%">
+<col style="width: 66%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Expr</td>
+<td>The ibis expression to execute and persist to parquet.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>path</code></td>
+<td>str | Path</td>
+<td>The data source. A string or Path to the parquet directory.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>options</code></td>
+<td>Mapping[str, str] | None</td>
+<td>Additional keyword arguments passed to pyspark.sql.streaming.DataStreamWriter</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-20" class="level4">
+<h4 class="anchored" data-anchor-id="returns-20">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 76%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>StreamingQuery | None</td>
+<td>Returns a Pyspark StreamingQuery object if in streaming mode, otherwise None</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_polars" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_polars">to_polars</h3>
+<p><code>to_polars(self, expr, *, params=None, limit=None, **kwargs)</code></p>
+<p>Execute expression and return results in as a polars DataFrame.</p>
+<p>This method is eager and will execute the associated expression immediately.</p>
+<section id="parameters-35" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-35">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 20%">
+<col style="width: 67%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Expr</td>
+<td>Ibis expression to export to polars.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Keyword arguments</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-21" class="level4">
+<h4 class="anchored" data-anchor-id="returns-21">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 86%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>dataframe</td>
+<td>A polars DataFrame holding the results of the executed expression.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_pyarrow" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_pyarrow">to_pyarrow</h3>
+<p><code>to_pyarrow(self, expr, params=None, limit=None, **kwargs)</code></p>
+<p>Execute expression and return results in as a pyarrow table.</p>
+<p>This method is eager and will execute the associated expression immediately.</p>
+<section id="parameters-36" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-36">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 20%">
+<col style="width: 67%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Expr</td>
+<td>Ibis expression to export to pyarrow</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Keyword arguments</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-22" class="level4">
+<h4 class="anchored" data-anchor-id="returns-22">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 10%">
+<col style="width: 89%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Table</td>
+<td>A pyarrow table holding the results of the executed expression.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_pyarrow_batches" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_pyarrow_batches">to_pyarrow_batches</h3>
+<p><code>to_pyarrow_batches(self, expr, *, params=None, limit=None, chunk_size=1000000, **kwargs)</code></p>
+<p>Execute expression and return an iterator of pyarrow record batches.</p>
+<p>This method is eager and will execute the associated expression immediately.</p>
+<section id="parameters-37" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-37">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 7%">
+<col style="width: 19%">
+<col style="width: 65%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Expr</td>
+<td>Ibis expression to export to pyarrow</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>chunk_size</code></td>
+<td>int</td>
+<td>Maximum number of rows in each returned record batch.</td>
+<td><code>1000000</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-23" class="level4">
+<h4 class="anchored" data-anchor-id="returns-23">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>RecordBatchReader</td>
+<td>Collection of pyarrow <code>RecordBatch</code>s.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.to_torch" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.to_torch">to_torch</h3>
+<p><code>to_torch(self, expr, *, params=None, limit=None, **kwargs)</code></p>
+<p>Execute an expression and return results as a dictionary of torch tensors.</p>
+<section id="parameters-38" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-38">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 7%">
+<col style="width: 25%">
+<col style="width: 57%">
+<col style="width: 8%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ir.Expr</td>
+<td>Ibis expression to execute.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>params</code></td>
+<td>Mapping[ir.Scalar, Any] | None</td>
+<td>Parameters to substitute into the expression.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means no limit.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>kwargs</code></td>
+<td>Any</td>
+<td>Keyword arguments passed into the backend’s <code>to_torch</code> implementation.</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-24" class="level4">
+<h4 class="anchored" data-anchor-id="returns-24">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 66%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>dict[str, torch.Tensor]</td>
+<td>A dictionary of torch tensors, keyed by column name.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.pyspark.Backend.truncate_table" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.pyspark.Backend.truncate_table">truncate_table</h3>
+<p><code>truncate_table(self, name, database=None, schema=None)</code></p>
+<p>Delete all rows from a table.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Ibis does not use the word <code>schema</code> to refer to database hierarchy.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A collection of tables is referred to as a <code>database</code>. A collection of <code>database</code> is referred to as a <code>catalog</code>. These terms are mapped onto the corresponding features in each backend (where available), regardless of whether the backend itself uses the same terminology.</p>
+</div>
+</div>
+<section id="parameters-39" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-39">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 4%">
+<col style="width: 4%">
+<col style="width: 86%">
+<col style="width: 4%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Table name</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Name of the attached database that the table is located in. For backends that support multi-level table hierarchies, you can pass in a dotted string path like <code>"catalog.database"</code> or a tuple of strings like <code>("catalog", "database")</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>schema</code></td>
+<td>str | None</td>
+<td>[deprecated] Schema name</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/ibis-project\.org");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/backends/pyspark.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

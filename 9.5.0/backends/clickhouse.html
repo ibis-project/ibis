@@ -1,0 +1,2659 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>clickhouse – Ibis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<script src="../site_libs/quarto-search/autocomplete-preset-algolia.umd.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../logo.svg" rel="icon" type="image/svg+xml">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e67ff5f79a98c6389aa7c0b9e6712459.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-14475e581903c9a7e5ed069634c08d5c.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-12c8c4cf821d2fd1848e951be45237d8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "algolia": {
+    "application-id": "TNU9HG3L41",
+    "search-only-api-key": "26350948d1961209df16d9717a7e01d6",
+    "index-name": "prod_ibis",
+    "analytics-events": true,
+    "show-logo": true,
+    "libDir": "site_libs"
+  },
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.5.1/dist/algoliasearch-lite.umd.js"></script>
+
+
+<script type="text/javascript">
+var ALGOLIA_INSIGHTS_SRC = "https://cdn.jsdelivr.net/npm/search-insights/dist/search-insights.iife.min.js";
+!function(e,a,t,n,s,i,c){e.AlgoliaAnalyticsObject=s,e[s]=e[s]||function(){
+(e[s].queue=e[s].queue||[]).push(arguments)},i=a.createElement(t),c=a.getElementsByTagName(t)[0],
+i.async=1,i.src=n,c.parentNode.insertBefore(i,c)
+}(window,document,"script",ALGOLIA_INSIGHTS_SRC,"aa");
+</script>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@algolia/autocomplete-plugin-algolia-insights">
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+<script data-goatcounter="https://ibis.goatcounter.com/count" async="" src="//gc.zgo.at/count.js"></script>
+
+
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="Ibis">
+<meta property="og:description" content="the portable Python dataframe library">
+<meta property="og:image" content="https://ibis-project.org/backends/logo.png">
+<meta property="og:site_name" content="Ibis">
+<meta name="twitter:title" content="Ibis">
+<meta name="twitter:description" content="the portable Python dataframe library">
+<meta name="twitter:image" content="https://ibis-project.org/backends/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="../install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Browser</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/browser/repl.html">
+ <span class="dropdown-text">JupyterLite console</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Cloud Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/cloud-data-platforms/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/cloud-data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Open Source Software</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/open-source-software/apache-flink/0_setup.html">
+ <span class="dropdown-text">Apache Flink</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="../why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/composable-ecosystem.html">
+ <span class="dropdown-text">Composable data ecosystem</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/datatypes.html">
+ <span class="dropdown-text">Datatypes and Datashapes</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/user-testimonials.html">
+ <span class="dropdown-text">User testimonials</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/who.html">
+ <span class="dropdown-text">Who supports Ibis?</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="../backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/exasol.html">
+ <span class="dropdown-text">Exasol</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/flink.html">
+ <span class="dropdown-text">Flink</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/risingwave.html">
+ <span class="dropdown-text">RisingWave</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Support</li>
+        <li>
+    <a class="dropdown-item" href="../backends/support/matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/support/operations.html">
+ <span class="dropdown-text">Operations</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/duckdb-parquet.html">
+ <span class="dropdown-text">Read parquet files with Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/gcs_duckdb.html">
+ <span class="dropdown-text">Loading Google Cloud Storage files with DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/imdb.html">
+ <span class="dropdown-text">Analyze IMDB data using Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/graphs.html">
+ <span class="dropdown-text">GraphViz + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/streaming.html">
+ <span class="dropdown-text">Ibis for streaming</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/unbound_expression.html">
+ <span class="dropdown-text">Write and execute unbound expressions</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="../reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="../reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/aggregate-udfs.html">
+ <span class="dropdown-text">Aggregate UDFs (experimental)</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="../reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Cursed Knowledge</li>
+        <li>
+    <a class="dropdown-item" href="../reference/cursed_knowledge.html">
+ <span class="dropdown-text">Cursed Knowledge</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../posts.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../presentations.html"> 
+<span class="menu-text">Presentations</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="../contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/04_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/05_reference.html">
+ <span class="dropdown-text">Test class reference</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../backends/clickhouse.html">ClickHouse</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/bigquery.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">BigQuery</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/clickhouse.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">ClickHouse</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/dask.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Dask</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/datafusion.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">DataFusion</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/druid.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Druid</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/duckdb.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">DuckDB</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/exasol.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Exasol</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/flink.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flink</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/impala.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Impala</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/mssql.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MSSQL</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/mysql.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MySQL</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/oracle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Oracle</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/pandas.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">pandas</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/polars.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Polars</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/postgresql.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">PostgreSQL</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/pyspark.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">PySpark</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/risingwave.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">RisingWave</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/snowflake.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Snowflake</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/sqlite.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SQLite</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/trino.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Trino</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Support</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/support/matrix.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Operation support matrix</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/support/operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Operations</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#install" id="toc-install" class="nav-link active" data-scroll-target="#install">Install</a></li>
+  <li><a href="#connect" id="toc-connect" class="nav-link" data-scroll-target="#connect">Connect</a>
+  <ul class="collapse">
+  <li><a href="#ibis.clickhouse.connect" id="toc-ibis.clickhouse.connect" class="nav-link" data-scroll-target="#ibis.clickhouse.connect"><code>ibis.clickhouse.connect</code></a></li>
+  <li><a href="#connection-parameters" id="toc-connection-parameters" class="nav-link" data-scroll-target="#connection-parameters">Connection Parameters</a></li>
+  <li><a href="#ibis.connect-url-format" id="toc-ibis.connect-url-format" class="nav-link" data-scroll-target="#ibis.connect-url-format"><code>ibis.connect</code> URL format</a></li>
+  </ul></li>
+  <li><a href="#clickhouse-playground" id="toc-clickhouse-playground" class="nav-link" data-scroll-target="#clickhouse-playground">ClickHouse playground</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend" id="toc-ibis.backends.clickhouse.Backend" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend"><code>clickhouse.Backend</code></a>
+  <ul class="collapse">
+  <li><a href="#ibis.backends.clickhouse.Backend.close" id="toc-ibis.backends.clickhouse.Backend.close" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.close">close</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.compile" id="toc-ibis.backends.clickhouse.Backend.compile" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.compile">compile</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.create_database" id="toc-ibis.backends.clickhouse.Backend.create_database" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.create_database">create_database</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.create_table" id="toc-ibis.backends.clickhouse.Backend.create_table" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.create_table">create_table</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.create_view" id="toc-ibis.backends.clickhouse.Backend.create_view" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.create_view">create_view</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.drop_database" id="toc-ibis.backends.clickhouse.Backend.drop_database" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.drop_database">drop_database</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.drop_table" id="toc-ibis.backends.clickhouse.Backend.drop_table" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.drop_table">drop_table</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.drop_view" id="toc-ibis.backends.clickhouse.Backend.drop_view" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.drop_view">drop_view</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.execute" id="toc-ibis.backends.clickhouse.Backend.execute" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.execute">execute</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.get_schema" id="toc-ibis.backends.clickhouse.Backend.get_schema" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.get_schema">get_schema</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.has_operation" id="toc-ibis.backends.clickhouse.Backend.has_operation" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.has_operation">has_operation</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.insert" id="toc-ibis.backends.clickhouse.Backend.insert" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.insert">insert</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.list_databases" id="toc-ibis.backends.clickhouse.Backend.list_databases" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.list_databases">list_databases</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.list_tables" id="toc-ibis.backends.clickhouse.Backend.list_tables" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.list_tables">list_tables</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.raw_sql" id="toc-ibis.backends.clickhouse.Backend.raw_sql" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.raw_sql">raw_sql</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.read_csv" id="toc-ibis.backends.clickhouse.Backend.read_csv" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.read_csv">read_csv</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.read_parquet" id="toc-ibis.backends.clickhouse.Backend.read_parquet" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.read_parquet">read_parquet</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.sql" id="toc-ibis.backends.clickhouse.Backend.sql" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.sql">sql</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.table" id="toc-ibis.backends.clickhouse.Backend.table" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.table">table</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.to_pyarrow" id="toc-ibis.backends.clickhouse.Backend.to_pyarrow" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.to_pyarrow">to_pyarrow</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.to_pyarrow_batches" id="toc-ibis.backends.clickhouse.Backend.to_pyarrow_batches" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.to_pyarrow_batches">to_pyarrow_batches</a></li>
+  <li><a href="#ibis.backends.clickhouse.Backend.truncate_table" id="toc-ibis.backends.clickhouse.Backend.truncate_table" class="nav-link" data-scroll-target="#ibis.backends.clickhouse.Backend.truncate_table">truncate_table</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/backends/clickhouse.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">ClickHouse</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><a href="https://clickhouse.com">https://clickhouse.com</a></p>
+<p><img src="https://img.shields.io/badge/memtables-native-green?style=flat-square.png" class="img-fluid"> <img src="https://img.shields.io/badge/inputs-ClickHouse%20tables-blue?style=flat-square.png" class="img-fluid"> <img src="https://img.shields.io/badge/outputs-ClickHouse%20tables%20%7C%20CSV%20%7C%20pandas%20%7C%20Parquet%20%7C%20PyArrow-orange?style=flat-square.png" class="img-fluid"></p>
+<section id="install" class="level2">
+<h2 class="anchored" data-anchor-id="install">Install</h2>
+<p>Install Ibis and dependencies for the ClickHouse backend:</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" aria-current="page"><code>pip</code></a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false"><code>conda</code></a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false"><code>mamba</code></a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<p>Install with the <code>clickhouse</code> extra:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="st">'ibis-framework[clickhouse]'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And connect:</p>
+<div class="sourceCode" id="annotated-cell-7"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-7-1"><a href="#annotated-cell-7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="annotated-cell-7-2"><a href="#annotated-cell-7-2" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-7" data-target-annotation="1">1</button><span id="annotated-cell-7-3" class="code-annotation-target"><a href="#annotated-cell-7-3" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.clickhouse.<span class="ex">connect</span>()</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-7" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-7" data-code-lines="3" data-code-annotation="1">Adjust connection parameters as needed.</span>
+</dd>
+</dl>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<p>Install for ClickHouse:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> conda-forge ibis-clickhouse</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And connect:</p>
+<div class="sourceCode" id="annotated-cell-9"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-9-1"><a href="#annotated-cell-9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="annotated-cell-9-2"><a href="#annotated-cell-9-2" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="1">1</button><span id="annotated-cell-9-3" class="code-annotation-target"><a href="#annotated-cell-9-3" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.clickhouse.<span class="ex">connect</span>()</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-9" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-9" data-code-lines="3" data-code-annotation="1">Adjust connection parameters as needed.</span>
+</dd>
+</dl>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<p>Install for ClickHouse:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> install <span class="at">-c</span> conda-forge ibis-clickhouse</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And connect:</p>
+<div class="sourceCode" id="annotated-cell-11"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-11-1"><a href="#annotated-cell-11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="annotated-cell-11-2"><a href="#annotated-cell-11-2" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-11" data-target-annotation="1">1</button><span id="annotated-cell-11-3" class="code-annotation-target"><a href="#annotated-cell-11-3" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.clickhouse.<span class="ex">connect</span>()</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-11" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-11" data-code-lines="3" data-code-annotation="1">Adjust connection parameters as needed.</span>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+</section>
+<section id="connect" class="level2">
+<h2 class="anchored" data-anchor-id="connect">Connect</h2>
+<section id="ibis.clickhouse.connect" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.clickhouse.connect"><code>ibis.clickhouse.connect</code></h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.clickhouse.<span class="ex">connect</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    user<span class="op">=</span><span class="st">"username"</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    password<span class="op">=</span><span class="st">"password"</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    host<span class="op">=</span><span class="st">"hostname"</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>ibis.clickhouse.connect</code> is a thin wrapper around <a href="#ibis.backends.clickhouse.Backend.do_connect"><code>ibis.backends.clickhouse.Backend.do_connect</code></a>.</p>
+</div>
+</div>
+</section>
+<section id="connection-parameters" class="level3">
+<h3 class="anchored" data-anchor-id="connection-parameters">Connection Parameters</h3>
+<section id="ibis.backends.clickhouse.Backend.do_connect" class="level4">
+<h4 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.do_connect">do_connect</h4>
+<p><code>do_connect(self, host='localhost', port=None, database='default', user='default', password='', client_name='ibis', secure=None, compression=True, **kwargs)</code></p>
+<p>Create a ClickHouse client for use with Ibis.</p>
+<section id="parameters" class="level5">
+<h5 class="anchored" data-anchor-id="parameters">Parameters</h5>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 8%">
+<col style="width: 7%">
+<col style="width: 75%">
+<col style="width: 8%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>host</code></td>
+<td>str</td>
+<td>Host name of the clickhouse server</td>
+<td><code>'localhost'</code></td>
+</tr>
+<tr class="even">
+<td><code>port</code></td>
+<td>int | None</td>
+<td>ClickHouse HTTP server’s port. If not passed, the value depends on whether <code>secure</code> is <code>True</code> or <code>False</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>database</code></td>
+<td>str</td>
+<td>Default database when executing queries</td>
+<td><code>'default'</code></td>
+</tr>
+<tr class="even">
+<td><code>user</code></td>
+<td>str</td>
+<td>User to authenticate with</td>
+<td><code>'default'</code></td>
+</tr>
+<tr class="odd">
+<td><code>password</code></td>
+<td>str</td>
+<td>Password to authenticate with</td>
+<td><code>''</code></td>
+</tr>
+<tr class="even">
+<td><code>client_name</code></td>
+<td>str</td>
+<td>Name of client that will appear in clickhouse server logs</td>
+<td><code>'ibis'</code></td>
+</tr>
+<tr class="odd">
+<td><code>secure</code></td>
+<td>bool | None</td>
+<td>Whether or not to use an authenticated endpoint</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>compression</code></td>
+<td>str | bool</td>
+<td>The kind of compression to use for requests. See https://clickhouse.com/docs/en/integrations/python#compression for more information.</td>
+<td><code>True</code></td>
+</tr>
+<tr class="odd">
+<td><code>kwargs</code></td>
+<td>typing.Any</td>
+<td>Client specific keyword arguments</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples" class="level5">
+<h5 class="anchored" data-anchor-id="examples">Examples</h5>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> client <span class="op">=</span> ibis.clickhouse.<span class="ex">connect</span>()</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> client</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>ibis.clickhouse.client.ClickhouseClient <span class="bu">object</span> at <span class="dv">0</span><span class="er">x</span>...<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+</section>
+<section id="ibis.connect-url-format" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.connect-url-format"><code>ibis.connect</code> URL format</h3>
+<p>In addition to <code>ibis.clickhouse.connect</code>, you can also connect to ClickHouse by passing a properly-formatted ClickHouse connection URL to <code>ibis.connect</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.<span class="ex">connect</span>(<span class="ss">f"clickhouse://</span><span class="sc">{</span>user<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span>password<span class="sc">}</span><span class="ss">@</span><span class="sc">{</span>host<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span>port<span class="sc">}</span><span class="ss">?secure=</span><span class="sc">{</span>secure<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="clickhouse-playground" class="level2">
+<h2 class="anchored" data-anchor-id="clickhouse-playground">ClickHouse playground</h2>
+<p>ClickHouse provides a free playground with several datasets that you can connect to using Ibis:</p>
+<div class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ibis.interactive <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.<span class="ex">connect</span>(<span class="st">"clickhouse://play:clickhouse@play.clickhouse.com:443?secure=True"</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>actors <span class="op">=</span> con.table(<span class="st">"actors"</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>actors</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="2">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> login            </span>┃<span style="font-weight: bold"> type    </span>┃<span style="font-weight: bold"> site_admin </span>┃<span style="font-weight: bold"> name         </span>┃<span style="font-weight: bold"> company             </span>┃<span style="font-weight: bold"> blog                </span>┃<span style="font-weight: bold"> location          </span>┃<span style="font-weight: bold"> email                     </span>┃<span style="font-weight: bold"> hireable </span>┃<span style="font-weight: bold"> bio                                       </span>┃<span style="font-weight: bold"> twitter_username </span>┃<span style="font-weight: bold"> public_repos </span>┃<span style="font-weight: bold"> public_gists </span>┃<span style="font-weight: bold"> followers </span>┃<span style="font-weight: bold"> following </span>┃<span style="font-weight: bold"> created_at          </span>┃<span style="font-weight: bold"> updated_at          </span>┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!string</span>          │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!boolean</span>   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!string</span>      │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!string</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!string</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!string</span>           │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!string</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!boolean</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!string</span>                                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!string</span>          │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!int64</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!int64</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!timestamp(0)</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">!timestamp(0)</span>       │
+├──────────────────┼─────────┼────────────┼──────────────┼─────────────────────┼─────────────────────┼───────────────────┼───────────────────────────┼──────────┼───────────────────────────────────────────┼──────────────────┼──────────────┼──────────────┼───────────┼───────────┼─────────────────────┼─────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">0000Blaze       </span> │ <span style="color: #008000; text-decoration-color: #008000">User   </span> │ False      │ <span style="color: #008000; text-decoration-color: #008000">RohanChhetry</span> │ <span style="color: #008000; text-decoration-color: #008000">Pulchowk Campus,IOE</span> │ <span style="color: #008000; text-decoration-color: #008000">rohanchhetry.com.np</span> │ <span style="color: #008000; text-decoration-color: #008000">Sanepa , Lalitpur</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                         │ True     │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                                         │ <span style="color: #008000; text-decoration-color: #008000">rohanchhetry9   </span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">56</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">57</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">83</span> │ <span style="color: #800080; text-decoration-color: #800080">2019-02-24 02:31:21</span> │ <span style="color: #800080; text-decoration-color: #800080">2023-07-30 11:30:14</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">007developforfun</span> │ <span style="color: #008000; text-decoration-color: #008000">User   </span> │ False      │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>            │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                         │ False    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                                         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │ <span style="color: #800080; text-decoration-color: #800080">2015-08-07 11:28:01</span> │ <span style="color: #800080; text-decoration-color: #800080">2022-08-12 08:45:30</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">00arthur00      </span> │ <span style="color: #008000; text-decoration-color: #008000">User   </span> │ False      │ <span style="color: #008000; text-decoration-color: #008000">Arthur      </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #008000; text-decoration-color: #008000">Beijing, China   </span> │ <span style="color: #008000; text-decoration-color: #008000">yang_yapo@126.com        </span> │ False    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                                         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">72</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">61</span> │ <span style="color: #800080; text-decoration-color: #800080">2017-04-01 13:37:01</span> │ <span style="color: #800080; text-decoration-color: #800080">2023-06-15 14:50:12</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">010001          </span> │ <span style="color: #008000; text-decoration-color: #008000">User   </span> │ False      │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>            │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                 │ <span style="color: #008000; text-decoration-color: #008000">1025394547@qq.com        </span> │ False    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                                         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">15</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span> │ <span style="color: #800080; text-decoration-color: #800080">2015-02-05 03:11:59</span> │ <span style="color: #800080; text-decoration-color: #800080">2023-03-17 06:07:01</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">01001101ilad    </span> │ <span style="color: #008000; text-decoration-color: #008000">User   </span> │ False      │ <span style="color: #008000; text-decoration-color: #008000">Milad       </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                         │ False    │ <span style="color: #008000; text-decoration-color: #008000">Programmer, Writer and Full-Time Learner.</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │ <span style="color: #800080; text-decoration-color: #800080">2016-10-31 19:12:55</span> │ <span style="color: #800080; text-decoration-color: #800080">2023-07-24 11:43:03</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">010227leo       </span> │ <span style="color: #008000; text-decoration-color: #008000">User   </span> │ False      │ <span style="color: #008000; text-decoration-color: #008000">zucker      </span> │ <span style="color: #008000; text-decoration-color: #008000">trip.com           </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #008000; text-decoration-color: #008000">Shanghai, China  </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                         │ False    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                                         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">7</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">11</span> │ <span style="color: #800080; text-decoration-color: #800080">2012-01-11 06:23:15</span> │ <span style="color: #800080; text-decoration-color: #800080">2023-07-24 03:35:26</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">010ric          </span> │ <span style="color: #008000; text-decoration-color: #008000">User   </span> │ False      │ <span style="color: #008000; text-decoration-color: #008000">Mario Turic </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #008000; text-decoration-color: #008000">Munich           </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                         │ True     │ <span style="color: #008000; text-decoration-color: #008000">Enthusiast and Maker                     </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">23</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">68</span> │ <span style="color: #800080; text-decoration-color: #800080">2017-10-27 14:00:07</span> │ <span style="color: #800080; text-decoration-color: #800080">2023-08-04 18:44:35</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">01egen          </span> │ <span style="color: #008000; text-decoration-color: #008000">User   </span> │ False      │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>            │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                         │ False    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                                         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2</span> │ <span style="color: #800080; text-decoration-color: #800080">2019-02-27 08:59:00</span> │ <span style="color: #800080; text-decoration-color: #800080">2023-06-20 04:02:51</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">0400H           </span> │ <span style="color: #008000; text-decoration-color: #008000">User   </span> │ False      │ <span style="color: #008000; text-decoration-color: #008000">0400H       </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #008000; text-decoration-color: #008000">Shanghai         </span> │ <span style="color: #008000; text-decoration-color: #008000">git@0400h.cn             </span> │ True     │ <span style="color: #008000; text-decoration-color: #008000">HPC &amp; MLSys &amp; PPML                       </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">42</span> │ <span style="color: #800080; text-decoration-color: #800080">2015-12-20 17:38:00</span> │ <span style="color: #800080; text-decoration-color: #800080">2023-07-21 11:28:22</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">0442A403        </span> │ <span style="color: #008000; text-decoration-color: #008000">User   </span> │ False      │ <span style="color: #008000; text-decoration-color: #008000">Damir Petrov</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                   │ <span style="color: #008000; text-decoration-color: #008000">Moscow           </span> │ <span style="color: #008000; text-decoration-color: #008000">petrovdamir2235@gmail.com</span> │ False    │ <span style="color: #008000; text-decoration-color: #008000">HSE student                              </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">~</span>                │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">15</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">30</span> │ <span style="color: #800080; text-decoration-color: #800080">2016-11-05 18:59:38</span> │ <span style="color: #800080; text-decoration-color: #800080">2023-06-22 06:08:50</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>          │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>            │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                                         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                │            <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │            <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │         <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │         <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                   │
+└──────────────────┴─────────┴────────────┴──────────────┴─────────────────────┴─────────────────────┴───────────────────┴───────────────────────────┴──────────┴───────────────────────────────────────────┴──────────────────┴──────────────┴──────────────┴───────────┴───────────┴─────────────────────┴─────────────────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="ibis.backends.clickhouse.Backend" class="level2">
+<h2 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend"><code>clickhouse.Backend</code></h2>
+<section id="ibis.backends.clickhouse.Backend.close" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.close">close</h3>
+<p><code>close(self)</code></p>
+<p>Close ClickHouse connection.</p>
+</section>
+<section id="ibis.backends.clickhouse.Backend.compile" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.compile">compile</h3>
+<p><code>compile(self, expr, limit=None, params=None, **kwargs)</code></p>
+<p>Compile an Ibis expression to a ClickHouse SQL string.</p>
+</section>
+<section id="ibis.backends.clickhouse.Backend.create_database" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.create_database">create_database</h3>
+<p><code>create_database(self, name, *, force=False, engine='Atomic')</code></p>
+<p>Create a new database.</p>
+<section id="parameters-1" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-1">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 8%">
+<col style="width: 70%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Name of the new database.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>force</code></td>
+<td>bool</td>
+<td>If <code>False</code>, an exception is raised if the database already exists.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.create_table" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.create_table">create_table</h3>
+<p><code>create_table(self, name, obj=None, *, schema=None, database=None, temp=False, overwrite=False, engine='MergeTree', order_by=None, partition_by=None, sample_by=None, settings=None)</code></p>
+<p>Create a table in a ClickHouse database.</p>
+<section id="parameters-2" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-2">Parameters</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Name of the table to create</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>obj</code></td>
+<td>pandas.pandas.DataFrame | pyarrow.pyarrow.Table | ibis.ibis.Table | None</td>
+<td>Optional data to create the table with</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>schema</code></td>
+<td>ibis.ibis.Schema | None</td>
+<td>Optional names and types of the table</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Database to create the table in</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>temp</code></td>
+<td>bool</td>
+<td>Create a temporary table. This is not yet supported, and exists for API compatibility.</td>
+<td><code>False</code></td>
+</tr>
+<tr class="even">
+<td><code>overwrite</code></td>
+<td>bool</td>
+<td>Whether to overwrite the table</td>
+<td><code>False</code></td>
+</tr>
+<tr class="odd">
+<td><code>engine</code></td>
+<td>str</td>
+<td>The table engine to use. See <a href="https://clickhouse.com/docs/en/sql-reference/statements/create/table">ClickHouse’s <code>CREATE TABLE</code> documentation</a> for specifics. Defaults to <a href="https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree"><code>MergeTree</code></a> with <code>ORDER BY tuple()</code> because <code>MergeTree</code> is the most feature-complete engine.</td>
+<td><code>'MergeTree'</code></td>
+</tr>
+<tr class="even">
+<td><code>order_by</code></td>
+<td>collections.abc.Iterable[str] | None</td>
+<td>String column names to order by. Required for some table engines like <code>MergeTree</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>partition_by</code></td>
+<td>collections.abc.Iterable[str] | None</td>
+<td>String column names to partition by</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>sample_by</code></td>
+<td>str | None</td>
+<td>String column names to sample by</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>settings</code></td>
+<td>collections.abc.Mapping[str, typing.Any] | None</td>
+<td>Key-value pairs of settings for table creation</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns" class="level4">
+<h4 class="anchored" data-anchor-id="returns">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Table</td>
+<td>The new table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.create_view" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.create_view">create_view</h3>
+<p><code>create_view(self, name, obj, *, database=None, overwrite=False)</code></p>
+<p>Create a new view from an expression.</p>
+<section id="parameters-3" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-3">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 11%">
+<col style="width: 70%">
+<col style="width: 8%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Name of the new view.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>obj</code></td>
+<td>ibis.ibis.Table</td>
+<td>An Ibis table expression that will be used to create the view.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Name of the database where the view will be created, if not provided the database’s default is used.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>overwrite</code></td>
+<td>bool</td>
+<td>Whether to clobber an existing view with the same name</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-1" class="level4">
+<h4 class="anchored" data-anchor-id="returns-1">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Table</td>
+<td>The view that was created.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.drop_database" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.drop_database">drop_database</h3>
+<p><code>drop_database(self, name, *, force=False)</code></p>
+<p>Drop a database with name <code>name</code>.</p>
+<section id="parameters-4" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-4">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 8%">
+<col style="width: 70%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Database to drop.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>force</code></td>
+<td>bool</td>
+<td>If <code>False</code>, an exception is raised if the database does not exist.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.drop_table" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.drop_table">drop_table</h3>
+<p><code>drop_table(self, name, database=None, force=False)</code></p>
+<p>Drop a table.</p>
+<section id="parameters-5" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-5">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 12%">
+<col style="width: 64%">
+<col style="width: 11%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Name of the table to drop.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Name of the database where the table exists, if not the default.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>force</code></td>
+<td>bool</td>
+<td>If <code>False</code>, an exception is raised if the table does not exist.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.drop_view" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.drop_view">drop_view</h3>
+<p><code>drop_view(self, name, *, database=None, force=False)</code></p>
+<p>Drop a view.</p>
+<section id="parameters-6" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-6">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 12%">
+<col style="width: 63%">
+<col style="width: 11%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Name of the view to drop.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Name of the database where the view exists, if not the default.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>force</code></td>
+<td>bool</td>
+<td>If <code>False</code>, an exception is raised if the view does not exist.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.execute" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.execute">execute</h3>
+<p><code>execute(self, expr, limit='default', external_tables=None, **kwargs)</code></p>
+<p>Execute an expression.</p>
+</section>
+<section id="ibis.backends.clickhouse.Backend.get_schema" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.get_schema">get_schema</h3>
+<p><code>get_schema(self, table_name, database=None)</code></p>
+<p>Return a Schema object for the indicated table and database.</p>
+<section id="parameters-7" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-7">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 10%">
+<col style="width: 69%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>table_name</code></td>
+<td>str</td>
+<td>May <strong>not</strong> be fully qualified. Use <code>database</code> if you want to qualify the identifier.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Database name</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-2" class="level4">
+<h4 class="anchored" data-anchor-id="returns-2">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ibis.ibis.Schema</td>
+<td>Ibis schema</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.has_operation" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.has_operation">has_operation</h3>
+<p><code>has_operation(cls, operation)</code></p>
+<p>Return whether the backend implements support for <code>operation</code>.</p>
+<section id="parameters-8" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-8">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 27%">
+<col style="width: 44%">
+<col style="width: 13%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>operation</code></td>
+<td>type[ibis.ibis.Value]</td>
+<td>A class corresponding to an operation.</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-3" class="level4">
+<h4 class="anchored" data-anchor-id="returns-3">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>bool</td>
+<td>Whether the backend implements the operation.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-1" class="level4">
+<h4 class="anchored" data-anchor-id="examples-1">Examples</h4>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis.expr.operations <span class="im">as</span> ops</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.sqlite.has_operation(ops.ArrayIndex)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="va">False</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.postgres.has_operation(ops.ArrayIndex)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.insert" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.insert">insert</h3>
+<p><code>insert(self, name, obj, settings=None, **kwargs)</code></p>
+</section>
+<section id="ibis.backends.clickhouse.Backend.list_databases" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.list_databases">list_databases</h3>
+<p><code>list_databases(self, like=None)</code></p>
+<p>List existing databases in the current connection.</p>
+<section id="parameters-9" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-9">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 7%">
+<col style="width: 12%">
+<col style="width: 68%">
+<col style="width: 10%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>like</code></td>
+<td>str | None</td>
+<td>A pattern in Python’s regex format to filter returned database names.</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-4" class="level4">
+<h4 class="anchored" data-anchor-id="returns-4">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 88%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>list[str]</td>
+<td>The database names that exist in the current connection, that match the <code>like</code> pattern if provided.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.list_tables" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.list_tables">list_tables</h3>
+<p><code>list_tables(self, like=None, database=None)</code></p>
+<p>Return the list of table names in the current database.</p>
+<p>For some backends, the tables may be files in a directory, or other equivalent entities in a SQL database.</p>
+<section id="parameters-10" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-10">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 10%">
+<col style="width: 70%">
+<col style="width: 8%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>like</code></td>
+<td>str | None</td>
+<td>A pattern in Python’s regex format.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>The database from which to list tables. If not provided, the current database is used.</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-5" class="level4">
+<h4 class="anchored" data-anchor-id="returns-5">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 17%">
+<col style="width: 82%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>list[str]</td>
+<td>The list of the table names that match the pattern <code>like</code>.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.raw_sql" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.raw_sql">raw_sql</h3>
+<p><code>raw_sql(self, query, external_tables=None, **kwargs)</code></p>
+<p>Execute a SQL string <code>query</code> against the database.</p>
+<section id="parameters-11" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-11">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 10%">
+<col style="width: 35%">
+<col style="width: 48%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>query</code></td>
+<td>str | sqlglot.sqlglot.exp.sqlglot.exp.Expression</td>
+<td>Raw SQL string</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>external_tables</code></td>
+<td>collections.abc.Mapping[str, pandas.pandas.DataFrame] | None</td>
+<td>Mapping of table name to pandas DataFrames providing external datasources for the query</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>kwargs</code></td>
+<td></td>
+<td>Backend specific query arguments</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-6" class="level4">
+<h4 class="anchored" data-anchor-id="returns-6">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Cursor</td>
+<td>Clickhouse cursor</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.read_csv" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.read_csv">read_csv</h3>
+<p><code>read_csv(self, path, table_name=None, engine='MergeTree', **kwargs)</code></p>
+<p>Register a CSV file as a table in the current backend.</p>
+<section id="parameters-12" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-12">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 14%">
+<col style="width: 67%">
+<col style="width: 8%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>path</code></td>
+<td>str | pathlib.Path</td>
+<td>The data source. A string or Path to the CSV file.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a sequentially generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>**kwargs</code></td>
+<td>typing.Any</td>
+<td>Additional keyword arguments passed to the backend loading function.</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-7" class="level4">
+<h4 class="anchored" data-anchor-id="returns-7">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ibis.ibis.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.read_parquet" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.read_parquet">read_parquet</h3>
+<p><code>read_parquet(self, path, table_name=None, engine='MergeTree', **kwargs)</code></p>
+<p>Register a parquet file as a table in the current backend.</p>
+<section id="parameters-13" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-13">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 14%">
+<col style="width: 67%">
+<col style="width: 8%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>path</code></td>
+<td>str | pathlib.Path</td>
+<td>The data source.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>table_name</code></td>
+<td>str | None</td>
+<td>An optional name to use for the created table. This defaults to a sequentially generated name.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>**kwargs</code></td>
+<td>typing.Any</td>
+<td>Additional keyword arguments passed to the backend loading function.</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-8" class="level4">
+<h4 class="anchored" data-anchor-id="returns-8">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ibis.ibis.Table</td>
+<td>The just-registered table</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.sql" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.sql">sql</h3>
+<p><code>sql(self, query, schema=None, dialect=None)</code></p>
+</section>
+<section id="ibis.backends.clickhouse.Backend.table" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.table">table</h3>
+<p><code>table(self, name, database=None)</code></p>
+<p>Construct a table expression.</p>
+<section id="parameters-14" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-14">Parameters</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>str</td>
+<td>Table name</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>database</code></td>
+<td>str | None</td>
+<td>Database name</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-9" class="level4">
+<h4 class="anchored" data-anchor-id="returns-9">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Table</td>
+<td>Table expression</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.to_pyarrow" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.to_pyarrow">to_pyarrow</h3>
+<p><code>to_pyarrow(self, expr, *, params=None, limit=None, external_tables=None, **kwargs)</code></p>
+<p>Execute expression and return results in as a pyarrow table.</p>
+<p>This method is eager and will execute the associated expression immediately.</p>
+<section id="parameters-15" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-15">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 4%">
+<col style="width: 32%">
+<col style="width: 57%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ibis.ibis.Expr</td>
+<td>Ibis expression to export to pyarrow</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>params</code></td>
+<td>collections.abc.Mapping[ibis.ibis.Scalar, typing.Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>kwargs</code></td>
+<td>typing.Any</td>
+<td>Keyword arguments</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-10" class="level4">
+<h4 class="anchored" data-anchor-id="returns-10">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 10%">
+<col style="width: 89%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Table</td>
+<td>A pyarrow table holding the results of the executed expression.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.to_pyarrow_batches" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.to_pyarrow_batches">to_pyarrow_batches</h3>
+<p><code>to_pyarrow_batches(self, expr, *, limit=None, params=None, external_tables=None, chunk_size=1000000, **_)</code></p>
+<p>Execute expression and return an iterator of pyarrow record batches.</p>
+<p>This method is eager and will execute the associated expression immediately.</p>
+<section id="parameters-16" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-16">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 8%">
+<col style="width: 30%">
+<col style="width: 54%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>expr</code></td>
+<td>ibis.ibis.Expr</td>
+<td>Ibis expression to export to pyarrow</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>limit</code></td>
+<td>int | str | None</td>
+<td>An integer to effect a specific row limit. A value of <code>None</code> means “no limit”. The default is in <code>ibis/config.py</code>.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>params</code></td>
+<td>collections.abc.Mapping[ibis.ibis.Scalar, typing.Any] | None</td>
+<td>Mapping of scalar parameter expressions to value.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="even">
+<td><code>external_tables</code></td>
+<td>collections.abc.Mapping[str, typing.Any] | None</td>
+<td>External data</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td><code>chunk_size</code></td>
+<td>int</td>
+<td>Maximum number of row to return in a single chunk</td>
+<td><code>1000000</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-11" class="level4">
+<h4 class="anchored" data-anchor-id="returns-11">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>results</td>
+<td>RecordBatchReader</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="notes" class="level4">
+<h4 class="anchored" data-anchor-id="notes">Notes</h4>
+<p>There are a variety of ways to implement clickhouse -&gt; record batches.</p>
+<ol type="1">
+<li>FORMAT ArrowStream -&gt; record batches via raw_query This has the same type conversion problem(s) as <code>to_pyarrow</code>. It’s harder to address due to lack of <code>cast</code> on <code>RecordBatch</code>. However, this is a ClickHouse problem: we should be able to get string data out without a bunch of settings/permissions rigmarole.</li>
+<li>Native -&gt; Python objects -&gt; pyarrow batches This is what is implemented, using <code>query_column_block_stream</code>.</li>
+<li>Native -&gt; Python objects -&gt; DataFrame chunks -&gt; pyarrow batches This is not implemented because it adds an unnecessary pandas step in between Python object -&gt; arrow. We can go directly to record batches without pandas in the middle.</li>
+</ol>
+</section>
+</section>
+<section id="ibis.backends.clickhouse.Backend.truncate_table" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.backends.clickhouse.Backend.truncate_table">truncate_table</h3>
+<p><code>truncate_table(self, name, database=None)</code></p>
+
+
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/ibis-project\.org");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/backends/clickhouse.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>
