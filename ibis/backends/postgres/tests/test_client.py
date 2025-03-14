@@ -290,7 +290,7 @@ def test_pgvector_type_load(con, vector_size):
     CREATE TABLE itemsvrandom (id bigserial PRIMARY KEY, embedding vector({vector_size}));
     """
 
-    with con.raw_sql(query):
+    with con._safe_raw_sql(query):
         pass
 
     t = con.table("itemsvrandom")
@@ -412,7 +412,9 @@ def test_create_geospatial_table_with_srid(con):
         f"{column} geometry({dtype}, 4326)"
         for column, dtype in zip(column_names, column_types)
     )
-    con.raw_sql(f"CREATE TEMP TABLE {name} ({schema_string})")
+    with con._safe_raw_sql(f"CREATE TEMP TABLE {name} ({schema_string})"):
+        pass
+
     schema = con.get_schema(name)
     assert schema == ibis.schema(
         {
@@ -425,11 +427,11 @@ def test_create_geospatial_table_with_srid(con):
 @pytest.fixture(scope="module")
 def enum_table(con):
     name = gen_name("enum_table")
-    con.raw_sql("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')")
-    con.raw_sql(f"CREATE TEMP TABLE {name} (mood mood)")
-    yield name
-    con.raw_sql(f"DROP TABLE {name}")
-    con.raw_sql("DROP TYPE mood")
+    with con._safe_raw_sql("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')") as cur:
+        cur.execute(f"CREATE TEMP TABLE {name} (mood mood)")
+        yield name
+        cur.execute(f"DROP TABLE {name}")
+        cur.execute("DROP TYPE mood")
 
 
 def test_enum_table(con, enum_table):

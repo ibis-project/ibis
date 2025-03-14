@@ -132,16 +132,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             name, schema=schema, columns=True, placeholder="%s"
         )
 
-        with self.begin() as cursor:
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
             cursor.execute(create_stmt_sql)
             cursor.executemany(sql, data)
 
     @contextlib.contextmanager
-    def begin(self, *, name: str = "", withhold: bool = False):
-        with (
-            (con := self.con).transaction(),
-            con.cursor(name=name, withhold=withhold) as cursor,
-        ):
+    def begin(self):
+        with (con := self.con).cursor() as cursor, con.transaction():
             yield cursor
 
     def _fetch_from_cursor(
@@ -278,9 +276,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         import psycopg.types
         import psycopg.types.hstore
 
+        con = self.con
+
         try:
             # try to load hstore
-            with self.begin() as cursor:
+            with con.cursor() as cursor, con.transaction():
                 cursor.execute("CREATE EXTENSION IF NOT EXISTS hstore")
             psycopg.types.hstore.register_hstore(
                 psycopg.types.TypeInfo.fetch(self.con, "hstore"), self.con
@@ -290,7 +290,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         except TypeError:
             pass
 
-        with self.begin() as cursor:
+        with con.cursor() as cursor, con.transaction():
             cursor.execute("SET TIMEZONE = UTC")
 
     @property
@@ -300,9 +300,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         # Before that temp table is created, this will return `None`
         # After a temp table is created, it will return `pg_temp_N` where N is
         # some integer
-        res = self.raw_sql(
-            "select nspname from pg_namespace where oid = pg_my_temp_schema()"
-        ).fetchone()
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            res = cursor.execute(
+                "SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema()"
+            ).fetchone()
         if res is not None:
             return res[0]
         return res
@@ -358,8 +360,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             .sql(self.dialect)
         )
 
-        with self._safe_raw_sql(sql) as cur:
-            out = cur.fetchall()
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            out = cursor.execute(sql).fetchall()
 
         # Include temporary tables only if no database has been explicitly specified
         # to avoid temp tables showing up in all calls to `list_tables`
@@ -381,8 +384,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             .sql(self.dialect)
         )
 
-        with self._safe_raw_sql(sql) as cur:
-            out = cur.fetchall()
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            out = cursor.execute(sql).fetchall()
 
         return out
 
@@ -392,33 +396,42 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             sg.select(C.datname)
             .from_(sg.table("pg_database", db="pg_catalog"))
             .where(sg.not_(C.datistemplate))
+            .sql(self.dialect)
         )
-        with self._safe_raw_sql(cats) as cur:
-            catalogs = list(map(itemgetter(0), cur))
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            catalogs = list(map(itemgetter(0), cursor.execute(cats)))
 
         return self._filter_with_like(catalogs, like)
 
     def list_databases(
         self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
-        dbs = sg.select(C.schema_name).from_(
-            sg.table("schemata", db="information_schema")
+        dbs = (
+            sg.select(C.schema_name)
+            .from_(sg.table("schemata", db="information_schema"))
+            .sql(self.dialect)
         )
-        with self._safe_raw_sql(dbs) as cur:
-            databases = list(map(itemgetter(0), cur))
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            databases = list(map(itemgetter(0), cursor.execute(dbs)))
 
         return self._filter_with_like(databases, like)
 
     @property
     def current_catalog(self) -> str:
-        with self._safe_raw_sql(sg.select(sg.func("current_database"))) as cur:
-            (db,) = cur.fetchone()
+        sql = sg.select(sg.func("current_database")).sql(self.dialect)
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            (db,) = cursor.execute(sql).fetchone()
         return db
 
     @property
     def current_database(self) -> str:
-        with self._safe_raw_sql(sg.select(sg.func("current_schema"))) as cur:
-            (schema,) = cur.fetchone()
+        sql = sg.select(sg.func("current_schema")).sql(self.dialect)
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            (schema,) = cursor.execute(sql).fetchone()
         return schema
 
     def function(self, name: str, *, database: str | None = None) -> Callable:
@@ -445,14 +458,16 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
                 join_type="LEFT",
             )
             .where(*predicates)
+            .sql(self.dialect)
         )
 
         def split_name_type(arg: str) -> tuple[str, dt.DataType]:
             name, typ = arg.split(" ", 1)
             return name, self.compiler.type_mapper.from_string(typ)
 
-        with self._safe_raw_sql(query) as cur:
-            rows = cur.fetchall()
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            rows = cursor.execute(query).fetchall()
 
         if not rows:
             name = f"{database}.{name}" if database else name
@@ -528,12 +543,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
                 c.relname.eq(sge.convert(name)),
             )
             .order_by(a.attnum)
+            .sql(self.dialect)
         )
 
         type_mapper = self.compiler.type_mapper
 
-        with self._safe_raw_sql(type_info) as cur:
-            rows = cur.fetchall()
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            rows = cursor.execute(type_info).fetchall()
 
         if not rows:
             raise com.TableNotFound(name)
@@ -553,18 +570,21 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             this=sg.table(name),
             expression=sg.parse_one(query, read=self.dialect),
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-        )
+        ).sql(self.dialect)
+
         drop_stmt = sge.Drop(kind="VIEW", this=sg.table(name), exists=True).sql(
             self.dialect
         )
 
-        with self._safe_raw_sql(create_stmt):
-            pass
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            cursor.execute(create_stmt)
+
         try:
             return self.get_schema(name)
         finally:
-            with self._safe_raw_sql(drop_stmt):
-                pass
+            with con.cursor() as cursor, con.transaction():
+                cursor.execute(drop_stmt)
 
     def create_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
@@ -575,9 +595,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             )
         sql = sge.Create(
             kind="SCHEMA", this=sg.table(name, catalog=catalog), exists=force
-        )
-        with self._safe_raw_sql(sql):
-            pass
+        ).sql(self.dialect)
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            cursor.execute(sql)
 
     def drop_database(
         self,
@@ -598,9 +619,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             this=sg.table(name, catalog=catalog),
             exists=force,
             cascade=cascade,
-        )
-        with self._safe_raw_sql(sql):
-            pass
+        ).sql(self.dialect)
+
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            cursor.execute(sql)
 
     def create_table(
         self,
@@ -679,19 +702,24 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             kind="TABLE",
             this=target,
             properties=sge.Properties(expressions=properties),
-        )
+        ).sql(dialect)
 
         this = sg.table(name, catalog=database, quoted=quoted)
         this_no_catalog = sg.table(name, quoted=quoted)
 
-        with self._safe_raw_sql(create_stmt) as cur:
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            cursor.execute(create_stmt)
+
             if query is not None:
                 insert_stmt = sge.Insert(this=table_expr, expression=query).sql(dialect)
-                cur.execute(insert_stmt)
+                cursor.execute(insert_stmt)
 
             if overwrite:
-                cur.execute(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
-                cur.execute(
+                cursor.execute(
+                    sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect)
+                )
+                cursor.execute(
                     f"ALTER TABLE IF EXISTS {table_expr.sql(dialect)} RENAME TO {this_no_catalog.sql(dialect)}"
                 )
 
@@ -715,16 +743,17 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             kind="TABLE",
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
             exists=force,
-        )
-        with self._safe_raw_sql(drop_stmt):
-            pass
+        ).sql(self.dialect)
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
+            cursor.execute(drop_stmt)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str | sg.Expression, **kwargs: Any):
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
 
-        with self.begin() as cursor:
+        with (con := self.con).cursor() as cursor, con.transaction():
             yield cursor.execute(query, **kwargs)
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
@@ -757,11 +786,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         import pyarrow as pa
 
         def _batches(self: Self, *, schema: pa.Schema, query: str):
+            con = self.con
             columns = schema.names
             # server-side cursors need to be uniquely named
-            with self.begin(
-                name=util.gen_name("postgres_cursor"), withhold=True
-            ) as cursor:
+            with (
+                con.cursor(name=util.gen_name("postgres_cursor")) as cursor,
+                con.transaction(),
+            ):
                 cursor.execute(query)
                 while batch := cursor.fetchmany(chunk_size):
                     yield pa.RecordBatch.from_pandas(

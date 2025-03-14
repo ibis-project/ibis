@@ -1343,12 +1343,11 @@ def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
     )
-    con.create_table(
-        temp_table,
-        schema=schema,
-        overwrite=True,
-    )
-    rows = con.raw_sql(f"DESCRIBE {temp_table}").fetchall()
+    con.create_table(temp_table, schema=schema, overwrite=True)
+
+    with con._safe_raw_sql(f"DESCRIBE {temp_table}") as cur:
+        rows = cur.fetchall()
+
     result = ibis.schema((name, typ) for name, typ, *_ in rows)
     assert result == schema
 
@@ -1750,7 +1749,8 @@ def test_insert_into_table_missing_columns(con, temp_table):
 
     ct_sql = f'CREATE TABLE {raw_ident} ("a" INT DEFAULT 1, "b" INT)'
     sg_expr = sg.parse_one(ct_sql, read="duckdb")
-    con.raw_sql(sg_expr.sql(dialect=con.dialect))
+    with con._safe_raw_sql(sg_expr.sql(dialect=con.dialect)):
+        pass
     con.insert(temp_table, [{"b": 1}])
 
     result = con.table(temp_table).to_pyarrow().to_pydict()
