@@ -1526,9 +1526,6 @@ def test_close_connection(con):
     raises=TypeError,
     reason="snowflake uses a custom pyarrow extension type for JSON pretty printing",
 )
-@pytest.mark.notimpl(
-    ["databricks"], raises=json.JSONDecodeError, reason="not yet implemented"
-)
 @pytest.mark.notimpl(["athena"], raises=AttributeError, reason="not yet implemented")
 def test_json_to_pyarrow(con):
     t = con.tables.json_t
