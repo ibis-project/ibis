@@ -59,3 +59,7 @@ class StructColumn(Value):
     def dtype(self) -> dt.DataType:
         dtypes = (value.dtype for value in self.values)
         return dt.Struct.from_tuples(zip(self.names, dtypes))
+
+    # @property
+    # def vals_by_name(self) -> dict[str, Value]:
+    #     return dict(zip(self.names, self.values))

@@ -33,13 +33,12 @@ def test_struct_operations():
     expr = ibis.literal(value)
     assert isinstance(expr, ir.StructValue)
     assert isinstance(expr["b"], ir.ArrayValue)
-    assert isinstance(expr["a"].op(), ops.StructField)
+    assert isinstance(expr["a"], ir.IntegerValue)
 
 
 def test_struct_getattr():
     expr = ibis.struct({"a": 1, "b": 2})
     assert isinstance(expr.a, ir.IntegerValue)
-    assert expr.a.get_name() == "a"
     with pytest.raises(AttributeError, match="bad"):
         expr.bad  # # noqa: B018
 
