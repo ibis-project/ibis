@@ -34,6 +34,7 @@ from ibis.backends.tests.errors import (
     PsycoPgUndefinedObject,
     Py4JJavaError,
     PyAthenaDatabaseError,
+    PyDruidProgrammingError,
     PyODBCProgrammingError,
     SnowflakeProgrammingError,
 )
@@ -1722,7 +1723,7 @@ def test_cross_database_join(con_create_database, monkeypatch):
 
 
 @pytest.mark.notimpl(
-    ["druid"], raises=AttributeError, reason="doesn't implement `raw_sql`"
+    ["druid"], raises=PyDruidProgrammingError, reason="doesn't implement CREATE syntax"
 )
 @pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
