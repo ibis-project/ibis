@@ -1,6 +1,18 @@
 ---
 ---
 
+## [10.3.1](https://github.com/ibis-project/ibis/compare/10.3.0...10.3.1) (2025-03-14)
+
+### Bug Fixes
+
+* **datatypes:** ensure that newer sqlglot `BLOB` type is not accessed if it does not exist ([6452a5e](https://github.com/ibis-project/ibis/commit/6452a5e76130bba565ba14e2c6d68fbadbf3ef7e))
+* **deps:** drop `pytz` from dependencies ([#10976](https://github.com/ibis-project/ibis/issues/10976)) ([3ecf731](https://github.com/ibis-project/ibis/commit/3ecf731f421393d54d0b156e874fe9f56fc34471))
+* **postgres:** use `.transaction` method instead of managing our own ([0edbab9](https://github.com/ibis-project/ibis/commit/0edbab99e68e9c41d6efcba3e091a5781ef995a3))
+
+### Documentation
+
+* link to our config file for conventional commits warning ([#10986](https://github.com/ibis-project/ibis/issues/10986)) ([a945c96](https://github.com/ibis-project/ibis/commit/a945c9687506a2a6803f0043928b0d98356b0917))
+
 ## [10.3.0](https://github.com/ibis-project/ibis/compare/10.2.0...10.3.0) (2025-03-11)
 
 ### Features

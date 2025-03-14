@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "10.3.0"
+__version__ = "10.3.1"
 
 import warnings
 from typing import Any
