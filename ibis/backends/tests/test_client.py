@@ -34,6 +34,7 @@ from ibis.backends.tests.errors import (
     PsycoPgUndefinedObject,
     Py4JJavaError,
     PyAthenaDatabaseError,
+    PyDruidProgrammingError,
     PyODBCProgrammingError,
     SnowflakeProgrammingError,
 )
@@ -1343,12 +1344,11 @@ def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
     )
-    con.create_table(
-        temp_table,
-        schema=schema,
-        overwrite=True,
-    )
-    rows = con.raw_sql(f"DESCRIBE {temp_table}").fetchall()
+    con.create_table(temp_table, schema=schema, overwrite=True)
+
+    with con._safe_raw_sql(f"DESCRIBE {temp_table}") as cur:
+        rows = cur.fetchall()
+
     result = ibis.schema((name, typ) for name, typ, *_ in rows)
     assert result == schema
 
@@ -1723,12 +1723,11 @@ def test_cross_database_join(con_create_database, monkeypatch):
 
 
 @pytest.mark.notimpl(
-    ["druid"], raises=AttributeError, reason="doesn't implement `raw_sql`"
+    ["druid"], raises=PyDruidProgrammingError, reason="doesn't implement CREATE syntax"
 )
 @pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["polars"], reason="Doesn't support insert")
-@pytest.mark.notyet(["exasol"], reason="Backend does not support raw_sql")
 @pytest.mark.notimpl(
     ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
 )
@@ -1750,7 +1749,8 @@ def test_insert_into_table_missing_columns(con, temp_table):
 
     ct_sql = f'CREATE TABLE {raw_ident} ("a" INT DEFAULT 1, "b" INT)'
     sg_expr = sg.parse_one(ct_sql, read="duckdb")
-    con.raw_sql(sg_expr.sql(dialect=con.dialect))
+    with con._safe_raw_sql(sg_expr.sql(dialect=con.dialect)):
+        pass
     con.insert(temp_table, [{"b": 1}])
 
     result = con.table(temp_table).to_pyarrow().to_pydict()
