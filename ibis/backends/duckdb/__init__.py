@@ -364,6 +364,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
     def do_connect(
         self,
         database: str | Path = ":memory:",
+        /,
+        *,
         read_only: bool = False,
         extensions: Sequence[str] | None = None,
         **config: Any,
