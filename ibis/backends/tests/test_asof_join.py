@@ -80,7 +80,17 @@ def time_keyed_right(time_keyed_df2):
 
 
 @pytest.mark.parametrize(
-    ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
+    ("direction", "op"),
+    [
+        pytest.param(
+            "backward",
+            operator.ge,
+            marks=pytest.mark.notyet(
+                ["risingwave"], reason="results don't match expectation"
+            ),
+        ),
+        ("forward", operator.le),
+    ],
 )
 @pytest.mark.notyet(
     [
@@ -96,7 +106,6 @@ def time_keyed_right(time_keyed_df2):
         "oracle",
         "mssql",
         "sqlite",
-        "risingwave",
         "flink",
         "databricks",
         "athena",
@@ -140,7 +149,6 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
         "oracle",
         "postgres",
         "pyspark",
-        "risingwave",
         "sqlite",
         "trino",
         "athena",
