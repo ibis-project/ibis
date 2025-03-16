@@ -234,6 +234,13 @@ mutated = t.mutate(two=t.two * 2)
 mutated
 ```
 
+To add a column with a scalar text value, you can use `ibis.literal`.
+
+```{python}
+mutated = t.mutate(two=ibis.literal('two'))
+```
+
+
 ### Renaming columns
 
 In addition to replacing columns, you can rename them as well. This is done with
