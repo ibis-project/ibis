@@ -234,10 +234,10 @@ mutated = t.mutate(two=t.two * 2)
 mutated
 ```
 
-To add a column with a single text value, you can use `ibis.literal`.
+To add a column with a single text value on all rows, you can use `ibis.literal`.
 
 ```{python}
-mutated = t.mutate(two=ibis.literal('two'))
+mutated = t.mutate(two_string=ibis.literal('two'))
 ```
 
 ### Renaming columns
