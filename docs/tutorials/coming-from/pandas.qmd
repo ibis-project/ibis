@@ -240,7 +240,6 @@ To add a column with a single text value, you can use `ibis.literal`.
 mutated = t.mutate(two=ibis.literal('two'))
 ```
 
-
 ### Renaming columns
 
 In addition to replacing columns, you can rename them as well. This is done with
