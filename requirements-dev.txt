@@ -1,14 +1,14 @@
 -e .
 aiobotocore==2.21.1
 aiohappyeyeballs==2.6.1
-aiohttp==3.11.13
+aiohttp==3.11.14
 aioitertools==0.12.0
 aiosignal==1.3.2
 alembic==1.15.1
 altair==5.5.0
 annotated-types==0.7.0
-anyio==4.8.0
-anywidget==0.9.15
+anyio==4.9.0
+anywidget==0.9.16
 appdirs==1.4.4
 appnope==0.1.4 ; sys_platform == 'darwin'
 argon2-cffi==23.1.0
@@ -19,7 +19,7 @@ arro3-io==0.4.6
 arrow==1.3.0
 asn1crypto==1.5.1
 asttokens==3.0.0
-async-lru==2.0.4
+async-lru==2.0.5
 async-timeout==5.0.1 ; python_full_version < '3.11'
 atpublic==5.1
 attrs==25.3.0
@@ -27,7 +27,7 @@ aws-error-utils==2.7.0
 aws-sso-lib==1.14.0
 aws-sso-util==4.33.0
 babel==2.17.0
-beartype==0.20.0 ; python_full_version >= '3.10'
+beartype==0.20.1 ; python_full_version >= '3.10'
 beautifulsoup4==4.13.3
 bitarray==2.9.3
 black==25.1.0
@@ -48,7 +48,7 @@ colorama==0.4.6
 comm==0.2.2
 contourpy==1.3.0 ; python_full_version < '3.10'
 contourpy==1.3.1 ; python_full_version >= '3.10'
-coverage==7.6.12
+coverage==7.7.0
 cryptography==44.0.2
 cycler==0.12.1
 databricks-sql-connector-core==4.0.1
@@ -61,13 +61,13 @@ deltalake==0.24.0
 distlib==0.3.9
 doit==0.36.0
 duckdb==1.2.1
-dunamai==1.23.0
+dunamai==1.23.1
 et-xmlfile==2.0.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
 execnet==2.1.1
 executing==2.2.0
 fastjsonschema==2.21.1
-filelock==3.17.0
+filelock==3.18.0
 fonttools==4.56.0
 fqdn==1.5.1
 frozenlist==1.5.0
@@ -82,25 +82,25 @@ google-cloud-bigquery==3.30.0
 google-cloud-bigquery-storage==2.29.1
 google-cloud-core==2.4.3
 google-cloud-storage==3.1.0
-google-crc32c==1.6.0
+google-crc32c==1.7.0
 google-resumable-media==2.7.2
-googleapis-common-protos==1.69.1
+googleapis-common-protos==1.69.2
 graphviz==0.20.3
 greenlet==3.1.1 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
-griffe==1.6.0
+griffe==1.6.2
 grpcio==1.71.0
 grpcio-status==1.71.0
 h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
 humanize==4.12.1
-hypothesis==6.129.1
+hypothesis==6.130.0
 identify==2.6.9
 idna==3.10
 importlib-metadata==8.6.1
 importlib-resources==6.5.2
 impyla==0.21.0
-iniconfig==2.0.0
+iniconfig==2.1.0
 ipykernel==6.29.5
 ipython==8.18.1 ; python_full_version < '3.10'
 ipython==8.34.0 ; python_full_version == '3.10.*'
@@ -124,7 +124,7 @@ jupyter-events==0.12.0
 jupyter-lsp==2.2.5
 jupyter-server==2.15.0
 jupyter-server-terminals==0.5.3
-jupyterlab==4.3.5
+jupyterlab==4.3.6
 jupyterlab-night==0.5.1
 jupyterlab-pygments==0.3.0
 jupyterlab-server==2.27.3
@@ -142,13 +142,13 @@ matplotlib==3.9.4 ; python_full_version < '3.10'
 matplotlib==3.10.1 ; python_full_version >= '3.10'
 matplotlib-inline==0.1.7
 mdurl==0.1.2
-mistune==3.1.2
+mistune==3.1.3
 mizani==0.11.4 ; python_full_version < '3.10'
 mizani==0.13.1 ; python_full_version >= '3.10'
-multidict==6.1.0
+multidict==6.2.0
 mypy-extensions==1.0.0
 mysqlclient==2.2.7
-narwhals==1.30.0
+narwhals==1.31.0
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -156,7 +156,7 @@ nest-asyncio==1.6.0
 nodeenv==1.9.1
 notebook-shim==0.2.4
 numpy==2.0.2 ; python_full_version < '3.10'
-numpy==2.2.3 ; python_full_version >= '3.10'
+numpy==2.2.4 ; python_full_version >= '3.10'
 oauthlib==3.2.2
 openpyxl==3.1.5
 oracledb==3.0.0
@@ -173,21 +173,21 @@ pexpect==4.9.0 ; (python_full_version < '3.10' and sys_platform == 'emscripten')
 pillow==11.1.0
 pins==0.8.7
 pkginfo==1.12.1.2
-platformdirs==4.3.6
+platformdirs==4.3.7
 plotly==5.24.1
 plotnine==0.13.6 ; python_full_version < '3.10'
 plotnine==0.14.5 ; python_full_version >= '3.10'
 pluggy==1.5.0
 plum-dispatch==1.7.4 ; python_full_version < '3.10'
 plum-dispatch==2.5.7 ; python_full_version >= '3.10'
-polars==1.24.0
+polars==1.25.2
 pprintpp==0.4.0
-pre-commit==4.1.0
+pre-commit==4.2.0
 prometheus-client==0.21.1
 prompt-toolkit==3.0.50
 propcache==0.3.0
 proto-plus==1.26.1
-protobuf==5.29.3
+protobuf==5.29.4
 psutil==7.0.0
 psycopg==3.2.6
 psycopg-binary==3.2.6 ; implementation_name != 'pypy'
@@ -233,7 +233,7 @@ pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
 python-json-logger==3.3.0
 pytz==2025.1
-pywin32==309 ; platform_python_implementation != 'PyPy' and sys_platform == 'win32'
+pywin32==310 ; platform_python_implementation != 'PyPy' and sys_platform == 'win32'
 pywinpty==2.0.15 ; os_name == 'nt'
 pyyaml==6.0.2
 pyzmq==26.3.0
@@ -247,7 +247,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rpds-py==0.23.1
 rsa==4.9
-ruff==0.10.0
+ruff==0.11.1
 s3fs==2025.3.0
 s3transfer==0.11.3
 scikit-learn==1.6.1
@@ -255,7 +255,7 @@ scipy==1.13.1 ; python_full_version < '3.10'
 scipy==1.15.2 ; python_full_version >= '3.10'
 seaborn==0.13.2
 send2trash==1.8.3
-setuptools==76.0.0
+setuptools==77.0.3
 shapely==2.0.7
 six==1.17.0
 sniffio==1.3.1
@@ -264,7 +264,7 @@ sortedcontainers==2.4.0
 soupsieve==2.6
 sphobjinv==2.3.1.2
 sqlalchemy==2.0.39
-sqlglot==26.10.1
+sqlglot==26.11.1
 stack-data==0.6.3
 statsmodels==0.14.4
 tabulate==0.9.0
