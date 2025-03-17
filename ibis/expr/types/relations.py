@@ -2177,12 +2177,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             - A function from old name to new name. If the function returns
               `None` the old name is used.
             - The literal strings `"snake_case"` or `"ALL_CAPS"` to
-              rename all columns using a `snake_case` or `"ALL_CAPS"``
+              rename all columns using a `snake_case` or `"ALL_CAPS"`
               naming convention respectively.
             - A mapping from new name to old name. Existing columns not present
               in the mapping will passthrough with their original name.
         substitutions
-            Columns to be explicitly renamed, expressed as `new_name=old_name``
+            Columns to be explicitly renamed, expressed as `new_name=old_name`
             keyword arguments.
 
         Returns
@@ -2217,7 +2217,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────────┴───────────────┴─────────────────────────────────────┘
 
         Rename specific columns by passing keyword arguments like
-        `new_name="old_name"``
+        `new_name="old_name"`
 
         >>> t.rename(study_name="studyName").head(1)
         ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
