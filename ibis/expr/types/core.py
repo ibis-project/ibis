@@ -669,7 +669,7 @@ class Expr(Immutable, Coercible):
         Parameters
         ----------
         path
-            The data source. A string or Path to the parquet file.
+            A string or Path where the Parquet file will be written.
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
@@ -714,8 +714,6 @@ class Expr(Immutable, Coercible):
 
         Parameters
         ----------
-        expr
-            Ibis table expression to write to an excel file.
         path
             Excel output path.
         sheet
@@ -802,7 +800,7 @@ class Expr(Immutable, Coercible):
         Parameters
         ----------
         path
-            The data source. A string or Path to the CSV file.
+            The data target. A string or Path where the CSV file will be written.
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
@@ -827,7 +825,7 @@ class Expr(Immutable, Coercible):
         Parameters
         ----------
         path
-            The data source. A string or Path to the Delta Lake table directory.
+            The data target. A string or Path to the Delta Lake table directory.
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
@@ -847,9 +845,9 @@ class Expr(Immutable, Coercible):
         Parameters
         ----------
         path
-            The data source. A string or Path to the Delta Lake table.
+            The data target. A string or Path where the JSON file will be written.
         kwargs
-            Additional, backend-specifc keyword arguments.
+            Additional, backend-specific keyword arguments.
         """
         self._find_backend(use_default=True).to_json(self, path, **kwargs)
 
