@@ -51,7 +51,7 @@ jobs:
 
       - name: Get all changed qmd files
         id: changed-qmd-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@v46
         with:
           # Avoid using single or double quotes for multiline patterns
           files: |
