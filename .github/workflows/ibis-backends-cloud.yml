@@ -136,7 +136,7 @@ jobs:
         if: matrix.backend.key == 'snowpark'
         run: uv add --no-sync --optional snowflake snowflake-snowpark-python
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

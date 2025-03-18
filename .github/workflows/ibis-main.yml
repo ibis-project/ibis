@@ -88,7 +88,7 @@ jobs:
         if: matrix.pyarrow
         run: python -c 'import numpy, pandas, pyarrow, pyarrow_hotfix'
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -157,7 +157,7 @@ jobs:
       - name: install uv
         uses: astral-sh/setup-uv@v5.3.1
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -67,7 +67,7 @@ jobs:
       - name: install uv
         uses: astral-sh/setup-uv@v5.3.1
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -473,7 +473,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -587,7 +587,7 @@ jobs:
           distribution: microsoft
           java-version: 17
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
