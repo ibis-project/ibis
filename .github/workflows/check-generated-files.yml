@@ -54,7 +54,7 @@ jobs:
       - name: install system dependencies
         run: sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev unixodbc-dev
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
