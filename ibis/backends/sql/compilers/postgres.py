@@ -739,6 +739,37 @@ $$""".format(
             f"{self.dialect} backend"
         )
 
+    def visit_JoinLink(self, op, *, how, table, predicates):
+        if how == "asof":
+            # Convert asof join to a lateral left join
+
+            # The asof match condition is always the first predicate
+            match_condition, *predicates = predicates
+            on = sg.and_(*predicates) if predicates else None
+
+            return sge.Join(
+                this=sge.Lateral(
+                    this=sge.Subquery(
+                        this=sg.select(sge.Star())
+                        .from_(table)
+                        .where(match_condition)
+                        # the ordering for the subquery depends on whether we
+                        # want to pick the one row with the largest or smallest
+                        # value that fulfills the match condition
+                        .order_by(
+                            match_condition.expression.asc()
+                            if match_condition.key in {"lte", "lt"}
+                            else match_condition.expression.desc()
+                        )
+                        .limit(1)
+                    )
+                ).as_(table.alias_or_name),
+                kind="left",
+                on=on,
+            )
+
+        return super().visit_JoinLink(op, how=how, table=table, predicates=predicates)
+
     def visit_TableUnnest(
         self,
         op,
