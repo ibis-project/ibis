@@ -110,7 +110,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: actions/create-github-app-token@v1.11.6
+      - uses: actions/create-github-app-token@v1.11.7
         id: generate_token
         with:
           app-id: ${{ secrets.DOCS_BOT_APP_ID }}
