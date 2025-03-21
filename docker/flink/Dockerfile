@@ -2,7 +2,7 @@ ARG FLINK_VERSION=2.0.0
 FROM flink:${FLINK_VERSION}
 
 # ibis-flink requires PyFlink dependency
-ARG FLINK_VERSION=1.20.0
+ARG FLINK_VERSION=2.0.0
 RUN wget -nv -P $FLINK_HOME/lib/ https://repo1.maven.org/maven2/org/apache/flink/flink-python/${FLINK_VERSION}/flink-python-${FLINK_VERSION}.jar
 
 # install python3 and pip3

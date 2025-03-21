@@ -225,7 +225,7 @@ jobs:
             extras:
               - --extra flink
             additional_deps:
-              - "'apache-flink==1.20.0'"
+              - "'apache-flink==2.0.0'"
               - "'pandas<2.2'"
               - setuptools
             services:
@@ -240,7 +240,7 @@ jobs:
               extras:
                 - --extra flink
               additional_deps:
-                - "'apache-flink==1.20.0'"
+                - "'apache-flink==2.0.0'"
                 - "'pandas<2.2'"
                 - setuptools
               services:
@@ -430,7 +430,7 @@ jobs:
               extras:
                 - --extra flink
               additional_deps:
-                - "'apache-flink==1.20.0'"
+                - "'apache-flink==2.0.0'"
                 - "'pandas<2.2'"
                 - setuptools
               services:
@@ -443,7 +443,7 @@ jobs:
               extras:
                 - --extra flink
               additional_deps:
-                - "'apache-flink==1.20.0'"
+                - "'apache-flink==2.0.0'"
                 - "'pandas<2.2'"
                 - setuptools
               services:
