@@ -66,8 +66,8 @@ def test_memtable_polars_types(con):
 def test_streaming(con, mocker, to_method):
     t = con.table("functional_alltypes")
     mocked_collect = mocker.patch("polars.LazyFrame.collect")
-    getattr(con, to_method)(t, streaming=True)
-    mocked_collect.assert_called_once_with(streaming=True, engine="cpu")
+    getattr(con, to_method)(t, engine="streaming")
+    mocked_collect.assert_called_once_with(engine="streaming")
 
 
 @pytest.mark.parametrize("to_method", ["to_pyarrow", "to_polars"])
@@ -75,4 +75,4 @@ def test_engine(con, mocker, to_method):
     t = con.table("functional_alltypes")
     mocked_collect = mocker.patch("polars.LazyFrame.collect")
     getattr(con, to_method)(t, engine="gpu")
-    mocked_collect.assert_called_once_with(streaming=False, engine="gpu")
+    mocked_collect.assert_called_once_with(engine="gpu")
