@@ -506,6 +506,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         a = ColGen(table="a")
         c = ColGen(table="c")
         n = ColGen(table="n")
+        t = ColGen(table="t")
+        e = ColGen(table="e")
 
         format_type = self.compiler.f["pg_catalog.format_type"]
 
@@ -522,7 +524,23 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         type_info = (
             sg.select(
                 a.attname.as_("column_name"),
-                format_type(a.atttypid, a.atttypmod).as_("data_type"),
+                sg.case()
+                .when(
+                    sge.Exists(
+                        this=sg.select(1)
+                        .from_(sg.table("pg_type", db="pg_catalog").as_("t"))
+                        .join(
+                            sg.table("pg_enum", db="pg_catalog").as_("e"),
+                            on=sg.and_(
+                                e.enumtypid.eq(t.oid),
+                                t.typname.eq(format_type(a.atttypid, a.atttypmod)),
+                            ),
+                        )
+                    ),
+                    sge.convert("enum"),
+                )
+                .else_(format_type(a.atttypid, a.atttypmod))
+                .as_("data_type"),
                 sg.not_(a.attnotnull).as_("nullable"),
             )
             .from_(sg.table("pg_attribute", db="pg_catalog").as_("a"))
