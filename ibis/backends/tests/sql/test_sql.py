@@ -663,3 +663,17 @@ def test_ctes_in_order():
 
     sql = ibis.to_sql(expr, dialect="duckdb")
     assert sql.find('"first" AS (') < sql.find('"second" AS (')
+
+
+@pytest.mark.parametrize(
+    "accessor",
+    [
+        pytest.param(lambda s, f: getattr(s, f), id="getattr"),
+        pytest.param(lambda s, f: s[f], id="getitem"),
+    ],
+)
+def test_struct_field_simplified(snapshot, accessor):
+    s = ibis.struct({"i": 123, "s": "foo"})
+    for _i in range(5):
+        s = ibis.struct({"i": accessor(s, "i") + 1, "s": accessor(s, "s") + "bar"})
+    snapshot.assert_match(ibis.to_sql(s.i, dialect="duckdb"), "out.sql")
