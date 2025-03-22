@@ -86,6 +86,7 @@ __all__ = (
     "following",
     "get_backend",
     "greatest",
+    "highest_precedence_dtype",
     "ifelse",
     "infer_dtype",
     "infer_schema",
@@ -136,6 +137,7 @@ __all__ = (
 dtype = dt.dtype
 infer_dtype = dt.infer
 infer_schema = sch.infer
+highest_precedence_dtype = dt.highest_precedence
 aggregate = ir.Table.aggregate
 cross_join = ir.Table.cross_join
 join = ir.Table.join
