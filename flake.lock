@@ -135,11 +135,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1742506788,
-        "narHash": "sha256-wzxTux4MSd4sYGAM04pK6A7DLIS1qE4ukyW/8/ogH0k=",
+        "lastModified": 1742725110,
+        "narHash": "sha256-FB14zSpe0Ky9MRE8p2bU5cgAiI3NNm3DeylUKEKSCEk=",
         "owner": "adisbladis",
         "repo": "uv2nix",
-        "rev": "9c654fe99adbd6d51b2100a40f544cb767f1e0d2",
+        "rev": "2e740db7b902976157f245af3d88d194ea3b55a8",
         "type": "github"
       },
       "original": {
