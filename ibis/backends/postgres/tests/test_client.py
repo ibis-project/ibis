@@ -429,6 +429,7 @@ def enum_table(con):
     name = gen_name("enum_table")
     with con._safe_raw_sql("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')") as cur:
         cur.execute(f"CREATE TEMP TABLE {name} (mood mood)")
+        cur.execute(f"INSERT INTO {name} (mood) VALUES ('happy'), ('ok')")
         yield name
         cur.execute(f"DROP TABLE {name}")
         cur.execute("DROP TYPE mood")
@@ -436,7 +437,10 @@ def enum_table(con):
 
 def test_enum_table(con, enum_table):
     t = con.table(enum_table)
-    assert t.mood.type() == dt.unknown
+    assert t.mood.type().is_string()
+    e = t.filter(t.mood == "ok")
+    result = e.execute()
+    assert len(result) == 1
 
 
 def test_parsing_oid_dtype(con):
