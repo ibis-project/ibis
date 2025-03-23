@@ -503,72 +503,44 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         catalog: str | None = None,
         database: str | None = None,
     ):
-        a = ColGen(table="a")
-        c = ColGen(table="c")
-        n = ColGen(table="n")
-        t = ColGen(table="t")
-        e = ColGen(table="e")
-
-        format_type = self.compiler.f["pg_catalog.format_type"]
-
         # If no database is specified, assume the current database
-        db = database or self.current_database
-
-        dbs = [sge.convert(db)]
+        dbs = [database or self.current_database]
 
         # If a database isn't specified, then include temp tables in the
         # returned values
         if database is None and (temp_table_db := self._session_temp_db) is not None:
-            dbs.append(sge.convert(temp_table_db))
+            dbs.append(temp_table_db)
 
-        type_info = (
-            sg.select(
-                a.attname.as_("column_name"),
-                sg.case()
-                .when(
-                    sge.Exists(
-                        this=sg.select(1)
-                        .from_(sg.table("pg_type", db="pg_catalog").as_("t"))
-                        .join(
-                            sg.table("pg_enum", db="pg_catalog").as_("e"),
-                            on=sg.and_(
-                                e.enumtypid.eq(t.oid),
-                                t.typname.eq(format_type(a.atttypid, a.atttypmod)),
-                            ),
-                        )
-                    ),
-                    sge.convert("enum"),
-                )
-                .else_(format_type(a.atttypid, a.atttypmod))
-                .as_("data_type"),
-                sg.not_(a.attnotnull).as_("nullable"),
-            )
-            .from_(sg.table("pg_attribute", db="pg_catalog").as_("a"))
-            .join(
-                sg.table("pg_class", db="pg_catalog").as_("c"),
-                on=c.oid.eq(a.attrelid),
-                join_type="INNER",
-            )
-            .join(
-                sg.table("pg_namespace", db="pg_catalog").as_("n"),
-                on=n.oid.eq(c.relnamespace),
-                join_type="INNER",
-            )
-            .where(
-                a.attnum > 0,
-                sg.not_(a.attisdropped),
-                n.nspname.isin(*dbs),
-                c.relname.eq(sge.convert(name)),
-            )
-            .order_by(a.attnum)
-            .sql(self.dialect)
-        )
-
+        type_info = """\
+SELECT
+  a.attname AS column_name,
+  CASE
+    WHEN EXISTS(
+      SELECT 1
+      FROM pg_catalog.pg_type t
+      INNER JOIN pg_catalog.pg_enum e
+              ON e.enumtypid = t.oid
+             AND t.typname = pg_catalog.format_type(a.atttypid, a.atttypmod)
+    ) THEN 'enum'
+    ELSE pg_catalog.format_type(a.atttypid, a.atttypmod)
+  END AS data_type,
+  NOT a.attnotnull AS nullable
+FROM pg_catalog.pg_attribute a
+INNER JOIN pg_catalog.pg_class c
+   ON a.attrelid = c.oid
+INNER JOIN pg_catalog.pg_namespace n
+   ON c.relnamespace = n.oid
+WHERE a.attnum > 0
+  AND NOT a.attisdropped
+  AND n.nspname = ANY(%(dbs)s)
+  AND c.relname = %(name)s
+ORDER BY a.attnum ASC"""
         type_mapper = self.compiler.type_mapper
 
         con = self.con
+        params = {"dbs": dbs, "name": name}
         with con.cursor() as cursor, con.transaction():
-            rows = cursor.execute(type_info).fetchall()
+            rows = cursor.execute(type_info, params, prepare=True).fetchall()
 
         if not rows:
             raise com.TableNotFound(name)
