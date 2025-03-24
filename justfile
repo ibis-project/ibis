@@ -75,17 +75,16 @@ ci-check extras *args:
 # run backend doctests
 backend-doctests backend *args:
     #!/usr/bin/env bash
-    args=(pytest --doctest-modules {{ args }})
-    for file in ibis/backends/{{ backend }}/**.py; do
-        if grep -qPv '.*test.+' <<< "${file}"; then
-            args+=("${file}")
-        fi
-    done
+    args=()
+
     if [ -n "${CI}" ]; then
-        uv run --extra {{ backend }} --group tests "${args[@]}"
-    else
-        "${args[@]}"
+        args=(uv run --extra {{ backend }} --group tests)
     fi
+
+    args+=(pytest --doctest-modules {{ args }})
+    args+=($(find ibis/backends/{{ backend }} -name '*.py' -not -wholename '*test*.py'))
+
+    "${args[@]}"
 
 # run the test suite for one or more backends
 test +backends:
