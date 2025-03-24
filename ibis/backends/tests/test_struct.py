@@ -78,14 +78,11 @@ _NULL_STRUCT_LITERAL = ibis.null().cast("struct<a: int64, b: string, c: float64>
 
 
 @pytest.mark.notimpl(["postgres", "risingwave"])
-@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
-@pytest.mark.parametrize("field", ["a", "b", "c"])
-def test_literal(backend, con, field):
-    query = _STRUCT_LITERAL[field]
-    dtype = query.type().to_pandas()
-    result = pd.Series([con.execute(query)], dtype=dtype)
+def test_literal(backend, con):
+    dtype = _STRUCT_LITERAL.type().to_pandas()
+    result = pd.Series([con.execute(_STRUCT_LITERAL)], dtype=dtype)
     result = result.replace({np.nan: None})
-    expected = pd.Series([_SIMPLE_DICT[field]])
+    expected = pd.Series([_SIMPLE_DICT])
     backend.assert_series_equal(result, expected.astype(dtype))
 
 

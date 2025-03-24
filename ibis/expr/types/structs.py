@@ -207,7 +207,18 @@ class StructValue(Value):
         """
         if name not in self.names:
             raise KeyError(name)
-        return ops.StructField(self, name).to_expr()
+
+        op = self.op()
+
+        # if the underlying operation is a simple struct column access, then
+        # just inline the underlying field access
+        if isinstance(op, ops.StructColumn):
+            return op.values[op.names.index(name)].to_expr()
+        # and then do the same if the underlying value is a field access
+        elif isinstance(op, ops.Literal):
+            return ops.Literal(op.value[name], dtype=self.fields[name]).to_expr()
+        else:
+            return ops.StructField(self, name).to_expr()
 
     def __setstate__(self, instance_dictionary):
         self.__dict__ = instance_dictionary
