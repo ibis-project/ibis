@@ -354,12 +354,8 @@ class DuckDBCompiler(SQLGlotCompiler):
         # Once that is our minimum supported duckdb version, we can
         # use `x || y || z ...` and drop the ifs
         # https://github.com/duckdb/duckdb/issues/14692#issuecomment-2457146174
-        return reduce(
-            lambda x, y: self.if_(
-                x.is_(NULL).or_(y.is_(NULL)), NULL, self.f.list_concat(x, y)
-            ),
-            arg,
-        )
+        any_arg_null = sg.or_(*(arr.is_(NULL) for arr in arg))
+        return self.if_(any_arg_null, NULL, reduce(self.f.list_concat, arg))
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         if unit.short == "ns":
