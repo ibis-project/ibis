@@ -640,8 +640,7 @@ def test_null_column():
 def test_null_column_union():
     s = ibis.table([("a", "string"), ("b", "double")])
     t = ibis.table([("a", "string")])
-    with pytest.raises(ibis.common.exceptions.RelationError):
-        s.union(t.mutate(b=ibis.null()))  # needs a type
+    assert s.union(t.mutate(b=ibis.null())).schema() == s.schema()
     assert s.union(t.mutate(b=ibis.null().cast("double"))).schema() == s.schema()
 
 

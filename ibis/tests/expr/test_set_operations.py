@@ -40,8 +40,13 @@ d = ibis.table(D)
 
 @pytest.mark.parametrize("method", ["union", "intersect", "difference"])
 def test_operation_requires_equal_schemas(method):
-    with pytest.raises(RelationError, match="`c`: string != float64"):
+    with pytest.raises(RelationError) as e:
         getattr(a, method)(d)
+    e_str = str(e.value)
+    assert "Table schemas must be unifiable for set operations" in e_str
+    assert "Int64(nullable=True)" in e_str
+    assert "String(nullable=True)" in e_str
+    assert "Float64(nullable=True)" in e_str
 
 
 @pytest.mark.parametrize("method", ["union", "intersect", "difference"])
