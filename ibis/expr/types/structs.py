@@ -209,13 +209,16 @@ class StructValue(Value):
             raise KeyError(name)
 
         op = self.op()
-        if isinstance(op, ops.StructColumn):
-            vals_by_name = dict(zip(op.names, op.values))
-            return vals_by_name[name].to_expr()
-        if isinstance(op, ops.Literal):
-            return ops.Literal(op.value[name], dtype=self.fields[name]).to_expr()
 
-        return ops.StructField(self, name).to_expr()
+        # if the underlying operation is a simple struct column access, then
+        # just inline the underlying field access
+        if isinstance(op, ops.StructColumn):
+            return op.values[op.names.index(name)].to_expr()
+        # and then do the same if the underlying value is a field access
+        elif isinstance(op, ops.Literal):
+            return ops.Literal(op.value[name], dtype=self.fields[name]).to_expr()
+        else:
+            return ops.StructField(self, name).to_expr()
 
     def __setstate__(self, instance_dictionary):
         self.__dict__ = instance_dictionary
