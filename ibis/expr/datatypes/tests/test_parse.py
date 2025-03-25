@@ -79,9 +79,12 @@ def test_parse_decimal_failure(case):
         dt.dtype(case)
 
 
-@pytest.mark.parametrize("spec", ["varchar", "varchar(10)", "char", "char(10)"])
-def test_parse_char_varchar(spec):
-    assert dt.dtype(spec) == dt.string
+@pytest.mark.parametrize(
+    ("spec", "length"),
+    [("varchar", None), ("varchar(10)", 10), ("char", None), ("char(10)", 10)],
+)
+def test_parse_char_varchar(spec, length):
+    assert dt.dtype(spec) == dt.String(length=length)
 
 
 @pytest.mark.parametrize(

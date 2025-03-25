@@ -266,7 +266,9 @@ def test_query_schema(ddl_backend, expr_fn, expected):
     expected = ibis.schema(
         [(name, dtype(nullable=schema[name].nullable)) for name, dtype in expected]
     )
-    assert schema.equals(expected)
+    assert schema.names == expected.names
+    # can't directly compare because string lengths may differ across backends
+    assert all(type(schema[name]) is type(expected[name]) for name in schema.names)
 
 
 _LIMIT = {

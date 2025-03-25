@@ -20,7 +20,9 @@ TEXT_TYPES = (
 )
 
 
-def _type_from_cursor_info(*, flags, type_code, field_length, scale) -> dt.DataType:
+def _type_from_cursor_info(
+    *, flags, type_code, field_length, scale, multi_byte_maximum_length
+) -> dt.DataType:
     """Construct an ibis type from MySQL field descr and field result metadata.
 
     This method is complex because the MySQL protocol is complex.
@@ -60,7 +62,7 @@ def _type_from_cursor_info(*, flags, type_code, field_length, scale) -> dt.DataT
         if flags.is_binary:
             typ = dt.Binary
         else:
-            typ = dt.String
+            typ = partial(dt.String, length=field_length // multi_byte_maximum_length)
     elif flags.is_timestamp or typename == "TIMESTAMP":
         typ = partial(dt.Timestamp, timezone="UTC", scale=scale or None)
     elif typename == "DATETIME":

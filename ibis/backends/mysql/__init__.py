@@ -192,11 +192,16 @@ class Backend(SQLBackend, CanCreateDatabase, PyArrowExampleLoader):
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         from ibis.backends.mysql.datatypes import _type_from_cursor_info
 
+        char_set_info = self.con.get_character_set_info()
+        multi_byte_maximum_length = char_set_info["mbmaxlen"]
+
         sql = (
             sg.select(STAR)
             .from_(
                 sg.parse_one(query, dialect=self.dialect).subquery(
-                    sg.to_identifier("tmp", quoted=self.compiler.quoted)
+                    sg.to_identifier(
+                        util.gen_name("query_schema"), quoted=self.compiler.quoted
+                    )
                 )
             )
             .limit(0)
@@ -210,13 +215,13 @@ class Backend(SQLBackend, CanCreateDatabase, PyArrowExampleLoader):
         for (name, type_code, _, _, field_length, scale, _), raw_flags in zip(
             descr, flags
         ):
-            item = _type_from_cursor_info(
+            items[name] = _type_from_cursor_info(
                 flags=raw_flags,
                 type_code=type_code,
                 field_length=field_length,
                 scale=scale,
+                multi_byte_maximum_length=multi_byte_maximum_length,
             )
-            items[name] = item
         return sch.Schema(items)
 
     def get_schema(

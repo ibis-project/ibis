@@ -114,7 +114,7 @@ class Value(Expr):
         >>> t.timestamp_col.type()
         Timestamp(timezone=None, scale=None, nullable=True)
         >>> t.string_col.type()
-        String(nullable=True)
+        String(length=None, nullable=True)
         """
         return self.op().dtype
 
@@ -2182,7 +2182,7 @@ class Column(Value, _FixedTextJupyterMixin):
 
         Rank all the colors by max carat:
 
-        >>> t.color.topk(by=t.carat.max(), name="max_carat")
+        >>> t.color.topk(k=5, by=t.carat.max(), name="max_carat")
         ┏━━━━━━━━┳━━━━━━━━━━━┓
         ┃ color  ┃ max_carat ┃
         ┡━━━━━━━━╇━━━━━━━━━━━┩
@@ -2193,8 +2193,6 @@ class Column(Value, _FixedTextJupyterMixin):
         │ I      │      4.01 │
         │ D      │      3.40 │
         │ E      │      3.05 │
-        │ F      │      3.01 │
-        │ G      │      3.01 │
         └────────┴───────────┘
         """
         from ibis.expr.types.relations import bind

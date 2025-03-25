@@ -125,7 +125,7 @@ def test_array_discovery_clickhouse(con):
         ),
         param(
             "Array(FixedString(32))",
-            dt.Array(dt.String(nullable=False), nullable=False),
+            dt.Array(dt.String(length=32, nullable=False), nullable=False),
             id="array_fixed_string",
         ),
         param(

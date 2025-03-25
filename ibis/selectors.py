@@ -189,6 +189,7 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Selector:
             "numeric": dt.Numeric,
             "struct": dt.Struct,
             "temporal": dt.Temporal,
+            "string": dt.String,  # abstract because of the length parameter
         }
 
         if dtype_cls := abstract.get(dtype.lower()):

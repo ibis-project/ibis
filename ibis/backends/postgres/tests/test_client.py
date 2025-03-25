@@ -148,7 +148,8 @@ def test_create_and_drop_table(con, temp_table, params):
         for (pg_type, ibis_type) in [
             ("boolean", dt.boolean),
             ("bytea", dt.binary),
-            ("char", dt.string),
+            ("char", dt.String(length=1)),
+            ("char(42)", dt.String(length=42)),
             ("bigint", dt.int64),
             ("smallint", dt.int16),
             ("integer", dt.int32),
@@ -162,8 +163,10 @@ def test_create_and_drop_table(con, temp_table, params):
             ("macaddr", dt.macaddr),
             ("macaddr8", dt.macaddr),
             ("inet", dt.inet),
-            ("character", dt.string),
+            ("character", dt.String(length=1)),
             ("character varying", dt.string),
+            ("character varying(73)", dt.String(length=73)),
+            ("varchar(37)", dt.String(length=37)),
             ("date", dt.date),
             ("time", dt.time),
             ("time without time zone", dt.time),
@@ -308,13 +311,13 @@ def test_pgvector_type_load(con, vector_size):
 def test_name_dtype(con):
     expected_schema = ibis.schema(
         {
-            "f_table_catalog": dt.String(nullable=True),
+            "f_table_catalog": dt.String(length=256, nullable=True),
             "f_table_schema": dt.String(nullable=True),
             "f_table_name": dt.String(nullable=True),
             "f_geometry_column": dt.String(nullable=True),
             "coord_dimension": dt.Int32(nullable=True),
             "srid": dt.Int32(nullable=True),
-            "type": dt.String(nullable=True),
+            "type": dt.String(length=30, nullable=True),
         }
     )
 
