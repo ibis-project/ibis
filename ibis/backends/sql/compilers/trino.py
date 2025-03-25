@@ -286,7 +286,9 @@ class TrinoCompiler(SQLGlotCompiler):
         return self.f.substr(arg, -self.f.length(end)).eq(end)
 
     def visit_Repeat(self, op, *, arg, times):
-        return self.f.array_join(self.f.repeat(arg, times), "")
+        return self.f.array_join(
+            self.f.nullif(self.f.repeat(arg, times), self.f.array()), ""
+        )
 
     def visit_DateTimestampTruncate(self, op, *, arg, unit):
         _truncate_precisions = {
@@ -425,7 +427,7 @@ class TrinoCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayStringJoin(self, op, *, sep, arg):
-        return self.f.array_join(arg, sep)
+        return self.f.array_join(self.f.nullif(arg, self.f.array()), sep)
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if not include_null:
@@ -449,7 +451,7 @@ class TrinoCompiler(SQLGlotCompiler):
         array = self.agg.array_agg(
             self.cast(arg, dt.string), where=where, order_by=order_by
         )
-        return self.f.array_join(array, sep)
+        return self.f.array_join(self.f.nullif(array, self.f.array()), sep)
 
     def visit_ArrayZip(self, op, *, arg):
         max_zip_arguments = 5
