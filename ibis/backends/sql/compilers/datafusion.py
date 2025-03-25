@@ -381,7 +381,7 @@ class DataFusionCompiler(SQLGlotCompiler):
         return sg.and_(arg.is_(sg.not_(NULL)), self.f.isnan(arg))
 
     def visit_ArrayStringJoin(self, op, *, sep, arg):
-        return self.f.array_join(arg, sep)
+        return self.if_(self.f.array_length(arg) > 0, self.f.array_join(arg, sep), NULL)
 
     def visit_FindInSet(self, op, *, needle, values):
         return self.f.coalesce(

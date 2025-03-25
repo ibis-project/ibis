@@ -1329,6 +1329,9 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
     reason="unable to handle the varbinary geometry column",
     raises=SnowflakeProgrammingError,
 )
+@pytest.mark.notyet(
+    ["druid"], raises=PyDruidProgrammingError, reason="doesn't support a binary type"
+)
 def test_memtable_from_geopandas_dataframe(con, data_dir):
     gpd = pytest.importorskip("geopandas")
     gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")[:5]
@@ -1718,7 +1721,7 @@ def test_hexdigest(backend, alltypes):
             ["0", "1", "2"],
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
+                pytest.mark.notimpl(["oracle"], raises=com.UnsupportedBackendType),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(

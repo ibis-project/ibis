@@ -766,6 +766,11 @@ class BigQueryCompiler(SQLGlotCompiler):
         array = self.f.array_reverse(self.f.array_agg(arg))
         return array[self.f.safe_offset(0)]
 
+    def visit_ArrayStringJoin(self, op, *, arg, sep):
+        return self.if_(
+            self.f.array_length(arg) > 0, self.f.array_to_string(arg, sep), NULL
+        )
+
     def visit_ArrayFilter(self, op, *, arg, body, param, index):
         return self.f.array(
             sg.select(param)

@@ -15,6 +15,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     OracleDatabaseError,
     PsycoPg2InternalError,
+    PyDruidProgrammingError,
     PyODBCProgrammingError,
 )
 from ibis.common.annotations import ValidationError
@@ -829,13 +830,9 @@ def test_capitalize(con, inp, expected):
 
 
 @pytest.mark.notyet(
-    ["exasol", "impala", "mssql", "mysql", "sqlite"],
+    ["exasol", "impala", "mssql", "mysql", "sqlite", "oracle", "flink"],
     reason="Backend doesn't support arrays",
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
-)
-@pytest.mark.notimpl(
-    ["oracle", "flink"],
-    raises=com.OperationNotDefinedError,
 )
 def test_array_string_join(con):
     s = ibis.array(["a", "b", "c"])
@@ -845,6 +842,23 @@ def test_array_string_join(con):
 
     expr = s.join(",")
     assert con.execute(expr) == expected
+
+
+@pytest.mark.notyet(
+    ["exasol", "impala", "mssql", "mysql", "sqlite", "oracle", "flink"],
+    reason="Backend doesn't support arrays",
+    raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
+)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="druid doesn't support empty array construction",
+)
+def test_empty_array_string_join(con):
+    t = ibis.memtable({"arr": [[], ["a", "b", "c"]]})
+
+    expr = t.arr.join(",")
+    assert set(con.execute(expr)) == {None, "a,b,c"}
 
 
 @pytest.mark.notimpl(

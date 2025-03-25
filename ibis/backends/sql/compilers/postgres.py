@@ -844,6 +844,13 @@ $$""".format(
             .subquery()
         )
 
+    def visit_ArrayStringJoin(self, op, *, arg, sep):
+        dtype = op.arg.dtype
+        return self.f.array_to_string(
+            self.f.nullif(self.cast(arg, dtype), self.cast(self.f.array(), dtype)),
+            sep,
+        )
+
     def visit_ArrayMin(self, op, *, arg):
         return self._array_reduction(arg=arg, reduction="min")
 

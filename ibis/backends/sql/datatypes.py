@@ -586,6 +586,10 @@ class MySQLType(SqlglotType):
         return dt.Timestamp(timezone="UTC", nullable=nullable)
 
     @classmethod
+    def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
+        raise com.UnsupportedBackendType("Array types aren't supported in MySQL")
+
+    @classmethod
     def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
         return sge.DataType(this=typecode.TEXT)
 
@@ -723,6 +727,10 @@ class OracleType(SqlglotType):
     default_temporal_scale = 9
 
     unknown_type_strings = FrozenDict({"raw": dt.binary})
+
+    @classmethod
+    def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
+        raise com.UnsupportedBackendType("Array types aren't supported in Oracle")
 
     @classmethod
     def _from_sqlglot_FLOAT(cls, nullable: bool | None = None) -> dt.Float64:
