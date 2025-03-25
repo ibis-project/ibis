@@ -605,7 +605,9 @@ class ClickHouseCompiler(SQLGlotCompiler):
             return self.f.queryString(arg)
 
     def visit_ArrayStringJoin(self, op, *, arg, sep):
-        return self.f.arrayStringConcat(arg, sep)
+        return self.if_(
+            self.f.array_length(arg) > 0, self.f.arrayStringConcat(arg, sep), NULL
+        )
 
     def visit_ArrayMap(self, op, *, arg, param, body, index):
         expressions = [param]
