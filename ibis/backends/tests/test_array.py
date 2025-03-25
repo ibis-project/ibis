@@ -1157,21 +1157,18 @@ array_zip_notimpl = pytest.mark.notimpl(
     raises=com.TableNotFound,
     reason="not yet set up with all testing tables",
 )
-def test_zip(backend):
+@pytest.mark.parametrize("nargs", [1, 5])
+def test_zip(backend, nargs):
     t = backend.array_types
 
-    x = t.x.execute()
-    res = t.x.zip(t.x)
-    assert res.type().value_type.names == ("f1", "f2")
-    s = res.execute()
-    assert len(s[0][0]) == len(res.type().value_type)
-    assert len(x[0]) == len(s[0])
+    x = t.select("x", id="scalar_column").order_by("id").execute()["x"]
+    res = t.select(id="scalar_column", zipped=t.x.zip(*([t.x] * nargs))).order_by("id")
 
-    x = t.x.execute()
-    res = t.x.zip(t.x, t.x, t.x, t.x, t.x)
-    assert res.type().value_type.names == ("f1", "f2", "f3", "f4", "f5", "f6")
-    s = res.execute()
-    assert len(s[0][0]) == len(res.type().value_type)
+    assert res.zipped.type().value_type.names == tuple(
+        f"f{i:d}" for i in range(1, nargs + 2)
+    )
+    s = res.execute()["zipped"]
+    assert len(s[0][0]) == len(res.zipped.type().value_type)
     assert len(x[0]) == len(s[0])
 
 
