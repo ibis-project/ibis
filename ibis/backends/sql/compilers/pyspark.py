@@ -426,7 +426,7 @@ class PySparkCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayStringJoin(self, op, *, arg, sep):
-        return self.f.concat_ws(sep, arg)
+        return self.if_(self.f.array_length(arg) > 0, self.f.concat_ws(sep, arg), NULL)
 
     def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if include_null:
