@@ -152,7 +152,7 @@ download-iceberg-jar pyspark scala="2.12" iceberg="1.6.1":
     if [ -n "${CI}" ]; then
         runner=(uv run --extra pyspark python)
     fi
-    pyspark="$("${runner[@]}" -c "import pyspark; print(pyspark.__file__.rsplit('/', 1)[0])")"
+    pyspark="$("${runner[@]}" -c "import pyspark, os; print(pyspark.__file__.rsplit(os.sep, 1)[0])")"
     pushd "${pyspark}/jars"
     jar="iceberg-spark-runtime-{{ pyspark }}_{{ scala }}-{{ iceberg }}.jar"
     url="https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-{{ pyspark }}_{{ scala }}/{{ iceberg }}/${jar}"

@@ -544,31 +544,56 @@ jobs:
         run: docker compose logs
 
   test_pyspark:
-    name: PySpark ${{ matrix.tag }} ${{ matrix.pyspark-minor-version }} ubuntu-latest python-${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    name: PySpark ${{ matrix.tag }} ${{ matrix.os }} ${{ matrix.pyspark-minor-version }} ubuntu-latest python-${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - python-version: "3.9"
+          - os: ubuntu-latest
+            python-version: "3.9"
             pyspark-minor-version: "3.3"
             tag: local
             deps:
               - pyspark==3.3.4
               - pandas==1.5.3
               - numpy==1.23.5
-          - python-version: "3.11"
+          - os: windows-latest
+            python-version: "3.9"
+            pyspark-minor-version: "3.3"
+            tag: local
+            deps:
+              - pyspark==3.3.4
+              - pandas==1.5.3
+              - numpy==1.23.5
+          - os: ubuntu-latest
+            python-version: "3.11"
             pyspark-minor-version: "3.5"
             tag: local
             deps:
               - delta-spark==3.2.1
-          - python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.11"
+            pyspark-minor-version: "3.5"
+            tag: local
+            deps:
+              - delta-spark==3.2.1
+          - os: ubuntu-latest
+            python-version: "3.13"
             pyspark-minor-version: "3.5"
             tag: local
             deps:
               - setuptools==75.1.0
               - delta-spark==3.2.1
-          - python-version: "3.12"
+          - os: windows-latest
+            python-version: "3.13"
+            pyspark-minor-version: "3.5"
+            tag: local
+            deps:
+              - setuptools==75.1.0
+              - delta-spark==3.2.1
+          - os: ubuntu-latest
+            python-version: "3.12"
             pyspark-minor-version: "3.5"
             SPARK_REMOTE: "sc://localhost:15002"
             tag: remote
