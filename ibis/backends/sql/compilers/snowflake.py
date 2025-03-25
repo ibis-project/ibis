@@ -417,6 +417,9 @@ $$""",
     def visit_TypeOf(self, op, *, arg):
         return self.f.typeof(self.f.to_variant(arg))
 
+    def visit_ArrayStringJoin(self, op, *, arg, sep):
+        return self.f.array_to_string(self.f.nullif(arg, self.f.array()), sep)
+
     def visit_ArrayRepeat(self, op, *, arg, times):
         return self.f.udf.array_repeat(arg, times)
 
