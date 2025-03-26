@@ -4716,13 +4716,19 @@ class Table(Expr, _FixedTextJupyterMixin):
         Parameters
         ----------
         name
-            The name to use for the frequency column. A suitable name will be
-            automatically generated if not provided.
+            The name to use for the frequency column.
+            If not provided, a suitable name will be generated.
 
         Returns
         -------
         Table
             Frequency table of this table's values.
+
+        See Also
+        --------
+        [`Table.topk`](./expression-tables.qmd#ibis.expr.types.relations.Table.topk)
+        [`Column.value_counts`](./expression-generic.qmd#ibis.expr.types.generic.Column.value_counts)
+        [`Column.topk`](./expression-generic.qmd#ibis.expr.types.generic.Column.topk)
 
         Examples
         --------
@@ -4772,6 +4778,87 @@ class Table(Expr, _FixedTextJupyterMixin):
         if name is None:
             name = "_".join(columns) + "_count"
         return self.group_by(columns).agg(lambda t: t.count().name(name))
+
+    def topk(self, k: int | None = None, *, name: str | None = None) -> ir.Table:
+        """Get the most frequent values of this table.
+
+        Parameters
+        ----------
+        k
+            Number of top values to return.
+            If `None`, all values are returned in descending order.
+        name
+            The name to use for the frequency column.
+            If not provided, a suitable name will be generated.
+
+        Returns
+        -------
+        Table
+            Frequency table of this table's values.
+
+        See Also
+        --------
+        [`Table.value_counts`](./expression-tables.qmd#ibis.expr.types.relations.Table.value_counts)
+        [`Column.topk`](./expression-generic.qmd#ibis.expr.types.generic.Column.topk)
+        [`Column.value_counts`](./expression-generic.qmd#ibis.expr.types.generic.Column.value_counts)
+
+        Examples
+        --------
+        >>> from ibis import examples, selectors as s
+        >>> ibis.options.interactive = True
+        >>> t = examples.penguins.fetch().select("species", "island", "sex", "year")
+        >>> t.head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ species ┃ island    ┃ sex    ┃ year  ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ string  │ string    │ string │ int64 │
+        ├─────────┼───────────┼────────┼───────┤
+        │ Adelie  │ Torgersen │ male   │  2007 │
+        │ Adelie  │ Torgersen │ female │  2007 │
+        │ Adelie  │ Torgersen │ female │  2007 │
+        │ Adelie  │ Torgersen │ NULL   │  2007 │
+        │ Adelie  │ Torgersen │ female │  2007 │
+        └─────────┴───────────┴────────┴───────┘
+        >>> t.topk().order_by(ibis.desc("species_island_sex_year_count"), s.all() & ~s.index[-1])
+        ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ species   ┃ island ┃ sex    ┃ year  ┃ species_island_sex_year_count ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string    │ string │ string │ int64 │ int64                         │
+        ├───────────┼────────┼────────┼───────┼───────────────────────────────┤
+        │ Gentoo    │ Biscoe │ male   │  2008 │                            23 │
+        │ Gentoo    │ Biscoe │ female │  2008 │                            22 │
+        │ Gentoo    │ Biscoe │ male   │  2009 │                            21 │
+        │ Gentoo    │ Biscoe │ female │  2009 │                            20 │
+        │ Gentoo    │ Biscoe │ male   │  2007 │                            17 │
+        │ Gentoo    │ Biscoe │ female │  2007 │                            16 │
+        │ Chinstrap │ Dream  │ female │  2007 │                            13 │
+        │ Chinstrap │ Dream  │ male   │  2007 │                            13 │
+        │ Chinstrap │ Dream  │ female │  2009 │                            12 │
+        │ Chinstrap │ Dream  │ male   │  2009 │                            12 │
+        │ …         │ …      │ …      │     … │                             … │
+        └───────────┴────────┴────────┴───────┴───────────────────────────────┘
+        >>> t.topk(3, name="n")
+        ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ species ┃ island ┃ sex    ┃ year  ┃ n     ┃
+        ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ string  │ string │ string │ int64 │ int64 │
+        ├─────────┼────────┼────────┼───────┼───────┤
+        │ Gentoo  │ Biscoe │ male   │  2008 │    23 │
+        │ Gentoo  │ Biscoe │ female │  2008 │    22 │
+        │ Gentoo  │ Biscoe │ male   │  2009 │    21 │
+        └─────────┴────────┴────────┴───────┴───────┘
+        """
+        columns = self.columns
+        if name is None:
+            name = "_".join(columns) + "_count"
+        in_desc = (
+            self.group_by(columns)
+            .agg(lambda t: t.count().name(name))
+            .order_by(ibis.desc(name))
+        )
+        if k is not None:
+            in_desc = in_desc.limit(k)
+        return in_desc
 
     def unnest(
         self, column, /, *, offset: str | None = None, keep_empty: bool = False

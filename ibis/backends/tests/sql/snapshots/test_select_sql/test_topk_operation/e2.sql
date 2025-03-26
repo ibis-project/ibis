@@ -11,13 +11,13 @@ SEMI JOIN (
   FROM (
     SELECT
       "t0"."city",
-      COUNT(*) AS "CountStar(tbl)"
+      COUNT(*) AS "city_count"
     FROM "tbl" AS "t0"
     GROUP BY
       1
   ) AS "t2"
   ORDER BY
-    "t2"."CountStar(tbl)" DESC
+    "t2"."city_count" DESC
   LIMIT 10
 ) AS "t5"
   ON "t1"."city" = "t5"."city"
