@@ -55,6 +55,11 @@ def operation(op, **_):
     raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
+@translate.register(ops.Alias)
+def alias(op, **kw):
+    return translate(op.arg, **kw).alias(op.name)
+
+
 @translate.register(ops.DatabaseTable)
 def table(op, **_):
     return op.source._tables[op.name]
