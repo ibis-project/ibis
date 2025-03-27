@@ -1,6 +1,38 @@
 ---
 ---
 
+## [10.4.0](https://github.com/ibis-project/ibis/compare/10.3.1...10.4.0) (2025-03-27)
+
+### Features
+
+* **api:** make topk() and value_counts() more flexible ([#10928](https://github.com/ibis-project/ibis/issues/10928)) ([329ad7c](https://github.com/ibis-project/ibis/commit/329ad7c1a1500b21c02b70dd06973fe1c89aa6a3))
+* **datatypes:** add string length ([#11045](https://github.com/ibis-project/ibis/issues/11045)) ([61dd7ea](https://github.com/ibis-project/ibis/commit/61dd7ea887d0c5ca60999a7f72acd355fd0af0dd))
+* **flink:** support `StringSplit` ([#11049](https://github.com/ibis-project/ibis/issues/11049)) ([b83a88e](https://github.com/ibis-project/ibis/commit/b83a88eaa60a70fa9fea24608d74b91345acebdc))
+* **postgres:** add support for reading enum types as strings ([#11028](https://github.com/ibis-project/ibis/issues/11028)) ([dfb818a](https://github.com/ibis-project/ibis/commit/dfb818ac06554c9de093911cd0639753b83b09f5))
+* **postgres:** implement support for `asof_join` API via a lateral join ([#11024](https://github.com/ibis-project/ibis/issues/11024)) ([8eb9d33](https://github.com/ibis-project/ibis/commit/8eb9d336b10af8ea1476beff68e2c8e7aa5ff9ac))
+* **ux:** include type of bad value in SignatureValidationError ([#10988](https://github.com/ibis-project/ibis/issues/10988)) ([a706afa](https://github.com/ibis-project/ibis/commit/a706afa9a9269f1f624e1630785e33cff0a016ad))
+
+### Bug Fixes
+
+* **backends:** array string join on empty array now consistently returns `None` across all supported backends ([#10913](https://github.com/ibis-project/ibis/issues/10913)) ([a02a392](https://github.com/ibis-project/ibis/commit/a02a3921e69170e99841f4fad3f97ff6f1867f39))
+* **polars:** use engine="streaming" instead of streaming=True ([e1bbe55](https://github.com/ibis-project/ibis/commit/e1bbe55d2e634c70fbb0917ae55ff1a9c27fcbc8))
+* **postgres:** clean up leaky cursor coming from `raw_sql` ([#11001](https://github.com/ibis-project/ibis/issues/11001)) ([c3097a7](https://github.com/ibis-project/ibis/commit/c3097a75d5d7b397a79702c50750c80c4cb51ec2))
+
+### Documentation
+
+* add introduction to pandas users for adding columns with single text values (literal) ([#11010](https://github.com/ibis-project/ibis/issues/11010)) ([6032e71](https://github.com/ibis-project/ibis/commit/6032e71b996bf5d39c0f4277dacb2255cf6b8f56))
+* fix to_* methods docstrings typos ([#11013](https://github.com/ibis-project/ibis/issues/11013)) ([523e4c3](https://github.com/ibis-project/ibis/commit/523e4c30f8e3f6416cfdfb57f1dcbfa7fe4cb889))
+* **ir:** remove extra backticks to fix formatting ([7c3e5fc](https://github.com/ibis-project/ibis/commit/7c3e5fc2cc31f13a7b0928c0d1ca028d52032ca2))
+
+### Refactors
+
+* **postgres:** use raw sql for `get_schema` invocation to simplify code ([#11037](https://github.com/ibis-project/ibis/issues/11037)) ([9b25ab1](https://github.com/ibis-project/ibis/commit/9b25ab1be5b43d8b1933a093500547710e122729))
+
+### Performance
+
+* **duckdb:** optimize generated SQL for ArrayConcat ([#10999](https://github.com/ibis-project/ibis/issues/10999)) ([d38db7e](https://github.com/ibis-project/ibis/commit/d38db7e125468aac65d506580e6c8f966e5d3c54))
+* **struct:** drop unused fields on Struct.__getitem__ ([#10996](https://github.com/ibis-project/ibis/issues/10996)) ([e5fe34c](https://github.com/ibis-project/ibis/commit/e5fe34c0167efb77e35c43311ca779659b5168d9))
+
 ## [10.3.1](https://github.com/ibis-project/ibis/compare/10.3.0...10.3.1) (2025-03-14)
 
 ### Bug Fixes
