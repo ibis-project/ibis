@@ -86,7 +86,6 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.ReductionVectorizedUDF,
         ops.RegexSplit,
         ops.RowID,
-        ops.StringSplit,
         ops.Translate,
         ops.StringToTime,
     )
@@ -108,6 +107,7 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.RegexSearch: "regexp",
         ops.StrRight: "right",
         ops.StringLength: "char_length",
+        ops.StringSplit: "split",
         ops.StringToDate: "to_date",
         ops.StringToTimestamp: "to_timestamp",
         ops.TypeOf: "typeof",

@@ -565,7 +565,6 @@ def uses_java_re(t):
                     "mssql",
                     "druid",
                     "oracle",
-                    "flink",
                     "exasol",
                 ],
                 raises=com.OperationNotDefinedError,
