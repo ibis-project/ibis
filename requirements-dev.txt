@@ -82,12 +82,12 @@ google-cloud-bigquery==3.31.0
 google-cloud-bigquery-storage==2.30.0
 google-cloud-core==2.4.3
 google-cloud-storage==3.1.0
-google-crc32c==1.7.0
+google-crc32c==1.7.1
 google-resumable-media==2.7.2
 googleapis-common-protos==1.69.2
 graphviz==0.20.3
 greenlet==3.1.1 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
-griffe==1.6.2
+griffe==1.6.3
 grpcio==1.71.0
 grpcio-status==1.71.0
 h11==0.14.0
@@ -245,7 +245,7 @@ requests-oauthlib==2.0.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.9.4
-rpds-py==0.23.1
+rpds-py==0.24.0
 rsa==4.9
 ruff==0.11.2
 s3fs==2025.3.0
