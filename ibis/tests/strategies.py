@@ -72,7 +72,9 @@ def numeric_dtypes(nullable=_nullable):
 
 
 def string_dtype(nullable=_nullable):
-    return st.builds(dt.String, nullable=nullable)
+    return st.builds(
+        dt.String, length=st.none() | st.integers(min_value=0), nullable=nullable
+    )
 
 
 def binary_dtype(nullable=_nullable):

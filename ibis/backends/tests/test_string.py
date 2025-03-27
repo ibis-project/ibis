@@ -9,7 +9,6 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     MySQLOperationalError,
@@ -124,7 +123,7 @@ def is_text_type(x):
 
 def test_string_col_is_unicode(alltypes, df):
     dtype = alltypes.string_col.type()
-    assert dtype == dt.String(nullable=dtype.nullable)
+    assert dtype.is_string()
     assert df.string_col.map(is_text_type).all()
     result = alltypes.string_col.execute()
     assert result.map(is_text_type).all()

@@ -103,8 +103,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
           bigint_col      int64
           float_col       float64
           double_col      float64
-          date_string_col string
-          string_col      string
+          date_string_col string(256)
+          string_col      string(256)
           timestamp_col   timestamp(3)
           year            int32
           month           int32
@@ -267,16 +267,19 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
         drop_view = sg.exp.Drop(kind="VIEW", this=table).sql(dialect)
         describe = sg.exp.Describe(this=table).sql(dialect)
         type_mapper = self.compiler.type_mapper
+        con = self.con
         with self._safe_raw_sql(create_view):
             try:
-                return sch.Schema(
-                    {
-                        name: type_mapper.from_string(_VARCHAR_REGEX.sub(r"\1", typ))
-                        for name, typ, *_ in self.con.execute(describe).fetchall()
-                    }
-                )
+                rows = con.execute(describe).fetchall()
             finally:
-                self.con.execute(drop_view)
+                con.execute(drop_view)
+
+        return sch.Schema(
+            {
+                name: type_mapper.from_string(_VARCHAR_REGEX.sub(r"\1", typ))
+                for name, typ, *_ in rows
+            }
+        )
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
