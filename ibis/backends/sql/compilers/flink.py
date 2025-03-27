@@ -107,7 +107,6 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.RegexSearch: "regexp",
         ops.StrRight: "right",
         ops.StringLength: "char_length",
-        ops.StringSplit: "split",
         ops.StringToDate: "to_date",
         ops.StringToTimestamp: "to_timestamp",
         ops.TypeOf: "typeof",

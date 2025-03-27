@@ -21,7 +21,6 @@ class DatabricksCompiler(PySparkCompiler):
         ops.BitXor: "bit_xor",
         ops.TypeOf: "typeof",
         ops.RandomUUID: "uuid",
-        ops.StringSplit: "split",
     }
 
     UNSUPPORTED_OPS = (
