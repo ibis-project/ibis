@@ -257,9 +257,9 @@ class Schema(Concrete, Coercible, MapSet):
         >>> columns = sch.to_sqlglot(dialect="duckdb")
         >>> columns
         [ColumnDef(
-          this=Identifier(this=a, quoted=True),
+          this=Identifier(this='a', quoted=True),
           kind=DataType(this=Type.BIGINT)), ColumnDef(
-          this=Identifier(this=b, quoted=True),
+          this=Identifier(this='b', quoted=True),
           kind=DataType(this=Type.VARCHAR),
           constraints=[
             ColumnConstraint(
