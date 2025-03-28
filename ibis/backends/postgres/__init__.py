@@ -134,34 +134,58 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
 
         con = self.con
         with con.cursor() as cursor, con.transaction():
-            cursor.execute(create_stmt_sql)
-            cursor.executemany(sql, data)
+            cursor.execute(create_stmt_sql).executemany(sql, data)
 
     @contextlib.contextmanager
     def begin(self):
         with (con := self.con).cursor() as cursor, con.transaction():
             yield cursor
 
-    def _fetch_from_cursor(
-        self, cursor: psycopg.Cursor, schema: sch.Schema
-    ) -> pd.DataFrame:
+    def execute(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame | pd.Series | Any:
+        """Execute an Ibis expression and return a pandas `DataFrame`, `Series`, or scalar.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
+
+        Returns
+        -------
+        DataFrame | Series | scalar
+            The result of the expression execution.
+        """
         import pandas as pd
 
         from ibis.backends.postgres.converter import PostgresPandasData
 
-        try:
-            df = pd.DataFrame.from_records(
-                cursor.fetchall(), columns=schema.names, coerce_float=True
-            )
-        except Exception:
-            # clean up the cursor if we fail to create the DataFrame
-            #
-            # in the sqlite case failing to close the cursor results in
-            # artificially locked tables
-            cursor.close()
-            raise
+        self._run_pre_execute_hooks(expr)
+
+        table = expr.as_table()
+        sql = self.compile(table, params=params, limit=limit, **kwargs)
+
+        con = self.con
+        with con.cursor() as cur, con.transaction():
+            rows = cur.execute(sql).fetchall()
+
+        schema = table.schema()
+        df = pd.DataFrame.from_records(rows, columns=schema.names, coerce_float=True)
         df = PostgresPandasData.convert_table(df, schema)
-        return df
+        return expr.__pandas_result__(df)
 
     @property
     def version(self):
@@ -352,43 +376,34 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             catalog = catalog.sql(dialect=self.name)
             conditions.append(C.table_catalog.eq(sge.convert(catalog)))
 
-        sql = (
-            sg.select("table_name")
+        sg_expr = (
+            sg.select(C.table_name)
             .from_(sg.table("tables", db="information_schema"))
             .distinct()
             .where(*conditions)
-            .sql(self.dialect)
         )
 
+        # Include temporary tables only if no database has been explicitly
+        # specified to avoid temp tables showing up in all calls to
+        # `list_tables`
+        if db == "public":
+            # postgres temporary tables are stored in a separate schema so we need
+            # to independently grab them and return them along with the existing
+            # results
+            sg_expr = sg_expr.union(
+                sg.select(C.table_name)
+                .from_(sg.table("tables", db="information_schema"))
+                .distinct()
+                .where(C.table_type.eq(sge.convert("LOCAL TEMPORARY"))),
+                distinct=False,
+            )
+
+        sql = sg_expr.sql(self.dialect)
         con = self.con
         with con.cursor() as cursor, con.transaction():
             out = cursor.execute(sql).fetchall()
-
-        # Include temporary tables only if no database has been explicitly specified
-        # to avoid temp tables showing up in all calls to `list_tables`
-        if db == "public":
-            out += self._fetch_temp_tables()
 
         return self._filter_with_like(map(itemgetter(0), out), like)
-
-    def _fetch_temp_tables(self):
-        # postgres temporary tables are stored in a separate schema
-        # so we need to independently grab them and return them along with
-        # the existing results
-
-        sql = (
-            sg.select("table_name")
-            .from_(sg.table("tables", db="information_schema"))
-            .distinct()
-            .where(C.table_type.eq(sge.convert("LOCAL TEMPORARY")))
-            .sql(self.dialect)
-        )
-
-        con = self.con
-        with con.cursor() as cursor, con.transaction():
-            out = cursor.execute(sql).fetchall()
-
-        return out
 
     def list_catalogs(self, *, like: str | None = None) -> list[str]:
         # http://dba.stackexchange.com/a/1304/58517
@@ -400,9 +415,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         )
         con = self.con
         with con.cursor() as cursor, con.transaction():
-            catalogs = list(map(itemgetter(0), cursor.execute(cats)))
+            catalogs = cursor.execute(cats).fetchall()
 
-        return self._filter_with_like(catalogs, like)
+        return self._filter_with_like(map(itemgetter(0), catalogs), like)
 
     def list_databases(
         self, *, like: str | None = None, catalog: str | None = None
@@ -414,16 +429,16 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         )
         con = self.con
         with con.cursor() as cursor, con.transaction():
-            databases = list(map(itemgetter(0), cursor.execute(dbs)))
+            databases = cursor.execute(dbs).fetchall()
 
-        return self._filter_with_like(databases, like)
+        return self._filter_with_like(map(itemgetter(0), databases), like)
 
     @property
     def current_catalog(self) -> str:
         sql = sg.select(sg.func("current_database")).sql(self.dialect)
         con = self.con
         with con.cursor() as cursor, con.transaction():
-            (db,) = cursor.execute(sql).fetchone()
+            [(db,)] = cursor.execute(sql).fetchall()
         return db
 
     @property
@@ -431,7 +446,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         sql = sg.select(sg.func("current_schema")).sql(self.dialect)
         con = self.con
         with con.cursor() as cursor, con.transaction():
-            (schema,) = cursor.execute(sql).fetchone()
+            [(schema,)] = cursor.execute(sql).fetchall()
         return schema
 
     def function(self, name: str, *, database: str | None = None) -> Callable:
@@ -698,20 +713,20 @@ ORDER BY a.attnum ASC"""
         this_no_catalog = sg.table(name, quoted=quoted)
 
         con = self.con
+        stmts = [create_stmt]
+
+        if query is not None:
+            stmts.append(sge.Insert(this=table_expr, expression=query).sql(dialect))
+
+        if overwrite:
+            stmts.append(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
+            stmts.append(
+                f"ALTER TABLE IF EXISTS {table_expr.sql(dialect)} RENAME TO {this_no_catalog.sql(dialect)}"
+            )
+
         with con.cursor() as cursor, con.transaction():
-            cursor.execute(create_stmt)
-
-            if query is not None:
-                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(dialect)
-                cursor.execute(insert_stmt)
-
-            if overwrite:
-                cursor.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect)
-                )
-                cursor.execute(
-                    f"ALTER TABLE IF EXISTS {table_expr.sql(dialect)} RENAME TO {this_no_catalog.sql(dialect)}"
-                )
+            for stmt in stmts:
+                cursor.execute(stmt)
 
         if schema is None:
             return self.table(name, database=database)
@@ -743,7 +758,8 @@ ORDER BY a.attnum ASC"""
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
 
-        with (con := self.con).cursor() as cursor, con.transaction():
+        con = self.con
+        with con.cursor() as cursor, con.transaction():
             yield cursor.execute(query, **kwargs)
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
@@ -757,6 +773,7 @@ ORDER BY a.attnum ASC"""
             cursor.execute(query, **kwargs)
         except Exception:
             cursor.close()
+            con.rollback()
             raise
         else:
             return cursor
@@ -783,8 +800,8 @@ ORDER BY a.attnum ASC"""
                 con.cursor(name=util.gen_name("postgres_cursor")) as cursor,
                 con.transaction(),
             ):
-                cursor.execute(query)
-                while batch := cursor.fetchmany(chunk_size):
+                cur = cursor.execute(query)
+                while batch := cur.fetchmany(chunk_size):
                     yield pa.RecordBatch.from_pandas(
                         pd.DataFrame(batch, columns=columns), schema=schema
                     )

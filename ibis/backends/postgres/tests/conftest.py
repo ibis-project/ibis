@@ -64,7 +64,6 @@ class TestConf(ServiceBackendTest):
             user=PG_USER,
             password=PG_PASS,
             database=IBIS_TEST_POSTGRES_DB,
-            application_name="Ibis test suite",
             **kw,
         )
 

@@ -33,7 +33,7 @@ import ibis.expr.types as ir
 from ibis.backends.tests.errors import PsycoPgOperationalError
 from ibis.util import gen_name
 
-pytest.importorskip("psycopg")
+psycopg = pytest.importorskip("psycopg")
 
 POSTGRES_TEST_DB = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
 IBIS_POSTGRES_HOST = os.environ.get("IBIS_TEST_POSTGRES_HOST", "localhost")
@@ -57,6 +57,17 @@ def test_literal_execute(con):
     expr = ibis.literal("1234")
     result = con.execute(expr)
     assert result == "1234"
+
+
+def test_raw_sql(con):
+    with con.raw_sql("SELECT 1 AS foo") as cur:
+        assert cur.fetchall() == [(1,)]
+    con.con.commit()
+    with (
+        pytest.raises(psycopg.errors.UndefinedTable),
+        con.raw_sql("SELECT foo FROM bar"),
+    ):
+        pass
 
 
 def test_simple_aggregate_execute(alltypes):
@@ -288,10 +299,9 @@ def test_pgvector_type_load(con, vector_size):
     result = ["[1,2,3]", "[4,5,6]"]
     assert t.to_pyarrow().column("embedding").to_pylist() == result
 
-    query = f"""
-    DROP TABLE IF EXISTS itemsvrandom;
-    CREATE TABLE itemsvrandom (id bigserial PRIMARY KEY, embedding vector({vector_size}));
-    """
+    query = f"""\
+DROP TABLE IF EXISTS itemsvrandom;
+CREATE TABLE itemsvrandom (id bigserial PRIMARY KEY, embedding vector({vector_size}))"""
 
     with con._safe_raw_sql(query):
         pass
@@ -427,7 +437,7 @@ def test_create_geospatial_table_with_srid(con):
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def enum_table(con):
     name = gen_name("enum_table")
     with con._safe_raw_sql("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')") as cur:
