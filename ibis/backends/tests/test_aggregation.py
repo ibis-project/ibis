@@ -901,11 +901,13 @@ def test_quantile(
     assert pytest.approx(result) == expected
 
 
-@pytest.mark.parametrize("filtered", [False, True])
+@pytest.mark.parametrize(
+    "filtered", [param(False, id="filtered"), param(True, id="unfiltered")]
+)
 @pytest.mark.parametrize(
     "multi",
     [
-        False,
+        param(False, id="single"),
         param(
             True,
             marks=[
@@ -920,6 +922,7 @@ def test_quantile(
                     reason="array types not supported",
                 ),
             ],
+            id="multi",
         ),
     ],
 )
