@@ -1412,7 +1412,6 @@ def test_26(catalog_sales, customer_demographics, date_dim, item, promotion):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["datafusion"], reason="internal error")
 def test_27(store_sales, customer_demographics, date_dim, store, item):
     results = (
         store_sales.join(customer_demographics, [("ss_cdemo_sk", "cd_demo_sk")])

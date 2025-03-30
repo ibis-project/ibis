@@ -71,17 +71,7 @@ def test_scalar_param_array(con):
     assert result == len(value)
 
 
-@pytest.mark.notimpl(
-    [
-        "datafusion",
-        "impala",
-        "postgres",
-        "risingwave",
-        "druid",
-        "oracle",
-        "exasol",
-    ]
-)
+@pytest.mark.notimpl(["impala", "postgres", "risingwave", "druid", "oracle", "exasol"])
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
