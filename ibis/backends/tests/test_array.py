@@ -1207,7 +1207,6 @@ def test_zip_null(con, fn):
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
-@pytest.mark.notimpl(["datafusion"], raises=Exception, reason="not yet supported")
 @pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,
