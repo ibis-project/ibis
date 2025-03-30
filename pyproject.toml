@@ -295,7 +295,7 @@ docs = [
   "py-cpuinfo>=9,<10",
   "quartodoc>=0.6.1,<1",
   "requests>=2,<3",
-  "rich>13.8.0,<14",
+  "rich>13.8.0,<15",
   "scikit-learn>=1.3,<2",
   "seaborn>=0.12.2,<1",
   "lonboard==0.10.4",
