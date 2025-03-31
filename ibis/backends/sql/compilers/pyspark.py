@@ -12,6 +12,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.pyspark.datatypes import PySparkType as PySparkTypeMapper
 from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PySparkType
 from ibis.backends.sql.dialects import PySpark
@@ -134,6 +135,11 @@ class PySparkCompiler(SQLGlotCompiler):
             return result
 
     def visit_Cast(self, op, *, arg, to):
+        if isinstance(arg, sge.Func) and arg.name.upper() == "FROM_JSON":
+            return self.f.from_json(
+                arg.expressions[0],
+                sge.Literal.string(PySparkTypeMapper.from_ibis(to).simpleString()),
+            )
         if to.is_json():
             if op.arg.dtype.is_string():
                 return arg
@@ -682,6 +688,9 @@ class PySparkCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)
+
+    def visit_ToJSONArray(self, op, *, arg):
+        return self.f.from_json(arg, sge.Literal.string("array<string>"))
 
 
 compiler = PySparkCompiler()
