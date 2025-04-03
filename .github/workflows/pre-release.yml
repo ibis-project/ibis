@@ -46,10 +46,10 @@ jobs:
 
       - name: publish pre-release wheel to test pypi index
         if: contains(steps.get-version.outputs.value, '.dev')
-        uses: pypa/gh-action-pypi-publish@v1.12.4
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc
         with:
           repository-url: https://test.pypi.org/legacy/
 
       - name: publish pre-release wheel to pypi
         if: contains(steps.get-version.outputs.value, '.dev')
-        uses: pypa/gh-action-pypi-publish@v1.12.4
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc
