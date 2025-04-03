@@ -38,5 +38,7 @@ jobs:
       - name: run semantic-release
         run: ./ci/release/run.sh
         env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.12.4

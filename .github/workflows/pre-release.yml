@@ -46,12 +46,10 @@ jobs:
 
       - name: publish pre-release wheel to test pypi index
         if: contains(steps.get-version.outputs.value, '.dev')
-        run: uv publish --publish-url https://test.pypi.org/legacy/
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@v1.12.4
+        with:
+          repository-url: https://test.pypi.org/legacy/
 
       - name: publish pre-release wheel to pypi
         if: contains(steps.get-version.outputs.value, '.dev')
-        run: uv publish
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@v1.12.4
