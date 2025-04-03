@@ -63,11 +63,9 @@ module.exports = {
     [
       "@semantic-release/exec",
       {
-        verifyConditionsCmd:
-          "ci/release/verify_conditions.sh ${options.dryRun}",
+        verifyConditionsCmd: "ci/release/verify_conditions.sh",
         verifyReleaseCmd: "ci/release/verify_release.sh ${nextRelease.version}",
-        prepareCmd: "ci/release/prepare.sh ${nextRelease.version}",
-        publishCmd: "ci/release/publish.sh"
+        prepareCmd: "ci/release/prepare.sh ${nextRelease.version}"
       }
     ],
     [
