@@ -1325,6 +1325,16 @@ class FlinkType(SqlglotType):
 class DatabricksType(SqlglotType):
     dialect = "databricks"
 
+    @classmethod
+    def _from_ibis_JSON(cls, dtype: dt.JSON) -> sge.DataType:
+        return sge.DataType(this=typecode.VARIANT)
+
+    @classmethod
+    def _from_sqlglot_VARIANT(cls, nullable: bool | None = None) -> sge.DataType:
+        return dt.JSON(nullable=nullable)
+
+    _from_sqlglot_JSON = _from_sqlglot_VARIANT
+
 
 class AthenaType(SqlglotType):
     dialect = "athena"
