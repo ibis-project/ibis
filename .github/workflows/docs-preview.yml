@@ -51,11 +51,8 @@ jobs:
 
       - name: Get all changed qmd files
         id: changed-qmd-files
-        uses: tj-actions/changed-files@v46
-        with:
-          # Avoid using single or double quotes for multiline patterns
-          files: |
-            **.qmd
+        run: |
+          echo "CHANGED_QMD_FILES=($(git diff-tree --no-commit-id --name-only -r HEAD | grep -P '\.qmd$'))" >> "$GITHUB_ENV"
 
       - name: get preview links
         env:
@@ -64,7 +61,7 @@ jobs:
         run: |
           {
             echo 'Docs preview: https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app'
-            for file in ${ALL_CHANGED_FILES}; do
+            for file in "${CHANGED_QMD_FILES[@]}"; do
               link="${file#docs/}"
               echo "- [${file}](${PREVIEW_URL}/${link%.qmd})"
             done
