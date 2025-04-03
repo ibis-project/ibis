@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import collections
 from keyword import iskeyword
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from public import public
 
@@ -17,13 +17,12 @@ if TYPE_CHECKING:
 
     import ibis.expr.datatypes as dt
     import ibis.expr.types as ir
-    from ibis.expr.types.typing import V
 
 
 @public
 @deferrable
 def struct(
-    value: Iterable[tuple[str, V]] | Mapping[str, V],
+    value: Iterable[tuple[str, Value | Any]] | Mapping[str, Value | Any],
     *,
     type: str | dt.DataType | None = None,
 ) -> StructValue:
