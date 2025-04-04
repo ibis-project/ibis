@@ -428,3 +428,25 @@ def test_read_garbage(con, monkeypatch):
 
     with pytest.raises((FileNotFoundError, duckdb.IOException)):
         con.read_parquet("garbage_notafile")
+
+
+@pytest.mark.parametrize("i", range(5))
+def test_stateful_data_is_loaded_once(
+    con, data_dir, tmp_path_factory, worker_id, mocker, i
+):
+    TestConf = pytest.importorskip(f"ibis.backends.{con.name}.tests.conftest").TestConf
+    if not TestConf.stateful:
+        pytest.skip("TestConf is not stateful, skipping test")
+
+    spy = mocker.spy(TestConf, "stateless_load")
+
+    for _ in range(2):
+        TestConf.load_data(data_dir, tmp_path_factory, worker_id)
+
+    # also verify that it's been called once, by checking that there's at least
+    # one table
+    assert con.list_tables()
+
+    # Ensure that the stateful load is called only once the one time it is
+    # called is from the `con` input, which *should* work across processes
+    spy.assert_not_called()
