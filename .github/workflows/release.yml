@@ -10,6 +10,9 @@ concurrency:
   # so cancel-in-progress is false
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest

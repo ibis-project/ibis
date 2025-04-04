@@ -22,6 +22,10 @@ on:
       - main
       - "*.x.x"
   merge_group:
+
+permissions:
+  contents: none
+
 jobs:
   test_core:
     runs-on: ubuntu-latest
