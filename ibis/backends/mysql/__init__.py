@@ -535,8 +535,11 @@ class Backend(SQLBackend, CanCreateDatabase, PyArrowExampleLoader):
     ) -> pa.ipc.RecordBatchReader:
         import pyarrow as pa
 
+        from ibis.formats.pyarrow import to_pa_compatible
+
         self._run_pre_execute_hooks(expr)
 
+        expr = to_pa_compatible(expr)
         schema = expr.as_table().schema()
         with self._safe_raw_sql(
             self.compile(expr, limit=limit, params=params)

@@ -1007,6 +1007,9 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl, PyArrowExampleLoader):
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
+        from ibis.formats.pyarrow import to_pa_compatible
+
+        expr = to_pa_compatible(expr)
         ibis_table = expr.as_table()
 
         if params is None and limit is None:
