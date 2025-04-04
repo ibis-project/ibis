@@ -465,3 +465,10 @@ def test_create_table_with_nulls(con, kwargs):
 
     with pytest.raises(com.IbisTypeError, match="NULL typed columns"):
         con.create_table(name, **kwargs)
+
+
+def test_create_temp_table_in_nondefault_schema():
+    con = ibis.duckdb.connect()
+    con.create_database("my_schema")
+    con.raw_sql("USE my_schema")
+    con.create_table("foo", {"id": [1, 2, 3]}, temp=True)

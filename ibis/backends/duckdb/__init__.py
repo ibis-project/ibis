@@ -155,6 +155,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
         if temp:
             properties.append(sge.TemporaryProperty())
             catalog = "temp"
+            database = "main"
 
         if obj is not None:
             if not isinstance(obj, ir.Expr):
