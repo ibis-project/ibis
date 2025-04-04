@@ -5,6 +5,10 @@ on:
     # "At 00:00 on day-of-month 1 in every 3rd month."
     - cron: "0 0 1 */3 *"
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   rotate_private_key:
     if: github.repository_owner == 'ibis-project'

@@ -24,6 +24,9 @@ on:
       - "*.x.x"
   merge_group:
 
+permissions:
+  contents: none
+
 jobs:
   nix:
     runs-on: ${{ matrix.os }}

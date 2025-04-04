@@ -26,6 +26,10 @@ on:
       - main
       - "*.x.x"
   merge_group:
+
+permissions:
+  contents: none
+
 jobs:
   test_bigquery_lite:
     runs-on: ubuntu-latest

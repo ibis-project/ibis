@@ -15,6 +15,9 @@ concurrency:
   # so cancel-in-progress is false
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   pre-release:
     if: github.repository_owner == 'ibis-project'
