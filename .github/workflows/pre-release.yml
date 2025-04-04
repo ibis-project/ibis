@@ -15,13 +15,13 @@ concurrency:
   # so cancel-in-progress is false
   cancel-in-progress: false
 
-permissions:
-  contents: read
-
 jobs:
   pre-release:
     if: github.repository_owner == 'ibis-project'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
