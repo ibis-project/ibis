@@ -52,6 +52,8 @@ jobs:
         uses: pypa/gh-action-pypi-publish@db8f07d3871a0a180efa06b95d467625c19d5d5f
         with:
           repository-url: https://test.pypi.org/legacy/
+          # no need for attestations here, no one should be installing ibis from test-pypi
+          attestations: false
 
       - name: publish pre-release wheel to pypi
         if: contains(steps.get-version.outputs.value, '.dev')
