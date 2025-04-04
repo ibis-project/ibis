@@ -49,19 +49,19 @@ jobs:
         run: |
           echo "id=pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
 
-      - name: Get all changed qmd files
-        id: changed-qmd-files
+      - name: get changed files
+        id: changed-files
         run: |
-          echo "CHANGED_QMD_FILES=($(git diff-tree --no-commit-id --name-only -r HEAD | grep -P '\.qmd$'))" >> "$GITHUB_ENV"
+          changed_qmd_files="$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -P '\.qmd$' | xargs)"
+          echo "changed_qmd_files=${changed_qmd_files}" >> "$GITHUB_OUTPUT"
 
       - name: get preview links
         env:
-          ALL_CHANGED_FILES: ${{ steps.changed-qmd-files.outputs.all_changed_files }}
           PREVIEW_URL: "https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app"
         run: |
           {
             echo 'Docs preview: https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app'
-            for file in "${CHANGED_QMD_FILES[@]}"; do
+            for file in ${{ steps.changed-files.outputs.changed_qmd_files }}; do
               link="${file#docs/}"
               echo "- [${file}](${PREVIEW_URL}/${link%.qmd})"
             done
