@@ -6,12 +6,14 @@ on:
     types: [opened, edited, synchronize, reopened]
 
 jobs:
-  commitlint:
+  verify-commitlint:
     name: Check PR title conforms to semantic-release
-    runs-on: ubuntu-latest
     permissions:
-      issues: write
-      pull-requests: write
+      contents: read
+    runs-on: ubuntu-latest
+    outputs:
+      lint_output: ${{ steps.lint.outputs.lint_output }}
+      failed: ${{ steps.lint.outputs.failed }}
     steps:
       - name: install node
         uses: actions/setup-node@v4
@@ -23,14 +25,11 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: install deps
-        run: npm install "@commitlint/config-conventional"
-
       - name: run commitlint
         id: lint
         run: |
           failed=0
-          if ! lint_output=$(npx commitlint --extends "@commitlint/config-conventional" --verbose <<< "$COMMIT_MSG" 2>&1); then
+          if ! lint_output=$(npx --yes commitlint --extends "@commitlint/config-conventional" --verbose <<< "$COMMIT_MSG" 2>&1); then
               failed=1
           fi
           {
@@ -45,16 +44,24 @@ jobs:
 
             ${{ github.event.pull_request.body }}
 
+  comment-if-necessary:
+    permissions:
+      pull-requests: write
+    name: Check PR title conforms to semantic-release
+    runs-on: ubuntu-latest
+    needs:
+      - verify-commitlint
+    if: needs.verify-commitlint.outputs.failed == '1'
+    steps:
       - name: find existing comment
-        if: steps.lint.outputs.failed == '1'
         uses: peter-evans/find-comment@v3
-        id: fc
+        id: find-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-includes: "ACTION NEEDED"
 
       - name: post a message if the pull request title and body fail `commitlint`
-        if: steps.lint.outputs.failed == '1' && steps.fc.outputs.comment-body == ''
+        if: steps.find-comment.outputs.comment-body == ''
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -73,9 +80,8 @@ jobs:
             The commitlint output is:
 
             ```
-            ${{ steps.lint.outputs.lint_output }}
+            ${{ needs.verify-commitlint.outputs.lint_output }}
             ```
 
-      - name: fail the check if commitlint failed
-        if: steps.lint.outputs.failed == '1'
-        run: exit 1 # templating not allowed here it seems
+      - name: fail the check because commitlint failed
+        run: exit 1
