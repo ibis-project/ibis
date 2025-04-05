@@ -2754,7 +2754,7 @@ docs = [
     { name = "altair", specifier = ">=5.0.1,<6" },
     { name = "griffe", specifier = "<2" },
     { name = "ipykernel", specifier = ">=6.25.1,<7" },
-    { name = "itables", specifier = ">=1.6.3,<2.3" },
+    { name = "itables", specifier = ">=1.6.3,<2.4" },
     { name = "jupyter-cache", specifier = ">=1.0.0,<2" },
     { name = "jupyterlab", specifier = ">=4.2.5,<5" },
     { name = "jupyterlab-night", specifier = ">=0.4.6,<1" },
@@ -3005,7 +3005,7 @@ wheels = [
 
 [[package]]
 name = "itables"
-version = "2.2.5"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipython", version = "8.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -3015,9 +3015,9 @@ dependencies = [
     { name = "numpy", version = "2.2.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pandas" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/18/359fc46f2874290843a4ba2c089d0109874cd2d73863d0e69fd54a5e9532/itables-2.2.5.tar.gz", hash = "sha256:838ed4783da0b6481b9062c362b8a331aa56f48d6c90e0f6dc76a0488a316049", size = 2436699 }
+sdist = { url = "https://files.pythonhosted.org/packages/84/e4/627d9c41d07a7117a2147e44c96e6bdc579c31d6889d3adb5630fbd189fa/itables-2.3.0.tar.gz", hash = "sha256:ce570e3f888e7baf5e9cb0416a2e1c981c09c49e81d2fb80e8bc574b169c250b", size = 2259074 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/aa/dd/8976761076632f492f0d25502e348f41f343423d36270dc32f323b9155bc/itables-2.2.5-py3-none-any.whl", hash = "sha256:d0d33ce427c6c84d4063998650323eb65ccddb47a5505ef1ad3f563580dc101d", size = 1407043 },
+    { url = "https://files.pythonhosted.org/packages/e5/c7/ae4ddcae20b2a7cfafa40c737d0d003c94804b68f3c168653deb468427e7/itables-2.3.0-py3-none-any.whl", hash = "sha256:1d78a38d04c13d30437a0544c16b572d2f38f5e480810f3964c4f32e558b7ee3", size = 2289497 },
 ]
 
 [[package]]

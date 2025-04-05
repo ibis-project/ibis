@@ -288,7 +288,7 @@ docs = [
   # addressed
   "griffe<2",
   "ipykernel>=6.25.1,<7",
-  "itables>=1.6.3,<2.3",
+  "itables>=1.6.3,<2.4",
   "nbclient>=0.8.0,<1",
   "plotly>=5.16.1,<6",
   "plotnine>=0.12.2,<1",
