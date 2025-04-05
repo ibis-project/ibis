@@ -57,6 +57,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
 
     def do_connect(
         self,
+        *,
         user: str,
         password: str,
         host: str = "localhost",
@@ -65,6 +66,10 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
         **kwargs: Any,
     ) -> None:
         """Create an Ibis client connected to an Exasol database.
+
+        This method is useful if you have individual connection parameters.
+        If you have a connection URL then you can connect directly using
+        `ibis.connect(f"exasol://{user}:{password}@{host}:{port}")`.
 
         Parameters
         ----------
