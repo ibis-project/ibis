@@ -1351,10 +1351,11 @@ class Backend(SQLBackend, NoExampleLoader):
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
-        from ibis.formats.pyarrow import PyArrowData
+        from ibis.formats.pyarrow import PyArrowData, to_pa_compatible
 
         self._run_pre_execute_hooks(expr)
 
+        expr = to_pa_compatible(expr)
         table_expr = expr.as_table()
         output = pa.Table.from_pandas(
             self.execute(table_expr, params=params, limit=limit, **kwargs),
@@ -1373,9 +1374,12 @@ class Backend(SQLBackend, NoExampleLoader):
         chunk_size: int = 1000000,
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
+        from ibis.formats.pyarrow import to_pa_compatible
+
         pa = self._import_pyarrow()
         self._run_pre_execute_hooks(expr)
 
+        expr = to_pa_compatible(expr)
         pa_table = self.to_pyarrow(
             expr.as_table(), params=params, limit=limit, **kwargs
         )
