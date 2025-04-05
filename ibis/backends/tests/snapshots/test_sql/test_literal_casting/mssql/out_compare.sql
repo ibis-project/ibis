@@ -1,0 +1,3 @@
+SELECT
+  IIF([t0].[x] > 12.34, CAST(1 AS TINYINT), CAST(0 AS TINYINT)) AS [Greater(x, 12.34)]
+FROM [t] AS [t0]
