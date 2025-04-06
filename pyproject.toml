@@ -446,6 +446,8 @@ filterwarnings = [
   # snowflake has decided once again to start warning about pyarrow versions,
   # for what seems to be a niche case only affecting azure users
   "ignore:You have an incompatible version of 'pyarrow' installed:UserWarning",
+  # shapely geos is deprecated
+  "ignore:The 'shapely\\.geos' module is deprecated, and will be removed in a future version:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [

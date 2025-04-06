@@ -199,6 +199,9 @@ def test_geospatial_buffer_point(zones, zones_gdf):
     gtm.assert_geoseries_equal(buffer.to_pandas(), gp_buffer, check_crs=False)
 
 
+@pytest.mark.xfail_version(
+    duckdb=["shapely>=2.1.0"], raises=AssertionError, reason="numerics are different"
+)
 def test_geospatial_buffer(zones, zones_gdf):
     buffer = zones.geom.buffer(100.0)
     # geopandas resolution default is 16, while duckdb is 8.

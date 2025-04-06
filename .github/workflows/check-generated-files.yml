@@ -45,8 +45,6 @@ jobs:
 
       - name: install uv
         uses: astral-sh/setup-uv@v5.4.1
-        with:
-          version: "0.4.x"
 
       - name: update apt-get
         run: sudo apt-get update -y -q
