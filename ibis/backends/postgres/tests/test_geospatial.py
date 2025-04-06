@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 import numpy as np
 import pytest
 from numpy import testing
@@ -81,7 +83,14 @@ def test_literal_geospatial_explicit(expr, assert_sql):
         shp_polygon_0,
         shp_multipolygon_0,
         shp_multilinestring_0,
-        shp_multipoint_0,
+        param(
+            shp_multipoint_0,
+            marks=pytest.mark.xfail(
+                sys.version_info[:2] < (3, 10),
+                raises=AssertionError,
+                reason="different code generated for python 3.9",
+            ),
+        ),
     ],
 )
 def test_literal_geospatial_inferred(shp, assert_sql):
@@ -388,7 +397,16 @@ def test_geo_dataframe(geotable):
             id="polygon_single",
         ),
         # Multipart geometries (2D)
-        param("multipoint", ((10, 40), (40, 30), (20, 20), (30, 10)), id="multipoint"),
+        param(
+            "multipoint",
+            ((10, 40), (40, 30), (20, 20), (30, 10)),
+            id="multipoint",
+            marks=pytest.mark.xfail(
+                sys.version_info[:2] < (3, 10),
+                raises=AssertionError,
+                reason="different code generated for python 3.9",
+            ),
+        ),
         param(
             "multilinestring",
             (((10, 10), (20, 20), (10, 40)), ((40, 40), (30, 30), (40, 20), (30, 10))),

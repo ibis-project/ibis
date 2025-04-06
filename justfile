@@ -53,6 +53,7 @@ update *packages:
         --group tests \
         --group docs \
         --no-hashes \
+        --no-annotate \
         --no-header
 
 # show all backends
