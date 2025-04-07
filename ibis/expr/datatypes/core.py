@@ -22,6 +22,7 @@ import toolz
 from public import public
 from typing_extensions import Self, get_args, get_origin
 
+from ibis import util
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenOrderedDict, MapSet
 from ibis.common.dispatch import lazy_singledispatch
@@ -127,8 +128,12 @@ class DataType(Concrete, Coercible):
 
     # TODO(kszucs): should remove it, only used internally
     @property
+    @util.deprecated(
+        instead="use dtype_instance.__class__.__name__",
+        as_of="10.5.0",
+        removed_in="11.0.0",
+    )
     def name(self) -> str:
-        """Return the name of the data type."""
         return self.__class__.__name__
 
     @classmethod
