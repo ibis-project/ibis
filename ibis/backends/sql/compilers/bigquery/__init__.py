@@ -206,7 +206,7 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     def to_sqlglot(
         self,
-        expr: ir.Expr,
+        x: ir.Expr | dt.DataType,
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
@@ -217,8 +217,8 @@ class BigQueryCompiler(SQLGlotCompiler):
 
         Parameters
         ----------
-        expr
-            Ibis expression
+        x
+            Ibis expression or data type.
         limit
             For expressions yielding result sets; retrieve at most this number
             of values/rows. Overrides any limit already set on the expression.
@@ -236,9 +236,11 @@ class BigQueryCompiler(SQLGlotCompiler):
             backend.
 
         """
-        sql = super().to_sqlglot(expr, limit=limit, params=params)
+        sql = super().to_sqlglot(x, limit=limit, params=params)
+        if isinstance(x, dt.DataType):
+            return sql
 
-        table_expr = expr.as_table()
+        table_expr = x.as_table()
 
         memtable_names = frozenset(
             op.name for op in table_expr.op().find(ops.InMemoryTable)

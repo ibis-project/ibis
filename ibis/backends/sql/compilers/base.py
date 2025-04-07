@@ -577,14 +577,17 @@ class SQLGlotCompiler(abc.ABC):
 
     def to_sqlglot(
         self,
-        expr: ir.Expr,
+        x: ir.Expr | dt.DataType,
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-    ):
+    ) -> sge.Expression:
         import ibis
 
-        table_expr = expr.as_table()
+        if isinstance(x, dt.DataType):
+            return self.type_mapper.from_ibis(x)
+
+        table_expr = x.as_table()
 
         if limit == "default":
             limit = ibis.options.sql.default_limit
