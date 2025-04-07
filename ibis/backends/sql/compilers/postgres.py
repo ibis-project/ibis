@@ -124,12 +124,15 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def to_sqlglot(
         self,
-        expr: ir.Expr,
+        x: ir.Expr | dt.DataType,
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-    ):
-        table_expr = expr.as_table()
+    ) -> sg.Expression:
+        if isinstance(x, dt.DataType):
+            return super().to_sqlglot(x)
+
+        table_expr = x.as_table()
         geocols = table_expr.schema().geospatial
         conversions = {name: table_expr[name].as_ewkb() for name in geocols}
 

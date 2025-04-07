@@ -109,14 +109,16 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def to_sqlglot(
         self,
-        expr: ir.Expr,
+        x: ir.Expr | dt.DataType,
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-    ):
-        sql = super().to_sqlglot(expr, limit=limit, params=params)
+    ) -> sge.Expression:
+        sql = super().to_sqlglot(x, limit=limit, params=params)
+        if isinstance(x, dt.DataType):
+            return sql
 
-        table_expr = expr.as_table()
+        table_expr = x.as_table()
         geocols = table_expr.schema().geospatial
 
         if not geocols:

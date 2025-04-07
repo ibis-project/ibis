@@ -158,15 +158,17 @@ class MSSQLCompiler(SQLGlotCompiler):
 
     def to_sqlglot(
         self,
-        expr: ir.Expr,
+        x: ir.Expr | dt.DataType,
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
+    ) -> sge.Expression:
         import ibis
 
-        table_expr = expr.as_table()
+        if isinstance(x, dt.DataType):
+            return super().to_sqlglot(x)
+
+        table_expr = x.as_table()
         conversions = {
             name: ibis.ifelse(table_expr[name], 1, 0).cast(dt.boolean)
             for name, typ in table_expr.schema().items()

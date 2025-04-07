@@ -769,8 +769,14 @@ class OracleType(SqlglotType):
 
     @classmethod
     def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
-        nullable = " NOT NULL" if not dtype.nullable else ""
-        return "VARCHAR2(4000)" + nullable
+        return sge.DataType(
+            this=typecode.VARCHAR,
+            expressions=[
+                sge.DataTypeParam(
+                    this=sge.convert(dtype.length if dtype.length is not None else 4000)
+                )
+            ],
+        )
 
 
 class SnowflakeType(SqlglotType):

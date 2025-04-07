@@ -197,6 +197,33 @@ def test_to_sql_default_backend(con, snapshot, monkeypatch):
     snapshot.assert_match(ibis.to_sql(expr), "to_sql.sql")
 
 
+@pytest.mark.parametrize(
+    "dialect",
+    [
+        # Just check these two to make sure that everything is plumbed through
+        pytest.param("sqlite", marks=pytest.mark.xfail(reason="arrays not supported")),
+        "duckdb",
+    ],
+)
+def test_to_sql_dtype_default_backend(dialect):
+    dt = ibis.dtype("array<int64>")
+    original_backend = ibis.get_backend()
+    try:
+        ibis.set_backend(dialect)
+        sql = ibis.to_sql(dt)
+    except:
+        ibis.set_backend(original_backend)
+        raise
+    assert "BIGINT[]" == sql
+
+
+@pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
+def test_to_sql_dtype(backend_name, snapshot):
+    dt = ibis.dtype("string")
+    sql = ibis.to_sql(dt, dialect=backend_name)
+    snapshot.assert_match(sql, "to_sql_dtype.sql")
+
+
 @pytest.mark.notimpl(["polars"], raises=ValueError, reason="not a SQL backend")
 def test_many_subqueries(backend_name, snapshot):
     def query(t, group_cols):
