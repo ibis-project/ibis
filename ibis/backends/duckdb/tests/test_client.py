@@ -469,6 +469,7 @@ def test_create_table_with_nulls(con, kwargs):
 
 def test_create_temp_table_in_nondefault_schema():
     con = ibis.duckdb.connect()
-    con.create_database("my_schema")
-    con.raw_sql("USE my_schema")
+    database = gen_name("nondefault_schema")
+    con.create_database(database)
+    con.con.execute(f"USE {database}")
     con.create_table("foo", {"id": [1, 2, 3]}, temp=True)
