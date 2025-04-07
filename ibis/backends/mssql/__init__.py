@@ -88,6 +88,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, PyArrowExampleLoa
 
     def do_connect(
         self,
+        *,
         host: str = "localhost",
         user: str | None = None,
         password: str | None = None,

@@ -339,6 +339,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         self,
         project_id: str | None = None,
         dataset_id: str = "",
+        *,
         credentials: google.auth.credentials.Credentials | None = None,
         application_name: str | None = None,
         auth_local_webserver: bool = True,
