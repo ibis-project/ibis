@@ -60,7 +60,7 @@ defusedxml==0.7.1
 deltalake==0.25.5
 distlib==0.3.9
 doit==0.36.0
-duckdb==1.2.1
+duckdb==1.2.2
 dunamai==1.23.1
 et-xmlfile==2.0.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
@@ -94,7 +94,7 @@ h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
 humanize==4.12.2
-hypothesis==6.130.9
+hypothesis==6.130.10
 identify==2.6.9
 idna==3.10
 importlib-metadata==8.6.1
@@ -103,8 +103,8 @@ impyla==0.21.0
 iniconfig==2.1.0
 ipykernel==6.29.5
 ipython==8.18.1 ; python_full_version < '3.10'
-ipython==8.34.0 ; python_full_version == '3.10.*'
-ipython==9.0.2 ; python_full_version >= '3.11'
+ipython==8.35.0 ; python_full_version == '3.10.*'
+ipython==9.1.0 ; python_full_version >= '3.11'
 ipython-pygments-lexers==1.1.1 ; python_full_version >= '3.11'
 ipywidgets==8.1.5
 isoduration==20.11.0
@@ -148,7 +148,7 @@ mizani==0.13.2 ; python_full_version >= '3.10'
 multidict==6.3.2
 mypy-extensions==1.0.0
 mysqlclient==2.2.7
-narwhals==1.33.0
+narwhals==1.34.0
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -226,7 +226,7 @@ pytest-cov==6.1.1
 pytest-deadfixtures==2.2.1
 pytest-mock==3.14.0
 pytest-randomly==3.16.0
-pytest-repeat==0.9.3
+pytest-repeat==0.9.4
 pytest-snapshot==0.9.0
 pytest-timeout==2.3.1
 pytest-xdist==3.6.1
