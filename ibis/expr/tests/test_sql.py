@@ -44,9 +44,23 @@ ORDER BY
     snapshot.assert_match(code, "decompiled.py")
 
 
+def test_parse_sql_limited_join(snapshot):
+    sql = """
+SELECT
+  *,
+  first_name as first
+FROM employee
+JOIN call ON
+  employee.id = call.employee_id
+LIMIT 3"""
+    expr = ibis.parse_sql(sql, catalog)
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
+
+
 def test_parse_sql_multiple_joins(snapshot):
     sql = """
-SELECT *
+SELECT employee.*, call.*, call_outcome.outcome_text, call_outcome.id as id_right
 FROM employee
 JOIN call
   ON employee.id = call.employee_id
@@ -113,6 +127,21 @@ WHERE call_attempts > (
   SELECT avg(call_attempts) AS mean
   FROM call
 )"""
+    expr = ibis.parse_sql(sql, catalog)
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "decompiled.py")
+
+
+def test_parse_sql_join_subquery(snapshot):
+    sql = """
+SELECT *
+FROM call
+INNER JOIN (
+  SELECT
+    AVG(call.call_attempts) AS mean
+  FROM call
+) AS subq
+  ON subq.mean < call.call_attempts"""
     expr = ibis.parse_sql(sql, catalog)
     code = ibis.decompile(expr, format=True)
     snapshot.assert_match(code, "decompiled.py")

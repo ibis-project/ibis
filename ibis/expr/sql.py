@@ -71,6 +71,25 @@ class Catalog(dict[str, sch.Schema]):
         return Catalog({**self, **updates})
 
 
+def apply_limit(table, step):
+    """Applies a LIMIT, if applicable."""
+
+    if not isinstance(step.limit, int):
+        return table
+
+    return table.limit(step.limit)
+
+
+def apply_projections(table, step, catalog):
+    """Applies a SELECT projection, if applicable."""
+
+    if not step.projections:
+        return table
+
+    projs = [convert(proj, catalog=catalog) for proj in step.projections]
+    return table.select(projs)
+
+
 @singledispatch
 def convert(step, catalog):
     raise TypeError(type(step))
@@ -86,12 +105,8 @@ def convert_scan(scan, catalog):
         pred = convert(scan.condition, catalog=catalog)
         table = table.filter(pred)
 
-    if scan.projections:
-        projs = [convert(proj, catalog=catalog) for proj in scan.projections]
-        table = table.select(projs)
-
-    if isinstance(scan.limit, int):
-        table = table.limit(scan.limit)
+    table = apply_projections(table, scan, catalog)
+    table = apply_limit(table, scan)
 
     return table
 
@@ -156,8 +171,7 @@ def convert_sort(sort, catalog):
         ]
         table = table.select(projs)
 
-    if isinstance(sort.limit, int):
-        table = table.limit(sort.limit)
+    table = apply_limit(table, sort)
 
     return table
 
@@ -202,6 +216,9 @@ def convert_join(join, catalog):
     if join.condition:
         predicate = convert(join.condition, catalog=catalog)
         left_table = left_table.filter(predicate)
+
+    left_table = apply_projections(left_table, join, catalog)
+    left_table = apply_limit(left_table, join)
 
     catalog[left_name] = left_table
 
