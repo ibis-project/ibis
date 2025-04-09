@@ -161,19 +161,6 @@ class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader):
     def list_tables(
         self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """List the tables in the database.
-
-        If `database` is None, the current database is used, and temporary
-        tables are included in the result.
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database.
-        """
         if database is None:
             database = "main"
             schemas = [database, "temp"]

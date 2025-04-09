@@ -212,22 +212,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
     def list_tables(
         self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
-        """List the tables in the database.
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            The database location to perform the list against.
-
-            By default uses the current `database` (`self.current_database`) and
-            `catalog` (`self.current_catalog`).
-
-            To specify a table in a separate catalog, you can pass in the
-            catalog and database as a string `"catalog.database"`, or as a tuple of
-            strings `("catalog", "database")`.
-        """
         table_loc = self._to_sqlglot_table(database)
 
         query = "SHOW TABLES"

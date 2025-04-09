@@ -629,15 +629,17 @@ class CanListCatalog(abc.ABC):
         A collection of `database` is referred to as a `catalog`.
 
         These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
+        backend (where available), regardless of the terminology the backend uses.
+
+        See the
+        [Table Heirarchy Concepts Guide](/concepts/backend-table-heirarchy.qmd)
+        for more info.
         :::
 
         Parameters
         ----------
         like
-            A pattern in Python's regex format to filter returned database
-            names.
+            A pattern in Python's regex format to filter returned catalog names.
 
         Returns
         -------
@@ -659,8 +661,11 @@ class CanCreateCatalog(CanListCatalog):
         A collection of `database` is referred to as a `catalog`.
 
         These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
+        backend (where available), regardless of the terminology the backend uses.
+
+        See the
+        [Table Heirarchy Concepts Guide](/concepts/backend-table-heirarchy.qmd)
+        for more info.
         :::
 
         Parameters
@@ -682,8 +687,11 @@ class CanCreateCatalog(CanListCatalog):
         A collection of `database` is referred to as a `catalog`.
 
         These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
+        backend (where available), regardless of the terminology the backend uses.
+
+        See the
+        [Table Heirarchy Concepts Guide](/concepts/backend-table-heirarchy.qmd)
+        for more info.
         :::
 
         Parameters
@@ -709,8 +717,11 @@ class CanListDatabase(abc.ABC):
         A collection of `database` is referred to as a `catalog`.
 
         These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
+        backend (where available), regardless of the terminology the backend uses.
+
+        See the
+        [Table Heirarchy Concepts Guide](/concepts/backend-table-heirarchy.qmd)
+        for more info.
         :::
 
         Parameters
@@ -737,6 +748,20 @@ class CanCreateDatabase(CanListDatabase):
     ) -> None:
         """Create a database named `name` in `catalog`.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of the terminology the backend uses.
+
+        See the
+        [Table Heirarchy Concepts Guide](/concepts/backend-table-heirarchy.qmd)
+        for more info.
+        :::
+
         Parameters
         ----------
         name
@@ -755,13 +780,27 @@ class CanCreateDatabase(CanListDatabase):
     ) -> None:
         """Drop the database with `name` in `catalog`.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of the terminology the backend uses.
+
+        See the
+        [Table Heirarchy Concepts Guide](/concepts/backend-table-heirarchy.qmd)
+        for more info.
+        :::
+
         Parameters
         ----------
         name
             Name of the schema to drop.
         catalog
-            Name of the catalog to drop the database from. If `None`, the
-            current catalog is used.
+            Name of the catalog to drop the database from.
+            If `None`, the current catalog is used.
         force
             If `False`, an exception is raised if the database does not exist.
 
@@ -981,73 +1020,105 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
     def list_tables(
         self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
-        """Return the list of table names in the current database.
+        """The table names that match `like` in the given `database`.
 
         For some backends, the tables may be files in a directory,
         or other equivalent entities in a SQL database.
-
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
 
         Parameters
         ----------
         like
             A pattern in Python's regex format.
         database
-            The database from which to list tables.
-            If not provided, the current database is used.
+            The database, or (catalog, database) from which to list tables.
+
+            For backends that support a single-level table hierarchy,
+            you can pass in a string like `"bar"`.
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
+            If not provided, the current database
+            (and catalog, if applicable for this backend) is used.
+
+            See the
+            [Table Heirarchy Concepts Guide](/concepts/backend-table-heirarchy.qmd)
+            for more info.
 
         Returns
         -------
         list[str]
             The list of the table names that match the pattern `like`.
 
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.duckdb.connect()
+        >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
+        >>> con.list_tables()
+        ['foo']
+        >>> bar = con.create_view("bar", foo)
+        >>> con.list_tables()
+        ['bar', 'foo']
+        >>> con.create_database("my_database")
+        >>> con.list_tables(database="my_database")
+        []
+        >>> con.raw_sql("CREATE TABLE my_database.baz (a INTEGER)")  # doctest: +ELLIPSIS
+        <duckdb.duckdb.DuckDBPyConnection object at 0x...>
+        >>> con.list_tables(database="my_database")
+        ['baz']
         """
 
     @abc.abstractmethod
     def table(
         self, name: str, /, *, database: tuple[str, str] | str | None = None
     ) -> ir.Table:
-        """Construct a table expression.
-
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
+        """Construct a table expression from the corresponding table in the backend.
 
         Parameters
         ----------
         name
             Table name
         database
-            Database name
-            If not provided, the current database is used.
+            The database, or (catalog, database) from which to get the table.
+
+            For backends that support a single-level table hierarchy,
+            you can pass in a string like `"bar"`.
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
+            If not provided, the current database
+            (and catalog, if applicable for this backend) is used.
+
+            See the
+            [Table Heirarchy Concepts Guide](/concepts/backend-table-heirarchy.qmd)
+            for more info.
 
         Returns
         -------
         Table
             Table expression
 
+        Examples
+        --------
+        >>> import ibis
+        >>> backend = ibis.duckdb.connect()
+
+        Get the "foo" table from the current database
+        (and catalog, if applicable for this backend):
+
+        >>> backend.table("foo")  # doctest: +SKIP
+
+        Get the "foo" table from the "bar" database
+        (in duckdb's language they would say the "bar" schema,
+        in SQL this would be `"bar"."foo"`)
+
+        >>> backend.table("foo", database="bar")  # doctest: +SKIP
+
+        Get the "foo" table from the "bar" database, within the "baz" catalog
+        (in duckdb's language they would say the "bar" schema, and "baz" database,
+        in SQL this would be `"baz"."bar"."foo"`)
+
+        >>> backend.table("foo", database=("baz", "bar"))  # doctest: +SKIP
         """
 
     @property
