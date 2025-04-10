@@ -164,9 +164,12 @@ class DruidCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
-        if from_.is_integer() and to.is_timestamp():
+        if from_.is_numeric() and to.is_timestamp():
             # seconds since UNIX epoch
-            return self.f.millis_to_timestamp(arg * 1_000)
+            millis = arg * 1_000
+            if not from_.is_integer():
+                millis = self.cast(millis, dt.int64)
+            return self.f.millis_to_timestamp(millis)
         elif from_.is_string() and to.is_timestamp():
             return self.f.time_parse(arg)
         return super().visit_Cast(op, arg=arg, to=to)

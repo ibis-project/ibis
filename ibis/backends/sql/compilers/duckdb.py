@@ -419,7 +419,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         if to.is_interval():
             func = self.f[f"to_{_INTERVAL_SUFFIXES[to.unit.short]}"]
             return func(sg.cast(arg, to=self.type_mapper.from_ibis(dt.int32)))
-        elif to.is_timestamp() and dtype.is_integer():
+        elif to.is_timestamp() and dtype.is_numeric():
             return self.f.to_timestamp(arg)
         elif to.is_geospatial():
             if dtype.is_binary():

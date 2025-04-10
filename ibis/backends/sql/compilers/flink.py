@@ -413,6 +413,10 @@ class FlinkCompiler(SQLGlotCompiler):
         from_ = op.arg.dtype
         if to.is_timestamp():
             if from_.is_numeric():
+                if not from_.is_integer():
+                    raise com.UnsupportedOperationError(
+                        "Flink does not support casting non-integer numbers to timestamp"
+                    )
                 arg = self.f.from_unixtime(arg)
             if (tz := to.timezone) is not None:
                 return self.f.to_timestamp(
