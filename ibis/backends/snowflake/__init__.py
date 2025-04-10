@@ -239,7 +239,7 @@ IMMUTABLE
 AS
 $$ {defn["source"]} $$"""
 
-    def do_connect(self, create_object_udfs: bool = True, **kwargs: Any):
+    def do_connect(self, *, create_object_udfs: bool = True, **kwargs: Any):
         """Connect to Snowflake.
 
         Parameters
