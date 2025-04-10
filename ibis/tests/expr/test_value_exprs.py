@@ -1537,11 +1537,20 @@ def test_array_map():
 
     r1 = arr.map(_ * 2)
     r2 = arr.map(lambda x: x * 2.0)
-    r3 = arr.map(functools.partial(lambda a, b: a + b, b=2))
+    r3 = arr.map(lambda x=2: x * 2.0)
+    r4 = arr.map(lambda a, idx: a + idx)
+    r5 = arr.map(functools.partial(lambda a, idx: a + idx, idx=2))
+    r6 = arr.map(functools.partial(lambda a, idx, c: a + c, c=2))
 
     assert r1.type() == dt.Array(dt.int16)
     assert r2.type() == dt.Array(dt.float64)
-    assert r3.type() == dt.Array(dt.int16)
+    assert r3.type() == dt.Array(dt.float64)
+    assert r4.type() == dt.Array(dt.int64)
+    assert r5.type() == dt.Array(dt.int64)
+    assert r6.type() == dt.Array(dt.int16)
+
+    with pytest.raises(TypeError, match="missing 1 required positional argument"):
+        arr.map(lambda a, idx, c: a + 2)
 
     with pytest.raises(TypeError, match="must be a Deferred or Callable"):
         # Non-deferred expressions aren't allowed
@@ -1551,13 +1560,22 @@ def test_array_map():
 def test_array_filter():
     arr = ibis.array([1, 2, 3])
 
-    r1 = arr.filter(lambda x: x < 0)
-    r2 = arr.filter(_ < 0)
-    r3 = arr.filter(functools.partial(lambda a, b: a == b, b=2))
+    r1 = arr.filter(_ < 0)
+    r2 = arr.filter(lambda x: x < 0)
+    r3 = arr.filter(lambda x=4: x < 0)
+    r4 = arr.filter(lambda x, idx: x < idx)
+    r5 = arr.filter(functools.partial(lambda a, idx: a == idx, idx=2))
+    r6 = arr.filter(functools.partial(lambda a, idx, c: a == c, c=2))
 
     assert r1.type() == arr.type()
     assert r2.type() == arr.type()
     assert r3.type() == arr.type()
+    assert r4.type() == arr.type()
+    assert r5.type() == arr.type()
+    assert r6.type() == arr.type()
+
+    with pytest.raises(TypeError, match="missing 1 required positional argument"):
+        arr.filter(lambda a, idx, c: a + 2)
 
     with pytest.raises(TypeError, match="must be a Deferred or Callable"):
         # Non-deferred expressions aren't allowed
