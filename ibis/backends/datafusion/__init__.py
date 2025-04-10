@@ -345,20 +345,6 @@ class Backend(
     def list_tables(
         self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """Return the list of table names in the current database.
-
-        Parameters
-        ----------
-        like
-            A pattern in Python's regex format.
-        database
-            Unused in the datafusion backend.
-
-        Returns
-        -------
-        list[str]
-            The list of the table names that match the pattern `like`.
-        """
         database = database or "public"
         query = (
             sg.select("table_name")
