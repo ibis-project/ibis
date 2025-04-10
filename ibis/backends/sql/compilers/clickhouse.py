@@ -125,7 +125,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
             return None
         return spec
 
-    def visit_Cast(self, op, *, arg, to):
+    def visit_Cast(self, op, *, arg, to: dt.DataType):
+        from_: dt.DataType = op.arg.dtype
         _interval_cast_suffixes = {
             "s": "Second",
             "m": "Minute",
@@ -140,6 +141,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
         if to.is_interval():
             suffix = _interval_cast_suffixes[to.unit.short]
             return self.f[f"toInterval{suffix}"](arg)
+        if to.is_timestamp() and from_.is_floating():
+            raise com.UnsupportedOperationError(
+                "ClickHouse drops the fractional part of the number when casting "
+                "floating types to datetime. https://github.com/ClickHouse/ClickHouse/issues/29386"
+            )
 
         result = self.cast(arg, to)
         if (timezone := getattr(to, "timezone", None)) is not None:

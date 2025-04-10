@@ -115,6 +115,21 @@ class TimestampUnit(TemporalUnit):
     MICROSECOND = "us"
     NANOSECOND = "ns"
 
+    @staticmethod
+    def to_scale(unit: str) -> int:
+        """Convert to number of digits after decimal (eg "ms" -> 3)."""
+        unit = TimestampUnit(unit)
+        if unit == TimestampUnit.SECOND:
+            return 0
+        elif unit == TimestampUnit.MILLISECOND:
+            return 3
+        elif unit == TimestampUnit.MICROSECOND:
+            return 6
+        elif unit == TimestampUnit.NANOSECOND:
+            return 9
+        else:
+            raise ValueError(f"Invalid unit {unit}")
+
 
 @public
 class IntervalUnit(TemporalUnit):
