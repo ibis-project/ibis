@@ -372,6 +372,9 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
            without pandas in the middle.
 
         """
+        from ibis.formats.pyarrow import to_pa_compatible
+
+        expr = to_pa_compatible(expr)
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
 

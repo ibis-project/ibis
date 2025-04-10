@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import contextlib
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
@@ -18,6 +18,10 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow.dataset as ds
+
+    import ibis
+
+    TableOrValue = TypeVar("TableOrValue", bound=ibis.Table | ibis.Value)
 
 
 _from_pyarrow_types = {
@@ -384,3 +388,42 @@ directly by running `ibis.memtable(my_dataset.to_table())`."""
 
     def to_polars(self, schema: Schema) -> pa.Table:
         raise com.UnsupportedOperationError(self.ERROR_MESSAGE)
+
+
+def to_pa_compatible(table_or_val: TableOrValue) -> TableOrValue:
+    """Convert (on the backend) an Ibis table or value to a PyArrow compatible type.
+
+    If we have a uuid type on the backend, we are going to represent it on the
+    pyarrow side as a string. So, since we are going to cast it to a string anyway,
+    we might as well do it on the backend side. Similarly for JSON types.
+
+    This avoids some issues where we have a type (eg uuid)
+    which is not supported by pyarrow, and we run into trouble materializing
+    it to pyarrow. See https://github.com/ibis-project/ibis/issues/8532
+    """
+    import ibis
+
+    if isinstance(table_or_val, ibis.Table):
+        return _to_pa_compatible_table(table_or_val)
+    elif isinstance(table_or_val, ibis.Value):
+        return _to_pa_compatible_value(table_or_val)
+    else:
+        raise TypeError(f"Unsupported type: {type(table_or_val)}")
+
+
+def _to_pa_compatible_value(val: ibis.Value) -> ibis.Value:
+    original_type = val.type()
+    pa_compatible_type = PyArrowType.to_ibis(PyArrowType.from_ibis(original_type))
+    if original_type != pa_compatible_type:
+        val = val.cast(pa_compatible_type)
+    return val
+
+
+def _to_pa_compatible_table(table: ibis.Table) -> ibis.Table:
+    original_schema = table.schema()
+    pa_compatible_schema = PyArrowSchema.to_ibis(
+        PyArrowSchema.from_ibis(original_schema)
+    )
+    if original_schema != pa_compatible_schema:
+        table = table.cast(pa_compatible_schema)
+    return table

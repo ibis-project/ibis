@@ -399,8 +399,11 @@ class SQLBackend(BaseBackend):
         RecordBatchReader
             Collection of pyarrow `RecordBatch`s.
         """
+        from ibis.formats.pyarrow import to_pa_compatible
+
         pa = self._import_pyarrow()
 
+        expr = to_pa_compatible(expr)
         schema = expr.as_table().schema()
         array_type = schema.as_struct().to_pyarrow()
         arrays = (

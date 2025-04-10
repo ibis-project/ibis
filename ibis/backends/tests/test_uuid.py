@@ -67,3 +67,20 @@ def test_uuid_unique_each_row(con):
         con.tables.functional_alltypes.mutate(uuid=ibis.uuid()).limit(2).uuid.nunique()
     )
     assert expr.execute() == 2
+
+
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=NotImplementedError,
+    reason="need to implement PolarsType.from_ibis()",
+)
+@pytest.mark.notimpl(
+    ["mssql"],
+    raises=AssertionError,
+    reason="We expect a lowercase UUID, but MSSQL returns uppercase",
+)
+def test_uuid_pyarrow(con):
+    pa = pytest.importorskip("pyarrow")
+    expr = ibis.literal(RAW_TEST_UUID, type=dt.uuid)
+    result = con.to_pyarrow(expr)
+    assert result == pa.scalar(RAW_TEST_UUID)
