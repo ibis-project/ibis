@@ -7,7 +7,6 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.annotations import EMPTY
 from ibis.common.deferred import Deferred, deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
 
@@ -391,12 +390,7 @@ class ArrayValue(Value):
             index = None
             resolve = func.resolve
         elif callable(func):
-            names = (
-                key
-                for key, value in inspect.signature(func).parameters.items()
-                # arg is already bound
-                if value.default is EMPTY
-            )
+            names = (name for name in inspect.signature(func).parameters.keys())
             name = next(names)
             index = next(names, None)
             resolve = func
