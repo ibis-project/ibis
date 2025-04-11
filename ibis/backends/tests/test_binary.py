@@ -16,7 +16,7 @@ BINARY_BACKEND_TYPES = {
     "trino": "varbinary",
     "postgres": "bytea",
     "risingwave": "bytea",
-    "flink": "BINARY(1) NOT NULL",
+    "flink": "BYTES NOT NULL",
     "databricks": "binary",
     "athena": "varbinary",
 }
