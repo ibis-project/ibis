@@ -221,7 +221,8 @@ def test_signature_from_callable_with_positional_only_arguments(snapshot):
     assert sig.validate(test, args=(2, 3), kwargs=dict(c=4)) == {"a": 2, "b": 3, "c": 4}
 
     with pytest.raises(
-        ValidationError, match=r"test\(1, b=2\).+positional[- ]only.+keyword"
+        ValidationError,
+        match=r"test\(1, b=2\).+positional[- ]only.+(?:keyword)?(?: argument)?",
     ):
         sig.validate(test, args=(1,), kwargs=dict(b=2))
 
