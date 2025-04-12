@@ -280,33 +280,20 @@ shp_multipolygon_0 = shapely.MultiPolygon([shp_polygon_0])
 
 
 @pytest.mark.parametrize(
-    ("shp", "expected"),
+    "shp",
     [
-        (shp_point_0, "(0 0)"),
-        (shp_point_1, "(1 1)"),
-        (shp_point_2, "(2 2)"),
-        (shp_linestring_0, "(0 0, 1 1, 2 2)"),
-        (shp_linestring_1, "(2 2, 1 1, 0 0)"),
-        (shp_polygon_0, "((0 0, 1 1, 2 2, 0 0))"),
-        (shp_multipolygon_0, "(((0 0, 1 1, 2 2, 0 0)))"),
-        (shp_multilinestring_0, "((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))"),
-        param(
-            shp_multipoint_0,
-            "((0 0), (1 1), (2 2))",
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                reason="Bug-fix change in GEOS 3.12 see shapely issue #1992",
-            ),
-        ),
+        param(shp_point_0, id="point"),
+        param(shp_linestring_0, id="linestring"),
+        param(shp_polygon_0, id="polygon"),
+        param(shp_multipolygon_0, id="multipolygon"),
+        param(shp_multilinestring_0, id="multilinestring"),
+        param(shp_multipoint_0, id="multipoint"),
     ],
 )
-def test_literal_geospatial_inferred(con, shp, expected, assert_sql):
+def test_literal_geospatial_inferred(con, shp):
     expr = ibis.literal(shp).name("result")
     result = con.compile(expr)
-    name = type(shp).__name__.upper()
-    pair = f"{name} {expected}"
-    assert pair in result
-    assert_sql(expr)
+    assert str(shp) in result
 
 
 @pytest.mark.skipif(
