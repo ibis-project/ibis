@@ -4,8 +4,13 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
+from ibis.conftest import IS_SPARK_REMOTE
+
 try:
-    from pyspark.errors.exceptions.captured import AnalysisException
+    if IS_SPARK_REMOTE:
+        from pyspark.errors.exceptions.connect import AnalysisException
+    else:
+        from pyspark.errors.exceptions.captured import AnalysisException
 except ImportError:
     from pyspark.sql.utils import AnalysisException
 
