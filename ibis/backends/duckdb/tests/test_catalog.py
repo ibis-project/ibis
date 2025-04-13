@@ -71,3 +71,10 @@ def test_read_write_external_catalog(con, external_duckdb_file, monkeypatch):
 def test_raise_if_catalog_and_temp(con):
     with pytest.raises(exc.UnsupportedArgumentError):
         con.create_table("some_table", obj="hi", temp=True, database="ext.main")
+
+
+def test_cant_drop_database_external_catalog(con, external_duckdb_file):
+    ddb_path, _ = external_duckdb_file
+    con.attach(ddb_path, name="foobar")
+    with pytest.raises(exc.UnsupportedOperationError):
+        con.drop_database("main", catalog="ext")

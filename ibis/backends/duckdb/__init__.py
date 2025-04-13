@@ -508,7 +508,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
     def drop_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
-        if catalog is not None:
+        if catalog is not None and catalog != self.current_catalog:
             raise exc.UnsupportedOperationError(
                 "DuckDB cannot drop a database in another catalog."
             )
