@@ -222,6 +222,8 @@ class Flink(Hive):
         TYPE_MAPPING = Hive.Generator.TYPE_MAPPING.copy() | {
             sge.DataType.Type.TIME: "TIME",
             sge.DataType.Type.STRUCT: "ROW",
+            sge.DataType.Type.BINARY: "VARBINARY",
+            sge.DataType.Type.VARBINARY: "VARBINARY",
         }
 
         TRANSFORMS = Hive.Generator.TRANSFORMS.copy() | {
