@@ -16,7 +16,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.backends import NoExampleLoader
+from ibis.backends import HasCurrentCatalog, HasCurrentDatabase, NoExampleLoader
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.datatypes import DruidType
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-class Backend(SQLBackend, NoExampleLoader):
+class Backend(SQLBackend, HasCurrentCatalog, HasCurrentDatabase, NoExampleLoader):
     name = "druid"
     compiler = sc.druid.compiler
     supports_create_or_replace = False
@@ -207,16 +207,6 @@ class Backend(SQLBackend, NoExampleLoader):
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """List the tables in the database.
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database.
-        """
         t = sg.table("TABLES", db="INFORMATION_SCHEMA", quoted=True)
         c = self.compiler
         query = sg.select(sg.column("TABLE_NAME", quoted=True)).from_(t).sql(c.dialect)

@@ -77,21 +77,6 @@ class SQLBackend(BaseBackend):
     def table(
         self, name: str, /, *, database: tuple[str, str] | str | None = None
     ) -> ir.Table:
-        """Construct a table expression.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Database name
-
-        Returns
-        -------
-        Table
-            Table expression
-
-        """
         table_loc = self._to_sqlglot_table(database)
 
         catalog = table_loc.catalog or None

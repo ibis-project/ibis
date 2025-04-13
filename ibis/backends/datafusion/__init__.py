@@ -25,6 +25,8 @@ from ibis.backends import (
     CanCreateCatalog,
     CanCreateDatabase,
     DirectPyArrowExampleLoader,
+    HasCurrentCatalog,
+    HasCurrentDatabase,
     NoUrl,
 )
 from ibis.backends.sql import SQLBackend
@@ -74,7 +76,13 @@ def as_nullable(dtype: dt.DataType) -> dt.DataType:
 
 
 class Backend(
-    SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl, DirectPyArrowExampleLoader
+    SQLBackend,
+    CanCreateCatalog,
+    CanCreateDatabase,
+    HasCurrentCatalog,
+    HasCurrentDatabase,
+    NoUrl,
+    DirectPyArrowExampleLoader,
 ):
     name = "datafusion"
     supports_arrays = True
@@ -299,6 +307,26 @@ class Backend(
         self._log(query)
         return self.con.sql(query)
 
+    @property
+    def current_catalog(self):
+        return (
+            self.sql(
+                "select value from information_schema.df_settings where name='datafusion.catalog.default_catalog'"
+            )
+            .execute()
+            .iloc[0, 0]
+        )
+
+    @property
+    def current_database(self):
+        return (
+            self.sql(
+                "select value from information_schema.df_settings where name='datafusion.catalog.default_schema'"
+            )
+            .execute()
+            .iloc[0, 0]
+        )
+
     def list_catalogs(self, *, like: str | None = None) -> list[str]:
         code = (
             sg.select(C.table_catalog)
@@ -322,10 +350,9 @@ class Backend(
     def list_databases(
         self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
-        return self._filter_with_like(
-            self.con.catalog(catalog if catalog is not None else "datafusion").names(),
-            like=like,
-        )
+        if catalog is None:
+            catalog = self.current_catalog
+        return self._filter_with_like(self.con.catalog(catalog).names(), like=like)
 
     def create_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
@@ -345,21 +372,8 @@ class Backend(
     def list_tables(
         self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """Return the list of table names in the current database.
-
-        Parameters
-        ----------
-        like
-            A pattern in Python's regex format.
-        database
-            Unused in the datafusion backend.
-
-        Returns
-        -------
-        list[str]
-            The list of the table names that match the pattern `like`.
-        """
-        database = database or "public"
+        if database is None:
+            database = self.current_database
         query = (
             sg.select("table_name")
             .from_("information_schema.tables")

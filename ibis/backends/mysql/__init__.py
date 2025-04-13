@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, PyArrowExampleLoader
+from ibis.backends import CanCreateDatabase, HasCurrentDatabase, PyArrowExampleLoader
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, TRUE, C, RenameTable
 
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
-class Backend(SQLBackend, CanCreateDatabase, PyArrowExampleLoader):
+class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleLoader):
     name = "mysql"
     compiler = sc.mysql.compiler
     supports_create_or_replace = False
@@ -293,27 +293,6 @@ class Backend(SQLBackend, CanCreateDatabase, PyArrowExampleLoader):
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
-
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database (`self.current_database`).
-        """
         if database is not None:
             table_loc = self._to_sqlglot_table(database)
         else:

@@ -16,7 +16,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import PyArrowExampleLoader, UrlFromPath
+from ibis.backends import HasCurrentDatabase, PyArrowExampleLoader, UrlFromPath
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
 from ibis.backends.sqlite.converter import SQLitePandasData
@@ -43,7 +43,12 @@ def _quote(name: str) -> str:
     return sg.to_identifier(name, quoted=True).sql("sqlite")
 
 
-class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader):
+class Backend(
+    SQLBackend,
+    UrlFromPath,
+    PyArrowExampleLoader,
+    HasCurrentDatabase,
+):
     name = "sqlite"
     compiler = sc.sqlite.compiler
     supports_python_udfs = True
@@ -161,19 +166,6 @@ class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader):
     def list_tables(
         self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """List the tables in the database.
-
-        If `database` is None, the current database is used, and temporary
-        tables are included in the result.
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database.
-        """
         if database is None:
             database = "main"
             schemas = [database, "temp"]

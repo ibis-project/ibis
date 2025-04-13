@@ -2,14 +2,17 @@
 title: Backend Table Hierarchy
 ---
 
-Several SQL backends support two levels of hierarchy in organizing tables
-(although the levels are also used for other purposes, like data access,
-billing, etc.).
+Most SQL backends organize tables into groups, and some use a two-level hierarchy.
+They use terms such as `catalog`, `database`, and/or `schema` to refer to these groups.
 
-Ibis uses the following terminology:
+Ibis uses the following terminology throughout its codebase, API, and documentation:
 
 - `database`: a collection of tables
 - `catalog`: a collection of databases
+
+In other words, the full specification of a table in Ibis is either
+- `catalog.database.table`
+- `database.table`
 
 Below is a table with the terminology used by each backend for the two levels of
 hierarchy. This is provided as a reference, note that when using Ibis, we will
@@ -31,7 +34,8 @@ use the terms `catalog` and `database` and map them onto the appropriate fields.
 | pandas     |                | NA         |
 | polars     |                | NA         |
 | postgres   | database       | schema     |
-| pyspark    |                | database   |
+| pyspark    | database       | schema     |
 | risingwave | database       | schema     |
-| snowflake  |                | database   |
+| sqlite     |                | schema     |
+| snowflake  | database       | schema     |
 | trino      | catalog        | schema     |
