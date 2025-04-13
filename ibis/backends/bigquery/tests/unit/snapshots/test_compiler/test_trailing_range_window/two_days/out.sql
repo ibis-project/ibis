@@ -12,5 +12,8 @@ SELECT
   `t0`.`timestamp_col`,
   `t0`.`year`,
   `t0`.`month`,
-  AVG(`t0`.`float_col`) OVER (ORDER BY `t0`.`timestamp_col` ASC RANGE BETWEEN INTERVAL (EXTRACT(DAY FROM INTERVAL '1' DAY) * 2) DAY preceding AND INTERVAL 0 DAY following) AS `win_avg`
+  AVG(`t0`.`float_col`) OVER (
+    ORDER BY `t0`.`timestamp_col` ASC
+    RANGE BETWEEN INTERVAL (EXTRACT(DAY FROM INTERVAL '1' DAY) * 2) DAY preceding AND INTERVAL 0 DAY following
+  ) AS `win_avg`
 FROM `functional_alltypes` AS `t0`

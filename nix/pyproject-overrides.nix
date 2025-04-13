@@ -25,7 +25,6 @@ let
       setuptools = [ ];
       setuptools-scm = [ ];
     };
-    psycopg2.setuptools = [ ];
     tomli.flit-core = [ ];
     toolz.setuptools = [ ];
     typing-extensions.flit-core = [ ];
@@ -97,7 +96,7 @@ in
 
   psycopg2 = prev.psycopg2.overrideAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
-    buildInputs = [ pkgs.postgresql ]
+    buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.libpq.pg_config ]
     ++ lib.optionals stdenv.hostPlatform.isDarwin [ pkgs.openssl ];
   });
 
