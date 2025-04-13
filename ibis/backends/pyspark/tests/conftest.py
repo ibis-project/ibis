@@ -306,15 +306,12 @@ else:
                 .config("spark.sql.execution.arrow.pyspark.enabled", "false")
                 .config("spark.sql.shuffle.partitions", "1")
                 .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
-                .config("spark.driver.memory", "5g")
             )
 
             try:
                 from delta.pip_utils import configure_spark_with_delta_pip
             except ImportError:
-
-                def configure_spark_with_delta_pip(cfg):
-                    return cfg
+                configure_spark_with_delta_pip = lambda cfg: cfg
             else:
                 config = config.config(
                     "spark.sql.catalog.spark_catalog",
