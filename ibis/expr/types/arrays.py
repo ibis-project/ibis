@@ -7,7 +7,6 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.annotations import EMPTY
 from ibis.common.deferred import Deferred, deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
 
@@ -386,37 +385,45 @@ class ArrayValue(Value):
         return ops.ArrayStringJoin(self, sep=sep).to_expr()
 
     def _construct_array_func_inputs(self, func):
+        shape = self.op().shape
         if isinstance(func, Deferred):
             name = "_"
             index = None
             resolve = func.resolve
         elif callable(func):
-            names = (
-                key
-                for key, value in inspect.signature(func).parameters.items()
-                # arg is already bound
-                if value.default is EMPTY
+            positional_params = (
+                param
+                for param in inspect.signature(func).parameters.values()
+                if param.kind
+                in {
+                    param.POSITIONAL_ONLY,
+                    param.POSITIONAL_OR_KEYWORD,
+                    param.VAR_POSITIONAL,
+                }
             )
-            name = next(names)
-            index = next(names, None)
+            try:
+                element_param = next(positional_params)
+            except StopIteration:
+                raise TypeError("function must accept at least 1 positional argument")
+            name = element_param.name
+            if element_param.kind == element_param.VAR_POSITIONAL:
+                index = "index"
+            else:
+                index = getattr(next(positional_params, None), "name", None)
             resolve = func
         else:
             raise TypeError(
                 f"function must be a Deferred or Callable, got `{type(func).__name__}`"
             )
 
-        shape = self.op().shape
-        parameter = ops.Argument(name=name, shape=shape, dtype=self.type().value_type)
-
-        kwargs = {name: parameter.to_expr()}
-
+        value_arg = ops.Argument(name=name, shape=shape, dtype=self.type().value_type)
+        args = [value_arg.to_expr()]
         if index is not None:
-            index_arg = ops.Argument(name=index, shape=shape, dtype=dt.int64)
-            kwargs[index] = index_arg.to_expr()
-            index = index_arg
+            index = ops.Argument(name=index, shape=shape, dtype=dt.int64)
+            args.append(index.to_expr())
 
-        body = resolve(**kwargs)
-        return parameter, index, body
+        body = resolve(*args)
+        return value_arg, index, body
 
     def map(
         self,
@@ -432,9 +439,9 @@ class ArrayValue(Value):
         func
             Function or `Deferred` to apply to each element of this array.
 
-            Callables must accept one or two arguments. If there are two
-            arguments, the second argument is the **zero**-based index of each
-            element of the array.
+            Callables will be called as `func(element)` or `func(element, idx)`
+            depending on if the function accepts 1 or 2+ positional parameters.
+            The `idx` argument is the **zero**-based index of each element in the array.
 
         Returns
         -------
@@ -484,35 +491,6 @@ class ArrayValue(Value):
         │ []                                         │
         └────────────────────────────────────────────┘
 
-        `.map()` also supports more complex callables like `functools.partial`
-        and `lambda`s with closures
-
-        >>> from functools import partial
-        >>> def add(x, y):
-        ...     return x + y
-        >>> add2 = partial(add, y=2)
-        >>> t.a.map(add2)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayMap(a, Add(x, 2), x) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>              │
-        ├───────────────────────────┤
-        │ [3, None, ... +1]         │
-        │ [6]                       │
-        │ []                        │
-        └───────────────────────────┘
-        >>> y = 2
-        >>> t.a.map(lambda x: x + y)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayMap(a, Add(x, 2), x) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>              │
-        ├───────────────────────────┤
-        │ [3, None, ... +1]         │
-        │ [6]                       │
-        │ []                        │
-        └───────────────────────────┘
-
         You can optionally include a second index argument in the mapped function
 
         >>> t.a.map(lambda x, i: i % 2)
@@ -525,6 +503,45 @@ class ArrayValue(Value):
         │ [0]                              │
         │ []                               │
         └──────────────────────────────────┘
+
+        `.map()` also supports more complex callables like `lambda`s with closures,
+        `functools.partial`s, and `func(*args)`
+
+        >>> y = 2
+        >>> t.a.map(lambda x: x + y)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Add(x, 2), x) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>              │
+        ├───────────────────────────┤
+        │ [3, None, ... +1]         │
+        │ [6]                       │
+        │ []                        │
+        └───────────────────────────┘
+
+        >>> from functools import partial
+        >>> def add(x, i, y):
+        ...     return x + i + y
+        >>> t.a.map(partial(add, y=2))
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Add(Add(x, i), 2), x, i) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                         │
+        ├──────────────────────────────────────┤
+        │ [3, None, ... +1]                    │
+        │ [6]                                  │
+        │ []                                   │
+        └──────────────────────────────────────┘
+        >>> t.a.map(lambda *elem_and_idx: elem_and_idx[0] + elem_and_idx[1])
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Add(elem_and_idx, index), elem_and_idx, index) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                                               │
+        ├────────────────────────────────────────────────────────────┤
+        │ [1, None, ... +1]                                          │
+        │ [4]                                                        │
+        │ []                                                         │
+        └────────────────────────────────────────────────────────────┘
         """
         param, index, body = self._construct_array_func_inputs(func)
         return ops.ArrayMap(self, param=param, index=index, body=body).to_expr()
@@ -543,9 +560,9 @@ class ArrayValue(Value):
         predicate
             Function or `Deferred` to use to filter array elements.
 
-            Callables must accept one or two arguments. If there are two
-            arguments, the second argument is the **zero**-based index of each
-            element of the array.
+            Callables will be called as `func(element)` or `func(element, idx)`
+            depending on if the function accepts 1 or 2+ positional parameters.
+            The `idx` argument is the **zero**-based index of each element in the array.
 
         Returns
         -------
@@ -595,35 +612,6 @@ class ArrayValue(Value):
         │ []                               │
         └──────────────────────────────────┘
 
-        `.filter()` also supports more complex callables like `functools.partial`
-        and `lambda`s with closures
-
-        >>> from functools import partial
-        >>> def gt(x, y):
-        ...     return x > y
-        >>> gt1 = partial(gt, y=1)
-        >>> t.a.filter(gt1)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayFilter(a, Greater(x, 1), x) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>                     │
-        ├──────────────────────────────────┤
-        │ [2]                              │
-        │ [4]                              │
-        │ []                               │
-        └──────────────────────────────────┘
-        >>> y = 1
-        >>> t.a.filter(lambda x: x > y)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayFilter(a, Greater(x, 1), x) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>                     │
-        ├──────────────────────────────────┤
-        │ [2]                              │
-        │ [4]                              │
-        │ []                               │
-        └──────────────────────────────────┘
-
         You can optionally include a second index argument in the predicate function
 
         >>> t.a.filter(lambda x, i: i % 4 == 0)
@@ -636,6 +624,45 @@ class ArrayValue(Value):
         │ [4]                                            │
         │ []                                             │
         └────────────────────────────────────────────────┘
+
+        `.filter()` also supports more complex callables like `lambda`s with closures,
+        `functools.partial`s, and `func(*args)`
+
+        >>> y = 1
+        >>> t.a.filter(lambda x: x > y)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Greater(x, 1), x) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                     │
+        ├──────────────────────────────────┤
+        │ [2]                              │
+        │ [4]                              │
+        │ []                               │
+        └──────────────────────────────────┘
+        >>> from functools import partial
+        >>> def gt(x, i, y):
+        ...     return x > y
+        >>> gt1 = partial(gt, y=1)
+        >>> t.a.filter(gt1)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Greater(x, 1), x, i) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                        │
+        ├─────────────────────────────────────┤
+        │ [2]                                 │
+        │ [4]                                 │
+        │ []                                  │
+        └─────────────────────────────────────┘
+        >>> t.a.filter(lambda *elem_and_idx: elem_and_idx[0] > elem_and_idx[1])
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Greater(elem_and_idx, index), elem_and_idx, index) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                                                      │
+        ├───────────────────────────────────────────────────────────────────┤
+        │ [1]                                                               │
+        │ [4]                                                               │
+        │ []                                                                │
+        └───────────────────────────────────────────────────────────────────┘
         """
         param, index, body = self._construct_array_func_inputs(predicate)
         return ops.ArrayFilter(self, param=param, index=index, body=body).to_expr()
