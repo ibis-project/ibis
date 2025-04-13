@@ -3,7 +3,11 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
-from pyspark.errors.exceptions.captured import AnalysisException
+
+try:
+    from pyspark.errors.exceptions.captured import AnalysisException
+except ImportError:
+    from pyspark.sql.utils import AnalysisException
 
 import ibis
 
@@ -69,7 +73,7 @@ def test_create_table_no_catalog(con):
         pytest.param(
             ("spark_catalog", "ibis_testing"),
             marks=pytest.mark.xfail_version(
-                condition=["pyspark<3.4"], reason="no catalog support"
+                pyspark=["pyspark<3.4"], reason="no catalog support"
             ),
             id="with_catalog",
         ),
@@ -150,7 +154,17 @@ def test_create_table_with_partitions(con, database_param):
 
 @pytest.mark.parametrize(
     "format",
-    ["delta", "parquet", "csv"],
+    [
+        pytest.param(
+            "delta",
+            marks=pytest.mark.xfail_version(
+                pyspark=["pyspark<3.4"], reason="no delta support"
+            ),
+            id="delta",
+        ),
+        "parquet",
+        "csv",
+    ],
 )
 @pytest.mark.parametrize(
     "database_param",
@@ -158,7 +172,7 @@ def test_create_table_with_partitions(con, database_param):
         pytest.param(
             ("spark_catalog", "ibis_testing"),
             marks=pytest.mark.xfail_version(
-                condition=["pyspark<3.4"], reason="no catalog support"
+                pyspark=["pyspark<3.4"], reason="no catalog support"
             ),
             id="with_catalog",
         ),
@@ -176,6 +190,7 @@ def test_create_table_kwargs(con, format, database_param):
         "epoch": [1712848119, 1712848121, 1712848155, 1712848169],
         "category1": ["A", "B", "A", "C"],
     }
+    base_data_pd = pd.DataFrame(base_data)
 
     table_name = f"kwarg_test_{format}"
     db_ref = database_param
@@ -183,7 +198,8 @@ def test_create_table_kwargs(con, format, database_param):
 
     # Helper to get table
     def get_table():
-        return con.table(table_name, database=db_ref).to_pandas()
+        loc = f"{db_str}.{table_name}" if db_ref else table_name
+        return con.raw_sql(f"SELECT * from {loc}").toPandas()
 
     # 1. Create db table
     t = ibis.memtable(base_data)
@@ -195,9 +211,8 @@ def test_create_table_kwargs(con, format, database_param):
         partitionBy="category1",
         format=format,
     )
-
     assert table_name in con.list_tables(database=db_str)
-    compare_tables(t.to_pandas(), get_table())
+    compare_tables(base_data_pd, get_table())
 
     # 2. Append, same schema (mode & format kwargs) - this is similar behavior to `insert` method
     con.create_table(
@@ -211,7 +226,7 @@ def test_create_table_kwargs(con, format, database_param):
     )
 
     assert table_name in con.list_tables(database=db_str)
-    expected_2x = pd.concat([t.to_pandas()] * 2, ignore_index=True)
+    expected_2x = pd.concat([base_data_pd] * 2, ignore_index=True)
     compare_tables(expected_2x, get_table())
 
     # 3. Overwrite table & schema (mode, overwriteSchema, & format kwargs)
@@ -219,6 +234,7 @@ def test_create_table_kwargs(con, format, database_param):
         **base_data,
         "category2": ["G", "J", "G", "H"],
     }
+    data2_pd = pd.DataFrame(data2)
     t2 = ibis.memtable(data2)
 
     con.create_table(
@@ -231,10 +247,11 @@ def test_create_table_kwargs(con, format, database_param):
     )
 
     assert table_name in con.list_tables(database=db_str)
-    compare_tables(t2.to_pandas(), get_table())
+    compare_tables(data2_pd, get_table())
 
     # 4. Append and merge schema (mode, mergeSchema, & format kwargs)
     data_merge = {**data2, "category3": ["W", "Z", "Q", "X"]}
+    data_merge_pd = pd.DataFrame(data_merge)
     t_merge = ibis.memtable(data_merge)
 
     if format == "delta":
@@ -249,11 +266,13 @@ def test_create_table_kwargs(con, format, database_param):
 
         assert table_name in con.list_tables(database=db_str)
         expected_merged = pd.concat(
-            [t2.to_pandas(), t_merge.to_pandas()], ignore_index=True
+            [data2_pd, data_merge_pd], ignore_index=True
         ).fillna(value=pd.NA)
 
         compare_tables(expected_merged, get_table().fillna(value=pd.NA))
-    else:  # Not supported on write for parquet or csv
+    elif AnalysisException is None:
+        pass
+    else:
         with pytest.raises(AnalysisException) as _:
             con.create_table(
                 table_name,
