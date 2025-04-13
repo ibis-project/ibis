@@ -604,8 +604,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
-        format: str = "parquet",
-        partition_by: str | list[str] | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
         """Create a new table in Spark.
 
@@ -626,11 +625,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         temp
             Whether the new table is temporary (unsupported)
         overwrite
-            If `True`, overwrite existing data
-        format
-            Format of the table on disk
-        partition_by
-            Name(s) of partitioning column(s)
+            If `True`, overwrite existing data. If `mode` is passed as a kwarg, it will take precedence over this argument.
+        **kwargs
+            Additional keyword arguments passed to [pyspark.sql.DataFrameWriter.saveAsTable](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.saveAsTable.html#pyspark.sql.DataFrameWriter.saveAsTable)
+            if `obj` is passed or [pyspark.sql.Catalog.createTable](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.Catalog.createTable.html#pyspark.sql.Catalog.createTable) if `schema` is passed.
 
         Returns
         -------
@@ -655,18 +653,21 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             else:
                 table = ibis.memtable(obj)
             query = self.compile(table)
-            mode = "overwrite" if overwrite else "error"
+            if "mode" in kwargs:
+                mode = kwargs["mode"]
+                del kwargs["mode"]
+            else:
+                mode = "overwrite" if overwrite else "error"
+
             with self._active_catalog_database(catalog, db):
                 self._run_pre_execute_hooks(table)
                 df = self._session.sql(query)
-                df.write.saveAsTable(
-                    name, format=format, mode=mode, partitionBy=partition_by
-                )
+                df.write.saveAsTable(name, mode=mode, **kwargs)
         elif schema is not None:
             schema = ibis.schema(schema)
             schema = PySparkSchema.from_ibis(schema)
             with self._active_catalog_database(catalog, db):
-                self._session.catalog.createTable(name, schema=schema, format=format)
+                self._session.catalog.createTable(name, schema=schema, **kwargs)
         else:
             raise com.IbisError("The schema or obj parameter is required")
 
