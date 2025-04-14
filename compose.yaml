@@ -593,7 +593,7 @@ services:
     image: bitnami/spark:3.5.5
     ports:
       - 15002:15002
-    command: /opt/bitnami/spark/sbin/start-connect-server.sh --name ibis_testing --packages org.apache.spark:spark-connect_2.12:3.5.3,org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.1,io.delta:delta-core_2.12:2.1.0
+    command: /opt/bitnami/spark/sbin/start-connect-server.sh --name ibis_testing --packages org.apache.spark:spark-connect_2.12:3.5.3,org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.1,io.delta:delta-spark_2.12:3.3.0
     healthcheck:
       test:
         - CMD-SHELL

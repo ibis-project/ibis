@@ -27,7 +27,7 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
     TrinoUserError,
 )
-from ibis.conftest import CI, IS_SPARK_REMOTE
+from ibis.conftest import IS_SPARK_REMOTE
 
 pd = pytest.importorskip("pandas")
 pa = pytest.importorskip("pyarrow")
@@ -494,11 +494,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
 @pytest.mark.notyet(["mssql"], raises=PyDeltaTableError)
-@pytest.mark.xfail_version(
-    pyspark=["pyspark<4"],
-    condition=CI and IS_SPARK_REMOTE,
-    reason="not supported until pyspark 4",
-)
 def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":
         pytest.importorskip("delta")

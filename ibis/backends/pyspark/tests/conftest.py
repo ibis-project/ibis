@@ -288,6 +288,8 @@ else:
                 )
             ).open(mode="r") as config_file:
                 for line in config_file:
+                    if "delta" in line:
+                        continue
                     config = config.config(*map(str.strip, line.strip().split("=", 1)))
 
             config = (
