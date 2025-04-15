@@ -48,7 +48,12 @@ class ScalarSubquery(Subquery):
 
     @attribute
     def value(self):
-        (value,) = self.rel.values.values()
+        rel = self.rel
+
+        if values := rel.values:
+            (value,) = values.values()
+        else:
+            (value,) = rel.fields.values()
         return value
 
     @attribute
