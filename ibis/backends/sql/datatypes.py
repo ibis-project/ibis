@@ -769,13 +769,13 @@ class OracleType(SqlglotType):
 
     @classmethod
     def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        expressions = [
+            sge.DataTypeParam(
+                this=sge.convert(dtype.length if dtype.length is not None else 4000)
+            )
+        ]
         return sge.DataType(
-            this=typecode.VARCHAR,
-            expressions=[
-                sge.DataTypeParam(
-                    this=sge.convert(dtype.length if dtype.length is not None else 4000)
-                )
-            ],
+            this=typecode.VARCHAR, expressions=expressions, is_nested=False
         )
 
 

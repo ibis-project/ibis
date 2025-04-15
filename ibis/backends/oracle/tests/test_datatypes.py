@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import pytest
+import sqlglot as sg
+import sqlglot.expressions as sge
+
 import ibis
+import ibis.expr.datatypes as dt
+from ibis.backends.sql.datatypes import OracleType
 
 
 def test_failed_column_inference(con):
@@ -21,3 +27,13 @@ def test_blob_raw(con):
     raw_blob = con.table("blob_raw_blobs_blob_raw")
 
     assert raw_blob.schema() == ibis.Schema(dict(blob="binary", raw="binary"))
+
+
+@pytest.mark.parametrize(
+    ("typ", "length"),
+    [("VARCHAR(4000)", None), ("VARCHAR(3)", 3), ("VARCHAR(4000)", 4000)],
+)
+def test_string(typ, length):
+    expected = sg.parse_one(typ, read="oracle", into=sge.DataType)
+    result = OracleType.from_ibis(dt.String(length=length))
+    assert result == expected
