@@ -59,9 +59,6 @@ def test_udf(batting):
 
 @no_python_udfs
 @cloudpickle_version_mismatch
-@mark.notyet(
-    ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
-)
 @mark.notimpl(["polars"])
 @mark.never(
     ["flink"],
@@ -93,9 +90,6 @@ def test_map_udf(batting):
 
 @no_python_udfs
 @cloudpickle_version_mismatch
-@mark.notyet(
-    ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
-)
 @mark.notimpl(["polars"])
 @mark.never(
     ["flink"],

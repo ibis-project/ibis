@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import inspect
-import warnings
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
@@ -208,7 +207,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         database: str | None = None,
         schema: str | None = None,
         autocommit: bool = True,
-        enable_map_support: bool = True,
         **kwargs: Any,
     ) -> None:
         """Create an Ibis client connected to PostgreSQL database.
@@ -229,9 +227,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             PostgreSQL schema to use. If `None`, use the default `search_path`.
         autocommit
             Whether or not to autocommit
-        enable_map_support
-            Whether or not to enable map support. If `True`, the HSTORE
-            extension will be loaded to support maps of string -> string.
         kwargs
             Additional keyword arguments to pass to the backend client connection.
 
@@ -265,9 +260,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         """
         import pandas as pd
         import psycopg
-        import psycopg.types.json
-
-        psycopg.types.json.set_json_loads(loads=lambda x: x)
 
         self.con = psycopg.connect(
             host=host,
@@ -282,7 +274,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
 
         self.con.adapters.register_dumper(type(pd.NaT), NatDumper)
 
-        self._post_connect(enable_map_support)
+        self._post_connect()
 
     @util.experimental
     @classmethod
@@ -300,26 +292,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         new_backend._post_connect()
         return new_backend
 
-    def _post_connect(self, enable_map_support: bool = True) -> None:
-        import psycopg.types
-        import psycopg.types.hstore
-
-        con = self.con
-
-        try:
-            # try to load hstore
-            if enable_map_support:
-                with con.cursor() as cursor, con.transaction():
-                    cursor.execute("CREATE EXTENSION IF NOT EXISTS hstore")
-                psycopg.types.hstore.register_hstore(
-                    psycopg.types.TypeInfo.fetch(self.con, "hstore"), self.con
-                )
-        except psycopg.Error as e:
-            warnings.warn(f"Failed to load hstore extension: {e}")
-        except TypeError:
-            pass
-
-        with con.cursor() as cursor, con.transaction():
+    def _post_connect(self) -> None:
+        with (con := self.con).cursor() as cursor, con.transaction():
             cursor.execute("SET TIMEZONE = UTC")
 
     @property

@@ -519,9 +519,7 @@ class PostgresType(SqlglotType):
     def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
         if not dtype.key_type.is_string():
             raise com.IbisTypeError("Postgres only supports string keys in maps")
-        if not dtype.value_type.is_string():
-            raise com.IbisTypeError("Postgres only supports string values in maps")
-        return sge.DataType(this=typecode.HSTORE)
+        return sge.DataType(this=typecode.JSONB)
 
     @classmethod
     def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:

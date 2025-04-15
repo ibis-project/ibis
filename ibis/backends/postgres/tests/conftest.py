@@ -25,6 +25,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
     from pathlib import Path
 
+    import ibis.expr.types as ir
+
 PG_USER = os.environ.get(
     "IBIS_TEST_POSTGRES_USER", os.environ.get("PGUSER", "postgres")
 )
@@ -46,11 +48,16 @@ class TestConf(ServiceBackendTest):
 
     returned_timestamp_unit = "s"
     supports_structs = False
+    supports_map = True
     rounding_method = "half_to_even"
     service_name = "postgres"
     deps = ("psycopg",)
 
     driver_supports_multiple_statements = True
+
+    @property
+    def map(self) -> ir.Table | None:
+        return self.connection.table("map").cast({"kv": "map<string, int>"})
 
     @property
     def test_files(self) -> Iterable[Path]:

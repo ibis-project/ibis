@@ -1,4 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS hstore;
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS plpython3u;
 CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
@@ -298,10 +297,10 @@ INSERT INTO win VALUES
     ('a', 4, 1);
 
 DROP TABLE IF EXISTS map CASCADE;
-CREATE TABLE map (idx BIGINT, kv HSTORE);
+CREATE TABLE map (idx BIGINT, kv JSONB);
 INSERT INTO map VALUES
-    (1, 'a=>1,b=>2,c=>3'),
-    (2, 'd=>4,e=>5,c=>6');
+    (1, '{"a": 1, "b": 2, "c": 3}'),
+    (2, '{"d": 4, "e": 5, "f": 6}');
 
 DROP TABLE IF EXISTS topk;
 
