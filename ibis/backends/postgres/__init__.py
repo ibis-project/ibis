@@ -208,6 +208,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         database: str | None = None,
         schema: str | None = None,
         autocommit: bool = True,
+        enable_map_support: bool = True,
         **kwargs: Any,
     ) -> None:
         """Create an Ibis client connected to PostgreSQL database.
@@ -228,6 +229,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             PostgreSQL schema to use. If `None`, use the default `search_path`.
         autocommit
             Whether or not to autocommit
+        enable_map_support
+            Whether or not to enable map support. If `True`, the HSTORE
+            extension will be loaded to support maps of string -> string.
         kwargs
             Additional keyword arguments to pass to the backend client connection.
 
@@ -278,7 +282,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
 
         self.con.adapters.register_dumper(type(pd.NaT), NatDumper)
 
-        self._post_connect()
+        self._post_connect(enable_map_support)
 
     @util.experimental
     @classmethod
@@ -296,7 +300,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         new_backend._post_connect()
         return new_backend
 
-    def _post_connect(self) -> None:
+    def _post_connect(self, enable_map_support: bool = True) -> None:
         import psycopg.types
         import psycopg.types.hstore
 
@@ -304,11 +308,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
 
         try:
             # try to load hstore
-            with con.cursor() as cursor, con.transaction():
-                cursor.execute("CREATE EXTENSION IF NOT EXISTS hstore")
-            psycopg.types.hstore.register_hstore(
-                psycopg.types.TypeInfo.fetch(self.con, "hstore"), self.con
-            )
+            if enable_map_support:
+                with con.cursor() as cursor, con.transaction():
+                    cursor.execute("CREATE EXTENSION IF NOT EXISTS hstore")
+                psycopg.types.hstore.register_hstore(
+                    psycopg.types.TypeInfo.fetch(self.con, "hstore"), self.con
+                )
         except psycopg.Error as e:
             warnings.warn(f"Failed to load hstore extension: {e}")
         except TypeError:
