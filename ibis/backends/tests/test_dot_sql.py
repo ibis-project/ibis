@@ -343,3 +343,9 @@ def test_unnamed_columns(con):
 
     assert types[0].is_string()
     assert types[1].is_integer()
+
+
+def test_scalar_dot_sql(con):
+    sql = sg.select(sge.convert(1).as_("a")).sql(con.dialect)
+    expr = con.sql(sql).as_scalar()
+    assert expr.type().is_numeric()
