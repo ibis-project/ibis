@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 import string
 import textwrap
 from functools import partial, reduce
@@ -114,9 +115,7 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.GeoWithin: "st_within",
         ops.GeoX: "st_x",
         ops.GeoY: "st_y",
-        ops.MapContains: "exist",
-        ops.MapKeys: "akeys",
-        ops.MapValues: "avals",
+        ops.MapContains: "jsonb_contains",
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
         ops.RandomUUID: "gen_random_uuid",
@@ -130,8 +129,14 @@ class PostgresCompiler(SQLGlotCompiler):
         params: Mapping[ir.Expr, Any] | None = None,
     ):
         table_expr = expr.as_table()
-        geocols = table_expr.schema().geospatial
-        conversions = {name: table_expr[name].as_ewkb() for name in geocols}
+        schema = table_expr.schema()
+
+        conversions = {name: table_expr[name].as_ewkb() for name in schema.geospatial}
+        conversions.update(
+            (col, table_expr[col].cast(dt.string))
+            for col, typ in schema.items()
+            if typ.is_map() or typ.is_json()
+        )
 
         if conversions:
             table_expr = table_expr.mutate(**conversions)
@@ -160,15 +165,25 @@ class PostgresCompiler(SQLGlotCompiler):
 
         type_mapper = self.type_mapper
         argnames = udf_node.argnames
-        return """\
+        args = ", ".join(argnames)
+        name = type(udf_node).__name__
+        argsig = ", ".join(argnames)
+        raw_args = [
+            f"json.loads({argname})" if arg.dtype.is_map() else argname
+            for argname, arg in zip(argnames, udf_node.args)
+        ]
+        args = ", ".join(raw_args)
+        call = f"{name}({args})"
+        defn = """\
 CREATE OR REPLACE FUNCTION {ident}({signature})
 RETURNS {return_type}
 LANGUAGE {language}
 AS $$
+{json_import}
+def {name}({argsig}):
 {source}
-return {name}({args})
+return {call}
 $$""".format(
-            name=type(udf_node).__name__,
             ident=self.__sql_name__(udf_node),
             signature=", ".join(
                 f"{argname} {type_mapper.to_string(arg.dtype)}"
@@ -176,9 +191,18 @@ $$""".format(
             ),
             return_type=type_mapper.to_string(udf_node.dtype),
             language=config.get("language", "plpython3u"),
-            source=source,
-            args=", ".join(argnames),
+            json_import=(
+                "import json"
+                if udf_node.dtype.is_map()
+                or any(arg.dtype.is_map() for arg in udf_node.args)
+                else ""
+            ),
+            name=name,
+            argsig=argsig,
+            source=textwrap.indent(source, " " * 4),
+            call=call if not udf_node.dtype.is_map() else f"json.dumps({call})",
         )
+        return defn
 
     def visit_Mode(self, op, *, arg, where):
         expr = self.f.mode()
@@ -513,21 +537,60 @@ $$""".format(
     def visit_Map(self, op, *, keys, values):
         # map(["a", "b"], NULL) results in {"a": NULL, "b": NULL} in regular postgres,
         # so we need to modify it to return NULL instead
-        regular = self.f.map(keys, values)
-        return self.if_(values.is_(NULL), NULL, regular)
+        k, v = map(sg.to_identifier, "kv")
+        regular = (
+            sg.select(self.f.jsonb_object_agg(k, v))
+            .from_(
+                sg.select(
+                    self.f.unnest(keys).as_(k), self.f.unnest(values).as_(v)
+                ).subquery()
+            )
+            .subquery()
+        )
+        return self.if_(keys.is_(NULL).or_(values.is_(NULL)), NULL, regular)
 
     def visit_MapLength(self, op, *, arg):
-        return self.f.cardinality(self.f.akeys(arg))
+        return (
+            sg.select(self.f.count(sge.Star()))
+            .from_(self.f.jsonb_object_keys(arg))
+            .subquery()
+        )
 
     def visit_MapGet(self, op, *, arg, key, default):
-        return self.if_(
-            self.f.exist(arg, key),
-            self.f.jsonb_extract_path_text(self.f.to_jsonb(arg), key),
-            default,
-        )
+        if op.dtype.is_null():
+            return NULL
+        else:
+            return self.cast(
+                self.if_(
+                    self.f.jsonb_contains(arg, key),
+                    self.f.jsonb_extract_path_text(arg, key),
+                    default,
+                ),
+                op.dtype,
+            )
 
     def visit_MapMerge(self, op, *, left, right):
         return sge.DPipe(this=left, expression=right)
+
+    def visit_MapKeys(self, op, *, arg):
+        return self.if_(
+            arg.is_(NULL), NULL, self.f.array(sg.select(self.f.jsonb_object_keys(arg)))
+        )
+
+    def visit_MapValues(self, op, *, arg):
+        col = gen_name("json_each_col")
+        return self.if_(
+            arg.is_(NULL),
+            NULL,
+            self.f.array(
+                sg.select(
+                    sge.Dot(
+                        this=sg.to_identifier(col),
+                        expression=sg.to_identifier("value", quoted=True),
+                    )
+                ).from_(self.f.jsonb_each(arg).as_(col))
+            ),
+        )
 
     def visit_TypeOf(self, op, *, arg):
         typ = self.cast(self.f.pg_typeof(arg), dt.string)
@@ -591,6 +654,11 @@ $$""".format(
             )
         elif dtype.is_json():
             return self.cast(value, dt.json)
+        elif dtype.is_map():
+            return sge.Cast(
+                this=sge.convert(json.dumps(value)),
+                to=sge.DataType(this=sge.DataType.Type.JSONB),
+            )
         return None
 
     def visit_TimestampFromYMDHMS(

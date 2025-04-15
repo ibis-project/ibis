@@ -435,7 +435,6 @@ class Polars(Postgres):
 
 
 Postgres.Generator.TRANSFORMS |= {
-    sge.Map: rename_func("hstore"),
     sge.Split: rename_func("string_to_array"),
     sge.RegexpSplit: rename_func("regexp_split_to_array"),
     sge.DateFromParts: rename_func("make_date"),

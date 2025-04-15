@@ -38,11 +38,6 @@ mark_notyet_snowflake = pytest.mark.notyet(
     "snowflake", reason="map keys must be strings"
 )
 
-mark_notimpl_risingwave_hstore = pytest.mark.notimpl(
-    ["risingwave"],
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
-
 mark_notyet_datafusion = pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="only map and make_map are available"
 )
@@ -230,7 +225,6 @@ def test_map_table(backend):
     assert not table.limit(1).execute().empty
 
 
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_column_map_values(backend):
     table = backend.map
@@ -257,7 +251,6 @@ def test_column_map_merge(backend):
     tm.assert_series_equal(result, expected)
 
 
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_literal_map_keys(con):
     mapping = ibis.literal({"1": "a", "2": "b"})
@@ -269,7 +262,6 @@ def test_literal_map_keys(con):
     assert np.array_equal(result, ["1", "2"])
 
 
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_literal_map_values(con):
     mapping = ibis.literal({"1": "a", "2": "b"})
@@ -279,8 +271,6 @@ def test_literal_map_values(con):
     assert np.array_equal(result, ["a", "b"])
 
 
-@mark_notimpl_risingwave_hstore
-@mark_notyet_postgres
 @mark_notyet_datafusion
 def test_scalar_isin_literal_map_keys(con):
     mapping = ibis.literal({"a": 1, "b": 2})
@@ -292,8 +282,6 @@ def test_scalar_isin_literal_map_keys(con):
     assert con.execute(false) == False  # noqa: E712
 
 
-@mark_notimpl_risingwave_hstore
-@mark_notyet_postgres
 @mark_notyet_datafusion
 def test_map_scalar_contains_key_scalar(con):
     mapping = ibis.literal({"a": 1, "b": 2})
@@ -305,7 +293,6 @@ def test_map_scalar_contains_key_scalar(con):
     assert con.execute(false) == False  # noqa: E712
 
 
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_map_scalar_contains_key_column(backend, alltypes, df):
     value = {"1": "a", "3": "c"}
@@ -316,8 +303,6 @@ def test_map_scalar_contains_key_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@mark_notimpl_risingwave_hstore
-@mark_notyet_postgres
 @mark_notyet_datafusion
 def test_map_column_contains_key_scalar(backend, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
@@ -329,8 +314,6 @@ def test_map_column_contains_key_scalar(backend, alltypes, df):
     backend.assert_series_equal(result, series)
 
 
-@mark_notimpl_risingwave_hstore
-@mark_notyet_postgres
 @mark_notyet_datafusion
 def test_map_column_contains_key_column(alltypes):
     map_expr = ibis.map(
@@ -341,8 +324,6 @@ def test_map_column_contains_key_column(alltypes):
     assert result.all()
 
 
-@mark_notimpl_risingwave_hstore
-@mark_notyet_postgres
 @mark_notyet_datafusion
 @pytest.mark.notyet(
     ["databricks"], reason="says one thing, does something completely different"
@@ -355,7 +336,6 @@ def test_literal_map_merge(con):
     assert con.execute(expr) == {"a": 1, "b": 2, "c": 3}
 
 
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_literal_map_getitem_broadcast(backend, alltypes, df):
     value = {"1": "a", "2": "b"}
@@ -447,39 +427,13 @@ values = pytest.mark.parametrize(
     "values",
     [
         pytest.param(["a", "b"], id="string"),
+        pytest.param([1, 2], id="int"),
+        pytest.param([True, False], id="bool"),
+        pytest.param([1.0, 2.0], id="float"),
         pytest.param(
-            [1, 2],
-            marks=[
-                mark_notyet_postgres,
-            ],
-            id="int",
+            [ibis.timestamp("2021-01-01"), ibis.timestamp("2021-01-02")], id="timestamp"
         ),
-        pytest.param(
-            [True, False],
-            marks=[
-                mark_notyet_postgres,
-            ],
-            id="bool",
-        ),
-        pytest.param(
-            [1.0, 2.0],
-            marks=[
-                mark_notyet_postgres,
-            ],
-            id="float",
-        ),
-        pytest.param(
-            [ibis.timestamp("2021-01-01"), ibis.timestamp("2021-01-02")],
-            marks=[
-                mark_notyet_postgres,
-            ],
-            id="timestamp",
-        ),
-        pytest.param(
-            [ibis.date(2021, 1, 1), ibis.date(2022, 2, 2)],
-            marks=[mark_notyet_postgres],
-            id="date",
-        ),
+        pytest.param([ibis.date(2021, 1, 1), ibis.date(2022, 2, 2)], id="date"),
         pytest.param(
             [[1, 2], [3, 4]],
             marks=[
@@ -502,7 +456,6 @@ values = pytest.mark.parametrize(
 
 @values
 @keys
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_map_get_all_types(con, keys, values):
     m = ibis.map(ibis.array(keys), ibis.array(values))
@@ -513,7 +466,6 @@ def test_map_get_all_types(con, keys, values):
 
 
 @keys
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_map_contains_all_types(con, keys):
     a = ibis.array(keys)
@@ -522,7 +474,6 @@ def test_map_contains_all_types(con, keys):
         assert con.execute(m.contains(key))
 
 
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_literal_map_get_broadcast(backend, alltypes, df):
     value = {"1": "a", "2": "b"}
@@ -544,14 +495,12 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
             [1, 2],
             id="string",
             marks=pytest.mark.notyet(
-                ["postgres", "risingwave"],
-                reason="only support maps of string -> string",
+                ["risingwave"], reason="only support maps of string -> string"
             ),
         ),
         param(["a", "b"], ["1", "2"], id="int"),
     ],
 )
-@mark_notimpl_risingwave_hstore
 def test_map_construct_dict(con, keys, values):
     expr = ibis.map(keys, values)
     result = con.execute(expr.name("tmp"))
@@ -563,8 +512,6 @@ def test_map_construct_dict(con, keys, values):
     raises=pa.lib.ArrowInvalid,
     reason="Map array child array should have no nulls",
 )
-@mark_notimpl_risingwave_hstore
-@mark_notyet_postgres
 def test_map_construct_array_column(con, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     result = con.execute(expr)
@@ -573,7 +520,6 @@ def test_map_construct_array_column(con, alltypes, df):
     assert result.to_list() == expected.to_list()
 
 
-@mark_notimpl_risingwave_hstore
 @mark_notyet_postgres
 @mark_notyet_datafusion
 def test_map_get_with_compatible_value_smaller(con):
@@ -582,7 +528,6 @@ def test_map_get_with_compatible_value_smaller(con):
     assert con.execute(expr) == 3
 
 
-@mark_notimpl_risingwave_hstore
 @mark_notyet_postgres
 @mark_notyet_datafusion
 def test_map_get_with_compatible_value_bigger(con):
@@ -591,7 +536,6 @@ def test_map_get_with_compatible_value_bigger(con):
     assert con.execute(expr) == 3000
 
 
-@mark_notimpl_risingwave_hstore
 @mark_notyet_postgres
 @mark_notyet_datafusion
 def test_map_get_with_incompatible_value_different_kind(con):
@@ -600,8 +544,6 @@ def test_map_get_with_incompatible_value_different_kind(con):
     assert con.execute(expr) == 3.0
 
 
-@mark_notimpl_risingwave_hstore
-@mark_notyet_postgres
 @mark_notyet_datafusion
 @pytest.mark.parametrize("null_value", [None, ibis.null()])
 def test_map_get_with_null_on_not_nullable(con, null_value):
@@ -612,7 +554,7 @@ def test_map_get_with_null_on_not_nullable(con, null_value):
     assert pd.isna(result)
 
 
-@pytest.mark.parametrize("null_value", [None, ibis.null()])
+@pytest.mark.parametrize("null_value", [None, ibis.null()], ids=["none", "null"])
 @pytest.mark.notyet(
     ["flink"], raises=Py4JJavaError, reason="Flink cannot handle typeless nulls"
 )
@@ -621,8 +563,6 @@ def test_map_get_with_null_on_not_nullable(con, null_value):
     raises=PyAthenaOperationalError,
     reason="athena cannot handle typeless nulls",
 )
-@mark_notimpl_risingwave_hstore
-@mark_notyet_datafusion
 def test_map_get_with_null_on_null_type_with_null(con, null_value):
     value = ibis.literal({"A": None, "B": None})
     expr = value.get("C", null_value)
@@ -633,7 +573,6 @@ def test_map_get_with_null_on_null_type_with_null(con, null_value):
 @pytest.mark.notyet(
     ["flink"], raises=Py4JJavaError, reason="Flink cannot handle typeless nulls"
 )
-@mark_notimpl_risingwave_hstore
 @mark_notyet_postgres
 @mark_notyet_datafusion
 def test_map_get_with_null_on_null_type_with_non_null(con):
@@ -647,7 +586,6 @@ def test_map_get_with_null_on_null_type_with_non_null(con):
     raises=exc.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_map_create_table(con, temp_table):
     t = con.create_table(
@@ -662,7 +600,6 @@ def test_map_create_table(con, temp_table):
     raises=exc.OperationNotDefinedError,
     reason="No translation rule for <class 'ibis.expr.operations.maps.MapLength'>",
 )
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_map_length(con):
     expr = ibis.literal(dict(a="A", b="B")).length()
@@ -676,7 +613,6 @@ def test_map_keys_unnest(backend):
     assert frozenset(result) == frozenset("abcdef")
 
 
-@mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion
 def test_map_contains_null(con):
     expr = ibis.map(["a"], ibis.literal([None], type="array<string>"))
