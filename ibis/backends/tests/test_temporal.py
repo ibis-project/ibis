@@ -4,6 +4,7 @@ import contextlib
 import datetime
 import operator
 import sqlite3
+import sys
 import warnings
 from operator import methodcaller
 
@@ -33,6 +34,7 @@ from ibis.backends.tests.errors import (
     Py4JJavaError,
     PyAthenaOperationalError,
     PyDruidProgrammingError,
+    PyODBCDataError,
     PyODBCProgrammingError,
     PySparkConnectGrpcException,
     SnowflakeProgrammingError,
@@ -1764,11 +1766,6 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion"],
-    raises=Exception,
-    reason="Unsupported CAST from Int32 to Timestamp(Nanosecond, None)",
-)
-@pytest.mark.notimpl(
     ["oracle"],
     raises=OracleDatabaseError,
     reason="ORA-00932",
@@ -1790,6 +1787,48 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     result = expr.execute()
     expected = pd.to_datetime(df.int_col.min(), unit="s")
     assert result == expected
+
+
+@pytest.mark.notimpl(
+    ["clickhouse"],
+    raises=com.UnsupportedOperationError,
+    reason="Results in Timestamp('2023-11-04 14:47:18') (no subsecond) https://github.com/ClickHouse/ClickHouse/issues/29386",
+)
+@pytest.mark.notimpl(
+    ["exasol"],
+    raises=ExaQueryError,
+    reason="conversion of float to timestamp is not supported",
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.UnsupportedOperationError,
+    reason="flink only supports integers as input to timestamp",
+)
+@pytest.mark.notimpl(
+    ["impala"],
+    raises=AssertionError,
+    reason="result is Timestamp('2023-11-04 14:47:18.499999')",
+)
+@pytest.mark.notimpl(
+    ["mssql"],
+    raises=PyODBCDataError,
+    reason="[22018] [FreeTDS][SQL Server]Explicit conversion from data type float to datetime2 is not allowed. (529)",
+)
+@pytest.mark.notimpl(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="ORA-00932: expression is of data type NUMBER, which is incompatible with expected data type TIMESTAMP",
+)
+@pytest.mark.parametrize(
+    "dtype", ["timestamp", "timestamp(1)", "timestamp(3)", "timestamp(6)"]
+)
+def test_subsecond_cast_to_timestamp(con, dtype):
+    if con.name == "sqlite" and sys.platform == "win32" and sys.version_info >= (3, 9):
+        pytest.skip("sqlite on Python 3.9 on Windows casts to NaT")
+    expr = ibis.literal("1699109238.5").cast(float).cast(dtype)
+    result = con.execute(expr)
+    expected = pd.Timestamp("2023-11-04 14:47:18.5")
+    assert expected == result
 
 
 @pytest.mark.notimpl(

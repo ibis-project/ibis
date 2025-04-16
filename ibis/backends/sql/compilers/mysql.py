@@ -115,7 +115,7 @@ class MySQLCompiler(SQLGlotCompiler):
             # MariaDB does not support casting to JSON because it's an alias
             # for TEXT (except when casting of course!)
             return arg
-        elif from_.is_integer() and to.is_timestamp():
+        elif from_.is_numeric() and to.is_timestamp():
             return self.if_(
                 arg.eq(0),
                 self.f.timestamp("1970-01-01 00:00:00"),

@@ -155,7 +155,7 @@ def _cast(op, strict=True, **kw):
         time_zone = to.timezone
         time_unit = _TIMESTAMP_SCALE_TO_UNITS.get(to.scale, "us")
 
-        if dtype.is_integer():
+        if dtype.is_numeric():
             typ = pl.Datetime(time_unit="us", time_zone=time_zone)
             arg = (arg * 1_000_000).cast(typ)
             if time_unit != "us":

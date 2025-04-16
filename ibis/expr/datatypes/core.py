@@ -666,14 +666,14 @@ class Time(Temporal, Primitive):
 
 @public
 class Timestamp(Temporal, Parametric):
-    """Timestamp values."""
+    """Timestamp values, with a timezone and a scale."""
 
     timezone: Optional[str] = None
     """The timezone of values of this type."""
 
     # Literal[*range(10)] is only supported from 3.11
     scale: Optional[Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]] = None
-    """The scale of the timestamp if known."""
+    """The number of digits after the decimal point. eg 3 for milliseconds, 6 for microseconds."""
 
     scalar = "TimestampScalar"
     column = "TimestampColumn"
@@ -681,21 +681,9 @@ class Timestamp(Temporal, Parametric):
     @classmethod
     def from_unit(cls, unit, timezone=None, nullable=True) -> Self:
         """Return a timestamp type with the given unit and timezone."""
-        unit = TimestampUnit(unit)
-        if unit == TimestampUnit.SECOND:
-            scale = 0
-        elif unit == TimestampUnit.MILLISECOND:
-            scale = 3
-        elif unit == TimestampUnit.MICROSECOND:
-            scale = 6
-        elif unit == TimestampUnit.NANOSECOND:
-            scale = 9
-        else:
-            # TODO: remove raise path as it's never triggered
-            # Timestamp op has a restriction that only the literal
-            # ints from 0 through 9 can be passed as scale
-            raise ValueError(f"Invalid unit {unit}")
-        return cls(scale=scale, timezone=timezone, nullable=nullable)
+        return cls(
+            scale=TimestampUnit.to_scale(unit), timezone=timezone, nullable=nullable
+        )
 
     @property
     def unit(self) -> str:
