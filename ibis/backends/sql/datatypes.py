@@ -556,6 +556,14 @@ class DataFusionType(PostgresType):
         "float64": dt.float64,
     }
 
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
+        key_type = cls.from_ibis(dtype.key_type)
+        value_type = cls.from_ibis(dtype.value_type)
+        return sge.DataType(
+            this=typecode.MAP, expressions=[key_type, value_type], nested=True
+        )
+
 
 class MySQLType(SqlglotType):
     dialect = "mysql"

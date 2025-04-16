@@ -146,7 +146,8 @@ def test_map_values_nulls(con, map):
             ),
             "a",
             marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
+                pytest.mark.notyet(["datafusion"], raises=Exception, strict=False),
             ],
             id="null_both_non_null_key",
         ),
@@ -165,7 +166,8 @@ def test_map_values_nulls(con, map):
             ibis.literal(None, type="map<string, string>"),
             "a",
             marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
+                mark_notyet_datafusion,
             ],
             id="null_map_non_null_key",
         ),
@@ -173,14 +175,14 @@ def test_map_values_nulls(con, map):
             ibis.literal(None, type="map<string, string>"),
             ibis.literal(None, type="string"),
             marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
+                mark_notyet_datafusion,
             ],
             id="null_map_null_key",
         ),
     ],
 )
 @pytest.mark.parametrize("method", ["get", "contains"])
-@mark_notyet_datafusion
 def test_map_get_contains_nulls(con, map, key, method):
     expr = getattr(map, method)
     assert con.execute(expr(key)) is None
@@ -251,7 +253,6 @@ def test_column_map_merge(backend):
     tm.assert_series_equal(result, expected)
 
 
-@mark_notyet_datafusion
 def test_literal_map_keys(con):
     mapping = ibis.literal({"1": "a", "2": "b"})
     expr = mapping.keys().name("tmp")
@@ -262,7 +263,6 @@ def test_literal_map_keys(con):
     assert np.array_equal(result, ["1", "2"])
 
 
-@mark_notyet_datafusion
 def test_literal_map_values(con):
     mapping = ibis.literal({"1": "a", "2": "b"})
     expr = mapping.values().name("tmp")
@@ -271,7 +271,6 @@ def test_literal_map_values(con):
     assert np.array_equal(result, ["a", "b"])
 
 
-@mark_notyet_datafusion
 def test_scalar_isin_literal_map_keys(con):
     mapping = ibis.literal({"a": 1, "b": 2})
     a = ibis.literal("a")
@@ -282,7 +281,6 @@ def test_scalar_isin_literal_map_keys(con):
     assert con.execute(false) == False  # noqa: E712
 
 
-@mark_notyet_datafusion
 def test_map_scalar_contains_key_scalar(con):
     mapping = ibis.literal({"a": 1, "b": 2})
     a = ibis.literal("a")
@@ -293,7 +291,6 @@ def test_map_scalar_contains_key_scalar(con):
     assert con.execute(false) == False  # noqa: E712
 
 
-@mark_notyet_datafusion
 def test_map_scalar_contains_key_column(backend, alltypes, df):
     value = {"1": "a", "3": "c"}
     mapping = ibis.literal(value)
@@ -303,7 +300,6 @@ def test_map_scalar_contains_key_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@mark_notyet_datafusion
 def test_map_column_contains_key_scalar(backend, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     series = df.apply(lambda row: {row["string_col"]: row["int_col"]}, axis=1)
@@ -314,7 +310,6 @@ def test_map_column_contains_key_scalar(backend, alltypes, df):
     backend.assert_series_equal(result, series)
 
 
-@mark_notyet_datafusion
 def test_map_column_contains_key_column(alltypes):
     map_expr = ibis.map(
         ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col])
@@ -466,7 +461,6 @@ def test_map_get_all_types(con, keys, values):
 
 
 @keys
-@mark_notyet_datafusion
 def test_map_contains_all_types(con, keys):
     a = ibis.array(keys)
     m = ibis.map(a, a)
@@ -521,7 +515,6 @@ def test_map_construct_array_column(con, alltypes, df):
 
 
 @mark_notyet_postgres
-@mark_notyet_datafusion
 def test_map_get_with_compatible_value_smaller(con):
     value = ibis.literal({"A": 1000, "B": 2000})
     expr = value.get("C", 3)
@@ -529,7 +522,6 @@ def test_map_get_with_compatible_value_smaller(con):
 
 
 @mark_notyet_postgres
-@mark_notyet_datafusion
 def test_map_get_with_compatible_value_bigger(con):
     value = ibis.literal({"A": 1, "B": 2})
     expr = value.get("C", 3000)
@@ -537,7 +529,6 @@ def test_map_get_with_compatible_value_bigger(con):
 
 
 @mark_notyet_postgres
-@mark_notyet_datafusion
 def test_map_get_with_incompatible_value_different_kind(con):
     value = ibis.literal({"A": 1000, "B": 2000})
     expr = value.get("C", 3.0)
@@ -574,7 +565,6 @@ def test_map_get_with_null_on_null_type_with_null(con, null_value):
     ["flink"], raises=Py4JJavaError, reason="Flink cannot handle typeless nulls"
 )
 @mark_notyet_postgres
-@mark_notyet_datafusion
 def test_map_get_with_null_on_null_type_with_non_null(con):
     value = ibis.literal({"A": None, "B": None})
     expr = value.get("C", 1)
@@ -600,7 +590,6 @@ def test_map_create_table(con, temp_table):
     raises=exc.OperationNotDefinedError,
     reason="No translation rule for <class 'ibis.expr.operations.maps.MapLength'>",
 )
-@mark_notyet_datafusion
 def test_map_length(con):
     expr = ibis.literal(dict(a="A", b="B")).length()
     assert con.execute(expr) == 2
@@ -613,7 +602,6 @@ def test_map_keys_unnest(backend):
     assert frozenset(result) == frozenset("abcdef")
 
 
-@mark_notyet_datafusion
 def test_map_contains_null(con):
     expr = ibis.map(["a"], ibis.literal([None], type="array<string>"))
     assert con.execute(expr.contains("a"))

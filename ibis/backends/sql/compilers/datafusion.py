@@ -67,6 +67,8 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.EndsWith: "ends_with",
         ops.ArrayIntersect: "array_intersect",
         ops.ArrayUnion: "array_union",
+        ops.MapKeys: "map_keys",
+        ops.MapValues: "map_values",
     }
 
     def _to_timestamp(self, value, target_dtype, literal=False):
@@ -540,6 +542,17 @@ class DataFusionCompiler(SQLGlotCompiler):
             ),
             map(partial(self.cast, to=op.dtype), arg),
         )
+
+    def visit_MapGet(self, op, *, arg, key, default):
+        if op.dtype.is_null():
+            return NULL
+        return self.f.coalesce(self.f.map_extract(arg, key)[1], default)
+
+    def visit_MapContains(self, op, *, arg, key):
+        return self.f.array_has(self.f.map_keys(arg), key)
+
+    def visit_MapLength(self, op, *, arg):
+        return self.f.array_length(self.f.map_keys(arg))
 
 
 compiler = DataFusionCompiler()
