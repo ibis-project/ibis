@@ -1,0 +1,30 @@
+# Casting between datatypes
+
+This is a compendium of how ibis treats casts between various datatypes.
+This often follows the semantics of the underlying backend, but
+sometimes ibis adds some glue code in between to make things consistent
+between backends.
+
+## Timestamps
+
+When casting from numeric types such as integers, decimals, and floating values,
+timestamps treated as the number of seconds since the epoch.
+So `0` is `1970-01-01 00:00:00` and `1` is `1970-01-01 00:00:01`.
+Subsecond fractions are supported when possible.
+Casting to numeric types is not implemented for most backends,
+but should be the inverse of the above.
+For example, `ibis.literal('1970-01-01 00:00:01').cast(int)` should return `1`.
+If the timestamp has subsecond resolution, timestamp is truncated to the second.
+
+When casting to/from strings, the format is `YYYY-MM-DD HH:MM:SS[.SSSSSSSSS]`.
+We haven't gotten to defining behavior with timezones in the string yet.
+Some backends may work, but others may not.
+PRs to implement this are welcomed!
+
+## Intervals
+
+When casting to/from numeric types such as integers, decimals, and floating values,
+intervals are treated as the number of the particular interval.
+For example `ibis.literal(123).cast("interval('s')")` results in
+an interval of 123 seconds.
+Casting the other direction from intervals to integers is not currently supported.
