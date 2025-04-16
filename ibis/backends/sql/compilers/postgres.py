@@ -700,7 +700,7 @@ $$""".format(
 
         if from_.is_timestamp() and to.is_integer():
             return self.f.extract("epoch", arg)
-        elif from_.is_integer() and to.is_timestamp():
+        elif from_.is_numeric() and to.is_timestamp():
             arg = self.f.to_timestamp(arg)
             if (timezone := to.timezone) is not None:
                 arg = self.f.timezone(timezone, arg)

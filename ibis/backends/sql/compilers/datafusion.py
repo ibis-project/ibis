@@ -69,21 +69,29 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.ArrayUnion: "array_union",
     }
 
-    def _to_timestamp(self, value, target_dtype, literal=False):
+    def _to_timestamp(self, value, target_dtype: dt.Timestamp, from_: dt.DataType):
         tz = (
             f'Some("{timezone}")'
             if (timezone := target_dtype.timezone) is not None
             else "None"
         )
-        unit = (
-            target_dtype.unit.name.capitalize()
-            if target_dtype.scale is not None
-            else "Microsecond"
-        )
-        str_value = str(value) if literal else value
-        return self.f.arrow_cast(str_value, f"Timestamp({unit}, {tz})")
+        if target_dtype.scale is None:
+            if from_.is_integer():
+                unit = TimestampUnit.SECOND
+            else:
+                unit = TimestampUnit.MICROSECOND
+        else:
+            unit = target_dtype.unit
+        if from_.is_numeric():
+            if unit == TimestampUnit.NANOSECOND:
+                raise com.UnsupportedOperationError(
+                    "Ibis has not implemented casting numeric to timestamp with nanosecond precision"
+                )
+            scale = TimestampUnit.to_scale(unit)
+            value *= 10**scale
+        return self.f.arrow_cast(value, f"Timestamp({unit.name.capitalize()}, {tz})")
 
-    def visit_NonNullLiteral(self, op, *, value, dtype):
+    def visit_NonNullLiteral(self, op: ops.Literal, *, value, dtype: dt.DataType):
         if dtype.is_decimal():
             return self.cast(
                 sg.exp.convert(str(value)),
@@ -107,7 +115,7 @@ class DataFusionCompiler(SQLGlotCompiler):
                 unit=sg.exp.var(dtype.unit.plural.lower()),
             )
         elif dtype.is_timestamp():
-            return self._to_timestamp(value, dtype, literal=True)
+            return self._to_timestamp(str(value), dtype, from_=dt.infer(value))
         elif dtype.is_date():
             return self.f.date_trunc("day", value.isoformat())
         elif dtype.is_binary():
@@ -124,13 +132,14 @@ class DataFusionCompiler(SQLGlotCompiler):
             return None
 
     def visit_Cast(self, op, *, arg, to):
+        from_ = op.arg.dtype
         if to.is_interval():
             unit = to.unit.name.lower()
             return sg.cast(
                 self.f.concat(self.cast(arg, dt.string), f" {unit}"), "interval"
             )
         if to.is_timestamp():
-            return self._to_timestamp(arg, to)
+            return self._to_timestamp(arg, to, from_=from_)
         if to.is_decimal():
             from ibis.formats.pyarrow import PyArrowType
 

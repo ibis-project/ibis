@@ -112,7 +112,10 @@ class SQLiteCompiler(SQLGlotCompiler):
                     "SQLite does not support casting to timezones other than 'UTC'"
                 )
             if op.arg.dtype.is_numeric():
-                return self.f.datetime(arg, "unixepoch")
+                if op.arg.dtype.is_integer():
+                    return self.f.datetime(arg, "unixepoch")
+                else:
+                    return self.f.datetime(arg, "unixepoch", "subsec")
             else:
                 return self.f.strftime("%Y-%m-%d %H:%M:%f", arg)
         elif to.is_date():

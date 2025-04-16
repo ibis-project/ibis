@@ -555,7 +555,7 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
-        if from_.is_integer() and to.is_timestamp():
+        if from_.is_numeric() and to.is_timestamp():
             return self.f.from_unixtime(arg, to.timezone or "UTC")
         return super().visit_Cast(op, arg=arg, to=to)
 

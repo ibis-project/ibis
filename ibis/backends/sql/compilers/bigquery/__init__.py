@@ -607,8 +607,10 @@ class BigQueryCompiler(SQLGlotCompiler):
         from_ = op.arg.dtype
         if from_.is_timestamp() and to.is_integer():
             return self.f.unix_micros(arg)
-        elif from_.is_integer() and to.is_timestamp():
-            return self.f.timestamp_seconds(arg)
+        elif from_.is_numeric() and to.is_timestamp():
+            if from_.is_integer():
+                return self.f.timestamp_seconds(arg)
+            return self.f.timestamp_micros(arg * 1_000_000)
         elif from_.is_interval() and to.is_integer():
             if from_.unit in {
                 IntervalUnit.WEEK,
