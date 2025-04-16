@@ -806,11 +806,17 @@ def timestamp(
     second: int | ir.IntegerValue | Deferred,
     /,
     timezone: str | None = None,
+    nullable: bool = True,
 ) -> TimestampValue: ...
 
 
 @overload
-def timestamp(value_or_year: Any, /, timezone: str | None = None) -> TimestampValue: ...
+def timestamp(
+    value_or_year: str | datetime.datetime,
+    /,
+    timezone: str | None = None,
+    nullable: bool = True,
+) -> TimestampValue: ...
 
 
 @deferrable
@@ -823,6 +829,7 @@ def timestamp(
     second=None,
     /,
     timezone=None,
+    nullable: bool = True,
 ):
     """Construct a timestamp scalar or column.
 
@@ -843,6 +850,8 @@ def timestamp(
         The timestamp second component; required if `value_or_year` is a year.
     timezone
         The timezone name, or none for a timezone-naive timestamp.
+    nullable
+        Whether the resulting timestamp should be nullable. Defaults to True.
 
     Returns
     -------
@@ -890,16 +899,17 @@ def timestamp(
             raise NotImplementedError(
                 "Timezone currently not supported when creating a timestamp from components"
             )
-        return ops.TimestampFromYMDHMS(*args).to_expr()
+        return ops.TimestampFromYMDHMS(*args, nullable=nullable).to_expr()
     elif isinstance(value_or_year, (numbers.Real, ir.IntegerValue)):
         raise TypeError("Use ibis.literal(...).as_timestamp() instead")
     elif isinstance(value_or_year, ir.Expr):
-        return value_or_year.cast(dt.Timestamp(timezone=timezone))
+        return value_or_year.cast(dt.Timestamp(timezone=timezone, nullable=nullable))
     else:
         value = normalize_datetime(value_or_year)
         tzinfo = normalize_timezone(timezone or value.tzinfo)
         timezone = tzinfo.tzname(value) if tzinfo is not None else None
-        return literal(value, type=dt.Timestamp(timezone=timezone))
+        dtype = dt.Timestamp.from_datetime(value, timezone=timezone, nullable=nullable)
+        return literal(value, type=dtype)
 
 
 @overload

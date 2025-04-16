@@ -223,7 +223,7 @@ def normalize_timezone(tz):
 
 
 @lazy_singledispatch
-def normalize_datetime(value):
+def normalize_datetime(value) -> datetime.datetime:
     raise TypeError(f"Unable to normalize {type(value)} to timestamp")
 
 

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from itertools import product, starmap
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from public import public
 
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
@@ -13,14 +14,17 @@ from ibis.common.grounds import Concrete
 from ibis.common.patterns import CoercionError, NoMatch, Pattern
 from ibis.common.temporal import IntervalUnit
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 
 @public
-def highest_precedence_shape(nodes):
+def highest_precedence_shape(nodes: Iterable[ops.Value]) -> ds.DataShape:
     return max(node.shape for node in nodes)
 
 
 @public
-def highest_precedence_dtype(nodes):
+def highest_precedence_dtype(nodes: Iterable[ops.Value]) -> dt.DataType:
     """Return the highest precedence type from the passed expressions.
 
     Also verifies that there are valid implicit casts between any of the types
@@ -29,8 +33,8 @@ def highest_precedence_dtype(nodes):
 
     Parameters
     ----------
-    nodes : Iterable[ops.Value]
-      A sequence of Expressions
+    nodes
+      An Iterable of Expressions
 
     Returns
     -------
@@ -42,7 +46,7 @@ def highest_precedence_dtype(nodes):
 
 
 @public
-def castable(source, target):
+def castable(source: ops.Value, target: ops.Value) -> bool:
     """Return whether source ir type is implicitly castable to target.
 
     Based on the underlying datatypes and the value in case of Literals
@@ -52,7 +56,7 @@ def castable(source, target):
 
 
 @public
-def comparable(left, right):
+def comparable(left: ops.Value, right: ops.Value) -> bool:
     return castable(left, right) or castable(right, left)
 
 
@@ -61,26 +65,29 @@ def comparable(left, right):
 
 
 @public
-def dtype_like(name):
+def dtype_like(names: str | Iterable[str]):
     @attribute
-    def dtype(self):
-        args = getattr(self, name)
-        args = args if util.is_iterable(args) else [args]
-        return highest_precedence_dtype(args)
+    def dtype(self) -> dt.DataType:
+        return highest_precedence_dtype(_attributes(self, names))
 
     return dtype
 
 
 @public
-def shape_like(name):
+def shape_like(name: str | Iterable[str]):
     @attribute
-    def shape(self):
-        args = getattr(self, name)
-        args = args if util.is_iterable(args) else [args]
+    def shape(self) -> ds.DataShape:
+        args = _attributes(self, name)
         args = [a for a in args if a is not None]
         return highest_precedence_shape(args)
 
     return shape
+
+
+def _attributes(obj: Any, names: str | Iterable[str]) -> tuple:
+    if isinstance(names, str):
+        return util.promote_tuple(getattr(obj, names))
+    return tuple(getattr(obj, name) for name in names)
 
 
 # TODO(kszucs): might just use bounds instead of actual literal values

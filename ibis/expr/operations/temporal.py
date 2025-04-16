@@ -258,9 +258,17 @@ class TimestampFromYMDHMS(Value):
     hours: Value[dt.Integer]
     minutes: Value[dt.Integer]
     seconds: Value[dt.Integer]
+    nullable: bool = True
 
-    dtype = dt.timestamp
-    shape = rlz.shape_like("args")
+    shape = rlz.shape_like(["year", "month", "day", "hours", "minutes", "seconds"])
+
+    @attribute
+    def dtype(self):
+        return dt.Timestamp(
+            nullable=self.nullable,
+            timezone=None,
+            scale=0,  # second precision
+        )
 
 
 @public

@@ -33,6 +33,7 @@ from ibis.common.temporal import IntervalUnit, TimestampUnit
 
 if TYPE_CHECKING:
     import numpy as np
+    import pandas as pd
     import polars as pl
     import pyarrow as pa
     from pandas.api.extensions import ExtensionDtype
@@ -81,6 +82,62 @@ def dtype(
     value: DataType | str | np.dtype | ExtensionDtype | pl.DataType | pa.DataType,
     nullable: bool = True,
 ) -> DataType: ...
+
+
+if TYPE_CHECKING:
+    import numpy as np
+    import polars as pl
+    import pyarrow as pa
+    from pandas.api.extensions import ExtensionDtype
+
+
+@overload
+def dtype(value: type[int] | Literal["int"], nullable: bool = True) -> Int64: ...
+@overload
+def dtype(
+    value: type[str] | Literal["str", "string"], nullable: bool = True
+) -> String: ...
+@overload
+def dtype(
+    value: type[bool] | Literal["bool", "boolean"], nullable: bool = True
+) -> Boolean: ...
+@overload
+def dtype(value: type[bytes] | Literal["bytes"], nullable: bool = True) -> Binary: ...
+@overload
+def dtype(value: type[Real] | Literal["float"], nullable: bool = True) -> Float64: ...
+@overload
+def dtype(
+    value: type[pydecimal.Decimal] | Literal["decimal"], nullable: bool = True
+) -> Decimal: ...
+@overload
+def dtype(
+    value: type[pydatetime.datetime] | Literal["timestamp"], nullable: bool = True
+) -> Timestamp: ...
+@overload
+def dtype(
+    value: type[pydatetime.date] | Literal["date"], nullable: bool = True
+) -> Date: ...
+@overload
+def dtype(
+    value: type[pydatetime.time] | Literal["time"], nullable: bool = True
+) -> Time: ...
+@overload
+def dtype(
+    value: type[pydatetime.timedelta] | Literal["interval"], nullable: bool = True
+) -> Interval: ...
+@overload
+def dtype(
+    value: type[pyuuid.UUID] | Literal["uuid"], nullable: bool = True
+) -> UUID: ...
+@overload
+def dtype(
+    value: DataType | str | np.dtype | ExtensionDtype | pl.DataType | pa.DataType,
+    nullable: bool = True,
+) -> DataType: ...
+
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 @lazy_singledispatch
@@ -695,6 +752,34 @@ class Timestamp(Temporal, Parametric):
         return cls(
             scale=TimestampUnit.to_scale(unit), timezone=timezone, nullable=nullable
         )
+
+    @classmethod
+    def from_datetime(
+        cls, dt: pydatetime.datetime, timezone: str | None = None, nullable: bool = True
+    ):
+        """Infer from a python datetime.datetime object."""
+        if dt.microsecond:
+            scale = 6
+        else:
+            scale = 0
+        if timezone is None and dt.tzinfo is not None:
+            timezone = str(dt.tzinfo)
+        return cls(scale=scale, timezone=timezone, nullable=nullable)
+
+    @classmethod
+    def from_pandas(
+        cls, value: pd.Timestamp, timezone: str | None = None, nullable: bool = True
+    ):
+        """Infer from a pandas.Timestamp."""
+        if value.nanosecond:
+            scale = 9
+        elif value.microsecond:
+            scale = 6
+        else:
+            scale = 0
+        if timezone is None and value.tz is not None:
+            timezone = str(value.tz)
+        return cls(timezone=timezone, scale=scale, nullable=nullable)
 
     @property
     def unit(self) -> str:
