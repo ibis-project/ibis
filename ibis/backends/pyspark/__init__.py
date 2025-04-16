@@ -1018,8 +1018,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
-        from ibis.formats.pyarrow import PyArrowData
+        from ibis.formats.pyarrow import PyArrowData, to_pa_compatible
 
+        expr = to_pa_compatible(expr)
         table_expr = expr.as_table()
         output = pa.Table.from_pandas(
             self.execute(table_expr, params=params, limit=limit, **kwargs),
@@ -1038,11 +1039,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         chunk_size: int = 1_000_000,
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
+        from ibis.formats.pyarrow import to_pa_compatible
+
         if self.mode == "streaming":
             raise NotImplementedError(
                 "PySpark in streaming mode does not support to_pyarrow_batches"
             )
         pa = self._import_pyarrow()
+        expr = to_pa_compatible(expr)
         pa_table = self.to_pyarrow(
             expr.as_table(), params=params, limit=limit, **kwargs
         )

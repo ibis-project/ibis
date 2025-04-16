@@ -797,6 +797,8 @@ ORDER BY a.attnum ASC"""
         import pandas as pd
         import pyarrow as pa
 
+        from ibis.formats.pyarrow import to_pa_compatible
+
         def _batches(self: Self, *, schema: pa.Schema, query: str):
             con = self.con
             columns = schema.names
@@ -813,6 +815,7 @@ ORDER BY a.attnum ASC"""
 
         self._run_pre_execute_hooks(expr)
 
+        expr = to_pa_compatible(expr)
         schema = expr.as_table().schema().to_pyarrow()
         query = self.compile(expr, limit=limit, params=params)
         return pa.RecordBatchReader.from_batches(
