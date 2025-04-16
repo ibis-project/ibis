@@ -403,16 +403,13 @@ class DuckDBCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
     def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds, **_
+        self, op, *, year, month, day, hours, minutes, seconds, dtype: dt.Timestamp, **_
     ):
         args = [year, month, day, hours, minutes, seconds]
-
-        func = "make_timestamp"
-        if (timezone := op.dtype.timezone) is not None:
-            func += "tz"
-            args.append(timezone)
-
-        return self.f[func](*args)
+        if (timezone := dtype.timezone) is not None:
+            return self.f.make_timestamptz(*args, timezone)
+        else:
+            return self.f.make_timestamp(*args)
 
     def visit_Cast(self, op, *, arg, to):
         dtype = op.arg.dtype

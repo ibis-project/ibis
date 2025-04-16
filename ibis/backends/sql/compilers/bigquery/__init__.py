@@ -527,9 +527,11 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.f.strpos(haystack, needle) > 0
 
     def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds
+        self, op, *, year, month, day, hours, minutes, seconds, dtype: dt.Timestamp
     ):
-        return self.f.anon.DATETIME(year, month, day, hours, minutes, seconds)
+        if dtype.timezone is not None:
+            raise NotImplementedError()
+        return self.f.datetime_from_parts(year, month, day, hours, minutes, seconds)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_inet() or dtype.is_macaddr():

@@ -381,7 +381,7 @@ class FlinkCompiler(SQLGlotCompiler):
         )
 
     def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds
+        self, op, *, year, month, day, hours, minutes, seconds, dtype: dt.Timestamp
     ):
         padded_year = self.f.lpad(self.cast(year, dt.string), 4, "0")
         padded_month = self.f.lpad(self.cast(month, dt.string), 2, "0")
@@ -403,7 +403,7 @@ class FlinkCompiler(SQLGlotCompiler):
                 ":",
                 padded_second,
             ),
-            op.dtype,
+            dtype,
         )
 
     def visit_ExtractEpochSeconds(self, op, *, arg):

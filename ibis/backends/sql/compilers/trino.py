@@ -323,7 +323,7 @@ class TrinoCompiler(SQLGlotCompiler):
         )
 
     def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds
+        self, op, *, year, month, day, hours, minutes, seconds, dtype: dt.Timestamp
     ):
         return self.cast(
             self.f.from_iso8601_timestamp(
@@ -337,7 +337,7 @@ class TrinoCompiler(SQLGlotCompiler):
                     seconds,
                 )
             ),
-            dt.timestamp,
+            dtype,
         )
 
     def visit_TimestampFromUNIX(self, op, *, arg, unit):

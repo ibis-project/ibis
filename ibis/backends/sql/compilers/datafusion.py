@@ -424,24 +424,25 @@ class DataFusionCompiler(SQLGlotCompiler):
         )
 
     def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds, **_
+        self, op, *, year, month, day, hours, minutes, seconds, dtype: dt.Timestamp, **_
     ):
-        return self.f.to_timestamp_micros(
-            self.f.concat(
-                self.f.lpad(self.cast(self.cast(year, dt.int64), dt.string), 4, "0"),
-                "-",
-                self.f.lpad(self.cast(self.cast(month, dt.int64), dt.string), 2, "0"),
-                "-",
-                self.f.lpad(self.cast(self.cast(day, dt.int64), dt.string), 2, "0"),
-                "T",
-                self.f.lpad(self.cast(self.cast(hours, dt.int64), dt.string), 2, "0"),
-                ":",
-                self.f.lpad(self.cast(self.cast(minutes, dt.int64), dt.string), 2, "0"),
-                ":",
-                self.f.lpad(self.cast(self.cast(seconds, dt.int64), dt.string), 2, "0"),
-                ".000000Z",
-            )
-        )
+        args = [
+            self.f.lpad(self.cast(self.cast(year, dt.int64), dt.string), 4, "0"),
+            "-",
+            self.f.lpad(self.cast(self.cast(month, dt.int64), dt.string), 2, "0"),
+            "-",
+            self.f.lpad(self.cast(self.cast(day, dt.int64), dt.string), 2, "0"),
+            "T",
+            self.f.lpad(self.cast(self.cast(hours, dt.int64), dt.string), 2, "0"),
+            ":",
+            self.f.lpad(self.cast(self.cast(minutes, dt.int64), dt.string), 2, "0"),
+            ":",
+            self.f.lpad(self.cast(self.cast(seconds, dt.int64), dt.string), 2, "0"),
+            "Z",
+        ]
+        if dtype.timezone is not None:
+            args.append(dtype.timezone)
+        return self.f.to_timestamp_seconds(self.f.concat(*args))
 
     def visit_IsInf(self, op, *, arg):
         return sg.and_(sg.not_(self.f.isnan(arg)), self.f.abs(arg).eq(self.POS_INF))

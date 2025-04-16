@@ -662,10 +662,10 @@ $$""".format(
         return None
 
     def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds
+        self, op, *, year, month, day, hours, minutes, seconds, dtype: dt.Timestamp
     ):
         to_int32 = partial(self.cast, to=dt.int32)
-        return self.f.make_timestamp(
+        args = (
             to_int32(year),
             to_int32(month),
             to_int32(day),
@@ -673,6 +673,10 @@ $$""".format(
             to_int32(minutes),
             self.cast(seconds, dt.float64),
         )
+        if dtype.timezone:
+            return self.f.make_timestamptz(*args, dtype.timezone)
+        else:
+            return self.f.make_timestamp(*args)
 
     def visit_DateFromYMD(self, op, *, year, month, day):
         to_int32 = partial(self.cast, to=dt.int32)
