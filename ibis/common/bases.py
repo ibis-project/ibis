@@ -82,10 +82,10 @@ class Abstract(metaclass=AbstractMeta):
 class Immutable(Abstract):
     """Prohibit attribute assignment on the instance."""
 
-    def __copy__(self):
+    def __copy__(self) -> Self:
         return self
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo) -> Self:
         return self
 
     def __setattr__(self, name: str, _: Any) -> None:
@@ -101,7 +101,7 @@ class Singleton(Abstract):
     __instances__: Mapping[Any, Self] = WeakValueDictionary()
 
     @classmethod
-    def __create__(cls, *args, **kwargs):
+    def __create__(cls, *args, **kwargs) -> Self:
         key = (cls, args, tuple(kwargs.items()))
         try:
             return cls.__instances__[key]
@@ -187,6 +187,8 @@ class Slotted(Abstract, metaclass=SlottedMeta):
     The class is mostly used to reduce boilerplate code.
     """
 
+    __fields__: tuple[str, ...]
+
     def __init__(self, **kwargs) -> None:
         for field in self.__fields__:
             object.__setattr__(self, field, kwargs[field])
@@ -198,14 +200,14 @@ class Slotted(Abstract, metaclass=SlottedMeta):
             return NotImplemented
         return all(getattr(self, n) == getattr(other, n) for n in self.__fields__)
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         return {k: getattr(self, k) for k in self.__fields__}
 
-    def __setstate__(self, state):
+    def __setstate__(self, state) -> None:
         for name, value in state.items():
             object.__setattr__(self, name, value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         fields = {k: getattr(self, k) for k in self.__fields__}
         fieldstring = ", ".join(f"{k}={v!r}" for k, v in fields.items())
         return f"{self.__class__.__name__}({fieldstring})"

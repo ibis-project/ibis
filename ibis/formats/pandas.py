@@ -20,8 +20,11 @@ from ibis.formats.numpy import NumpyType
 from ibis.formats.pyarrow import PyArrowData, PyArrowSchema, PyArrowType
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import polars as pl
     import pyarrow as pa
+    from pandas.api.extensions import ExtensionDtype
 
 geospatial_supported = _find_spec("geopandas") is not None
 
@@ -48,7 +51,7 @@ class PandasType(NumpyType):
             return super().to_ibis(typ, nullable=nullable)
 
     @classmethod
-    def from_ibis(cls, dtype):
+    def from_ibis(cls, dtype) -> np.dtype | pd.Ex:
         if dtype.is_timestamp() and dtype.timezone:
             return pdt.DatetimeTZDtype("ns", dtype.timezone)
         elif dtype.is_date():
@@ -61,7 +64,9 @@ class PandasType(NumpyType):
 
 class PandasSchema(SchemaMapper):
     @classmethod
-    def to_ibis(cls, pandas_schema):
+    def to_ibis(
+        cls, pandas_schema: pd.Series | Iterable[tuple[str, np.dtype | ExtensionDtype]]
+    ) -> sch.Schema:
         if isinstance(pandas_schema, pd.Series):
             pandas_schema = pandas_schema.to_list()
 
@@ -70,7 +75,9 @@ class PandasSchema(SchemaMapper):
         return sch.Schema(fields)
 
     @classmethod
-    def from_ibis(cls, schema):
+    def from_ibis(
+        cls, schema: sch.Schema
+    ) -> list[tuple[str, np.dtype | ExtensionDtype]]:
         names = schema.names
         types = [PandasType.from_ibis(t) for t in schema.types]
         return list(zip(names, types))

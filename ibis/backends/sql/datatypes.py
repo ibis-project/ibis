@@ -1346,7 +1346,7 @@ class AthenaType(SqlglotType):
     dialect = "athena"
 
 
-TYPE_MAPPERS = {
+TYPE_MAPPERS: dict[str, SqlglotType] = {
     mapper.dialect: mapper
     for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
 }

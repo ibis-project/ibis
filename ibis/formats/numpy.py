@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats import SchemaMapper, TypeMapper
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 _from_numpy_types = toolz.keymap(
     np.dtype,
@@ -92,11 +97,11 @@ class NumpyType(TypeMapper[np.dtype]):
 
 class NumpySchema(SchemaMapper):
     @classmethod
-    def from_ibis(cls, schema):
+    def from_ibis(cls, schema) -> list[tuple[str, np.dtype]]:
         numpy_types = map(NumpyType.from_ibis, schema.types)
         return list(zip(schema.names, numpy_types))
 
     @classmethod
-    def to_ibis(cls, schema):
+    def to_ibis(cls, schema: Iterable[tuple[str, np.dtype]]) -> sch.Schema:
         ibis_types = {name: NumpyType.to_ibis(typ) for name, typ in schema}
         return sch.Schema(ibis_types)

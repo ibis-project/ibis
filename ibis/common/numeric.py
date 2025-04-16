@@ -8,7 +8,7 @@ def normalize_decimal(
     precision: int | None = None,
     scale: int | None = None,
     strict: bool = True,
-):
+) -> Decimal:
     context = Context(prec=38 if precision is None else precision)
 
     try:
