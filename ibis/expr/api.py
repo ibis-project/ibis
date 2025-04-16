@@ -895,11 +895,8 @@ def timestamp(
     is_ymdhms = any(a is not None for a in args[1:])
 
     if is_ymdhms:
-        if timezone is not None:
-            raise NotImplementedError(
-                "Timezone currently not supported when creating a timestamp from components"
-            )
-        return ops.TimestampFromYMDHMS(*args, nullable=nullable).to_expr()
+        dtype = dt.Timestamp(timezone=timezone, nullable=nullable, scale=0)
+        return ops.TimestampFromYMDHMS(*args, dtype=dtype).to_expr()
     elif isinstance(value_or_year, (numbers.Real, ir.IntegerValue)):
         raise TypeError("Use ibis.literal(...).as_timestamp() instead")
     elif isinstance(value_or_year, ir.Expr):
@@ -908,7 +905,7 @@ def timestamp(
         value = normalize_datetime(value_or_year)
         tzinfo = normalize_timezone(timezone or value.tzinfo)
         timezone = tzinfo.tzname(value) if tzinfo is not None else None
-        dtype = dt.Timestamp.from_datetime(value, timezone=timezone, nullable=nullable)
+        dtype = dt.Timestamp.from_datetime(value, nullable=nullable)
         return literal(value, type=dtype)
 
 

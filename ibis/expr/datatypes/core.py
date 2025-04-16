@@ -754,16 +754,16 @@ class Timestamp(Temporal, Parametric):
         )
 
     @classmethod
-    def from_datetime(
-        cls, dt: pydatetime.datetime, timezone: str | None = None, nullable: bool = True
-    ):
+    def from_datetime(cls, dt: pydatetime.datetime, *, nullable: bool = True):
         """Infer from a python datetime.datetime object."""
         if dt.microsecond:
             scale = 6
         else:
             scale = 0
-        if timezone is None and dt.tzinfo is not None:
+        if dt.tzinfo is not None:
             timezone = str(dt.tzinfo)
+        else:
+            timezone = None
         return cls(scale=scale, timezone=timezone, nullable=nullable)
 
     @classmethod
