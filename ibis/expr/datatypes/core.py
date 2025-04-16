@@ -8,6 +8,7 @@ from abc import abstractmethod
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from numbers import Integral, Real
 from typing import (
+    TYPE_CHECKING,
     Annotated,
     Any,
     Generic,
@@ -16,6 +17,7 @@ from typing import (
     Optional,
     TypeVar,
     get_type_hints,
+    overload,
 )
 
 import toolz
@@ -29,9 +31,60 @@ from ibis.common.grounds import Concrete, Singleton
 from ibis.common.patterns import Between, Coercible, CoercionError
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 
+if TYPE_CHECKING:
+    import numpy as np
+    import polars as pl
+    import pyarrow as pa
+    from pandas.api.extensions import ExtensionDtype
+
+
+@overload
+def dtype(value: type[int] | Literal["int"], nullable: bool = True) -> Int64: ...
+@overload
+def dtype(
+    value: type[str] | Literal["str", "string"], nullable: bool = True
+) -> String: ...
+@overload
+def dtype(
+    value: type[bool] | Literal["bool", "boolean"], nullable: bool = True
+) -> Boolean: ...
+@overload
+def dtype(value: type[bytes] | Literal["bytes"], nullable: bool = True) -> Binary: ...
+@overload
+def dtype(value: type[Real] | Literal["float"], nullable: bool = True) -> Float64: ...
+@overload
+def dtype(
+    value: type[pydecimal.Decimal] | Literal["decimal"], nullable: bool = True
+) -> Decimal: ...
+@overload
+def dtype(
+    value: type[pydatetime.datetime] | Literal["timestamp"], nullable: bool = True
+) -> Timestamp: ...
+@overload
+def dtype(
+    value: type[pydatetime.date] | Literal["date"], nullable: bool = True
+) -> Date: ...
+@overload
+def dtype(
+    value: type[pydatetime.time] | Literal["time"], nullable: bool = True
+) -> Time: ...
+@overload
+def dtype(
+    value: type[pydatetime.timedelta] | Literal["interval"], nullable: bool = True
+) -> Interval: ...
+@overload
+def dtype(
+    value: type[pyuuid.UUID] | Literal["uuid"], nullable: bool = True
+) -> UUID: ...
+@overload
+def dtype(
+    value: DataType | str | np.dtype | ExtensionDtype | pl.DataType | pa.DataType,
+    nullable: bool = True,
+) -> DataType: ...
+
 
 @lazy_singledispatch
-def dtype(value: Any, nullable: bool = True) -> DataType:
+def dtype(value, nullable=True) -> DataType:
     """Create a DataType object.
 
     Parameters
@@ -147,27 +200,27 @@ class DataType(Concrete, Coercible):
         prefix = "!" * (not self.nullable)
         return f"{prefix}{self.name.lower()}{self._pretty_piece}"
 
-    def equals(self, other):
+    def equals(self, other: DataType) -> bool:
         if not isinstance(other, DataType):
             raise TypeError(
                 f"invalid equality comparison between DataType and {type(other)}"
             )
         return self == other
 
-    def cast(self, other, **kwargs):
+    def cast(self, other: str | DataType, **kwargs) -> DataType:
         # TODO(kszucs): remove it or deprecate it?
         from ibis.expr.datatypes.cast import cast
 
         return cast(self, other, **kwargs)
 
-    def castable(self, to, **kwargs) -> bool:
+    def castable(self, to: DataType, **kwargs) -> bool:
         """Check whether this type is castable to another."""
         from ibis.expr.datatypes.cast import castable
 
         return castable(self, to, **kwargs)
 
     @classmethod
-    def from_string(cls, value, nullable: bool = True) -> Self:
+    def from_string(cls, value: str, nullable: bool = True) -> Self:
         from ibis.expr.datatypes.parse import parse
 
         try:
@@ -236,52 +289,54 @@ class DataType(Concrete, Coercible):
             raise TypeError(f"Value {typ!r} is not a valid datatype")
 
     @classmethod
-    def from_numpy(cls, numpy_type, nullable=True) -> Self:
+    def from_numpy(cls, numpy_type: np.dtype, nullable: bool = True) -> Self:
         """Return the equivalent ibis datatype."""
         from ibis.formats.numpy import NumpyType
 
         return NumpyType.to_ibis(numpy_type, nullable=nullable)
 
     @classmethod
-    def from_pandas(cls, pandas_type, nullable=True) -> Self:
+    def from_pandas(
+        cls, pandas_type: np.dtype | ExtensionDtype, nullable: bool = True
+    ) -> Self:
         """Return the equivalent ibis datatype."""
         from ibis.formats.pandas import PandasType
 
         return PandasType.to_ibis(pandas_type, nullable=nullable)
 
     @classmethod
-    def from_pyarrow(cls, arrow_type, nullable=True) -> Self:
+    def from_pyarrow(cls, arrow_type: pa.DataType, nullable: bool = True) -> Self:
         """Return the equivalent ibis datatype."""
         from ibis.formats.pyarrow import PyArrowType
 
         return PyArrowType.to_ibis(arrow_type, nullable=nullable)
 
     @classmethod
-    def from_polars(cls, polars_type, nullable=True) -> Self:
+    def from_polars(cls, polars_type: pl.DataType, nullable: bool = True) -> Self:
         """Return the equivalent ibis datatype."""
         from ibis.formats.polars import PolarsType
 
         return PolarsType.to_ibis(polars_type, nullable=nullable)
 
-    def to_numpy(self):
+    def to_numpy(self) -> np.dtype:
         """Return the equivalent numpy datatype."""
         from ibis.formats.numpy import NumpyType
 
         return NumpyType.from_ibis(self)
 
-    def to_pandas(self):
+    def to_pandas(self) -> np.dtype | ExtensionDtype:
         """Return the equivalent pandas datatype."""
         from ibis.formats.pandas import PandasType
 
         return PandasType.from_ibis(self)
 
-    def to_pyarrow(self):
+    def to_pyarrow(self) -> pa.DataType:
         """Return the equivalent pyarrow datatype."""
         from ibis.formats.pyarrow import PyArrowType
 
         return PyArrowType.from_ibis(self)
 
-    def to_polars(self):
+    def to_polars(self) -> pl.DataType:
         """Return the equivalent polars datatype."""
         from ibis.formats.polars import PolarsType
 
@@ -624,7 +679,7 @@ class Timestamp(Temporal, Parametric):
     column = "TimestampColumn"
 
     @classmethod
-    def from_unit(cls, unit, timezone=None, nullable=True):
+    def from_unit(cls, unit, timezone=None, nullable=True) -> Self:
         """Return a timestamp type with the given unit and timezone."""
         unit = TimestampUnit(unit)
         if unit == TimestampUnit.SECOND:
@@ -676,7 +731,7 @@ class SignedInteger(Integer):
     """Signed integer values."""
 
     @property
-    def bounds(self):
+    def bounds(self) -> Bounds:
         exp = self.nbytes * 8 - 1
         upper = (1 << exp) - 1
         return Bounds(lower=~upper, upper=upper)
@@ -687,7 +742,7 @@ class UnsignedInteger(Integer):
     """Unsigned integer values."""
 
     @property
-    def bounds(self):
+    def bounds(self) -> Bounds:
         exp = self.nbytes * 8
         upper = (1 << exp) - 1
         return Bounds(lower=0, upper=upper)
@@ -849,7 +904,7 @@ class Interval(Parametric):
     column = "IntervalColumn"
 
     @property
-    def resolution(self):
+    def resolution(self) -> str:
         """The interval unit's name."""
         return self.unit.singular
 
@@ -870,7 +925,7 @@ class Struct(Parametric, MapSet):
     @classmethod
     def from_tuples(
         cls, pairs: Iterable[tuple[str, str | DataType]], nullable: bool = True
-    ) -> Struct:
+    ) -> Self:
         """Construct a `Struct` type from pairs.
 
         Parameters

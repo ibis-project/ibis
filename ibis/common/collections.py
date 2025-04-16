@@ -120,15 +120,15 @@ class Mapping(Collection[K], Generic[K, V]):
     """Mapping abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __getitem__(self, key): ...
+    def __getitem__(self, key) -> V: ...
 
-    def get(self, key, default=None):
+    def get(self, key, default=None) -> V | None:
         try:
             return self[key]
         except KeyError:
             return default
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         try:
             self[key]
         except KeyError:
@@ -136,16 +136,16 @@ class Mapping(Collection[K], Generic[K, V]):
         else:
             return True
 
-    def keys(self):
+    def keys(self) -> collections.abc.KeysView[K]:
         return collections.abc.KeysView(self)
 
-    def items(self):
+    def items(self) -> collections.abc.ItemsView[K, V]:
         return collections.abc.ItemsView(self)
 
     def values(self):
         return collections.abc.ValuesView(self)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         return dict(self.items()) == dict(other.items())
@@ -347,20 +347,20 @@ class RewindableIterator(Iterator[V]):
 
     __slots__ = ("_checkpoint", "_iterator")
 
-    def __init__(self, iterable):
+    def __init__(self, iterable: collections.abc.Iterable[V]) -> None:
         self._iterator = iter(iterable)
         self._checkpoint = None
 
-    def __next__(self):
+    def __next__(self) -> V:
         return next(self._iterator)
 
-    def rewind(self):
+    def rewind(self) -> None:
         """Rewind the iterator to the last checkpoint."""
         if self._checkpoint is None:
             raise ValueError("No checkpoint to rewind to.")
         self._iterator, self._checkpoint = tee(self._checkpoint)
 
-    def checkpoint(self):
+    def checkpoint(self) -> None:
         """Create a checkpoint of the current iterator state."""
         self._iterator, self._checkpoint = tee(self._iterator)
 

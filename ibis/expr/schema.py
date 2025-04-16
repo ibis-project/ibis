@@ -14,12 +14,15 @@ from ibis.common.patterns import Coercible
 from ibis.util import indent
 
 if TYPE_CHECKING:
+    import numpy as np
+    import pyarrow as pa
     import sqlglot as sg
     import sqlglot.expressions as sge
-    from typing_extensions import TypeAlias
+    from pandas.api.extensions import ExtensionDtype
+    from typing_extensions import Self, TypeAlias
 
 
-class Schema(Concrete, Coercible, MapSet):
+class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
     """An ordered mapping of str -> [datatype](./datatypes.qmd), used to hold a [Table](./expression-tables.qmd#ibis.expr.tables.Table)'s schema."""
 
     fields: FrozenOrderedDict[str, dt.DataType]
@@ -108,7 +111,7 @@ class Schema(Concrete, Coercible, MapSet):
     def from_tuples(
         cls,
         values: Iterable[tuple[str, str | dt.DataType]],
-    ) -> Schema:
+    ) -> Self:
         """Construct a `Schema` from an iterable of pairs.
 
         Parameters
@@ -150,46 +153,46 @@ class Schema(Concrete, Coercible, MapSet):
         return cls(dict(zip(names, types)))
 
     @classmethod
-    def from_numpy(cls, numpy_schema):
+    def from_numpy(cls, numpy_schema) -> Self:
         """Return the equivalent ibis schema."""
         from ibis.formats.numpy import NumpySchema
 
         return NumpySchema.to_ibis(numpy_schema)
 
     @classmethod
-    def from_pandas(cls, pandas_schema):
+    def from_pandas(cls, pandas_schema) -> Self:
         """Return the equivalent ibis schema."""
         from ibis.formats.pandas import PandasSchema
 
         return PandasSchema.to_ibis(pandas_schema)
 
     @classmethod
-    def from_pyarrow(cls, pyarrow_schema):
+    def from_pyarrow(cls, pyarrow_schema) -> Self:
         """Return the equivalent ibis schema."""
         from ibis.formats.pyarrow import PyArrowSchema
 
         return PyArrowSchema.to_ibis(pyarrow_schema)
 
     @classmethod
-    def from_polars(cls, polars_schema):
+    def from_polars(cls, polars_schema) -> Self:
         """Return the equivalent ibis schema."""
         from ibis.formats.polars import PolarsSchema
 
         return PolarsSchema.to_ibis(polars_schema)
 
-    def to_numpy(self):
+    def to_numpy(self) -> list[tuple[str, np.dtype]]:
         """Return the equivalent numpy dtypes."""
         from ibis.formats.numpy import NumpySchema
 
         return NumpySchema.from_ibis(self)
 
-    def to_pandas(self):
+    def to_pandas(self) -> list[tuple[str, np.dtype | ExtensionDtype]]:
         """Return the equivalent pandas datatypes."""
         from ibis.formats.pandas import PandasSchema
 
         return PandasSchema.from_ibis(self)
 
-    def to_pyarrow(self):
+    def to_pyarrow(self) -> pa.Schema:
         """Return the equivalent pyarrow schema."""
         from ibis.formats.pyarrow import PyArrowSchema
 

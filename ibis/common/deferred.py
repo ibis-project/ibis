@@ -5,7 +5,7 @@ import functools
 import inspect
 import operator
 from abc import abstractmethod
-from typing import Any, Callable, TypeVar, overload
+from typing import Any, Callable, NoReturn, TypeVar, overload
 
 from ibis.common.bases import Final, FrozenSlotted, Hashable, Immutable, Slotted
 from ibis.common.collections import FrozenDict
@@ -89,23 +89,23 @@ class Deferred(Slotted, Immutable, Final):
         context = {"_": _, **kwargs}
         return self._resolver.resolve(context)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self._resolver) if self._repr is None else self._repr
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Deferred:
         if name.startswith("__") and name.endswith("__"):
             raise AttributeError(name)
         return Deferred(Attr(self, name))
 
-    def __iter__(self):
+    def __iter__(self) -> NoReturn:
         raise TypeError(f"{self.__class__.__name__!r} object is not iterable")
 
-    def __bool__(self):
+    def __bool__(self) -> NoReturn:
         raise TypeError(
             f"The truth value of {self.__class__.__name__} objects is not defined"
         )
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Deferred:
         return Deferred(Item(self, name))
 
     def __call__(self, *args, **kwargs):
