@@ -474,6 +474,27 @@ class RisingWave(Postgres):
             sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMPTZ"
         }
 
+        def datatype_sql(self, expression: sge.DataType) -> str:
+            # for some reason risingwave chose to make their delimiters for
+            # structs angle brackets (<>) and their delimiters for maps
+            # parentheses
+            #
+            # this code works around the consequences of that decision
+            if expression.is_type(sge.DataType.Type.MAP):
+                curr = self.STRUCT_DELIMITER
+                self.STRUCT_DELIMITER = ("(", ")")
+                result = super().datatype_sql(expression)
+                self.STRUCT_DELIMITER = curr
+                return result
+            elif expression.is_type(sge.DataType.Type.STRUCT):
+                curr = self.STRUCT_DELIMITER
+                self.STRUCT_DELIMITER = ("<", ">")
+                result = super().datatype_sql(expression)
+                self.STRUCT_DELIMITER = curr
+                return result
+            else:
+                return super().datatype_sql(expression)
+
 
 Snowflake.Generator.TRANSFORMS |= {
     sge.ApproxDistinct: rename_func("approx_count_distinct"),

@@ -548,6 +548,14 @@ class RisingWaveType(PostgresType):
     def _from_ibis_UUID(cls, dtype: dt.UUID) -> sge.DataType:
         return sge.DataType(this=typecode.VARCHAR)
 
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
+        key_type = cls.from_ibis(dtype.key_type)
+        value_type = cls.from_ibis(dtype.value_type)
+        return sge.DataType(
+            this=typecode.MAP, expressions=[key_type, value_type], nested=True
+        )
+
 
 class DataFusionType(PostgresType):
     dialect = "datafusion"

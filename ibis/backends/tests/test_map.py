@@ -44,11 +44,6 @@ mark_notyet_datafusion = pytest.mark.notyet(
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
 @pytest.mark.parametrize(
     ("k", "v"),
     [
@@ -66,11 +61,6 @@ def test_map_nulls(con, k, v):
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
 @pytest.mark.parametrize(
     ("k", "v"),
     [
@@ -87,11 +77,6 @@ def test_map_keys_nulls(con, k, v):
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
 @pytest.mark.parametrize(
     "map",
     [
@@ -116,11 +101,6 @@ def test_map_values_nulls(con, map):
     assert con.execute(map.values()) is None
 
 
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
 @pytest.mark.parametrize(
     ("map", "key"),
     [
@@ -189,11 +169,6 @@ def test_map_get_contains_nulls(con, map, key, method):
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function hstore(character varying[], character varying[]) does not exist",
-)
 @pytest.mark.parametrize(
     ("m1", "m2"),
     [
@@ -349,13 +324,15 @@ keys = pytest.mark.parametrize(
     [
         pytest.param(["a", "b"], id="string"),
         pytest.param(
-            [1, 2],
-            marks=[mark_notyet_postgres, mark_notyet_snowflake],
-            id="int",
+            [1, 2], marks=[mark_notyet_postgres, mark_notyet_snowflake], id="int"
         ),
         pytest.param(
             [True, False],
-            marks=[mark_notyet_postgres, mark_notyet_snowflake],
+            marks=[
+                mark_notyet_postgres,
+                mark_notyet_snowflake,
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+            ],
             id="bool",
         ),
         pytest.param(
@@ -368,12 +345,17 @@ keys = pytest.mark.parametrize(
                 ),
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
             id="float",
         ),
         pytest.param(
             [ibis.timestamp("2021-01-01"), ibis.timestamp("2021-01-02")],
-            marks=[mark_notyet_postgres, mark_notyet_snowflake],
+            marks=[
+                mark_notyet_postgres,
+                mark_notyet_snowflake,
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+            ],
             id="timestamp",
         ),
         pytest.param(
@@ -384,6 +366,7 @@ keys = pytest.mark.parametrize(
                 ),
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
             id="date",
         ),
@@ -395,6 +378,7 @@ keys = pytest.mark.parametrize(
                 ),
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
             id="array",
         ),
@@ -411,6 +395,7 @@ keys = pytest.mark.parametrize(
                     reason="does not support selecting struct key from map",
                 ),
                 mark_notyet_snowflake,
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
             id="struct",
         ),
@@ -442,6 +427,7 @@ values = pytest.mark.parametrize(
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
                 mark_notyet_postgres,
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
             id="struct",
         ),
@@ -484,14 +470,7 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
 @pytest.mark.parametrize(
     ("keys", "values"),
     [
-        param(
-            ["a", "b"],
-            [1, 2],
-            id="string",
-            marks=pytest.mark.notyet(
-                ["risingwave"], reason="only support maps of string -> string"
-            ),
-        ),
+        param(["a", "b"], [1, 2], id="string"),
         param(["a", "b"], ["1", "2"], id="int"),
     ],
 )
