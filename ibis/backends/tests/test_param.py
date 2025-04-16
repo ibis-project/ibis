@@ -9,7 +9,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
-from ibis.backends.tests.errors import OracleDatabaseError, PsycoPg2InternalError
+from ibis.backends.tests.errors import OracleDatabaseError
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -89,11 +89,6 @@ def test_scalar_param_struct(con):
     reason="mysql and sqlite will never implement map types",
 )
 @pytest.mark.notyet(["bigquery"])
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function make_date(integer, integer, integer) does not exist",
-)
 def test_scalar_param_map(con):
     value = {"a": "ghi", "b": "def", "c": "abc"}
     param = ibis.param(dt.Map(dt.string, dt.string))
