@@ -556,7 +556,13 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
         if from_.is_numeric() and to.is_timestamp():
-            return self.f.from_unixtime(arg, to.timezone or "UTC")
+            tz = to.timezone or "UTC"
+            if from_.is_integer():
+                return self.f.from_unixtime(arg, tz)
+            else:
+                return self.f.from_unixtime_nanos(
+                    self.cast(arg, dt.Decimal(38, 9)) * 1_000_000_000
+                )
         return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_CountDistinctStar(self, op, *, arg, where):
