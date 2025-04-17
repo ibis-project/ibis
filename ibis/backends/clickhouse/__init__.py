@@ -570,8 +570,12 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
         with self._safe_raw_sql(src):
             pass
 
-    def drop_database(self, name: str, /, *, force: bool = False) -> None:
-        src = sge.Drop(this=sg.to_identifier(name), kind="DATABASE", exists=force)
+    def drop_database(
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
+    ) -> None:
+        src = sge.Drop(
+            this=sg.table(name, catalog=catalog), kind="DATABASE", exists=force
+        )
         with self._safe_raw_sql(src):
             pass
 

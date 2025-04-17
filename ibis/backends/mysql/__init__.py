@@ -255,10 +255,12 @@ class Backend(SQLBackend, CanCreateDatabase, PyArrowExampleLoader):
         with self.begin() as cur:
             cur.execute(sql)
 
-    def drop_database(self, name: str, force: bool = False) -> None:
-        sql = sge.Drop(kind="DATABASE", exists=force, this=sg.to_identifier(name)).sql(
-            self.name
-        )
+    def drop_database(
+        self, name: str, *, catalog: str | None = None, force: bool = False
+    ) -> None:
+        sql = sge.Drop(
+            kind="DATABASE", exists=force, this=sg.table(name, catalog=catalog)
+        ).sql(self.name)
         with self.begin() as cur:
             cur.execute(sql)
 
