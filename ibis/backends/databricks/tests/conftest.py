@@ -6,6 +6,8 @@ import sys
 from os import environ as env
 from typing import TYPE_CHECKING, Any
 
+import pytest
+
 import ibis
 from ibis.backends.tests.base import BackendTest
 
@@ -73,3 +75,9 @@ class TestConf(BackendTest):
             schema="default",
             **kw,
         )
+
+
+@pytest.fixture(scope="session")
+def con(tmp_path_factory, data_dir, worker_id):
+    with TestConf.load_data(data_dir, tmp_path_factory, worker_id) as be:
+        yield be.connection

@@ -407,7 +407,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
 
 
 @mark.notimpl(["polars", "druid", "athena"])
-@mark.never(["impala", "pyspark", "databricks"], reason="No non-nullable datatypes")
+@mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.IbisError,
