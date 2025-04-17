@@ -235,13 +235,16 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         """
         return self.names[i]
 
-    def to_sqlglot(self, dialect: str | sg.Dialect) -> list[sge.ColumnDef]:
+    def to_sqlglot(
+        self, dialect: str | sg.Dialect | None = None
+    ) -> list[sge.ColumnDef]:
         """Convert the schema to a list of SQL column definitions.
 
         Parameters
         ----------
         dialect
             The SQL dialect to use.
+            If not provided, the dialect from `ibis.get_backend()` is used.
 
         Returns
         -------
@@ -287,13 +290,10 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         import sqlglot as sg
         import sqlglot.expressions as sge
 
-        from ibis.backends.sql.datatypes import TYPE_MAPPERS as type_mappers
-
-        type_mapper = type_mappers[dialect]
         return [
             sge.ColumnDef(
                 this=sg.to_identifier(name, quoted=True),
-                kind=type_mapper.from_ibis(dtype),
+                kind=dtype.to_sqlglot(dialect),
                 constraints=(
                     None
                     if dtype.nullable

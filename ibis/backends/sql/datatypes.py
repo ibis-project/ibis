@@ -172,11 +172,12 @@ class SqlglotType(TypeMapper):
     @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> sge.DataType:
         """Convert an Ibis dtype to an sqlglot dtype."""
-
         if method := getattr(cls, f"_from_ibis_{dtype.name}", None):
             return method(dtype)
         else:
-            return sge.DataType(this=_to_sqlglot_types[type(dtype)])
+            return sge.DataType(
+                this=_to_sqlglot_types[type(dtype)], nullable=dtype.nullable
+            )
 
     @classmethod
     def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
@@ -1360,7 +1361,19 @@ class AthenaType(SqlglotType):
     dialect = "athena"
 
 
-TYPE_MAPPERS: dict[str, SqlglotType] = {
+_TYPE_MAPPERS: dict[str, type[SqlglotType]] = {
     mapper.dialect: mapper
     for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
 }
+_TYPE_MAPPERS["pyspark"] = PySparkType
+_TYPE_MAPPERS["druid"] = DruidType
+
+
+def get_mapper(dialect: str | type[sg.Dialect] | None) -> type[SqlglotType]:
+    import ibis
+
+    if dialect is None:
+        dialect = ibis.get_backend().dialect
+    if not isinstance(dialect, str):
+        dialect = dialect.__name__.lower()
+    return _TYPE_MAPPERS[dialect]

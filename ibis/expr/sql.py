@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import operator
 from functools import singledispatch
+from typing import TYPE_CHECKING
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -17,6 +18,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.sql.datatypes import SqlglotType
 from ibis.util import experimental
+
+if TYPE_CHECKING:
+    from ibis.backends.sql.compilers.base import SQLGlotCompiler
 
 
 class Catalog(dict[str, sch.Schema]):
@@ -462,14 +466,18 @@ class SQLString(str):
 
 @public
 def to_sql(
-    expr: ir.Expr, dialect: str | None = None, pretty: bool = True, **kwargs
+    x: ir.Expr | dt.DataType,
+    dialect: str | None = None,
+    *,
+    pretty: bool = True,
+    **kwargs,
 ) -> SQLString:
-    """Return the formatted SQL string for an expression.
+    """Return the formatted SQL string for an expression or data type.
 
     Parameters
     ----------
-    expr
-        Ibis expression.
+    x
+        Ibis expression or data type.
     dialect
         SQL dialect to use for compilation.
     pretty
@@ -501,6 +509,8 @@ def to_sql(
       `t0`.`b`,
       `t0`.`a` + `t0`.`b` AS `c`
     FROM `t` AS `t0`
+    >>> ibis.to_sql(ibis.dtype("array<int64>"), dialect="duckdb")
+    'BIGINT[]'
 
     See Also
     --------
@@ -509,11 +519,17 @@ def to_sql(
     """
     import ibis.backends.sql.compilers as sc
 
+    if isinstance(x, (dt.DataType, sch.Schema)):
+        dialect = dialect or ibis.get_backend().dialect
+        return SQLString(
+            x.to_sqlglot(dialect=dialect).sql(dialect=dialect, pretty=pretty)
+        )
+
     # try to infer from a non-str expression or if not possible fallback to
     # the default pretty dialect for expressions
     if dialect is None:
         try:
-            compiler_provider = expr._find_backend(use_default=True)
+            compiler_provider = x._find_backend(use_default=True)
         except com.IbisError:
             # default to duckdb for SQL compilation because it supports the
             # widest array of ibis features for SQL backends
@@ -524,11 +540,13 @@ def to_sql(
         except AttributeError as e:
             raise ValueError(f"Unknown dialect {dialect}") from e
 
+    compiler: SQLGlotCompiler
     if (compiler := getattr(compiler_provider, "compiler", None)) is None:
         raise NotImplementedError(f"{compiler_provider} is not a SQL backend")
 
-    out = compiler.to_sqlglot(expr.unbind(), **kwargs)
+    out = compiler.to_sqlglot(x.unbind(), **kwargs)
     queries = out if isinstance(out, list) else [out]
-    dialect = compiler.dialect
-    sql = ";\n".join(query.sql(dialect=dialect, pretty=pretty) for query in queries)
+    sql = ";\n".join(
+        query.sql(dialect=compiler.dialect, pretty=pretty) for query in queries
+    )
     return SQLString(sql)
