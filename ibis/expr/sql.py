@@ -438,9 +438,6 @@ class SQLString(str):
     Syntax highlights in Jupyter notebooks.
     """
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({str(self)!r})"
-
     def _repr_markdown_(self) -> str:
         return f"```sql\n{self!s}\n```"
 
