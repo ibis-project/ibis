@@ -1441,11 +1441,16 @@ def test_create_catalog(con_create_catalog):
     assert catalog not in con_create_catalog.list_catalogs()
 
 
-def test_create_database(con_create_database):
+@pytest.mark.parametrize("catalog", [None, "current_catalog"])
+def test_create_database(con_create_database, catalog):
     database = gen_name("test_create_database")
     con_create_database.create_database(database)
     assert database in con_create_database.list_databases()
-    con_create_database.drop_database(database)
+    if catalog is None:
+        catalog = None
+    else:
+        catalog = getattr(con_create_database, "current_catalog", None)
+    con_create_database.drop_database(database, catalog=catalog)
     assert database not in con_create_database.list_databases()
 
 

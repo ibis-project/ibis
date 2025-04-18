@@ -401,7 +401,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
 
         sql = sge.Drop(
             kind="SCHEMA",
-            this=sg.table(name, catalog=catalog),
+            this=sg.table(name),
             exists=force,
             cascade=cascade,
         )
