@@ -200,6 +200,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
 
     def do_connect(
         self,
+        *,
         host: str | None = None,
         user: str | None = None,
         password: str | None = None,

@@ -90,6 +90,7 @@ class Backend(SQLBackend, NoExampleLoader):
 
     def do_connect(
         self,
+        *,
         host: str = "localhost",
         port: int = 21050,
         database: str = "default",
