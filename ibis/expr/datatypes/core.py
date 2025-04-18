@@ -160,10 +160,21 @@ del dtype.register
 class DataType(Concrete, Coercible):
     """Base class for all data types.
 
+    Don't instantiate this class directly, use the
+    [ibis.dtype](./datatypes.qmd#ibis.dtype) function instead.
     Instances are immutable.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.dtype("int32")
+    Int32(nullable=True)
+    >>> isinstance(ibis.dtype("int32"), ibis.DataType)
+    True
     """
 
     nullable: bool = True
+    """A bool of whether the type is nullable."""
 
     @property
     @abstractmethod

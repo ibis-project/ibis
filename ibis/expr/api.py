@@ -23,6 +23,7 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.common.temporal import normalize_datetime, normalize_timezone
+from ibis.expr.datatypes import DataType
 from ibis.expr.decompile import decompile
 from ibis.expr.schema import Schema
 from ibis.expr.sql import parse_sql, to_sql
@@ -57,6 +58,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     "Column",
+    "DataType",
     "Deferred",
     "Expr",
     "Scalar",
