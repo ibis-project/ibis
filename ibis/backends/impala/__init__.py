@@ -19,7 +19,7 @@ import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import NoExampleLoader
+from ibis.backends import CanCreateDatabase, HasCurrentDatabase, NoExampleLoader
 from ibis.backends.impala import ddl, udf
 from ibis.backends.impala.udf import (
     aggregate_function,
@@ -51,7 +51,7 @@ __all__ = (
 )
 
 
-class Backend(SQLBackend, NoExampleLoader):
+class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, NoExampleLoader):
     name = "impala"
     compiler = sc.impala.compiler
 
@@ -206,22 +206,6 @@ class Backend(SQLBackend, NoExampleLoader):
     def list_tables(
         self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """Return the list of table names in the current database.
-
-        Parameters
-        ----------
-        like
-            A pattern in Python's regex format.
-        database
-            The database from which to list tables.
-            If not provided, the current database is used.
-
-        Returns
-        -------
-        list[str]
-            The list of the table names that match the pattern `like`.
-        """
-
         statement = "SHOW TABLES"
         if database is not None:
             statement += f" IN {database}"
@@ -287,18 +271,6 @@ class Backend(SQLBackend, NoExampleLoader):
         return db
 
     def create_database(self, name, path=None, force=False):
-        """Create a new Impala database.
-
-        Parameters
-        ----------
-        name
-            Database name
-        path
-            Path where to store the database data; otherwise uses the Impala default
-        force
-            Forcibly create the database
-
-        """
         statement = ddl.CreateDatabase(name, path=path, can_exist=force)
         self._safe_exec_sql(statement)
 
