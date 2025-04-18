@@ -760,11 +760,12 @@ class Timestamp(Temporal, Parametric):
             scale = 6
         else:
             scale = 0
-        if dt.tzinfo is not None:
-            timezone = str(dt.tzinfo)
+
+        if (tzinfo := dt.tzinfo) is not None:
+            timezone_string = tzinfo.tzname(dt)
         else:
-            timezone = None
-        return cls(scale=scale, timezone=timezone, nullable=nullable)
+            timezone_string = None
+        return cls(scale=scale, timezone=timezone_string, nullable=nullable)
 
     @classmethod
     def from_pandas(

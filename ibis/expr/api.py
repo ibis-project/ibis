@@ -904,7 +904,7 @@ def timestamp(
     else:
         value = normalize_datetime(value_or_year)
         tzinfo = normalize_timezone(timezone or value.tzinfo)
-        timezone = tzinfo.tzname(value) if tzinfo is not None else None
+        value = value.astimezone(tzinfo) if tzinfo is not None else value
         dtype = dt.Timestamp.from_datetime(value, nullable=nullable)
         return literal(value, type=dtype)
 
