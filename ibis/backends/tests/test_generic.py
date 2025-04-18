@@ -1783,9 +1783,6 @@ def test_cast(con, from_type, to_type, from_val, expected):
                 pytest.mark.notimpl(
                     ["polars"], reason="casts to 1672531200000000000 (nanoseconds)"
                 ),
-                pytest.mark.notimpl(
-                    ["datafusion"], reason="casts to 1672531200000000 (microseconds)"
-                ),
                 pytest.mark.notimpl(["mysql"], reason="returns 20230101000000"),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
             ],
