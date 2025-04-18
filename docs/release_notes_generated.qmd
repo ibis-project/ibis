@@ -1,6 +1,37 @@
 ---
 ---
 
+## [10.5.0](https://github.com/ibis-project/ibis/compare/10.4.0...10.5.0) (2025-04-18)
+
+### Features
+
+* **api:** expose DataType publicly at ibis.DataType ([#11101](https://github.com/ibis-project/ibis/issues/11101)) ([4164265](https://github.com/ibis-project/ibis/commit/4164265eea9bd6c5008612b90f02f68f8b2d4cd0))
+* **backends:** fixup drop_database() when passing a specific catalog ([#11110](https://github.com/ibis-project/ibis/issues/11110)) ([57d79b7](https://github.com/ibis-project/ibis/commit/57d79b707fb7406cd5ba81441ef660233e4f145c))
+* **databricks:** add support for json via variant ([a1f2bab](https://github.com/ibis-project/ibis/commit/a1f2bab5adf1797dcf194c192182708e2b31f152))
+* **datafusion:** basic map operations ([16b0c4c](https://github.com/ibis-project/ibis/commit/16b0c4cdb933601f1677de4a42d66963b2c9d12a))
+* **postgres:** allow disablement of hstore extension loading ([#11126](https://github.com/ibis-project/ibis/issues/11126)) ([35fc38b](https://github.com/ibis-project/ibis/commit/35fc38be09de01b7feb595f035b0b8820d56f2b6)), closes [#11103](https://github.com/ibis-project/ibis/issues/11103)
+* **postgres:** implement maps in terms of JSONB instead of HSTORE ([ff6100a](https://github.com/ibis-project/ibis/commit/ff6100aeebe8ad19d84a19451e29a2a374d96cd5))
+* **pyflink:** fix type mapping from BINARY to VARBINARY ([bbcd5b9](https://github.com/ibis-project/ibis/commit/bbcd5b9a2ea080b2c2b277c56e2e0b018857c383))
+* **risingwave:** support map operations ([e7d8c3a](https://github.com/ibis-project/ibis/commit/e7d8c3ab50834efe62695feea7495e04c1694b5a))
+* **temporal:** implement casting floating values to timestamps ([0356caf](https://github.com/ibis-project/ibis/commit/0356caf065cdd364f0ab5a5fd1230a5f14aca330))
+
+### Bug Fixes
+
+* **athena:** only replace commas instead of all special characters in column names ([#11138](https://github.com/ibis-project/ibis/issues/11138)) ([4c74ddd](https://github.com/ibis-project/ibis/commit/4c74ddd510e31acdfce71a0ec6fe363d28d8caa0))
+* **databricks:** use `AS JSON` for programmatic output of schema information ([d55a5ee](https://github.com/ibis-project/ibis/commit/d55a5eee5a9fa45d53ea51775f53d1215ed819ac))
+* **duckdb:** always create temp tables in `temp.main` ([#11092](https://github.com/ibis-project/ibis/issues/11092)) ([20bec13](https://github.com/ibis-project/ibis/commit/20bec137463d0dba71e741247624119b7a7b3452))
+* **ir:** make ibis.to_sql() parse join limits and projections; fixes [#11105](https://github.com/ibis-project/ibis/issues/11105) ([a416755](https://github.com/ibis-project/ibis/commit/a4167551013e927c2f751777e3f63e30fb50ade0))
+* **oracle:** return a `sqlglot.DataType`, not `str`, when compiling string dtype ([#11124](https://github.com/ibis-project/ibis/issues/11124)) ([99be73b](https://github.com/ibis-project/ibis/commit/99be73be73ccd175687b97a2fd02374334597470))
+* **postgres:** clean up possible transaction hangs ([6f9d141](https://github.com/ibis-project/ibis/commit/6f9d14189394707cd6cfaec29911a6387a783848))
+* **scalar-subquery:** ensure that scalar subqueries `value` is resolvable with no underlying projection ([#11125](https://github.com/ibis-project/ibis/issues/11125)) ([a92c3cb](https://github.com/ibis-project/ibis/commit/a92c3cb9a47a9f2976bbe29d6a8f44c726d4fea1))
+* **snowflake/bigquery/athena:** ensure that timestamp casting works ([#11135](https://github.com/ibis-project/ibis/issues/11135)) ([4bb0b78](https://github.com/ibis-project/ibis/commit/4bb0b786a20ac6063c7e4b4d29e2103ea1a4fa9c))
+* **typing:** remove unnecessary generics in `ibis.struct()` typing ([#11070](https://github.com/ibis-project/ibis/issues/11070)) ([9d3aece](https://github.com/ibis-project/ibis/commit/9d3aece739dbc2b0594a296b105b2e1b7a252bbc))
+
+### Documentation
+
+* clarify NULL/NaN/inf distinction in docstring and examples ([#11077](https://github.com/ibis-project/ibis/issues/11077)) ([3d4e741](https://github.com/ibis-project/ibis/commit/3d4e74144dc5dbcd4f0919f877c2b4bee9ae7e13))
+* fix `SECURITY.md` formatting ([63aeff4](https://github.com/ibis-project/ibis/commit/63aeff41858dfb2ac568c5064bf2ded7ca6da116))
+
 ## [10.4.0](https://github.com/ibis-project/ibis/compare/10.3.1...10.4.0) (2025-03-27)
 
 ### Features
