@@ -429,7 +429,10 @@ class Value(Expr):
         return ops.TypeOf(self).to_expr()
 
     def fill_null(self, fill_value: Scalar, /) -> Value:
-        """Replace any null values with the indicated fill value.
+        """Replace `NULL`s with the given value. Does NOT affect `NaN` and `inf` values.
+
+        This only replaces genuine `NULL` values, it does NOT affect
+        `NaN` and `inf` values for floating point types.
 
         Parameters
         ----------
@@ -440,36 +443,45 @@ class Value(Expr):
         --------
         [`Value.coalesce()`](./expression-generic.qmd#ibis.expr.types.generic.Value.coalesce)
         [`ibis.coalesce()`](./expression-generic.qmd#ibis.coalesce)
+        [`Value.isnull()`](./expression-generic.qmd#ibis.expr.types.generic.Value.isnull)
+        [`FloatingValue.isnan()`](./expression-numeric.qmd#ibis.expr.types.numeric.FloatingValue.isnan)
+        [`FloatingValue.isinf()`](./expression-numeric.qmd#ibis.expr.types.numeric.FloatingValue.isinf)
 
         Examples
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch().limit(5)
-        >>> t.sex
-        ┏━━━━━━━━┓
-        ┃ sex    ┃
-        ┡━━━━━━━━┩
-        │ string │
-        ├────────┤
-        │ male   │
-        │ female │
-        │ female │
-        │ NULL   │
-        │ female │
-        └────────┘
-        >>> t.sex.fill_null("unrecorded").name("sex")
-        ┏━━━━━━━━━━━━┓
-        ┃ sex        ┃
-        ┡━━━━━━━━━━━━┩
-        │ string     │
-        ├────────────┤
-        │ male       │
-        │ female     │
-        │ female     │
-        │ unrecorded │
-        │ female     │
-        └────────────┘
+        >>> t = ibis.memtable({"f": [None, "-inf", "3.0", "inf", "nan"]})
+        >>> t = t.mutate(f=ibis._.f.cast(float))
+        >>> t = t.mutate(filled=t.f.fill_null(99))
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━┓
+        ┃ f       ┃ filled  ┃
+        ┡━━━━━━━━━╇━━━━━━━━━┩
+        │ float64 │ float64 │
+        ├─────────┼─────────┤
+        │    NULL │    99.0 │
+        │    -inf │    -inf │
+        │     3.0 │     3.0 │
+        │     inf │     inf │
+        │     nan │     nan │
+        └─────────┴─────────┘
+
+        If you want to fill all `NaN` and `inf` values as well, use something like
+        the following:
+
+        >>> t.mutate(filled2=ibis.or_(t.f.isnull(), t.f.isnan(), t.f.isinf()).ifelse(99, t.f))
+        ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+        ┃ f       ┃ filled  ┃ filled2 ┃
+        ┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+        │ float64 │ float64 │ float64 │
+        ├─────────┼─────────┼─────────┤
+        │    NULL │    99.0 │    99.0 │
+        │    -inf │    -inf │    99.0 │
+        │     3.0 │     3.0 │     3.0 │
+        │     inf │     inf │    99.0 │
+        │     nan │     nan │    99.0 │
+        └─────────┴─────────┴─────────┘
 
         Returns
         -------
@@ -480,7 +492,7 @@ class Value(Expr):
 
     @deprecated(as_of="9.1", instead="use fill_null instead")
     def fillna(self, fill_value: Scalar, /) -> Value:
-        """DEPRECATED: use `fill_null` instead."""
+        """DEPRECATED: use `fill_null` instead, which acts exactly the same."""
         return self.fill_null(fill_value)
 
     def nullif(self, null_if_expr: Value, /) -> Value:
@@ -879,37 +891,39 @@ class Value(Expr):
             return bind(_)
 
     def isnull(self) -> ir.BooleanValue:
-        """Return whether this expression is NULL.
+        """Whether this expression is `NULL`. Does NOT detect `NaN` and `inf` values.
+
+        For FloatingValue types, use [`FloatingValue.isnan()`](./expression-numeric.qmd#ibis.expr.types.numeric.FloatingValue.isnan)
+        and [`FloatingValue.isinf()`](./expression-numeric.qmd#ibis.expr.types.numeric.FloatingValue.isinf) to detect `NaN` and `inf` values.
+
+        See Also
+        --------
+        [`Value.fill_null()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fill_null)
+        [`FloatingValue.isnan()`](./expression-numeric.qmd#ibis.expr.types.numeric.FloatingValue.isnan)
+        [`FloatingValue.isinf()`](./expression-numeric.qmd#ibis.expr.types.numeric.FloatingValue.isinf)
 
         Examples
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch().limit(5)
-        >>> t.bill_depth_mm
-        ┏━━━━━━━━━━━━━━━┓
-        ┃ bill_depth_mm ┃
-        ┡━━━━━━━━━━━━━━━┩
-        │ float64       │
-        ├───────────────┤
-        │          18.7 │
-        │          17.4 │
-        │          18.0 │
-        │          NULL │
-        │          19.3 │
-        └───────────────┘
-        >>> t.bill_depth_mm.isnull()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ IsNull(bill_depth_mm) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean               │
-        ├───────────────────────┤
-        │ False                 │
-        │ False                 │
-        │ False                 │
-        │ True                  │
-        │ False                 │
-        └───────────────────────┘
+        >>> t = ibis.memtable({"f": [None, "-inf", "3.0", "inf", "nan"]})
+        >>> t = t.mutate(f=ibis._.f.cast(float))
+        >>> t.mutate(
+        ...     isnull=t.f.isnull(),
+        ...     isnan=t.f.isnan(),
+        ...     isinf=t.f.isinf(),
+        ... )
+        ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+        ┃ f       ┃ isnull  ┃ isnan   ┃ isinf   ┃
+        ┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+        │ float64 │ boolean │ boolean │ boolean │
+        ├─────────┼─────────┼─────────┼─────────┤
+        │    NULL │ True    │ NULL    │ NULL    │
+        │    -inf │ False   │ False   │ True    │
+        │     3.0 │ False   │ False   │ False   │
+        │     inf │ False   │ False   │ True    │
+        │     nan │ False   │ True    │ False   │
+        └─────────┴─────────┴─────────┴─────────┘
         """
         return ops.IsNull(self).to_expr()
 

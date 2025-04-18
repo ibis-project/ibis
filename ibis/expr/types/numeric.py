@@ -1662,11 +1662,69 @@ class IntegerColumn(NumericColumn, IntegerValue):
 @public
 class FloatingValue(NumericValue):
     def isnan(self) -> ir.BooleanValue:
-        """Return whether the value is NaN."""
+        """Return whether the value is NaN. Does NOT detect `NULL` and `inf` values.
+
+        See Also
+        --------
+        [`Value.isnull()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fill_null)
+        [`FloatingValue.isinf()`](./expression-numeric.qmd#ibis.expr.types.numeric.FloatingValue.isinf)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"f": [None, "-inf", "3.0", "inf", "nan"]})
+        >>> t = t.mutate(f=ibis._.f.cast(float))
+        >>> t.mutate(
+        ...     isnull=t.f.isnull(),
+        ...     isnan=t.f.isnan(),
+        ...     isinf=t.f.isinf(),
+        ... )
+        ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+        ┃ f       ┃ isnull  ┃ isnan   ┃ isinf   ┃
+        ┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+        │ float64 │ boolean │ boolean │ boolean │
+        ├─────────┼─────────┼─────────┼─────────┤
+        │    NULL │ True    │ NULL    │ NULL    │
+        │    -inf │ False   │ False   │ True    │
+        │     3.0 │ False   │ False   │ False   │
+        │     inf │ False   │ False   │ True    │
+        │     nan │ False   │ True    │ False   │
+        └─────────┴─────────┴─────────┴─────────┘
+        """
         return ops.IsNan(self).to_expr()
 
     def isinf(self) -> ir.BooleanValue:
-        """Return whether the value is infinity."""
+        """Return whether the value is +/-inf. Does NOT detect `NULL` and `inf` values.
+
+        See Also
+        --------
+        [`Value.isnull()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fill_null)
+        [`FloatingValue.isnan()`](./expression-numeric.qmd#ibis.expr.types.numeric.FloatingValue.isnan)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"f": [None, "-inf", "3.0", "inf", "nan"]})
+        >>> t = t.mutate(f=ibis._.f.cast(float))
+        >>> t.mutate(
+        ...     isnull=t.f.isnull(),
+        ...     isnan=t.f.isnan(),
+        ...     isinf=t.f.isinf(),
+        ... )
+        ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+        ┃ f       ┃ isnull  ┃ isnan   ┃ isinf   ┃
+        ┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+        │ float64 │ boolean │ boolean │ boolean │
+        ├─────────┼─────────┼─────────┼─────────┤
+        │    NULL │ True    │ NULL    │ NULL    │
+        │    -inf │ False   │ False   │ True    │
+        │     3.0 │ False   │ False   │ False   │
+        │     inf │ False   │ False   │ True    │
+        │     nan │ False   │ True    │ False   │
+        └─────────┴─────────┴─────────┴─────────┘
+        """
         return ops.IsInf(self).to_expr()
 
 
