@@ -1,7 +1,7 @@
 SELECT
-  "t0"."x" + 1 AS "x"
+  "t0"."x" + CAST(1 AS TINYINT) AS "x"
 FROM "t" AS "t0"
 WHERE
   (
-    "t0"."x" + 1
+    "t0"."x" + CAST(1 AS TINYINT)
   ) > 1
