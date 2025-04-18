@@ -1765,13 +1765,8 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     assert result == 333
 
 
-@pytest.mark.notimpl(
-    ["oracle"],
-    raises=OracleDatabaseError,
-    reason="ORA-00932",
-)
+@pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError, reason="ORA-00932")
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
-@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
@@ -1781,7 +1776,6 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
 
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
-@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()

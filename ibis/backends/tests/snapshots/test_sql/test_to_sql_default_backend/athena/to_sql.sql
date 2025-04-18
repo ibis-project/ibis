@@ -1,5 +1,5 @@
 SELECT
-  COUNT(*) AS "CountStar"
+  COUNT(*) AS "CountStar()"
 FROM (
   SELECT
     *
