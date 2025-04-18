@@ -59,6 +59,8 @@ class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader):
     def do_connect(
         self,
         database: str | Path | None = None,
+        /,
+        *,
         type_map: dict[str, str | dt.DataType] | None = None,
     ) -> None:
         """Create an Ibis client connected to a SQLite database.
