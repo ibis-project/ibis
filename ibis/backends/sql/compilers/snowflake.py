@@ -300,10 +300,15 @@ $$""",
         return self.f.get(self.agg.array_agg(arg, where=where), 0)
 
     def visit_Cast(self, op, *, arg, to):
+        from_ = op.arg.dtype
         if to.is_struct() or to.is_map():
             return self.if_(self.f.is_object(arg), arg, NULL)
         elif to.is_array():
             return self.if_(self.f.is_array(arg), arg, NULL)
+        elif from_.is_numeric() and to.is_timestamp():
+            if from_.is_integer():
+                return self.f.to_timestamp(self.f.to_decimal(arg), 0)
+            return self.f.to_timestamp(self.f.to_decimal(arg * 1_000_000), 6)
         return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_IsNan(self, op, *, arg):
