@@ -1,15 +1,11 @@
 from __future__ import annotations
 
-import re
-
 from sqlglot.dialects import Athena
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.trino import TrinoCompiler
 from ibis.backends.sql.datatypes import AthenaType
-
-_NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
 
 
 class AthenaCompiler(TrinoCompiler):
@@ -35,7 +31,7 @@ class AthenaCompiler(TrinoCompiler):
 
     @staticmethod
     def _gen_valid_name(name: str) -> str:
-        return "_".join(map(str.strip, _NAME_REGEX.findall(name))) or "tmp"
+        return name.replace(",", ";")
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype

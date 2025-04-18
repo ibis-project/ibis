@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+import ibis
 from ibis.backends.tests.errors import PyAthenaOperationalError
 from ibis.util import gen_name
 
@@ -28,3 +29,14 @@ def test_create_and_drop_database(con):
     # drop it again (should fail)
     with pytest.raises(PyAthenaOperationalError):
         con.drop_database(name)
+
+
+def test_column_name_with_slash(con):
+    table = ibis.memtable({"inventarnr_/_mde_dummy": [1, 2, 3]})
+
+    renamed_table = con.execute(
+        table.select("inventarnr_/_mde_dummy")
+        .rename({"dummy": "inventarnr_/_mde_dummy"})
+        .dummy
+    )
+    assert set(renamed_table.values) == {1, 2, 3}
