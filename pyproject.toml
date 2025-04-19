@@ -267,7 +267,7 @@ tests = [
   "filelock>=3.7.0,<4",
   "fsspec[s3]",
   "hypothesis>=6.58.0,<7",
-  "packaging>=21.3,<25",
+  "packaging>=21.3,<26",
   "pytest>=8.2.0,<9",
   "pytest-benchmark>=3.4.1,<6",
   "pytest-deadfixtures>=2.2.1,<3",
