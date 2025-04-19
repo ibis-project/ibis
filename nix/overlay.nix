@@ -99,13 +99,11 @@ in
     sha256 = "sha256-1fenQNQB+Q0pbb0cbK2S/UIwZDE4PXXG15MH3aVbyLU=";
   };
 
-  ibis39 = mkEnv pkgs.python39;
   ibis310 = mkEnv pkgs.python310;
   ibis311 = mkEnv pkgs.python311;
   ibis312 = mkEnv pkgs.python312;
   ibis313 = mkEnv pkgs.python313;
 
-  ibisDevEnv39 = mkDevEnv pkgs.python39;
   ibisDevEnv310 = mkDevEnv pkgs.python310;
   ibisDevEnv311 = mkDevEnv pkgs.python311;
   ibisDevEnv312 = mkDevEnv pkgs.python312;
