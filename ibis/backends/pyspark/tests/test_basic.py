@@ -9,7 +9,6 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.common.exceptions import IbisTypeError
 
 pyspark = pytest.importorskip("pyspark")
 
@@ -135,7 +134,7 @@ def test_interval_columns_invalid(con):
 
     df_interval_invalid.createTempView("invalid_interval_table")
     msg = r"DayTimeIntervalType.+ couldn't be converted to Interval"
-    with pytest.raises(IbisTypeError, match=msg):
+    with pytest.raises(NotImplementedError, match=msg):
         con.table("invalid_interval_table")
 
 
