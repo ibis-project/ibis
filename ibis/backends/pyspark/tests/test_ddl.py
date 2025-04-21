@@ -181,9 +181,9 @@ def test_create_table_reserved_identifier(con, alltypes, keyword_t):
 
 
 @pytest.mark.xfail_version(
-    pyspark=["pyspark<3.5"],
+    pyspark=["pyspark<3.4"],
     raises=ValueError,
-    reason="PySparkAnalysisException is not available in PySpark <3.5",
+    reason="PySparkAnalysisException is not available in PySpark <3.4",
 )
 def test_create_database_exists(con):
     con.create_database(dbname := util.gen_name("dbname"))
@@ -197,9 +197,9 @@ def test_create_database_exists(con):
 
 
 @pytest.mark.xfail_version(
-    pyspark=["pyspark<3.5"],
+    pyspark=["pyspark<3.4"],
     raises=ValueError,
-    reason="PySparkAnalysisException is not available in PySpark <3.5",
+    reason="PySparkAnalysisException is not available in PySpark <3.4",
 )
 def test_drop_database_exists(con):
     con.create_database(dbname := util.gen_name("dbname"))

@@ -293,9 +293,42 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
 @pytest.mark.parametrize(
     ("ibis_unit", "pandas_unit"),
     [
-        param("Y", "Y", id="year"),
-        param("Q", "Q", id="quarter"),
-        param("M", "M", id="month"),
+        param(
+            "Y",
+            "Y",
+            id="year",
+            marks=[
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                    raises=UserWarning,
+                ),
+            ],
+        ),
+        param(
+            "Q",
+            "Q",
+            id="quarter",
+            marks=[
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                    raises=UserWarning,
+                ),
+            ],
+        ),
+        param(
+            "M",
+            "M",
+            id="month",
+            marks=[
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                    raises=UserWarning,
+                ),
+            ],
+        ),
         param(
             "W",
             "W",
@@ -306,9 +339,24 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                     raises=AssertionError,
                     reason="implemented, but doesn't match other backends",
                 ),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                    raises=UserWarning,
+                ),
             ],
         ),
-        param("D", "D"),
+        param(
+            "D",
+            "D",
+            marks=[
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                    raises=UserWarning,
+                ),
+            ],
+        ),
         param(
             "h",
             "h",
@@ -432,6 +480,11 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
         ),
     ],
 )
+@pytest.mark.xfail_version(
+    pyspark=["pyspark<3.4"],
+    reason="no support for timezoneless timestamps",
+    raises=UserWarning,
+)
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit).name("tmp")
@@ -501,10 +554,31 @@ def test_date_truncate(backend, alltypes, df, unit):
                     reason="Bind error: Invalid unit: week",
                 ),
                 sqlite_without_ymd_intervals,
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"], raises=AssertionError
+                ),
             ],
         ),
-        param("D", pd.offsets.DateOffset, marks=sqlite_without_ymd_intervals),
-        param("h", pd.Timedelta, marks=sqlite_without_hms_intervals),
+        param(
+            "D",
+            pd.offsets.DateOffset,
+            marks=[
+                sqlite_without_ymd_intervals,
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"], raises=AssertionError
+                ),
+            ],
+        ),
+        param(
+            "h",
+            pd.Timedelta,
+            marks=[
+                sqlite_without_hms_intervals,
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"], raises=AssertionError
+                ),
+            ],
+        ),
         param("m", pd.Timedelta, marks=sqlite_without_hms_intervals),
         param("s", pd.Timedelta, marks=sqlite_without_hms_intervals),
         param(
@@ -770,6 +844,10 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=PySparkConnectGrpcException,
                     reason="arrow conversion breaks",
                 ),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                ),
                 pytest.mark.notyet(
                     ["databricks"],
                     raises=AssertionError,
@@ -830,6 +908,10 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=PySparkConnectGrpcException,
                     reason="arrow conversion breaks",
                 ),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                ),
                 pytest.mark.notyet(
                     ["databricks"],
                     raises=AssertionError,
@@ -876,6 +958,9 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     reason="TableException: DAY_INTERVAL_TYPES precision is not supported: 5",
                 ),
                 sqlite_without_ymd_intervals,
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"], raises=AssertionError
+                ),
             ],
         ),
         param("5W", plus, id="weeks-plus", marks=sqlite_without_ymd_intervals),
@@ -940,7 +1025,8 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
         comparison_fn(alltypes.timestamp_col.cast("timestamp('UTC')"), ts)
     )
 
-    col = df.timestamp_col.dt.tz_localize("UTC")
+    if getattr((col := df.timestamp_col).dtype, "tz", None) is None:
+        col = df.timestamp_col.dt.tz_localize("UTC")
     expected = df[comparison_fn(col, ts)]
     result = con.execute(expr)
 
@@ -973,7 +1059,8 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
 
     ts = pd.Timestamp(ts.item(), tz="UTC")
 
-    col = df.timestamp_col.dt.tz_localize("UTC")
+    if getattr((col := df.timestamp_col).dtype, "tz", None) is None:
+        col = df.timestamp_col.dt.tz_localize("UTC")
     expected = df[comparison_fn(col, ts)]
     result = con.execute(expr)
 

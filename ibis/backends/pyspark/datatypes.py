@@ -126,7 +126,7 @@ class PySparkType(TypeMapper):
             else:
                 if not SUPPORTS_TIMESTAMP_NTZ:
                     raise com.UnsupportedBackendType(
-                        "PySpark<3.5 doesn't properly support timestamps without a timezone"
+                        "PySpark<3.4 doesn't properly support timestamps without a timezone"
                     )
                 return pt.TimestampNTZType()
         else:
