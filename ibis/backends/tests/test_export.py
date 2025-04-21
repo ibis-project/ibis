@@ -521,6 +521,7 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     ["databricks"], raises=AssertionError, reason="Only the devil knows"
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
+@pytest.mark.xfail_version(pyspark=["pyspark<3.4"], raises=AssertionError)
 def test_arrow_timestamp_with_time_zone(alltypes):
     from ibis.formats.pyarrow import PyArrowType
 

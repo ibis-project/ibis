@@ -17,6 +17,7 @@ from ibis.formats import SchemaMapper, TypeMapper
 PYSPARK_VERSION = vparse(pyspark.__version__)
 PYSPARK_33 = vparse("3.3") <= PYSPARK_VERSION < vparse("3.4")
 PYSPARK_35 = vparse("3.5") <= PYSPARK_VERSION
+SUPPORTS_TIMESTAMP_NTZ = vparse("3.4") <= PYSPARK_VERSION
 
 
 _from_pyspark_dtypes = {
@@ -83,8 +84,12 @@ class PySparkType(TypeMapper):
                 return dt.Interval(unit, nullable=nullable)
             else:
                 raise com.IbisTypeError(f"{typ!r} couldn't be converted to Interval")
-        elif PYSPARK_35 and isinstance(typ, pt.TimestampNTZType):
-            return dt.Timestamp(nullable=nullable)
+        elif isinstance(typ, pt.TimestampNTZType):
+            if SUPPORTS_TIMESTAMP_NTZ:
+                return dt.Timestamp(nullable=nullable)
+            raise com.UnsupportedBackendType(
+                "PySpark<3.4 doesn't properly support timestamps without a timezone"
+            )
         elif isinstance(typ, pt.UserDefinedType):
             return cls.to_ibis(typ.sqlType(), nullable=nullable)
         else:
@@ -119,6 +124,10 @@ class PySparkType(TypeMapper):
             if dtype.timezone is not None:
                 return pt.TimestampType()
             else:
+                if not SUPPORTS_TIMESTAMP_NTZ:
+                    raise com.UnsupportedBackendType(
+                        "PySpark<3.5 doesn't properly support timestamps without a timezone"
+                    )
                 return pt.TimestampNTZType()
         else:
             try:
