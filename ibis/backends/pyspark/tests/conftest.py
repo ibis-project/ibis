@@ -337,8 +337,16 @@ else:
 
             for name, schema in TEST_TABLES.items():
                 path = str(self.data_dir / "directory" / "parquet" / name)
+                sch = ibis.schema(
+                    {
+                        col: dtype.copy(timezone="UTC")
+                        if dtype.is_timestamp()
+                        else dtype
+                        for col, dtype in schema.items()
+                    }
+                )
                 t = (
-                    s.readStream.schema(PySparkSchema.from_ibis(schema))
+                    s.readStream.schema(PySparkSchema.from_ibis(sch))
                     .parquet(path)
                     .repartition(num_partitions)
                 )

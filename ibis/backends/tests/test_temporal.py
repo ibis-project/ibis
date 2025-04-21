@@ -42,6 +42,7 @@ from ibis.backends.tests.errors import (
 )
 from ibis.common.annotations import ValidationError
 from ibis.conftest import IS_SPARK_REMOTE
+from ibis.util import gen_name
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -2345,3 +2346,43 @@ def test_simple_unix_date_offset(con):
     result = con.execute(expr)
     delta = datetime.date(2023, 4, 7) - datetime.date(1970, 1, 1)
     assert result == delta.days
+
+
+timestamp_with_timezone_params = {
+    "clickhouse": ("UTC", 0, True),
+    "datafusion": ("+00:00", 9, False),
+    "duckdb": ("UTC", 6, True),
+    "impala": (None, None, True),
+    "oracle": ("UTC", 6, True),
+    "polars": ("UTC", 9, True),
+    "trino": ("UTC", 3, True),
+}
+
+
+@pytest.mark.notyet(
+    ["druid"],
+    raises=NotImplementedError,
+    reason="druid doesn't implement `create_table`",
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=com.IbisError,
+    reason="Flink can only use in-memory objects for `create_table`",
+)
+def test_basic_timestamp_with_timezone(con):
+    name = gen_name("tmp_tz")
+    ts = "2023-01-07 13:20:05.561021"
+    dtype = dt.Timestamp(timezone="UTC")
+    colname = "ts"
+    timezone, scale, nullable = timestamp_with_timezone_params.get(
+        con.name, ("UTC", None, True)
+    )
+    result = con.create_table(
+        name, ibis.timestamp(ts).cast(dtype).name(colname).as_table()
+    )
+    try:
+        assert result.schema() == ibis.schema(
+            {colname: dtype.copy(timezone=timezone, scale=scale, nullable=nullable)}
+        )
+    finally:
+        con.drop_table(name, force=True)

@@ -534,7 +534,9 @@ def test_arrow_timestamp_with_time_zone(alltypes):
     patype = PyArrowType.from_ibis(alltypes.timestamp_col.type())
     paunit = patype.unit
     expected = [pa.timestamp(paunit, tz="UTC"), pa.timestamp(paunit)]
-    assert t.to_pyarrow().schema.types == expected
+    result_table = t.to_pyarrow()
+    result_schema = result_table.schema
+    assert result_schema.types == expected
 
     with t.to_pyarrow_batches() as reader:
         (batch,) = reader

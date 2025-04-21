@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from functools import partial
+from inspect import isclass
+
 import pyspark
 import pyspark.sql.types as pt
 from packaging.version import parse as vparse
@@ -11,8 +14,9 @@ from ibis.formats import SchemaMapper, TypeMapper
 
 # DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
 # PySpark until version 3.3
-PYSPARK_33 = vparse(pyspark.__version__) >= vparse("3.3")
-PYSPARK_35 = vparse(pyspark.__version__) >= vparse("3.5")
+PYSPARK_VERSION = vparse(pyspark.__version__)
+PYSPARK_33 = vparse("3.3") <= PYSPARK_VERSION < vparse("3.4")
+PYSPARK_35 = vparse("3.5") <= PYSPARK_VERSION
 
 
 _from_pyspark_dtypes = {
@@ -27,10 +31,20 @@ _from_pyspark_dtypes = {
     pt.NullType: dt.Null,
     pt.ShortType: dt.Int16,
     pt.StringType: dt.String,
-    pt.TimestampType: dt.Timestamp,
 }
 
-_to_pyspark_dtypes = {v: k for k, v in _from_pyspark_dtypes.items()}
+try:
+    _from_pyspark_dtypes[pt.TimestampNTZType] = dt.Timestamp
+except AttributeError:
+    _from_pyspark_dtypes[pt.TimestampType] = dt.Timestamp
+else:
+    _from_pyspark_dtypes[pt.TimestampType] = partial(dt.Timestamp, timezone="UTC")
+
+_to_pyspark_dtypes = {
+    v: k
+    for k, v in _from_pyspark_dtypes.items()
+    if isclass(v) and not issubclass(v, dt.Timestamp) and not isinstance(v, partial)
+}
 _to_pyspark_dtypes[dt.JSON] = pt.StringType
 _to_pyspark_dtypes[dt.UUID] = pt.StringType
 
@@ -54,9 +68,7 @@ class PySparkType(TypeMapper):
             return dt.Array(cls.to_ibis(typ.elementType), nullable=nullable)
         elif isinstance(typ, pt.MapType):
             return dt.Map(
-                cls.to_ibis(typ.keyType),
-                cls.to_ibis(typ.valueType),
-                nullable=nullable,
+                cls.to_ibis(typ.keyType), cls.to_ibis(typ.valueType), nullable=nullable
             )
         elif isinstance(typ, pt.StructType):
             fields = {f.name: cls.to_ibis(f.dataType) for f in typ.fields}
@@ -97,11 +109,17 @@ class PySparkType(TypeMapper):
             value_contains_null = dtype.value_type.nullable
             return pt.MapType(key_type, value_type, value_contains_null)
         elif dtype.is_struct():
-            fields = [
-                pt.StructField(n, cls.from_ibis(t), t.nullable)
-                for n, t in dtype.fields.items()
-            ]
-            return pt.StructType(fields)
+            return pt.StructType(
+                [
+                    pt.StructField(field, cls.from_ibis(dtype), dtype.nullable)
+                    for field, dtype in dtype.fields.items()
+                ]
+            )
+        elif dtype.is_timestamp():
+            if dtype.timezone is not None:
+                return pt.TimestampType()
+            else:
+                return pt.TimestampNTZType()
         else:
             try:
                 return _to_pyspark_dtypes[type(dtype)]()
@@ -114,11 +132,7 @@ class PySparkType(TypeMapper):
 class PySparkSchema(SchemaMapper):
     @classmethod
     def from_ibis(cls, schema):
-        fields = [
-            pt.StructField(name, PySparkType.from_ibis(dtype), dtype.nullable)
-            for name, dtype in schema.items()
-        ]
-        return pt.StructType(fields)
+        return PySparkType.from_ibis(schema.as_struct())
 
     @classmethod
     def to_ibis(cls, schema):
