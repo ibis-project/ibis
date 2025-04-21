@@ -116,7 +116,7 @@ def test_integer_to_timestamp(case, unit, snapshot):
 
 
 @pytest.mark.parametrize(
-    ("case",),
+    "case",
     [
         param("a\\b\\c", id="escape_backslash"),
         param("a\ab\bc\fd\ne\rf\tg\vh", id="escape_ascii_sequences"),

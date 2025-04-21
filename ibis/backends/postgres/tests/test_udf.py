@@ -74,7 +74,7 @@ def con_for_udf(con, sql_table_setup, sql_define_udf, sql_define_py_udf, test_da
         c.execute(sql_table_setup)
         c.execute(sql_define_udf)
         c.execute(sql_define_py_udf)
-    yield con
+    return con
 
 
 @pytest.fixture

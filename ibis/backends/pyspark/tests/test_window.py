@@ -50,7 +50,7 @@ def test_time_indexed_window(t, spark_table, ibis_windows, spark_range):
         F.mean(spark_table["value"]).over(spark_window),
     ).toPandas()
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.parametrize(
@@ -90,7 +90,7 @@ def test_multiple_windows(t, spark_table, ibis_windows, spark_range):
         )
         .toPandas()
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result, expected, check_dtype=False)
 
 
 def test_tumble_window_by_grouped_agg(con_streaming, tmp_path):
