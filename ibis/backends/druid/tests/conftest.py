@@ -145,5 +145,5 @@ class TestConf(ServiceBackendTest):
                 fut.result()
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
+    def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
         return ibis.connect(DRUID_URL, **kw)

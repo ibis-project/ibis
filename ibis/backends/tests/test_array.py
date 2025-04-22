@@ -743,7 +743,10 @@ def test_array_filter_with_index(con, input, output, predicate):
 )
 @pytest.mark.parametrize(
     "predicate",
-    [lambda x, i: i % 2 == 0, partial(lambda x, y, i: i % 2 == 0, y=1)],
+    [
+        lambda _, i: i % 2 == 0,
+        partial(lambda _, y, i: i % 2 == 0, y=1),  # noqa: ARG005
+    ],
     ids=["lambda", "partial"],
 )
 def test_array_filter_with_index_lambda(con, input, output, predicate):

@@ -116,7 +116,7 @@ def cache():
     assert not cache
 
 
-def test_comparable_basic(cache):
+def test_comparable_basic():
     a = Node(name="a")
     b = Node(name="a")
     c = Node(name="a")

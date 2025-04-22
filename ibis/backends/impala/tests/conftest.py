@@ -124,7 +124,7 @@ class TestConf(BackendTest):
         self.connection = self.connect(database=env.test_data_db, **kw)
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
+    def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
         env = IbisTestEnv()
         return ibis.impala.connect(host=env.impala_host, port=env.impala_port, **kw)
 

@@ -134,9 +134,7 @@ def test_timestamp_field_access_on_date(
         ("millisecond", ops.ExtractMillisecond, ir.IntegerColumn),
     ],
 )
-def test_timestamp_field_access_on_date_failure(
-    field, expected_operation, expected_type, alltypes
-):
+def test_timestamp_field_access_on_date_failure(field, alltypes):
     time_col = alltypes.i.date()
     with pytest.raises(AttributeError):
         getattr(time_col, field)

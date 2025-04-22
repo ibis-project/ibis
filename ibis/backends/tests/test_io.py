@@ -418,7 +418,7 @@ def test_read_json_glob(con, tmp_path, ft_data):
 )
 def test_read_garbage(con, monkeypatch):
     # monkeypatch to avoid downloading extensions in tests
-    monkeypatch.setattr(con, "_load_extensions", lambda x: True)
+    monkeypatch.setattr(con, "_load_extensions", lambda _: True)
 
     duckdb = pytest.importorskip("duckdb")
     with pytest.raises(

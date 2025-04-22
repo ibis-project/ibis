@@ -30,7 +30,7 @@ def test_repeated_project_name(project_id, credentials):
 def test_project_id_different_from_default_credentials(monkeypatch):
     creds = mock.create_autospec(auth.Credentials)
 
-    def mock_credentials(*args, **kwargs):
+    def mock_credentials(*_, **__):
         return creds, "default-project-id"
 
     monkeypatch.setattr(pydata_google_auth, "default", mock_credentials)

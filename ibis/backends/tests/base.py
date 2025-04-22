@@ -120,7 +120,7 @@ class BackendTest(abc.ABC):
     def connect(*, tmpdir, worker_id, **kw: Any):
         """Return a connection with data loaded from `data_dir`."""
 
-    def _transform_tpc_sql(self, parsed, *, suite, leaves):
+    def _transform_tpc_sql(self, parsed, *, suite, leaves):  # noqa: ARG002
         return parsed
 
     def _load_data(self, **_: Any) -> None:

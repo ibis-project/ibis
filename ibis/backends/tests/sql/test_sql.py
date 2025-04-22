@@ -126,7 +126,7 @@ def test_comparisons(functional_alltypes, opname, snapshot):
         ]
     ],
 )
-def test_binop_parens(snapshot, opname, dtype, associative):
+def test_binop_parens(snapshot, opname, dtype):
     op = getattr(operator, opname)
     dtypes = [ibis.dtype(d) for d in dtype.split(",")]
     while len(dtypes) < 3:
