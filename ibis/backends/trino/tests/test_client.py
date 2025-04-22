@@ -18,7 +18,7 @@ from ibis.backends.trino.tests.conftest import (
 
 @pytest.fixture
 def tmp_name(con):
-    name = ibis.util.gen_name("test_trino")
+    name = util.gen_name("test_trino")
     yield name
     con.drop_table(name, force=True)
 
@@ -198,3 +198,40 @@ def test_connect_uri():
 
     assert result.iat[0, 0] == 1
     assert result.iat[0, 1] == "b"
+
+
+def test_nested_madness(con, tmp_name):
+    result = (
+        con.create_table(tmp_name, ibis.literal("A-1_B-2").name("c").as_table())
+        .select(
+            cc=lambda t: t.c.split("_").map(
+                lambda c: ibis.struct(
+                    {
+                        "As": ibis.array(
+                            [
+                                ibis.struct(
+                                    {
+                                        "X": c.split("-")[0],
+                                        "Y": c.split("-")[1].cast("int"),
+                                        "Zs": ibis.literal(
+                                            None, type="array<struct<z: string>>"
+                                        ),
+                                    }
+                                )
+                            ]
+                        ),
+                        "Bs": ibis.literal(None, type="array<struct<w: string>>"),
+                    }
+                )
+            )
+        )
+        .execute()
+    )
+
+    assert len(result) == 1
+
+    elements = result.iat[0, 0]
+
+    assert len(elements) == 2
+    assert all(element.keys() == {"As", "Bs"} for element in elements)
+    assert all(element["Bs"] is None for element in elements)
