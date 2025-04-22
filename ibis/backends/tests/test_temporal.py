@@ -559,26 +559,8 @@ def test_date_truncate(backend, alltypes, df, unit):
                 ),
             ],
         ),
-        param(
-            "D",
-            pd.offsets.DateOffset,
-            marks=[
-                sqlite_without_ymd_intervals,
-                pytest.mark.xfail_version(
-                    pyspark=["pyspark<3.4"], raises=AssertionError
-                ),
-            ],
-        ),
-        param(
-            "h",
-            pd.Timedelta,
-            marks=[
-                sqlite_without_hms_intervals,
-                pytest.mark.xfail_version(
-                    pyspark=["pyspark<3.4"], raises=AssertionError
-                ),
-            ],
-        ),
+        param("D", pd.offsets.DateOffset, marks=sqlite_without_ymd_intervals),
+        param("h", pd.Timedelta, marks=sqlite_without_hms_intervals),
         param("m", pd.Timedelta, marks=sqlite_without_hms_intervals),
         param("s", pd.Timedelta, marks=sqlite_without_hms_intervals),
         param(
@@ -958,9 +940,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     reason="TableException: DAY_INTERVAL_TYPES precision is not supported: 5",
                 ),
                 sqlite_without_ymd_intervals,
-                pytest.mark.xfail_version(
-                    pyspark=["pyspark<3.4"], raises=AssertionError
-                ),
             ],
         ),
         param("5W", plus, id="weeks-plus", marks=sqlite_without_ymd_intervals),
