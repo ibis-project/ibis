@@ -9,6 +9,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 
 pyspark = pytest.importorskip("pyspark")
 
@@ -109,7 +110,7 @@ def test_cast(t, df):
     tm.assert_frame_equal(result, df)
 
 
-def test_alias_after_select(t, df):
+def test_alias_after_select(t):
     # Regression test for issue 2136
     table = t[["id"]]
     table = table.mutate(id2=table["id"])
@@ -135,7 +136,7 @@ def test_interval_columns_invalid(con):
     con._session.createDataFrame(data, schema).createTempView(name)
 
     with pytest.raises(
-        NotImplementedError, match="Unable to convert type DayTimeIntervalType"
+        com.IbisTypeError, match="DayTimeIntervalType.+ couldn't be converted"
     ):
         con.table(name)
 
