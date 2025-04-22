@@ -3,22 +3,12 @@ from __future__ import annotations
 from functools import partial
 from inspect import isclass
 
-import pyspark
 import pyspark.sql.types as pt
-from packaging.version import parse as vparse
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats import SchemaMapper, TypeMapper
-
-# DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
-# PySpark until version 3.3
-PYSPARK_VERSION = vparse(pyspark.__version__)
-PYSPARK_33 = vparse("3.3") <= PYSPARK_VERSION < vparse("3.4")
-PYSPARK_35 = vparse("3.5") <= PYSPARK_VERSION
-SUPPORTS_TIMESTAMP_NTZ = vparse("3.4") <= PYSPARK_VERSION
-
 
 _from_pyspark_dtypes = {
     pt.BinaryType: dt.Binary,
@@ -50,19 +40,12 @@ _to_pyspark_dtypes[dt.JSON] = pt.StringType
 _to_pyspark_dtypes[dt.UUID] = pt.StringType
 
 
-if PYSPARK_33:
-    _pyspark_interval_units = {
-        pt.DayTimeIntervalType.SECOND: "s",
-        pt.DayTimeIntervalType.MINUTE: "m",
-        pt.DayTimeIntervalType.HOUR: "h",
-        pt.DayTimeIntervalType.DAY: "D",
-    }
-
-
 class PySparkType(TypeMapper):
     @classmethod
     def to_ibis(cls, typ, nullable=True):
         """Convert a pyspark type to an ibis type."""
+        from ibis.backends.pyspark import PYSPARK_33, SUPPORTS_TIMESTAMP_NTZ
+
         if isinstance(typ, pt.DecimalType):
             return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
         elif isinstance(typ, pt.ArrayType):
@@ -76,11 +59,18 @@ class PySparkType(TypeMapper):
 
             return dt.Struct(fields, nullable=nullable)
         elif PYSPARK_33 and isinstance(typ, pt.DayTimeIntervalType):
+            pyspark_interval_units = {
+                pt.DayTimeIntervalType.SECOND: "s",
+                pt.DayTimeIntervalType.MINUTE: "m",
+                pt.DayTimeIntervalType.HOUR: "h",
+                pt.DayTimeIntervalType.DAY: "D",
+            }
+
             if (
                 typ.startField == typ.endField
-                and typ.startField in _pyspark_interval_units
+                and typ.startField in pyspark_interval_units
             ):
-                unit = _pyspark_interval_units[typ.startField]
+                unit = pyspark_interval_units[typ.startField]
                 return dt.Interval(unit, nullable=nullable)
             else:
                 raise com.IbisTypeError(f"{typ!r} couldn't be converted to Interval")
@@ -102,6 +92,8 @@ class PySparkType(TypeMapper):
 
     @classmethod
     def from_ibis(cls, dtype):
+        from ibis.backends.pyspark import SUPPORTS_TIMESTAMP_NTZ
+
         if dtype.is_decimal():
             return pt.DecimalType(dtype.precision, dtype.scale)
         elif dtype.is_array():

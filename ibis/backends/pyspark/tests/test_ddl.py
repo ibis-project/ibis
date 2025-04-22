@@ -9,6 +9,7 @@ import pytest
 
 import ibis
 from ibis import util
+from ibis.backends.pyspark import PYSPARK_33
 from ibis.backends.tests.errors import PySparkAnalysisException
 from ibis.tests.util import assert_equal
 
@@ -92,12 +93,13 @@ def test_ctas_from_table_expr(con, alltypes, temp_table_db):
 
 def test_create_empty_table(con, temp_table):
     schema = ibis.schema(
-        [
-            ("a", "string"),
-            ("b", "timestamp"),
-            ("c", "decimal(12, 8)"),
-            ("d", "double"),
-        ]
+        {
+            "a": "string",
+            "b": "timestamp('UTC')",
+            "c": "decimal(12, 8)",
+            "d": "double",
+        }
+        | ({"e": "timestamp"} if not PYSPARK_33 else {})
     )
 
     con.create_table(temp_table, schema=schema)
