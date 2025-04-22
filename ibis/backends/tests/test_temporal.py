@@ -555,7 +555,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 ),
                 sqlite_without_ymd_intervals,
                 pytest.mark.xfail_version(
-                    pyspark=["pyspark>=3.4"], raises=AssertionError
+                    pyspark=["pyspark<3.4"], raises=AssertionError
                 ),
             ],
         ),
@@ -565,7 +565,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             marks=[
                 sqlite_without_ymd_intervals,
                 pytest.mark.xfail_version(
-                    pyspark=["pyspark>=3.4"], raises=AssertionError
+                    pyspark=["pyspark<3.4"], raises=AssertionError
                 ),
             ],
         ),
@@ -575,7 +575,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             marks=[
                 sqlite_without_hms_intervals,
                 pytest.mark.xfail_version(
-                    pyspark=["pyspark>=3.4"], raises=AssertionError
+                    pyspark=["pyspark<3.4"], raises=AssertionError
                 ),
             ],
         ),
