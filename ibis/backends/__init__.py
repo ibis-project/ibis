@@ -618,6 +618,8 @@ class _FileIOHandler:
 
 
 class HasCurrentCatalog(abc.ABC):
+    """Has a `current_catalog` property."""
+
     @property
     @abc.abstractmethod
     def current_catalog(self) -> str:
@@ -641,6 +643,8 @@ class HasCurrentCatalog(abc.ABC):
 
 
 class HasCurrentDatabase(abc.ABC):
+    """Has a `current_database` property."""
+
     @property
     @abc.abstractmethod
     def current_database(self) -> str:
