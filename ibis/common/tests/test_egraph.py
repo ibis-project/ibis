@@ -443,7 +443,7 @@ def test_egraph_rewrite_to_pattern():
 
 
 def test_egraph_rewrite_dynamic():
-    def applier(egraph, match, a, *_):  # noqa: ARG001
+    def applier(egraph, match, a, *_, **__):  # noqa: ARG001
         return ENode(ops.Add, (a, a))
 
     node = (one * 2).op()
