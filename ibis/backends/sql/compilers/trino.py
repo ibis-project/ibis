@@ -365,7 +365,10 @@ class TrinoCompiler(SQLGlotCompiler):
         return super().visit_InSubquery(op, rel=rel, needle=needle)
 
     def visit_StructColumn(self, op, *, names, values):
-        return self.cast(sge.Struct(expressions=list(values)), op.dtype)
+        return sge.TryCast(
+            this=sge.Struct(expressions=values),
+            to=self.type_mapper.from_ibis(op.dtype),
+        )
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_floating():
@@ -373,11 +376,17 @@ class TrinoCompiler(SQLGlotCompiler):
                 return self.cast(value, dtype)
             return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
         elif dtype.is_struct():
-            items = [
-                self.visit_Literal(ops.Literal(v, fdtype), value=v, dtype=fdtype)
-                for fdtype, v in zip(dtype.types, value.values())
-            ]
-            return self.cast(sge.Struct(expressions=items), dtype)
+            return sge.TryCast(
+                this=sge.Struct(
+                    expressions=[
+                        self.visit_Literal(
+                            ops.Literal(v, field_dtype), value=v, dtype=field_dtype
+                        )
+                        for field_dtype, v in zip(dtype.types, value.values())
+                    ]
+                ),
+                to=self.type_mapper.from_ibis(dtype),
+            )
         elif dtype.is_timestamp():
             return self.cast(self.f.from_iso8601_timestamp(value.isoformat()), dtype)
         elif dtype.is_date():
