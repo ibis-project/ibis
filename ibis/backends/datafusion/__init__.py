@@ -309,7 +309,7 @@ class Backend(
 
     @property
     def current_catalog(self):
-        return (
+        return str(
             self.sql(
                 "select value from information_schema.df_settings where name='datafusion.catalog.default_catalog'"
             )
@@ -319,7 +319,7 @@ class Backend(
 
     @property
     def current_database(self):
-        return (
+        return str(
             self.sql(
                 "select value from information_schema.df_settings where name='datafusion.catalog.default_schema'"
             )
