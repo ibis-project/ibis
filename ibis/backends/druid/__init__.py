@@ -211,7 +211,7 @@ class Backend(SQLBackend, HasCurrentCatalog, HasCurrentDatabase, NoExampleLoader
         raise NotImplementedError()
 
     def list_tables(
-        self, like: str | None = None, database: str | None = None
+        self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
         if database is not None:
             raise NotImplementedError(
