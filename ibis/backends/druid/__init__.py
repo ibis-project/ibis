@@ -65,6 +65,12 @@ class Backend(SQLBackend, HasCurrentCatalog, HasCurrentDatabase, NoExampleLoader
         # https://druid.apache.org/docs/latest/querying/sql-metadata-tables.html#schemata-table
         return "druid"
 
+    @property
+    def current_catalog(self) -> str:
+        raise NotImplementedError(
+            "Ibis has not implemented the `current_datalog` property for Druid"
+        )
+
     def do_connect(self, **kwargs: Any) -> None:
         """Create an Ibis client using the passed connection parameters.
 
@@ -207,6 +213,10 @@ class Backend(SQLBackend, HasCurrentCatalog, HasCurrentDatabase, NoExampleLoader
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
+        if database is not None:
+            raise NotImplementedError(
+                "Ibis has not yet implemented the `database` param for Druid.list_tables()"
+            )
         t = sg.table("TABLES", db="INFORMATION_SCHEMA", quoted=True)
         c = self.compiler
         query = sg.select(sg.column("TABLE_NAME", quoted=True)).from_(t).sql(c.dialect)
