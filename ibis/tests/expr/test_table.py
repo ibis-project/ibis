@@ -1303,7 +1303,7 @@ def test_join_non_boolean_expr(con):
         t1.inner_join(t2, [predicate])
 
 
-def test_unravel_compound_equijoin(_):
+def test_unravel_compound_equijoin():
     t1 = ibis.table(
         [
             ("key1", "string"),
