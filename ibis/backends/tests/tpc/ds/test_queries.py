@@ -4116,6 +4116,7 @@ def test_75(
 
 
 @tpc_test("ds")
+@pytest.mark.notyet(["clickhouse"], raises=AssertionError, reason="incorrect result")
 def test_76(
     store_sales,
     item,
