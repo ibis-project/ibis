@@ -105,7 +105,7 @@ class DataFusionCompiler(SQLGlotCompiler):
                     return self.cast("+Inf", dt.float64)
                 elif math.isnan(value):
                     return self.cast("NaN", dt.float64)
-            return sg.exp.convert(value)
+            return self.cast(value, dtype)
         elif dtype.is_interval():
             if dtype.unit.short in ("ms", "us", "ns"):
                 raise com.UnsupportedOperationError(
