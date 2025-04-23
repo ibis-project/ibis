@@ -27,8 +27,7 @@ import toolz
 from ibis.common.typing import Coercible
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
-    from numbers import Real
+    from collections.abc import Iterable, Iterator, Sequence
     from pathlib import Path
 
     import ibis.expr.types as ir
@@ -40,10 +39,8 @@ K = TypeVar("K")
 V = TypeVar("V")
 
 
-# https://www.compart.com/en/unicode/U+22EE
-VERTICAL_ELLIPSIS = "\u22ee"
-# https://www.compart.com/en/unicode/U+2026
-HORIZONTAL_ELLIPSIS = "\u2026"
+VERTICAL_ELLIPSIS = "⋮"
+HORIZONTAL_ELLIPSIS = "…"
 
 
 def guid() -> str:
@@ -93,7 +90,7 @@ any_of = toolz.compose(any, is_one_of)
 all_of = toolz.compose(all, is_one_of)
 
 
-def promote_list(val: V | Sequence[V]) -> list[V]:
+def promote_list(val: V | Iterable[V]) -> list[V]:
     """Ensure that the value is a list.
 
     Parameters
@@ -118,7 +115,7 @@ def promote_list(val: V | Sequence[V]) -> list[V]:
         return [val]
 
 
-def promote_tuple(val: V | Sequence[V]) -> tuple[V]:
+def promote_tuple(val: V | Iterable[V]) -> tuple[V]:
     """Ensure that the value is a tuple.
 
     Parameters
@@ -159,48 +156,6 @@ def log(msg: str) -> None:
 
     if options.verbose:
         (options.verbose_log or print)(msg)
-
-
-def approx_equal(a: Real, b: Real, eps: Real):
-    """Return whether the difference between `a` and `b` is less than `eps`.
-
-    Raises
-    ------
-    AssertionError
-
-    """
-    assert abs(a - b) < eps
-
-
-def safe_index(elements: Sequence[int], value: int) -> int:
-    """Find the location of `value` in `elements`.
-
-    Return -1 if `value` is not found instead of raising `ValueError`.
-
-    Parameters
-    ----------
-    elements
-        Elements to index into
-    value : int
-        Index of the given sequence/elements
-
-    Returns
-    -------
-    int
-
-    Examples
-    --------
-    >>> sequence = [1, 2, 3]
-    >>> safe_index(sequence, 2)
-    1
-    >>> safe_index(sequence, 4)
-    -1
-
-    """
-    try:
-        return elements.index(value)
-    except ValueError:
-        return -1
 
 
 def is_iterable(o: Any) -> bool:
