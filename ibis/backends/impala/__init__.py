@@ -20,7 +20,7 @@ import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, HasCurrentDatabase, NoExampleLoader
+from ibis.backends import HasCurrentDatabase, NoExampleLoader
 from ibis.backends.impala import ddl, udf
 from ibis.backends.impala.udf import (
     aggregate_function,
