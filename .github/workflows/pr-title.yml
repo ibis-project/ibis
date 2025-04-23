@@ -32,14 +32,12 @@ jobs:
           if ! lint_output=$(npx --yes commitlint -- --extends "commitlint/config-conventional" --verbose <<< "$COMMIT_MSG" 2>&1); then
               failed=1
           fi
-          echo "failed=$failed"
-          echo "$lint_output"
           {
               echo "failed=$failed"
               echo "lint_output<<EOF"
               echo "$lint_output"
               echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          } | tee -a "$GITHUB_OUTPUT"
           exit $failed
         env:
           COMMIT_MSG: |
