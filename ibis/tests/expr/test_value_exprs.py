@@ -1532,16 +1532,61 @@ def test_array_length_scalar():
     assert isinstance(expr.op(), ops.ArrayLength)
 
 
+def one_positional(a, *, b=2):
+    return a + b
+
+
+def one_positional_only_one_kwarg_only(a, /, *, b=2):
+    return a + b
+
+
+def one_positional_only_one_positional_or_kwarg(a, /, b=2):
+    return a + b
+
+
+def one_positional_then_args(a, *args):
+    return a + args[0]
+
+
+def only_args(*args):
+    return args[0] + args[1]
+
+
+def zero_positionals(*, a=1, b=2):
+    return a + b
+
+
 def test_array_map():
     arr = ibis.array([1, 2, 3])
+    assert arr.type() == dt.Array(dt.int8)
 
-    r1 = arr.map(_ * 2)
-    r2 = arr.map(lambda x: x * 2.0)
-    r3 = arr.map(functools.partial(lambda a, b: a + b, b=2))
+    NO_INDEX = dt.Array(dt.int16)
+    USED_INDEX = dt.Array(dt.int64)
 
-    assert r1.type() == dt.Array(dt.int16)
-    assert r2.type() == dt.Array(dt.float64)
-    assert r3.type() == dt.Array(dt.int16)
+    assert arr.map(_ * 2).type() == NO_INDEX
+    assert arr.map(lambda x: x * 2.0).type() == dt.Array(dt.float64)
+    assert arr.map(lambda x=2: x * 2.0).type() == dt.Array(dt.float64)
+    assert arr.map(lambda a, idx: a + idx).type() == USED_INDEX
+    assert arr.map(functools.partial(lambda a, b: a + b, 6)).type() == NO_INDEX
+    assert arr.map(functools.partial(lambda a, b: a + b, b=2)).type() == NO_INDEX
+    assert arr.map(functools.partial(lambda a, i, c: a + c, 6)).type() == USED_INDEX
+    assert arr.map(functools.partial(lambda a, i, c: a + c, c=2)).type() == NO_INDEX
+    assert arr.map(functools.partial(lambda a, i, c: a + i, 6)).type() == NO_INDEX
+    assert arr.map(functools.partial(lambda a, i, c: a + i, c=2)).type() == USED_INDEX
+    assert arr.map(one_positional).type() == NO_INDEX
+    assert arr.map(one_positional_only_one_kwarg_only).type() == NO_INDEX
+    assert arr.map(one_positional_only_one_positional_or_kwarg).type() == USED_INDEX
+    assert arr.map(one_positional_then_args).type() == USED_INDEX
+    assert arr.map(only_args).type() == USED_INDEX
+
+    with pytest.raises(TypeError, match="missing 1 required positional argument"):
+        arr.map(lambda a, idx, c: a + 2)
+
+    with pytest.raises(TypeError, match="missing 1 required positional argument"):
+        arr.map(functools.partial(lambda a, i, c: a + c, i=2))
+
+    with pytest.raises(TypeError, match="at least 1 positional argument"):
+        arr.map(zero_positionals)
 
     with pytest.raises(TypeError, match="must be a Deferred or Callable"):
         # Non-deferred expressions aren't allowed
@@ -1551,13 +1596,28 @@ def test_array_map():
 def test_array_filter():
     arr = ibis.array([1, 2, 3])
 
-    r1 = arr.filter(lambda x: x < 0)
-    r2 = arr.filter(_ < 0)
-    r3 = arr.filter(functools.partial(lambda a, b: a == b, b=2))
+    r1 = arr.filter(_ < 0)
+    r2 = arr.filter(lambda x: x < 0)
+    r3 = arr.filter(lambda x=4: x < 0)
+    r4 = arr.filter(lambda x, idx: x < idx)
+    r5 = arr.filter(functools.partial(lambda a, idx: a == idx, idx=2))
+    r6 = arr.filter(functools.partial(lambda a, idx, c: a == c, c=2))
 
     assert r1.type() == arr.type()
     assert r2.type() == arr.type()
     assert r3.type() == arr.type()
+    assert r4.type() == arr.type()
+    assert r5.type() == arr.type()
+    assert r6.type() == arr.type()
+
+    with pytest.raises(TypeError, match="missing 1 required positional argument"):
+        arr.filter(lambda a, idx, c: a + 2)
+
+    with pytest.raises(TypeError, match="missing 1 required positional argument"):
+        arr.map(functools.partial(lambda a, i, c: a + c, i=2))
+
+    with pytest.raises(TypeError, match="at least 1 positional argument"):
+        arr.map(zero_positionals)
 
     with pytest.raises(TypeError, match="must be a Deferred or Callable"):
         # Non-deferred expressions aren't allowed
