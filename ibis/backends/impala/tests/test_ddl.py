@@ -53,7 +53,7 @@ def temp_db(con, tmp_dir):
 
 def test_create_database_with_location(con, temp_db):
     name = os.path.basename(temp_db)
-    con.create_database(name, path=temp_db)
+    con.create_database(name, catalog=temp_db)
     assert name in con.list_databases()
 
 
