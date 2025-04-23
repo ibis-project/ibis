@@ -9,6 +9,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
 
 import impala.dbapi as impyla
+import impala.hiveserver2 as hs2
 import sqlglot as sg
 import sqlglot.expressions as sge
 from impala.error import Error as ImpylaError
@@ -19,7 +20,7 @@ import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import NoExampleLoader
+from ibis.backends import CanCreateDatabase, NoExampleLoader
 from ibis.backends.impala import ddl, udf
 from ibis.backends.impala.udf import (
     aggregate_function,
@@ -34,7 +35,6 @@ if TYPE_CHECKING:
     from pathlib import Path
     from urllib.parse import ParseResult
 
-    import impala.hiveserver2 as hs2
     import pandas as pd
     import polars as pl
     import pyarrow as pa
@@ -51,7 +51,7 @@ __all__ = (
 )
 
 
-class Backend(SQLBackend, NoExampleLoader):
+class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
     name = "impala"
     compiler = sc.impala.compiler
 
@@ -286,34 +286,28 @@ class Backend(SQLBackend, NoExampleLoader):
             [(db,)] = cur.fetchall()
         return db
 
-    def create_database(self, name, path=None, force=False):
-        """Create a new Impala database.
+    def table(
+        self, name, /, *, database: str | tuple[str, str] | None = None
+    ) -> ir.Table:
+        try:
+            return super().table(name, database=database)
+        except hs2.HiveServer2Error as e:
+            if "AnalysisException: Could not resolve path:" in str(e):
+                raise com.TableNotFound(name) from e
 
-        Parameters
-        ----------
-        name
-            Database name
-        path
-            Path where to store the database data; otherwise uses the Impala default
-        force
-            Forcibly create the database
-
-        """
-        statement = ddl.CreateDatabase(name, path=path, can_exist=force)
+    def create_database(
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
+    ) -> None:
+        statement = ddl.CreateDatabase(name, path=catalog, can_exist=force)
         self._safe_exec_sql(statement)
 
-    def drop_database(self, name, force=False):
-        """Drop an Impala database.
-
-        Parameters
-        ----------
-        name
-            Database name
-        force
-            If False and there are any tables in this database, raises an
-            IntegrityError
-
-        """
+    def drop_database(
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
+    ) -> None:
+        if catalog is not None:
+            raise NotImplementedError(
+                "Ibis has not yet implemented `catalog` parameter of drop_database() for Impala"
+            )
         if not force or name in self.list_databases():
             tables = self.list_tables(database=name)
             udfs = self.list_udfs(database=name)
