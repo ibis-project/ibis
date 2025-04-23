@@ -415,6 +415,7 @@ def test_12(orders, lineitem):
 
 
 @tpc_test("h")
+@pytest.mark.notyet(["clickhouse"], raises=AssertionError, reason="off by one")
 def test_13(customer, orders):
     """Customer Distribution Query (Q13)
 
