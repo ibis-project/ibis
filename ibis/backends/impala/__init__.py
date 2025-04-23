@@ -51,7 +51,7 @@ __all__ = (
 )
 
 
-class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, NoExampleLoader):
+class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
     name = "impala"
     compiler = sc.impala.compiler
 
