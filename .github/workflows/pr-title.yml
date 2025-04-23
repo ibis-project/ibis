@@ -32,12 +32,15 @@ jobs:
           if ! lint_output=$(npx --yes commitlint -- --extends "commitlint/config-conventional" --verbose <<< "$COMMIT_MSG" 2>&1); then
               failed=1
           fi
+          echo "failed=$failed"
+          echo "$lint_output"
           {
               echo "failed=$failed"
               echo "lint_output<<EOF"
               echo "$lint_output"
               echo "EOF"
           } >> "$GITHUB_OUTPUT"
+          exit $failed
         env:
           COMMIT_MSG: |
             ${{ github.event.pull_request.title }}
@@ -47,11 +50,10 @@ jobs:
   comment-if-necessary:
     permissions:
       pull-requests: write
-    name: Check PR title conforms to semantic-release
+    name: Add/update comment describing commitlint failure
     runs-on: ubuntu-latest
     needs:
       - verify-commitlint
-    if: needs.verify-commitlint.outputs.failed == '1'
     steps:
       - name: find existing comment
         uses: peter-evans/find-comment@v3
@@ -60,11 +62,13 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-includes: "ACTION NEEDED"
 
-      - name: post a message if the pull request title and body fail `commitlint`
-        if: steps.find-comment.outputs.comment-body == ''
+      - name: if the PR title and body fail `commitlint`, post or update a comment
+        if: needs.verify-commitlint.outputs.failed == '1'
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
           body: |
             **ACTION NEEDED**
 
@@ -83,5 +87,11 @@ jobs:
             ${{ needs.verify-commitlint.outputs.lint_output }}
             ```
 
-      - name: fail the check because commitlint failed
-        run: exit 1
+      - name: If commitlint now passes, and comment exists, update it
+        if: needs.verify-commitlint.outputs.failed == '0' && steps.find-comment.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: The PR title and description conform to the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/).
