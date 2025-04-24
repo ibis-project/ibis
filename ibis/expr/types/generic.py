@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING, Any, Literal, overload
 
 from public import public
@@ -584,7 +584,9 @@ class Value(Expr):
         """
         return ops.Between(self, lower, upper).to_expr()
 
-    def isin(self, values: Value | Sequence[Value], /) -> ir.BooleanValue:
+    def isin(
+        self, values: ir.ArrayValue | ir.Column | Iterable[Value], /
+    ) -> ir.BooleanValue:
         """Check whether this expression's values are in `values`.
 
         `NULL` values are propagated in the output. See examples for details.
@@ -702,7 +704,9 @@ class Value(Expr):
         else:
             return ops.InValues(self, values).to_expr()
 
-    def notin(self, values: Value | Sequence[Value], /) -> ir.BooleanValue:
+    def notin(
+        self, values: ir.ArrayValue | ir.Column | Iterable[Value], /
+    ) -> ir.BooleanValue:
         """Check whether this expression's values are not in `values`.
 
         Opposite of [`Value.isin()`](./expression-generic.qmd#ibis.expr.types.generic.Value.isin).
