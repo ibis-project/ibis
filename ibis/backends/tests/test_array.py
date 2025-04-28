@@ -1903,7 +1903,7 @@ def test_array_agg_numeric(con, data, agg, baseline_func):
         param([[True, False], [True], [False], [], None], id="no-nulls"),
     ],
 )
-@notimpl_aggs
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_agg_bool(con, data, agg, baseline_func):
     t = ibis.memtable({"x": data, "id": range(len(data))})
     t = t.mutate(y=agg(t.x))
