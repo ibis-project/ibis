@@ -17,7 +17,7 @@ jobs:
       id-token: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/create-github-app-token@v2.0.2
+      - uses: actions/create-github-app-token@v2.0.3
         id: generate_token
         with:
           app-id: ${{ secrets.APP_ID }}
