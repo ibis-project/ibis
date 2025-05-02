@@ -1,5 +1,5 @@
 -e .
-aiobotocore==2.21.1
+aiobotocore==2.22.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.11.18
 aioitertools==0.12.0
@@ -32,14 +32,14 @@ beautifulsoup4==4.13.4
 bitarray==2.9.3
 black==25.1.0
 bleach==6.2.0
-boto3==1.37.1
-botocore==1.37.1
+boto3==1.37.3
+botocore==1.37.3
 cachetools==5.5.2
 certifi==2025.4.26
 cffi==1.17.1
 cfgv==3.4.0
 chardet==5.2.0
-charset-normalizer==3.4.1
+charset-normalizer==3.4.2
 click==8.1.8
 clickhouse-connect==0.8.17
 cloudpickle==3.1.1
@@ -247,7 +247,7 @@ rfc3986-validator==0.1.1
 rich==14.0.0
 rpds-py==0.24.0
 rsa==4.9.1
-ruff==0.11.7
+ruff==0.11.8
 s3fs==2025.3.2
 s3transfer==0.11.3
 scikit-learn==1.6.1
@@ -265,7 +265,7 @@ sortedcontainers==2.4.0
 soupsieve==2.7
 sphobjinv==2.3.1.2
 sqlalchemy==2.0.40
-sqlglot==26.16.3
+sqlglot==26.16.4
 stack-data==0.6.3
 statsmodels==0.14.4
 tabulate==0.9.0
