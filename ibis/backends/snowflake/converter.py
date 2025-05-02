@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class JSONScalar(pa.ExtensionScalar):
-    def as_py(self):
+    def as_py(self, **_):
         value = self.value
         if value is None:
             return value
