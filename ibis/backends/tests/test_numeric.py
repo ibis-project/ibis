@@ -1084,6 +1084,11 @@ def test_complex_math_functions_columns(
                     raises=AssertionError,
                     reason="rounding works but behavior differs from pandas",
                 ),
+                pytest.mark.notyet(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="rounding behavior is slightly different",
+                ),
             ],
         ),
         param(
@@ -1136,21 +1141,9 @@ def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    "op",
-    [
-        operator.add,
-        operator.sub,
-        operator.mul,
-        operator.truediv,
-        operator.floordiv,
-        param(
-            operator.pow, marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)]
-        ),
-    ],
-    ids=lambda op: op.__name__,
-)
-def test_binary_arithmetic_operations(backend, alltypes, df, op):
+@pytest.mark.parametrize("opname", ["add", "sub", "mul", "truediv", "floordiv", "pow"])
+def test_binary_arithmetic_operations(backend, alltypes, df, opname):
+    op = getattr(operator, opname)
     smallint_col = alltypes.smallint_col + 1  # make it nonzero
     smallint_series = df.smallint_col + 1
 

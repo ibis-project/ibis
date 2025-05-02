@@ -12,5 +12,8 @@ SELECT
   `t0`.`timestamp_col`,
   `t0`.`year`,
   `t0`.`month`,
-  AVG(`t0`.`float_col`) OVER (ORDER BY `t0`.`timestamp_col` ASC RANGE BETWEEN INTERVAL '1' MINUTE preceding AND INTERVAL 0 MINUTE following) AS `win_avg`
+  AVG(`t0`.`float_col`) OVER (
+    ORDER BY `t0`.`timestamp_col` ASC
+    RANGE BETWEEN INTERVAL '1' MINUTE preceding AND INTERVAL 0 MINUTE following
+  ) AS `win_avg`
 FROM `functional_alltypes` AS `t0`

@@ -112,7 +112,7 @@ def test_struct_column(alltypes, df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["postgres", "risingwave", "polars"])
+@pytest.mark.notimpl(["postgres", "risingwave"])
 def test_collect_into_struct(alltypes):
     from ibis import _
 
