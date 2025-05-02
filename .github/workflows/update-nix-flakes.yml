@@ -17,7 +17,7 @@ jobs:
       - name: install nix
         uses: DeterminateSystems/nix-installer-action@v17
 
-      - uses: actions/create-github-app-token@v2.0.3
+      - uses: actions/create-github-app-token@v2.0.5
         id: generate-token
         with:
           app-id: ${{ secrets.SQUAWK_BOT_APP_ID }}
