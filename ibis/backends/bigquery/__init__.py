@@ -328,12 +328,14 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         )
         return self._read_file(path, table_name=table_name, job_config=job_config)
 
-    def _from_url(self, url: ParseResult, **kwargs):
-        return self.connect(
-            project_id=url.netloc or kwargs.get("project_id", [""])[0],
-            dataset_id=url.path[1:] or kwargs.get("dataset_id", [""])[0],
-            **kwargs,
-        )
+    def _from_url(self, url: ParseResult, **kwarg_overrides):
+        kwargs = {}
+        if url.netloc:
+            kwargs["project_id"] = url.netloc
+        if url.path:
+            kwargs["dataset_id"] = url.path[1:]
+        kwargs.update(kwarg_overrides)
+        return self.connect(**kwargs)
 
     def do_connect(
         self,

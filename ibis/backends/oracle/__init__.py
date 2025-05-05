@@ -206,16 +206,21 @@ class Backend(SQLBackend, CanListDatabase, PyArrowExampleLoader):
         # Set to ensure decimals come back as decimals
         oracledb.defaults.fetch_decimals = True
 
-    def _from_url(self, url: ParseResult, **kwargs):
-        self.do_connect(
-            user=url.username,
-            password=unquote_plus(url.password) if url.password is not None else None,
-            database=url.path.removeprefix("/"),
-            port=url.port,
-            **kwargs,
-        )
-
-        return self
+    def _from_url(self, url: ParseResult, **kwarg_overrides):
+        kwargs = {}
+        if url.username:
+            kwargs["user"] = url.username
+        if url.password:
+            kwargs["password"] = unquote_plus(url.password)
+        if url.hostname:
+            kwargs["host"] = url.hostname
+        if database := url.path.removeprefix("/"):
+            kwargs["database"] = database
+        if url.port:
+            kwargs["port"] = url.port
+        kwargs.update(kwarg_overrides)
+        self._convert_kwargs(kwargs)
+        return self.connect(**kwargs)
 
     @property
     def current_catalog(self) -> str:
