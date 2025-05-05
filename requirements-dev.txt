@@ -21,7 +21,7 @@ asn1crypto==1.5.1
 asttokens==3.0.0
 async-lru==2.0.5
 async-timeout==5.0.1 ; python_full_version < '3.11'
-atpublic==5.1
+atpublic==6.0.1
 attrs==25.3.0
 aws-error-utils==2.7.0
 aws-sso-lib==1.14.0
@@ -49,7 +49,7 @@ comm==0.2.2
 contourpy==1.3.0 ; python_full_version < '3.10'
 contourpy==1.3.2 ; python_full_version >= '3.10'
 coverage==7.8.0
-cryptography==44.0.2
+cryptography==44.0.3
 cycler==0.12.1
 databricks-sql-connector-core==4.0.1
 datafusion==46.0.0
@@ -61,7 +61,7 @@ deltalake==0.25.5
 distlib==0.3.9
 doit==0.36.0
 duckdb==1.2.2
-dunamai==1.23.1
+dunamai==1.23.2
 et-xmlfile==2.0.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
 execnet==2.1.1
@@ -76,7 +76,7 @@ gcsfs==2025.3.2
 geoarrow-types==0.2.0
 geopandas==1.0.1
 google-api-core==2.24.2
-google-auth==2.39.0
+google-auth==2.40.1
 google-auth-oauthlib==1.2.2
 google-cloud-bigquery==3.31.0
 google-cloud-bigquery-storage==2.31.0
@@ -94,7 +94,7 @@ h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 humanize==4.12.3
-hypothesis==6.131.9
+hypothesis==6.131.14
 identify==2.6.10
 idna==3.10
 importlib-metadata==8.7.0
@@ -106,13 +106,13 @@ ipython==8.18.1 ; python_full_version < '3.10'
 ipython==8.36.0 ; python_full_version == '3.10.*'
 ipython==9.2.0 ; python_full_version >= '3.11'
 ipython-pygments-lexers==1.1.1 ; python_full_version >= '3.11'
-ipywidgets==8.1.6
+ipywidgets==8.1.7
 isoduration==20.11.0
 itables==2.3.0
 jedi==0.19.2
 jinja2==3.1.6
 jmespath==1.0.1
-joblib==1.4.2
+joblib==1.5.0
 json5==0.12.0
 jsonpointer==3.0.0
 jsonschema==4.23.0
@@ -124,11 +124,11 @@ jupyter-events==0.12.0
 jupyter-lsp==2.2.5
 jupyter-server==2.15.0
 jupyter-server-terminals==0.5.3
-jupyterlab==4.4.1
+jupyterlab==4.4.2
 jupyterlab-night==0.5.1
 jupyterlab-pygments==0.3.0
 jupyterlab-server==2.27.3
-jupyterlab-widgets==3.0.14
+jupyterlab-widgets==3.0.15
 jupyterlite-core==0.5.1
 jupyterlite-pyodide-kernel==0.5.2
 kiwisolver==1.4.7 ; python_full_version < '3.10'
@@ -144,11 +144,11 @@ matplotlib-inline==0.1.7
 mdurl==0.1.2
 mistune==3.1.3
 mizani==0.11.4 ; python_full_version < '3.10'
-mizani==0.13.3 ; python_full_version >= '3.10'
+mizani==0.13.5 ; python_full_version >= '3.10'
 multidict==6.4.3
 mypy-extensions==1.1.0
 mysqlclient==2.2.7
-narwhals==1.37.1
+narwhals==1.38.0
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -192,7 +192,7 @@ psutil==7.0.0
 psycopg==3.2.7
 psycopg-binary==3.2.7 ; implementation_name != 'pypy'
 psycopg2==2.9.10
-psygnal==0.12.0
+psygnal==0.13.0
 ptyprocess==0.7.0 ; (python_full_version < '3.10' and sys_platform == 'emscripten') or os_name != 'nt' or (sys_platform != 'emscripten' and sys_platform != 'win32')
 pure-eval==0.2.3
 pure-sasl==0.6.2
@@ -228,7 +228,7 @@ pytest-mock==3.14.0
 pytest-randomly==3.16.0
 pytest-repeat==0.9.4
 pytest-snapshot==0.9.0
-pytest-timeout==2.3.1
+pytest-timeout==2.4.0
 pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
 python-json-logger==3.3.0
@@ -255,7 +255,7 @@ scipy==1.13.1 ; python_full_version < '3.10'
 scipy==1.15.2 ; python_full_version >= '3.10'
 seaborn==0.13.2
 send2trash==1.8.3
-setuptools==80.1.0
+setuptools==80.3.1
 shapely==2.0.7 ; python_full_version < '3.10'
 shapely==2.1.0 ; python_full_version >= '3.10'
 six==1.17.0
@@ -281,7 +281,7 @@ toolz==1.0.0
 tornado==6.4.2
 tqdm==4.67.1
 traitlets==5.14.3
-trino==0.333.0
+trino==0.334.0
 types-python-dateutil==2.9.0.20241206
 typing-extensions==4.13.2
 typing-inspection==0.4.0
@@ -290,7 +290,7 @@ tzlocal==5.3.1
 uri-template==1.3.0
 urllib3==1.26.20 ; python_full_version < '3.10'
 urllib3==2.4.0 ; python_full_version >= '3.10'
-virtualenv==20.30.0
+virtualenv==20.31.1
 watchdog==6.0.0
 wcwidth==0.2.13
 webcolors==24.11.1
