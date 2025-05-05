@@ -101,6 +101,8 @@ passing a properly-formatted Postgres connection URL to `ibis.connect`:
 
 ```python
 con = ibis.connect(f"postgres://{user}:{password}@{host}:{port}/{database}")
+con = ibis.connect(f"postgres://{user}:{password}@{host}:{port}/{database}/{schema}")
+con = ibis.connect(f"postgres://{user}:{password}@{host}:{port}/{database}/{schema}?sslmode=require")
 ```
 
 ```{python}
