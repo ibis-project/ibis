@@ -161,53 +161,23 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, DirectExampleLoad
         with contextlib.suppress(KeyError):
             kwargs["account"] = kwargs.pop("host")
 
-    def _from_url(self, url: ParseResult, **kwargs):
-        """Connect to a backend using a URL `url`.
-
-        Parameters
-        ----------
-        url
-            URL with which to connect to a backend.
-        kwargs
-            Additional keyword arguments
-
-        Returns
-        -------
-        BaseBackend
-            A backend instance
-
-        """
-        if url.path:
-            database, schema = url.path[1:].split("/", 1)
-            warehouse = kwargs.pop("warehouse", None)
-            connect_args = {
-                "user": url.username,
-                "password": unquote_plus(url.password or ""),
-                "account": url.hostname,
-                "warehouse": warehouse,
-                "database": database or "",
-                "schema": schema or "",
-            }
-        else:
-            connect_args = {}
-
-        session_parameters = kwargs.setdefault("session_parameters", {})
-
-        session_parameters["MULTI_STATEMENT_COUNT"] = 0
-        session_parameters["JSON_INDENT"] = 0
-        session_parameters["PYTHON_CONNECTOR_QUERY_RESULT_FORMAT"] = "arrow_force"
-
-        kwargs.update(connect_args)
+    def _from_url(self, url: ParseResult, **kwarg_overrides):
+        kwargs = {}
+        database, *schema = url.path[1:].split("/", 1)
+        if url.username:
+            kwargs["user"] = url.username
+        if url.password:
+            kwargs["password"] = unquote_plus(url.password)
+        if url.hostname:
+            kwargs["account"] = url.hostname
+        if database:
+            kwargs["database"] = database
+        if url.port:
+            kwargs["port"] = url.port
+        if schema:
+            kwargs["schema"] = schema[0]
+        kwargs.update(kwarg_overrides)
         self._convert_kwargs(kwargs)
-
-        if "database" in kwargs and not kwargs["database"]:
-            del kwargs["database"]
-
-        if "schema" in kwargs and not kwargs["schema"]:
-            del kwargs["schema"]
-
-        if "password" in kwargs and kwargs["password"] is None:
-            kwargs["password"] = ""
         return self.connect(**kwargs)
 
     @property

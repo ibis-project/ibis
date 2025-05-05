@@ -44,35 +44,20 @@ class Backend(SQLBackend, NoExampleLoader):
             [(version,)] = result.fetchall()
         return version
 
-    def _from_url(self, url: ParseResult, **kwargs):
-        """Connect to a backend using a URL `url`.
-
-        Parameters
-        ----------
-        url
-            URL with which to connect to a backend.
-        kwargs
-            Additional keyword arguments
-
-        Returns
-        -------
-        BaseBackend
-            A backend instance
-
-        """
-        kwargs = {
-            "user": url.username,
-            "password": unquote_plus(url.password)
-            if url.password is not None
-            else None,
-            "host": url.hostname,
-            "path": url.path,
-            "port": url.port,
-            **kwargs,
-        }
-
+    def _from_url(self, url: ParseResult, **kwarg_overrides):
+        kwargs = {}
+        if url.username:
+            kwargs["user"] = url.username
+        if url.password:
+            kwargs["password"] = unquote_plus(url.password)
+        if url.hostname:
+            kwargs["host"] = url.hostname
+        if url.path:
+            kwargs["path"] = url.path
+        if url.port:
+            kwargs["port"] = url.port
+        kwargs.update(kwarg_overrides)
         self._convert_kwargs(kwargs)
-
         return self.connect(**kwargs)
 
     @property

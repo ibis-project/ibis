@@ -46,53 +46,23 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
     compiler = sc.postgres.compiler
     supports_python_udfs = True
 
-    def _from_url(self, url: ParseResult, **kwargs):
-        """Connect to a backend using a URL `url`.
-
-        Parameters
-        ----------
-        url
-            URL with which to connect to a backend.
-        kwargs
-            Additional keyword arguments
-
-        Returns
-        -------
-        BaseBackend
-            A backend instance
-
-        """
+    def _from_url(self, url: ParseResult, **kwarg_overrides):
+        kwargs = {}
         database, *schema = url.path[1:].split("/", 1)
-        connect_args = {
-            "user": url.username,
-            "password": unquote_plus(url.password or ""),
-            "host": url.hostname,
-            "database": database or "",
-            "schema": schema[0] if schema else "",
-            "port": url.port,
-        }
-
-        kwargs.update(connect_args)
+        if url.username:
+            kwargs["user"] = url.username
+        if url.password:
+            kwargs["password"] = unquote_plus(url.password)
+        if url.hostname:
+            kwargs["host"] = url.hostname
+        if database:
+            kwargs["database"] = database
+        if url.port:
+            kwargs["port"] = url.port
+        if schema:
+            kwargs["schema"] = schema[0]
+        kwargs.update(kwarg_overrides)
         self._convert_kwargs(kwargs)
-
-        if "user" in kwargs and not kwargs["user"]:
-            del kwargs["user"]
-
-        if "host" in kwargs and not kwargs["host"]:
-            del kwargs["host"]
-
-        if "database" in kwargs and not kwargs["database"]:
-            del kwargs["database"]
-
-        if "schema" in kwargs and not kwargs["schema"]:
-            del kwargs["schema"]
-
-        if "password" in kwargs and kwargs["password"] is None:
-            del kwargs["password"]
-
-        if "port" in kwargs and kwargs["port"] is None:
-            del kwargs["port"]
-
         return self.connect(**kwargs)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:

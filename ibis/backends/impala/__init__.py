@@ -55,36 +55,41 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
     name = "impala"
     compiler = sc.impala.compiler
 
-    def _from_url(self, url: ParseResult, **kwargs: Any) -> Backend:
-        """Connect to a backend using a URL `url`.
+    def _from_url(self, url: ParseResult, **kwarg_overrides: Any) -> Backend:
+        def _get_env(attr: str) -> str | None:
+            return os.environ.get(f"{self.name.upper()}_{attr.upper()}")
 
-        Parameters
-        ----------
-        url
-            URL with which to connect to a backend.
-        kwargs
-            Additional keyword arguments passed to the `connect` method.
+        kwargs = {}
+        if (username := _get_env("username")) is not None:
+            kwargs["user"] = username
+        if url.username:
+            kwargs["user"] = url.username
 
-        Returns
-        -------
-        BaseBackend
-            A backend instance
+        if (password := _get_env("password")) is not None:
+            kwargs["password"] = password
+        if url.password:
+            kwargs["password"] = url.password
 
-        """
-        for name in ("username", "hostname", "port", "password"):
-            if value := (
-                getattr(url, name, None)
-                or os.environ.get(f"{self.name.upper()}_{name.upper()}")
-            ):
-                kwargs[name] = value
+        if (host := _get_env("hostname")) is not None:
+            kwargs["host"] = host
+        if (host := _get_env("host")) is not None:
+            kwargs["host"] = host
+        if url.hostname:
+            kwargs["host"] = url.hostname
+        if host := kwarg_overrides.get("hostname"):
+            kwargs["host"] = host
 
-        with contextlib.suppress(KeyError):
-            kwargs["host"] = kwargs.pop("hostname")
+        if (port := _get_env("port")) is not None:
+            kwargs["port"] = port
+        if url.port:
+            kwargs["port"] = url.port
 
-        (database,) = url.path[1:].split("/", 1)
-        if database:
+        if (database := _get_env("path")) is not None:
+            kwargs["database"] = database
+        if database := url.path[1:].split("/", 1)[0]:
             kwargs["database"] = database
 
+        kwargs.update(kwarg_overrides)
         self._convert_kwargs(kwargs)
         return self.connect(**kwargs)
 
