@@ -39,84 +39,105 @@ def test_schema_from_names_and_typesield_names():
 
 
 @pytest.mark.parametrize(
-    ("string", "expected_value", "expected_timezone"),
+    ("string", "expected_value", "expected_dtype"),
     [
+        param(
+            "2015-01-01 12:34:56",
+            datetime(2015, 1, 1, 12, 34, 56),
+            dt.Timestamp(scale=0),
+            id="from_string_seconds",
+        ),
         param(
             "2015-01-01 12:34:56.789",
             datetime(2015, 1, 1, 12, 34, 56, 789000),
-            None,
+            dt.Timestamp(scale=6),
             id="from_string_millis",
         ),
         param(
             "2015-01-01 12:34:56.789321",
             datetime(2015, 1, 1, 12, 34, 56, 789321),
-            None,
+            dt.Timestamp(scale=6),
             id="from_string_micros",
         ),
         param(
             "2015-01-01 12:34:56.789 UTC",
             datetime(2015, 1, 1, 12, 34, 56, 789000, tzinfo=tzutc()),
-            "UTC",
+            dt.Timestamp(timezone="UTC", scale=6),
             id="from_string_millis_utc",
         ),
         param(
             "2015-01-01 12:34:56.789321 UTC",
             datetime(2015, 1, 1, 12, 34, 56, 789321, tzinfo=tzutc()),
-            "UTC",
+            dt.Timestamp(timezone="UTC", scale=6),
             id="from_string_micros_utc",
         ),
         param(
             "2015-01-01 12:34:56.789+00:00",
             datetime(2015, 1, 1, 12, 34, 56, 789000, tzinfo=tzutc()),
-            "UTC",
+            dt.Timestamp(timezone="UTC", scale=6),
             id="from_string_millis_utc_offset",
         ),
         param(
             "2015-01-01 12:34:56.789+01:00",
             datetime(2015, 1, 1, 12, 34, 56, 789000, tzinfo=tzoffset(None, 3600)),
-            "UTC+01:00",
+            dt.Timestamp(timezone="UTC+01:00", scale=6),
             id="from_string_millis_utc_+1_offset",
         ),
     ],
 )
-def test_timestamp(string, expected_value, expected_timezone):
-    expr = ibis.timestamp(string)
+@pytest.mark.parametrize("nullable", [True, False])
+def test_timestamp(string, expected_value, expected_dtype: dt.Timestamp, nullable):
+    expr = ibis.timestamp(string, nullable=nullable)
     op = expr.op()
     assert isinstance(expr, ibis.expr.types.TimestampScalar)
     assert op.value == expected_value
-    assert op.dtype == dt.Timestamp(timezone=expected_timezone)
+    assert op.dtype == expected_dtype.copy(nullable=nullable)
 
 
 @pytest.mark.parametrize(
-    ("string", "expected_value", "expected_timezone"),
+    ("string", "expected_value", "expected_dtype"),
     [
+        param(
+            "2015-01-01 12:34:56",
+            datetime(2015, 1, 1, 12, 34, 56),
+            dt.Timestamp(scale=0),
+            id="from_pandas_seconds",
+        ),
         param(
             "2015-01-01 12:34:56.789",
             datetime(2015, 1, 1, 12, 34, 56, 789000),
-            None,
+            dt.Timestamp(scale=6),
             id="from_pandas_millis",
         ),
         param(
             "2015-01-01 12:34:56.789+00:00",
             datetime(2015, 1, 1, 12, 34, 56, 789000, tzinfo=tzutc()),
-            "UTC",
+            dt.Timestamp(scale=6, timezone="UTC"),
             id="from_pandas_millis_utc",
         ),
+        # TODO: make this work with nanosecond precision
+        # param(
+        #     "2015-01-01 12:34:56.789123456+00:00",
+        #     datetime(2015, 1, 1, 12, 34, 56, 789000, tzinfo=tzutc()),
+        #     dt.Timestamp(scale=9, timezone="UTC"),
+        #     id="from_pandas_nanos_utc",
+        # ),
         param(
             "2015-01-01 12:34:56.789+03:00",
             datetime(2015, 1, 1, 12, 34, 56, 789000, tzinfo=tzoffset(None, 10800)),
-            "UTC+03:00",
+            dt.Timestamp(scale=6, timezone="UTC+03:00"),
             id="from_pandas_millis_+3_offset",
         ),
     ],
 )
-def test_timestamp_pandas(string, expected_value, expected_timezone):
+@pytest.mark.parametrize("nullable", [True, False])
+def test_timestamp_pandas(string, expected_value, expected_dtype, nullable):
     pd = pytest.importorskip("pandas")
-    expr = ibis.timestamp(pd.Timestamp(string))
+    expr = ibis.timestamp(pd.Timestamp(string), nullable=nullable)
     op = expr.op()
     assert isinstance(expr, ibis.expr.types.TimestampScalar)
     assert op.value == expected_value
-    assert op.dtype == dt.Timestamp(timezone=expected_timezone)
+    assert op.dtype == expected_dtype.copy(nullable=nullable)
 
 
 @pytest.mark.parametrize(
