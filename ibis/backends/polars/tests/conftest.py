@@ -29,7 +29,7 @@ class TestConf(BackendTest):
         con.create_table("topk", topk)
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
+    def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
         return ibis.polars.connect(**kw)
 
     @classmethod

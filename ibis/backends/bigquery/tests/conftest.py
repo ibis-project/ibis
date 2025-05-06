@@ -64,7 +64,7 @@ class TestConf(BackendTest):
         query.result()
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw) -> Backend:
+    def connect(*, tmpdir, worker_id, **kw) -> Backend:  # noqa: ARG004
         """Connect to the test project and dataset."""
         credentials, default_project_id = google.auth.default(
             scopes=EXTERNAL_DATA_SCOPES

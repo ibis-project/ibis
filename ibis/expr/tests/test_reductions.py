@@ -80,15 +80,9 @@ from ibis.common.exceptions import IbisTypeError
 @pytest.mark.parametrize(
     "cond",
     [
-        pytest.param(lambda t: None, id="no_cond"),
-        pytest.param(
-            lambda t: t.string_col.isin(["1", "7"]),
-            id="is_in",
-        ),
-        pytest.param(
-            lambda t: _.string_col.isin(["1", "7"]),
-            id="is_in_deferred",
-        ),
+        pytest.param(lambda _: None, id="no_cond"),
+        pytest.param(lambda t: t.string_col.isin(["1", "7"]), id="is_in"),
+        pytest.param(lambda _: _.string_col.isin(["1", "7"]), id="is_in_deferred"),
     ],
 )
 def test_reduction_methods(fn, operation, cond):

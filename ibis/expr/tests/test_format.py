@@ -421,7 +421,7 @@ def test_format_new_relational_operation(alltypes, snapshot):
     snapshot.assert_match(result, "repr.txt")
 
 
-def test_format_new_value_operation(alltypes, snapshot):
+def test_format_new_value_operation(alltypes):
     class Inc(ops.Value):
         arg: ops.Value
 

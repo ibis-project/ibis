@@ -1,5 +1,5 @@
 function f() {
-    class Foo {
+    class _ {
         do_stuff() {
             while (true) {
                 let i = 1;

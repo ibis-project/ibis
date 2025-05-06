@@ -78,13 +78,13 @@ def test_timestamp_cast(alltypes, assert_sql):
     assert_sql(result2, "out2.sql")
 
 
-def test_timestamp_now(con, assert_sql):
+def test_timestamp_now(assert_sql):
     expr = ibis.now()
     assert_sql(expr)
 
 
 @pytest.mark.parametrize("unit", ["y", "m", "d", "w", "h", "minute"])
-def test_timestamp_truncate(con, unit, assert_sql):
+def test_timestamp_truncate(unit, assert_sql):
     stamp = ibis.timestamp("2009-05-17 12:34:56")
     expr = stamp.truncate(unit)
     assert_sql(expr)

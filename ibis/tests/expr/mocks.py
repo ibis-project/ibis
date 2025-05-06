@@ -48,7 +48,7 @@ class MockBackend(BaseBackend):
     def _finalize_memtable(self, name: str) -> None:
         pass
 
-    def table(self, name, **kwargs):
+    def table(self, name, **_):
         schema = self.get_schema(name)
         node = ops.DatabaseTable(source=self, name=name, schema=schema)
         return node.to_expr()
@@ -96,7 +96,7 @@ class MockBackend(BaseBackend):
     def _get_schema_using_query(self, query):
         return self.sql_query_schemas[query]
 
-    def _get_sql_string_view_schema(self, name, table, query):
+    def _get_sql_string_view_schema(self, name, table, query):  # noqa: ARG002
         return self.sql_query_schemas[query]
 
     @contextlib.contextmanager

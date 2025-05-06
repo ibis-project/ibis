@@ -292,8 +292,8 @@ def test_set_srid(geotable, condition, expected):
 @pytest.mark.parametrize(
     ("condition", "expected"),
     [
-        (lambda t: point_geom_0.transform(900913).srid(), 900913),
-        (lambda t: point_geom_2.transform(900913).srid(), 900913),
+        (lambda _: point_geom_0.transform(900913).srid(), 900913),
+        (lambda _: point_geom_2.transform(900913).srid(), 900913),
         (
             lambda t: t.geo_point.set_srid(4326).transform(900913).srid(),
             900913,
@@ -323,12 +323,12 @@ def test_transform(geotable, condition, expected):
     "expr_fn",
     [
         param(lambda t: t.geo_point.set_srid(4326), id="geom_geo_point"),
-        param(lambda t: point_geom_0, id="point_geom_0"),
-        param(lambda t: point_geom_1, id="point_geom_1"),
-        param(lambda t: point_geom_2, id="point_geom_2"),
-        param(lambda t: point_geog_0, id="point_geog_0"),
-        param(lambda t: point_geog_1, id="point_geog_1"),
-        param(lambda t: point_geog_2, id="point_geog_2"),
+        param(lambda _: point_geom_0, id="point_geom_0"),
+        param(lambda _: point_geom_1, id="point_geom_1"),
+        param(lambda _: point_geom_2, id="point_geom_2"),
+        param(lambda _: point_geog_0, id="point_geog_0"),
+        param(lambda _: point_geog_1, id="point_geog_1"),
+        param(lambda _: point_geog_2, id="point_geog_2"),
     ],
 )
 def test_cast_geography(geotable, expr_fn):
@@ -425,7 +425,7 @@ def test_geo_dataframe(geotable):
         ),
     ],
 )
-def test_geo_literals_smoke(con, shape, value, modifier, assert_sql):
+def test_geo_literals_smoke(shape, value, modifier, assert_sql):
     """Smoke tests for geo spatial literals."""
     expr = ibis.literal(value, type=getattr(dt, shape).copy(**modifier))
     assert_sql(expr)
