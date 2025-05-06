@@ -267,7 +267,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             user=user,
             password=password,
             dbname=database,
-            options=(f"-csearch_path={schema}" * (schema is not None)) or None,
             autocommit=autocommit,
             **kwargs,
         )
@@ -295,6 +294,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
     def _post_connect(self) -> None:
         with (con := self.con).cursor() as cursor, con.transaction():
             cursor.execute("SET TIMEZONE = UTC")
+            if schema := self._con_kwargs.get("schema"):
+                # The `false` means this setting will persist beyond this transaction
+                cursor.execute("SELECT set_config('search_path', %s, false)", (schema,))
 
     @property
     def _session_temp_db(self) -> str | None:
