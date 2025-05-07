@@ -258,7 +258,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
           year            int32
           month           int32
         """
-        import pandas as pd
         import psycopg
 
         self.con = psycopg.connect(
@@ -270,8 +269,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             autocommit=autocommit,
             **kwargs,
         )
-
-        self.con.adapters.register_dumper(type(pd.NaT), NatDumper)
 
         self._post_connect()
 
@@ -292,6 +289,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         return new_backend
 
     def _post_connect(self) -> None:
+        import pandas as pd
+
+        self.con.adapters.register_dumper(type(pd.NaT), NatDumper)
         with (con := self.con).cursor() as cursor, con.transaction():
             cursor.execute("SET TIMEZONE = UTC")
             if schema := self._con_kwargs.get("schema"):
