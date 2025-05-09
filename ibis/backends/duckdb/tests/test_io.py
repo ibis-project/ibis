@@ -235,6 +235,18 @@ def test_read_sqlite_no_table_name(con, tmp_path):
         scon.close()
 
 
+@pytest.fixture
+def sqlite_path(tmp_path, data_dir):
+    path = tmp_path / "test.db"
+    scon = sqlite3.connect(str(path))
+    try:
+        with scon:
+            scon.executescript((data_dir.parent / "schema" / "sqlite.sql").read_text())
+        yield path
+    finally:
+        scon.close()
+
+
 # Because we create a new connection and the test requires loading/installing a
 # DuckDB extension, we need to xfail these on Nix.
 @pytest.mark.xfail(
@@ -242,45 +254,58 @@ def test_read_sqlite_no_table_name(con, tmp_path):
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
     raises=duckdb.IOException,
 )
-def test_attach_sqlite(data_dir, tmp_path):
-    import sqlite3
-
+def test_attach_sqlite(sqlite_path):
     # Create a new connection here because we already have the `ibis_testing`
     # tables loaded in to the `con` fixture.
     con = ibis.duckdb.connect()
 
-    test_db_path = tmp_path / "test.db"
-    scon = sqlite3.connect(test_db_path)
-    try:
-        with scon:
-            scon.executescript((data_dir.parent / "schema" / "sqlite.sql").read_text())
-
-        con.attach_sqlite(test_db_path)
-        assert set(con.list_tables()) >= {
+    catalogs_before = con.list_catalogs()
+    assert con.list_tables() == []
+    for i in range(2):
+        name = con.attach_sqlite(sqlite_path, name="foo", skip_if_exists=True)
+        if i == 0:
+            assert isinstance(name, str)
+        else:
+            assert name is None
+        assert con.list_tables() == []
+        assert set(con.list_catalogs()) == {*catalogs_before, "foo"}
+        database = ("foo", "main")
+        assert set(con.list_tables(database=database)) >= {
             "functional_alltypes",
             "awards_players",
             "batting",
             "diamonds",
         }
 
-        fa = con.tables.functional_alltypes
-        assert len(set(fa.schema().types)) > 1
+        types = con.table("functional_alltypes", database=database).schema().types
+        assert any(not isinstance(t, dt.String) for t in types)
+        assert any(isinstance(t, dt.String) for t in types)
 
-        # overwrite existing sqlite_db and force schema to all strings
-        con.attach_sqlite(test_db_path, overwrite=True, all_varchar=True)
-        assert set(con.list_tables()) >= {
-            "functional_alltypes",
-            "awards_players",
-            "batting",
-            "diamonds",
-        }
+    with pytest.raises(duckdb.BinderException) as exc:
+        con.attach_sqlite(sqlite_path, name="foo")
+    assert "already" in str(exc.value)
 
-        fa = con.tables.functional_alltypes
-        types = fa.schema().types
-        assert len(set(types)) == 1
-        assert dt.String(nullable=True) in set(types)
-    finally:
-        scon.close()
+    con.detach("foo")
+    assert con.list_catalogs() == catalogs_before
+
+    # Check for the name to be returned.
+    # Check all_varchar=True.
+    con = ibis.duckdb.connect()
+    catalogs_before = con.list_catalogs()
+    name = con.attach_sqlite(sqlite_path, all_varchar=True)
+    assert isinstance(name, str)
+    assert set(con.list_catalogs()) == {*catalogs_before, name}
+    types = con.table("functional_alltypes", database=(name, "main")).schema().types
+    assert all(isinstance(t, dt.String) for t in types)
+
+    name = con.attach_sqlite(sqlite_path, name="read_write", read_only=False)
+    assert name == "read_write"
+    con.create_table("t", database=("read_write", "main"), schema={"a": "int"})
+
+    name = con.attach_sqlite(sqlite_path, name="read_only", read_only=True)
+    assert name == "read_only"
+    with pytest.raises(duckdb.InvalidInputException) as exc:
+        con.create_table("t", database=("read_only", "main"), schema={"a": "int"})
 
 
 def test_memtable_with_nullable_dtypes(con):

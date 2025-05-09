@@ -1189,6 +1189,9 @@ class Backend(
     def detach(self, name: str) -> None:
         """Detach a database from the current DuckDB session.
 
+        See [DuckDB documentation](https://duckdb.org/docs/stable/sql/statements/attach.html)
+        for more information.
+
         Parameters
         ----------
         name
@@ -1199,19 +1202,40 @@ class Backend(
         self.con.execute(f"DETACH {name}").fetchall()
 
     def attach_sqlite(
-        self, path: str | Path, overwrite: bool = False, all_varchar: bool = False
-    ) -> None:
+        self,
+        path: str | Path,
+        /,
+        *,
+        name: str | None = None,
+        skip_if_exists: bool = False,
+        read_only: bool = False,
+        all_varchar: bool = False,
+    ) -> str | None:
         """Attach a SQLite database to the current DuckDB session.
+
+        See https://duckdb.org/docs/stable/sql/statements/attach.html
+        for more information.
 
         Parameters
         ----------
         path
             The path to the SQLite database.
-        overwrite
-            Allow overwriting any tables or views that already exist in your current
-            session with the contents of the SQLite database.
+        name
+            The name to attach the database as.
+            If `None`, use the default behavior of DuckDB
+            (as of duckdb==1.2.0 this is the basename of the path).
+        skip_if_exists
+            If `True`, do not attach the database if it already exists.
+        read_only
+            Whether to attach the database as read-only.
         all_varchar
-            Set all SQLite columns to type `VARCHAR` to avoid type errors on ingestion.
+            Whether to read SQLite columns as `VARCHAR` to avoid type errors on ingestion.
+            See https://duckdb.org/docs/stable/extensions/sqlite.html#data-types
+
+        Returns
+        -------
+        str | None
+            The name of the attached database, or `None` if the database already exists.
 
         Examples
         --------
@@ -1229,16 +1253,38 @@ class Backend(
         >>> con = ibis.connect("duckdb://")
         >>> con.list_tables()
         []
-        >>> con.attach_sqlite("/tmp/attach_sqlite.db")
-        >>> con.list_tables()
+        >>> name = con.attach_sqlite("/tmp/attach_sqlite.db")
+        >>> name
+        'attach_sqlite'
+        >>> con.list_tables(database=(name, "main"))
         ['t']
-
         """
         self.load_extension("sqlite")
+        if_not_exists = "IF NOT EXISTS" if skip_if_exists else ""
+        as_name = (
+            f"AS {sg.to_identifier(name, self.compiler.quoted).sql(self.name)}"
+            if name
+            else ""
+        )
+        options = ["TYPE sqlite"]
+        if read_only:
+            options.append("READ_ONLY true")
+        else:
+            options.append("READ_ONLY false")
+        option_string = ", ".join(options)
+        databases_before = set(self.list_catalogs())
         with self._safe_raw_sql(f"SET GLOBAL sqlite_all_varchar={all_varchar}") as cur:
             cur.execute(
-                f"CALL sqlite_attach('{path}', overwrite={overwrite})"
+                f"ATTACH {if_not_exists} '{path}' {as_name} ({option_string})"
             ).fetchall()
+        databases_after = set(self.list_catalogs())
+        added_databases = databases_after - databases_before
+        if not added_databases:
+            if skip_if_exists:
+                return None
+            raise AssertionError((databases_before, databases_after))
+        assert len(added_databases) == 1, (databases_before, databases_after)
+        return added_databases.pop()
 
     def register_filesystem(self, filesystem: AbstractFileSystem):
         """Register an `fsspec` filesystem object with DuckDB.
