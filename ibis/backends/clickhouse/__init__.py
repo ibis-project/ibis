@@ -69,36 +69,20 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
     def _finalize_memtable(self, name: str) -> None:
         """No-op."""
 
-    def _from_url(self, url: ParseResult, **kwargs) -> BaseBackend:
-        """Connect to a backend using a URL `url`.
-
-        Parameters
-        ----------
-        url
-            URL with which to connect to a backend.
-        kwargs
-            Additional keyword arguments
-
-        Returns
-        -------
-        BaseBackend
-            A backend instance
-
-        """
-        database = url.path[1:]
-
-        connect_args = {
-            "user": url.username,
-            "password": unquote_plus(url.password or ""),
-            "host": url.hostname,
-            "database": database or "",
-            "port": url.port,
-            **kwargs,
-        }
-
-        kwargs.update(connect_args)
+    def _from_url(self, url: ParseResult, **kwarg_overrides) -> BaseBackend:
+        kwargs = {}
+        if url.username:
+            kwargs["user"] = url.username
+        if url.password:
+            kwargs["password"] = unquote_plus(url.password)
+        if url.hostname:
+            kwargs["host"] = url.hostname
+        if url.port:
+            kwargs["port"] = url.port
+        if database := url.path[1:]:
+            kwargs["database"] = database
+        kwargs.update(kwarg_overrides)
         self._convert_kwargs(kwargs)
-
         return self.connect(**kwargs)
 
     def _convert_kwargs(self, kwargs):

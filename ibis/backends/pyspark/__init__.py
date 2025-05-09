@@ -119,13 +119,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
 
         treat_nan_as_null: bool = False
 
-    def _from_url(self, url: ParseResult, **kwargs) -> Backend:
+    def _from_url(self, url: ParseResult, **kwarg_overrides) -> Backend:
         """Construct a PySpark backend from a URL `url`."""
-        conf = SparkConf().setAll(kwargs.items())
-
+        kwargs = {}
         if database := url.path[1:]:
-            conf = conf.set("spark.sql.warehouse.dir", str(Path(database).absolute()))
+            kwargs["spark.sql.warehouse.dir"] = str(Path(database).absolute())
+        kwargs.update(kwarg_overrides)
 
+        conf = SparkConf().setAll(kwargs.items())
         builder = SparkSession.builder.config(conf=conf)
         session = builder.getOrCreate()
         return self.connect(session, **kwargs)

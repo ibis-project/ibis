@@ -18,7 +18,7 @@ jobs:
       cancel-in-progress: true
     if: github.event.label.name == 'docs-preview'
     steps:
-      - uses: actions/create-github-app-token@v2.0.5
+      - uses: actions/create-github-app-token@v2.0.6
         id: generate_token
         with:
           app-id: ${{ secrets.DOCS_BOT_APP_ID }}

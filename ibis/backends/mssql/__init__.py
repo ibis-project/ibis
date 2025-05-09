@@ -213,38 +213,20 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, PyArrowExampleLoa
         with closing(self.con.cursor()) as cur:
             cur.execute("SET DATEFIRST 1")
 
-    def _from_url(self, url: ParseResult, **kwargs):
-        database, *_ = url.path[1:].split("/", 1)
-        kwargs.update(
-            {
-                "user": url.username,
-                "password": unquote_plus(url.password or ""),
-                "host": url.hostname,
-                "database": database or "",
-                "port": url.port or None,
-            }
-        )
-
+    def _from_url(self, url: ParseResult, **kwarg_overrides):
+        kwargs = {}
+        if url.username:
+            kwargs["user"] = url.username
+        if url.password:
+            kwargs["password"] = unquote_plus(url.password)
+        if url.hostname:
+            kwargs["host"] = url.hostname
+        if url.port:
+            kwargs["port"] = url.port
+        if database := url.path[1:].split("/")[0]:
+            kwargs["database"] = database
+        kwargs.update(kwarg_overrides)
         self._convert_kwargs(kwargs)
-
-        if "host" in kwargs and not kwargs["host"]:
-            del kwargs["host"]
-
-        if "user" in kwargs and not kwargs["user"]:
-            del kwargs["user"]
-
-        if "password" in kwargs and kwargs["password"] is None:
-            del kwargs["password"]
-
-        if "port" in kwargs and kwargs["port"] is None:
-            del kwargs["port"]
-
-        if "database" in kwargs and not kwargs["database"]:
-            del kwargs["database"]
-
-        if "driver" in kwargs and not kwargs["driver"]:
-            del kwargs["driver"]
-
         return self.connect(**kwargs)
 
     def get_schema(

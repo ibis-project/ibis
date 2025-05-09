@@ -41,18 +41,24 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
     supports_create_or_replace = False
     supports_temporary_tables = False
 
-    def _from_url(self, url: ParseResult, **kwargs):
-        catalog, db = url.path.strip("/").split("/")
-        self.do_connect(
-            user=url.username or None,
-            auth=unquote_plus(url.password) if url.password is not None else None,
-            host=url.hostname or None,
-            port=url.port or None,
-            database=catalog,
-            schema=db,
-            **kwargs,
-        )
-        return self
+    def _from_url(self, url: ParseResult, **kwarg_overrides):
+        kwargs = {}
+        database, *schema = url.path.strip("/").split("/", 1)
+        if url.username:
+            kwargs["user"] = url.username
+        if url.password:
+            kwargs["auth"] = unquote_plus(url.password)
+        if url.hostname:
+            kwargs["host"] = url.hostname
+        if database:
+            kwargs["database"] = database
+        if url.port:
+            kwargs["port"] = url.port
+        if schema:
+            kwargs["schema"] = schema[0]
+        kwargs.update(kwarg_overrides)
+        self._convert_kwargs(kwargs)
+        return self.connect(**kwargs)
 
     def raw_sql(self, query: str | sg.Expression) -> Any:
         """Execute a raw SQL query."""
