@@ -68,7 +68,7 @@ def metadata_row_to_type(
         and precision is not None
         and (scale is not None and scale > 0)
     ):
-        typ = dt.Decimal(precision=precision, scale=scale, nullable=nullable)
+        typ = dt.Decimal(precision=int(precision), scale=int(scale), nullable=nullable)
 
     else:
         typ = type_mapper.from_string(type_string, nullable=nullable)
