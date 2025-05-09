@@ -37,9 +37,7 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.Clip,
         ops.CountDistinctStar,
         ops.DateDelta,
-        ops.Greatest,
         ops.IntervalFromInteger,
-        ops.Least,
         ops.RowID,
         ops.Strftime,
         ops.TimeDelta,
@@ -600,6 +598,12 @@ class DataFusionCompiler(SQLGlotCompiler):
                 self.cast(NULL, dt.bool),
             ),
         )
+
+    def visit_Greatest(self, op, *, arg):
+        return self.f.greatest(*arg)
+
+    def visit_Least(self, op, *, arg):
+        return self.f.least(*arg)
 
 
 compiler = DataFusionCompiler()

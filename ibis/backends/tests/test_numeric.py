@@ -755,17 +755,11 @@ def test_isnan_isinf(
             ibis.least(L(10), L(1)),
             1,
             id="least",
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
         ),
         param(
             ibis.greatest(L(10), L(1)),
             10,
             id="greatest",
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
         ),
         param(L(5.5).round(), 6.0, id="round"),
         param(L(5.556).round(2), 5.56, id="round-digits"),
@@ -1043,14 +1037,6 @@ def test_floor_divide_precedence(con):
             ),
             id="log_base_bigint",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=ValueError,
-                    reason="Base greatest(9000, t0.bigint_col) for logarithm not supported!",
-                ),
                 pytest.mark.notimpl(["polars"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -1100,9 +1086,6 @@ def test_complex_math_functions_columns(
             lambda be, t: ibis.least(t.bigint_col, t.int_col),
             lambda be, t: pd.Series(list(map(min, t.bigint_col, t.int_col))),
             id="least-all-columns",
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
         ),
         param(
             lambda be, t: ibis.least(t.bigint_col, t.int_col, -2),
@@ -1110,17 +1093,11 @@ def test_complex_math_functions_columns(
                 list(map(min, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
             id="least-scalar",
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
         ),
         param(
             lambda be, t: ibis.greatest(t.bigint_col, t.int_col),
             lambda be, t: pd.Series(list(map(max, t.bigint_col, t.int_col))),
             id="greatest-all-columns",
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
         ),
         param(
             lambda be, t: ibis.greatest(t.bigint_col, t.int_col, -2),
@@ -1128,9 +1105,6 @@ def test_complex_math_functions_columns(
                 list(map(max, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
             id="greatest-scalar",
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
         ),
     ],
 )
