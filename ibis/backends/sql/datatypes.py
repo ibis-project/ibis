@@ -215,10 +215,13 @@ class SqlglotType(TypeMapper):
     def _from_sqlglot_VARCHAR(
         cls, length: sge.DataTypeParam | None = None, nullable: bool | None = None
     ) -> dt.String:
-        return dt.String(
-            length=int(length.this.this) if length is not None else None,
-            nullable=nullable,
-        )
+        if length is None:
+            length_value = None
+        elif length.this.this == "MAX":
+            length_value = None
+        else:
+            length_value = int(length.this.this)
+        return dt.String(length=length_value, nullable=nullable)
 
     _from_sqlglot_NVARCHAR = _from_sqlglot_NCHAR = _from_sqlglot_CHAR = (
         _from_sqlglot_FIXEDSTRING
