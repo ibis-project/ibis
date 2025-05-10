@@ -37,3 +37,18 @@ def test_string(typ, length):
     expected = sg.parse_one(typ, read="oracle", into=sge.DataType)
     result = OracleType.from_ibis(dt.String(length=length))
     assert result == expected
+
+
+def test_number(con):
+    con.drop_table("number_table", force=True)
+
+    with con.begin() as bind:
+        bind.execute(
+            """CREATE TABLE "number_table" ("number_8_2" NUMBER(8, 2), "number_8" NUMBER(8), "number_default" NUMBER)"""
+        )
+
+    raw_blob = con.table("number_table")
+
+    assert raw_blob.schema() == ibis.Schema(
+        dict(number_8_2="decimal(8, 2)", number_8="int64", number_default="int64")
+    )
