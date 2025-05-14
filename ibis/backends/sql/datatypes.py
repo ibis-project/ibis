@@ -253,12 +253,18 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_sqlglot_TIMESTAMP(
-        cls, scale=None, nullable: bool | None = None
+        cls, scale: int | None = None, nullable: bool | None = None
     ) -> dt.Timestamp:
         return dt.Timestamp(
             scale=cls.default_temporal_scale if scale is None else int(scale.this.this),
             nullable=nullable,
         )
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMPNTZ(
+        cls, scale=None, nullable: bool | None = None
+    ) -> dt.Timestamp:
+        return cls._from_sqlglot_TIMESTAMP(scale=scale, nullable=nullable)
 
     @classmethod
     def _from_sqlglot_TIMESTAMPTZ(
@@ -276,16 +282,6 @@ class SqlglotType(TypeMapper):
     ) -> dt.Timestamp:
         return dt.Timestamp(
             timezone="UTC",
-            scale=cls.default_temporal_scale if scale is None else int(scale.this.this),
-            nullable=nullable,
-        )
-
-    @classmethod
-    def _from_sqlglot_TIMESTAMPNTZ(
-        cls, scale=None, nullable: bool | None = None
-    ) -> dt.Timestamp:
-        return dt.Timestamp(
-            timezone=None,
             scale=cls.default_temporal_scale if scale is None else int(scale.this.this),
             nullable=nullable,
         )
@@ -614,7 +610,9 @@ class MySQLType(SqlglotType):
         )
 
     @classmethod
-    def _from_sqlglot_TIMESTAMP(cls, nullable: bool | None = None) -> dt.Timestamp:
+    def _from_sqlglot_TIMESTAMP(
+        cls, scale: int | None = None, nullable: bool | None = None
+    ) -> dt.Timestamp:
         return dt.Timestamp(timezone="UTC", nullable=nullable)
 
     @classmethod
@@ -635,7 +633,9 @@ class DuckDBType(SqlglotType):
     unknown_type_strings = FrozenDict({"wkb_blob": dt.binary})
 
     @classmethod
-    def _from_sqlglot_TIMESTAMP(cls, nullable: bool | None = None) -> dt.Timestamp:
+    def _from_sqlglot_TIMESTAMP(
+        cls, scale: int | None = None, nullable: bool | None = None
+    ) -> dt.Timestamp:
         return dt.Timestamp(scale=6, nullable=nullable)
 
     @classmethod
@@ -923,7 +923,9 @@ class BigQueryType(SqlglotType):
         return dt.Timestamp(timezone=None, nullable=nullable)
 
     @classmethod
-    def _from_sqlglot_TIMESTAMP(cls, nullable: bool | None = None) -> dt.Timestamp:
+    def _from_sqlglot_TIMESTAMP(
+        cls, scale: int | None = None, nullable: bool | None = None
+    ) -> dt.Timestamp:
         return dt.Timestamp(timezone=None, nullable=nullable)
 
     @classmethod
@@ -1147,7 +1149,9 @@ class MSSQLType(SqlglotType):
         )
 
     @classmethod
-    def _from_sqlglot_TIMESTAMP(cls):
+    def _from_sqlglot_TIMESTAMP(
+        cls, scale: int | None = None, nullable: bool | None = None
+    ):
         return dt.Binary(nullable=False)
 
     @classmethod
