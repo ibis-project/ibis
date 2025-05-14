@@ -607,6 +607,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         overwrite: bool = False,
         format: str = "parquet",
         partition_by: str | list[str] | None = None,
+        merge_schema: bool = False,
     ) -> ir.Table:
         """Create a new table in Spark.
 
@@ -632,6 +633,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             Format of the table on disk
         partition_by
             Name(s) of partitioning column(s)
+        merge_schema
+            Forwarded to pyspark's `saveAsTable` method as the `mergeSchema` option.
 
         Returns
         -------
@@ -661,7 +664,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
                 self._run_pre_execute_hooks(table)
                 df = self._session.sql(query)
                 df.write.saveAsTable(
-                    name, format=format, mode=mode, partitionBy=partition_by
+                    name,
+                    format=format,
+                    mode=mode,
+                    partitionBy=partition_by,
+                    mergeSchema=merge_schema,
                 )
         elif schema is not None:
             schema = ibis.schema(schema)
