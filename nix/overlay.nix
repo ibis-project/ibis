@@ -124,11 +124,6 @@ in
     }
   );
 
-  gdal = super.gdal.override {
-    useMinimalFeatures = true;
-    useArrow = true;
-  };
-
   quarto = pkgs.callPackage ./quarto { };
   uv = uv2nix.packages.${pkgs.system}.uv-bin;
 
