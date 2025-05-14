@@ -14,7 +14,7 @@ from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
-from ibis.util import deprecated, promote_list
+from ibis.util import deprecated, experimental, promote_list
 
 if TYPE_CHECKING:
     import datetime
@@ -1384,6 +1384,17 @@ class Value(Expr):
 
 @public
 class Scalar(Value):
+    # overriding Expr's implementation just for typing
+    @experimental
+    def to_pyarrow(
+        self,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Scalar:
+        return super().to_pyarrow(params=params, limit=limit, **kwargs)
+
     def __pyarrow_result__(
         self,
         table: pa.Table,
@@ -1573,6 +1584,17 @@ class Column(Value, _FixedTextJupyterMixin):
             max_depth=max_depth,
             console_width=console_width,
         )
+
+    # overriding Expr's implementation just for typing
+    @experimental
+    def to_pyarrow(
+        self,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Array:
+        return super().to_pyarrow(params=params, limit=limit, **kwargs)
 
     def __pyarrow_result__(
         self,
