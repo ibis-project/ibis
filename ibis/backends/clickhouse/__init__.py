@@ -199,23 +199,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
     def list_tables(
         self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """List the tables in `database` matching the pattern `like`.
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database.
-
-        Returns
-        -------
-        list[str]
-            List of table names in `database` matching the optional pattern
-            `like`.
-        """
-
         query = sg.select(C.name).from_(sg.table("tables", db="system"))
 
         if database is None:

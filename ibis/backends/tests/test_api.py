@@ -25,7 +25,6 @@ def test_version(backend):
         "polars",
         "clickhouse",
         "sqlite",
-        "datafusion",
         "exasol",
         "druid",
         "oracle",
