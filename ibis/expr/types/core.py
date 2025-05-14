@@ -555,8 +555,8 @@ class Expr(Immutable, Coercible):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
-    ) -> pa.Table:
-        """Execute expression and return results in as a pyarrow table.
+    ) -> pa.Table | pa.Array | pa.Scalar:
+        """Execute expression to a pyarrow object.
 
         This method is eager and will execute the associated expression
         immediately.
@@ -567,14 +567,16 @@ class Expr(Immutable, Coercible):
             Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         kwargs
             Keyword arguments
 
         Returns
         -------
-        Table
-            A pyarrow table holding the results of the executed expression.
+        result
+            If the passed expression is a Table, a pyarrow table is returned.
+            If the passed expression is a Column, a pyarrow array is returned.
+            If the passed expression is a Scalar, a pyarrow scalar is returned.
         """
         return self._find_backend(use_default=True).to_pyarrow(
             self, params=params, limit=limit, **kwargs

@@ -24,7 +24,7 @@ from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
 from ibis.expr.types.temporal import TimestampColumn
-from ibis.util import deprecated
+from ibis.util import deprecated, experimental
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -241,6 +241,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.formats.polars import PolarsData
 
         return PolarsData.convert_table(df, self.schema())
+
+    # overriding Expr's implementation just for typing
+    @experimental
+    def to_pyarrow(
+        self,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Table:
+        return super().to_pyarrow(params=params, limit=limit, **kwargs)
 
     def _fast_bind(self, *args, **kwargs):
         # allow the first argument to be either a dictionary or a list of values
