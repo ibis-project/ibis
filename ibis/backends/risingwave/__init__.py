@@ -401,6 +401,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
 
     def do_connect(
         self,
+        *,
         host: str | None = None,
         user: str | None = None,
         password: str | None = None,
