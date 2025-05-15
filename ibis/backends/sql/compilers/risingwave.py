@@ -193,5 +193,8 @@ class RisingWaveCompiler(PostgresCompiler):
             self.cast(arg, op.arg.dtype), self.cast(key, op.key.dtype)
         )
 
+    def visit_StructField(self, op, *, arg, field):
+        return sge.Dot(this=sge.Paren(this=arg), expression=sge.to_identifier(field))
+
 
 compiler = RisingWaveCompiler()
