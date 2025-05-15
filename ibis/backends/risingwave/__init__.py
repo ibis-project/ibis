@@ -583,9 +583,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
             create_stmt = sge.Create(
                 kind="TABLE",
                 this=target,
-                properties=sge.Properties(
-                    expressions=sge.Properties.from_dict(connector_properties)
-                ),
+                properties=sge.Properties.from_dict(connector_properties),
             )
             create_stmt = create_stmt.sql(self.dialect) + data_and_encode_format(
                 data_format, encode_format, encode_properties
@@ -744,6 +742,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
         data_format: str,
         encode_format: str,
         encode_properties: dict | None = None,
+        includes: dict[str, str] | None = None,
     ) -> ir.Table:
         """Creating a source.
 
@@ -764,22 +763,31 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
             The encode format for the new source, e.g., "JSON". data_format and encode_format must be specified at the same time.
         encode_properties
             The properties of encode format, providing information like schema registry url. Refer https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
+        includes
+            A dict of `INCLUDE` clauses of the form `{field: alias, ...}`.
+            Set value(s) to `None` if no alias is needed. Refer to https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
 
         Returns
         -------
         Table
             Table expression
         """
-        table = sg.table(name, db=database, quoted=self.compiler.quoted)
+        quoted = self.compiler.quoted
+        table = sg.table(name, db=database, quoted=quoted)
         target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
-        create_stmt = sge.Create(
-            kind="SOURCE",
-            this=target,
-            properties=sge.Properties(
-                expressions=sge.Properties.from_dict(connector_properties)
-            ),
+        properties = sge.Properties.from_dict(connector_properties)
+        properties.expressions.extend(
+            sge.IncludeProperty(
+                this=sg.to_identifier(include_type),
+                alias=sg.to_identifier(column_name, quoted=quoted)
+                if column_name
+                else None,
+            )
+            for include_type, column_name in (includes or {}).items()
         )
+
+        create_stmt = sge.Create(kind="SOURCE", this=target, properties=properties)
 
         create_stmt = create_stmt.sql(self.dialect) + data_and_encode_format(
             data_format, encode_format, encode_properties
