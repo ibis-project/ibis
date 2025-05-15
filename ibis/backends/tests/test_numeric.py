@@ -1362,7 +1362,6 @@ def test_random_different_per_row(alltypes):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
     expected = pandas_func(df.int_col).astype(result.dtype)
@@ -1371,7 +1370,7 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["druid"],
     raises=PyDruidProgrammingError,
@@ -1509,7 +1508,7 @@ def test_bitwise_scalars(con, op, left, right):
     assert result == expected
 
 
-@pytest.mark.notimpl(["datafusion", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @flink_no_bitwise
 def test_bitwise_not_scalar(con):
@@ -1519,7 +1518,7 @@ def test_bitwise_not_scalar(con):
     assert result == expected
 
 
-@pytest.mark.notimpl(["datafusion", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @flink_no_bitwise
 def test_bitwise_not_col(backend, alltypes, df):
