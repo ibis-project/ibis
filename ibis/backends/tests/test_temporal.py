@@ -552,9 +552,7 @@ def test_date_truncate(backend, alltypes, df, unit):
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["datafusion", "druid", "exasol"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["druid", "exasol"], raises=com.OperationNotDefinedError)
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
@@ -628,7 +626,7 @@ def test_integer_to_interval_timestamp(
         param("D", marks=sqlite_without_ymd_intervals),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.as_interval(unit)
