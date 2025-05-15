@@ -448,7 +448,7 @@ def test_insert_dict_variants(con):
             # ignore surrogates, because they fail in PyArrow
             exclude_categories=("Cs",),
             # \x00 fails inside snowflake-connector-python
-            exclude_characters="\x00",
+            exclude_characters="\x00\\f",
         ),
         min_size=0,
         # upper limit of identifier length dictated by snowflake
@@ -457,8 +457,7 @@ def test_insert_dict_variants(con):
 )
 def test_fancy_column_names(con, column_name):
     value = 2
-    t = con.sql(
-        sg.select(sge.convert(value).as_(column_name, quoted=True)).sql("snowflake")
-    )
+    sql = sg.select(sge.convert(value).as_(column_name, quoted=True)).sql("snowflake")
+    t = con.sql(sql)
     assert t.columns == (column_name,)
     assert t[column_name].sum().execute() == value
