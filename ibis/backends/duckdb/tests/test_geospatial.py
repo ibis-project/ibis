@@ -262,7 +262,7 @@ point_geom = ibis.literal((1, 0), type="point:geometry").name("p")
 
 
 @pytest.mark.parametrize("expr", [point, point_geom])
-def test_literal_geospatial_explicit(con, expr, assert_sql):
+def test_literal_geospatial_explicit(expr, assert_sql):
     assert_sql(expr)
 
 

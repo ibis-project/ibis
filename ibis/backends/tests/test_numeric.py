@@ -669,29 +669,25 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
             ],
         ),
         param(
-            lambda t: ibis.literal(1.3),
-            lambda t: 1.3,
+            lambda _: ibis.literal(1.3),
+            lambda _: 1.3,
             id="float-literal",
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
             ],
         ),
+        param(lambda _: ibis.literal(np.nan), lambda _: np.nan, id="nan-literal"),
         param(
-            lambda t: ibis.literal(np.nan),
-            lambda t: np.nan,
-            id="nan-literal",
-        ),
-        param(
-            lambda t: ibis.literal(np.inf),
-            lambda t: np.inf,
+            lambda _: ibis.literal(np.inf),
+            lambda _: np.inf,
             id="inf-literal",
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
             ],
         ),
         param(
-            lambda t: ibis.literal(-np.inf),
-            lambda t: -np.inf,
+            lambda _: ibis.literal(-np.inf),
+            lambda _: -np.inf,
             id="-inf-literal",
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
@@ -1060,7 +1056,7 @@ def test_complex_math_functions_columns(
     ("expr_fn", "expected_fn"),
     [
         param(
-            lambda be, t: t.double_col.round(),
+            lambda _, t: t.double_col.round(),
             lambda be, t: be.round(t.double_col),
             id="round",
             marks=[
@@ -1078,30 +1074,30 @@ def test_complex_math_functions_columns(
             ],
         ),
         param(
-            lambda be, t: t.double_col.add(0.05).round(3),
+            lambda _, t: t.double_col.add(0.05).round(3),
             lambda be, t: be.round(t.double_col + 0.05, 3),
             id="round-with-param",
         ),
         param(
-            lambda be, t: ibis.least(t.bigint_col, t.int_col),
-            lambda be, t: pd.Series(list(map(min, t.bigint_col, t.int_col))),
+            lambda _, t: ibis.least(t.bigint_col, t.int_col),
+            lambda _, t: pd.Series(list(map(min, t.bigint_col, t.int_col))),
             id="least-all-columns",
         ),
         param(
-            lambda be, t: ibis.least(t.bigint_col, t.int_col, -2),
-            lambda be, t: pd.Series(
+            lambda _, t: ibis.least(t.bigint_col, t.int_col, -2),
+            lambda _, t: pd.Series(
                 list(map(min, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
             id="least-scalar",
         ),
         param(
-            lambda be, t: ibis.greatest(t.bigint_col, t.int_col),
-            lambda be, t: pd.Series(list(map(max, t.bigint_col, t.int_col))),
+            lambda _, t: ibis.greatest(t.bigint_col, t.int_col),
+            lambda _, t: pd.Series(list(map(max, t.bigint_col, t.int_col))),
             id="greatest-all-columns",
         ),
         param(
-            lambda be, t: ibis.greatest(t.bigint_col, t.int_col, -2),
-            lambda be, t: pd.Series(
+            lambda _, t: ibis.greatest(t.bigint_col, t.int_col, -2),
+            lambda _, t: pd.Series(
                 list(map(max, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
             id="greatest-scalar",

@@ -81,7 +81,7 @@ def test_annotations_are_not_hashable():
 
 
 def test_default_argument():
-    annotation = Argument(pattern=lambda x, context: int(x), default=3)
+    annotation = Argument(pattern=lambda x, *_, **__: int(x), default=3)
     assert annotation.pattern.match(1, {}) == 1
 
 
@@ -122,7 +122,7 @@ def test_attribute_default_value():
 
     assert field.get_default("b", Foo) == 20
 
-    field2 = Attribute(pattern=lambda x, this: str(x), default=lambda self: self.a)
+    field2 = Attribute(pattern=lambda x, *_, **__: str(x), default=lambda self: self.a)
     assert field2.has_default()
     assert field != field2
     assert field2.get_default("b", Foo) == "10"
@@ -146,11 +146,11 @@ def test_parameter():
     assert op.annotation.pattern.match(None, {"other": 1}) is None
 
     with pytest.raises(TypeError, match="annotation must be an instance of Argument"):
-        Parameter.from_argument("wrong", annotation=Attribute(lambda x, context: x))
+        Parameter.from_argument("wrong", annotation=Attribute(lambda x, *_, **__: x))
 
 
 def test_signature():
-    def to_int(x, this):
+    def to_int(x, *_, **__):
         return int(x)
 
     def add_other(x, this):
@@ -212,7 +212,7 @@ def test_signature_from_callable_with_varargs():
     assert kwargs == {}
 
 
-def test_signature_from_callable_with_positional_only_arguments(snapshot):
+def test_signature_from_callable_with_positional_only_arguments():
     def test(a: int, b: int, /, c: int = 1): ...
 
     sig = Signature.from_callable(test)
@@ -263,7 +263,7 @@ def test_signature_from_callable_with_keyword_only_arguments(snapshot):
 
 
 def test_signature_unbind():
-    def to_int(x, this):
+    def to_int(x, *_, **__):
         return int(x)
 
     def add_other(x, this):
@@ -352,7 +352,7 @@ def test_annotated_function_with_return_type_annotation():
         return a + b + c
 
     @annotated
-    def test_wrong(a: int, b: int, c: int = 1) -> int:
+    def test_wrong(a: int, b: int, c: int = 1) -> int:  # noqa: ARG001
         return "invalid result"
 
     assert test_ok(2, 3) == 6
@@ -392,7 +392,7 @@ def test_annotated_function_with_list_overrides_and_return_override():
 
 
 @pattern
-def short_str(x, this):
+def short_str(x, *_, **__):
     if len(x) > 3:
         return x
     else:
@@ -400,7 +400,7 @@ def short_str(x, this):
 
 
 @pattern
-def endswith_d(x, this):
+def endswith_d(x, *_, **__):
     if x.endswith("d"):
         return x
     else:

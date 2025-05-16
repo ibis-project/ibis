@@ -8,7 +8,7 @@ from ibis.common.dispatch import lazy_singledispatch
 
 def test_lazy_singledispatch():
     @lazy_singledispatch
-    def foo(x):
+    def foo(_):
         """A docstring."""
         return "base result"
 
@@ -61,7 +61,7 @@ def test_lazy_singledispatch_lazy():
         return a
 
     @foo.register("decimal.Decimal")
-    def inc(a):
+    def _(a):
         return a + 1
 
     assert foo(1) == 1
@@ -76,15 +76,15 @@ def test_lazy_singledispatch_lazy_walks_mro():
         pass
 
     @lazy_singledispatch
-    def foo(a):
+    def foo(_):
         return "base call"
 
     @foo.register(Subclass2)
-    def _(a):
+    def _(_):
         return "eager call"
 
     @foo.register("decimal.Decimal")
-    def _(a):
+    def _(_):
         return "lazy call"
 
     assert foo(1) == "base call"
@@ -99,19 +99,19 @@ def test_lazy_singledispatch_abc():
         pass
 
     @lazy_singledispatch
-    def foo(a):
+    def foo(_):
         return "base"
 
     @foo.register(collections.abc.Mapping)
-    def _(a):
+    def _(_):
         return "mapping"
 
     @foo.register(mydict)
-    def _(a):
+    def _(_):
         return "mydict"
 
     @foo.register(collections.abc.Callable)
-    def _(a):
+    def _(_):
         return "callable"
 
     assert foo(1) == "base"

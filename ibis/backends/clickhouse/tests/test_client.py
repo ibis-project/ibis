@@ -380,13 +380,13 @@ def test_password_with_bracket():
         ibis.clickhouse.connect(host=host, user=user, port=port, password=quoted_pass)
 
 
-def test_from_url(con):
+def test_from_url():
     assert ibis.connect(
         f"clickhouse://{CLICKHOUSE_USER}:{CLICKHOUSE_PASS}@{CLICKHOUSE_HOST}:{CLICKHOUSE_PORT}/{IBIS_TEST_CLICKHOUSE_DB}"
     )
 
 
-def test_from_url_with_kwargs(con):
+def test_from_url_with_kwargs():
     # since explicit kwargs take precedence, this passes, because we're passing
     # `database` explicitly, even though our connection string says to use a
     # random database

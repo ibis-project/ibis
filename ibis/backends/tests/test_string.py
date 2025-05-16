@@ -1187,7 +1187,7 @@ def string_temp_table(backend, con):
         ),
         param(
             lambda t: t.string_col.find_in_set(["aBc", "123"]),
-            lambda t: pd.Series([-1, -1, -1, 1, 0, -1, -1], name="tmp"),
+            lambda _: pd.Series([-1, -1, -1, 1, 0, -1, -1], name="tmp"),
             id="find_in_set",
             marks=[
                 pytest.mark.notyet(
@@ -1216,7 +1216,7 @@ def string_temp_table(backend, con):
         ),
         param(
             lambda t: t.string_col.find_in_set(["abc, 123"]),
-            lambda t: pd.Series([-1, -1, -1, -1, -1, -1, -1], name="tmp"),
+            lambda _: pd.Series([-1, -1, -1, -1, -1, -1, -1], name="tmp"),
             id="find_in_set_w_comma",
             marks=[
                 pytest.mark.notyet(

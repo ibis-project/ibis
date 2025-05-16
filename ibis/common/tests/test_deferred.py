@@ -584,7 +584,7 @@ def test_deferred_is_immutable():
         _.a = 1
 
 
-def test_deferred_namespace(table):
+def test_deferred_namespace():
     ns = Namespace(deferred, module=__name__)
 
     assert isinstance(ns.ColumnMock, Deferred)

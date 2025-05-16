@@ -90,7 +90,7 @@ def test_mv_on_table_with_connector(con):
     con.drop_table(tblc_name)
 
 
-def test_sink_from(con, alltypes):
+def test_sink_from(con):
     sk_name = util.gen_name("sk_from")
     con.create_sink(
         sk_name,

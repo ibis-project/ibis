@@ -548,7 +548,7 @@ def test_windowization_wraps_reduction_inside_a_nested_value_expression(t):
     assert expr.op() == expected
 
 
-def test_group_by_with_window_function_preserves_range(alltypes):
+def test_group_by_with_window_function_preserves_range():
     t = ibis.table(dict(one="string", two="double", three="int32"), name="my_data")
     w = ibis.cumulative_window(order_by=t.one)
     expr = t.group_by(t.three).mutate(four=t.two.sum().over(w))
