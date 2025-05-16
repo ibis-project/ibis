@@ -764,7 +764,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
             The encode format for the new source, e.g., "JSON". data_format and encode_format must be specified at the same time.
         encode_properties
             The properties of encode format, providing information like schema registry url. Refer https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
-
+        includes
+            A dict of INCLUDE clauses. Set the value to None if no alias is needed. Refer https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
+        
         Returns
         -------
         Table
@@ -773,11 +775,19 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
         table = sg.table(name, db=database, quoted=self.compiler.quoted)
         target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
+        include_clauses = []
+        if includes:
+          for include_type, column_name in includes.items():
+              include_clauses.append(sge.IncludeProperty(this=sg.column(include_type), alias=sg.column(column_name) if column_name else None))
+
         create_stmt = sge.Create(
             kind="SOURCE",
             this=target,
             properties=sge.Properties(
-                expressions=sge.Properties.from_dict(connector_properties)
+                expressions=[
+                    *include_clauses,
+                    *sge.Properties.from_dict(connector_properties)
+                ]
             ),
         )
 
