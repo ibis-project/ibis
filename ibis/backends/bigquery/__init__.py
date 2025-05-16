@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow as pa
+    from google.cloud.bigquery.table import RowIterator
 
 
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]
@@ -666,7 +667,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         )
         return BigQuerySchema.to_ibis(job.schema)
 
-    def raw_sql(self, query: str, params=None, page_size: int | None = None):
+    def raw_sql(self, query: str, params=None) -> RowIterator:
         query_parameters = [
             bigquery_param(param.type(), value, param.get_name())
             for param, value in (params or {}).items()
@@ -676,10 +677,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         job_config = bq.job.QueryJobConfig(query_parameters=query_parameters or [])
         return self.client.query_and_wait(
-            query,
-            job_config=job_config,
-            project=self.billing_project,
-            page_size=page_size,
+            query, job_config=job_config, project=self.billing_project
         )
 
     @property
@@ -770,14 +768,13 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        page_size: int | None = None,
         **kwargs: Any,
-    ):
+    ) -> RowIterator:
         self._run_pre_execute_hooks(table_expr)
         sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
         self._log(sql)
 
-        return self.raw_sql(sql, params=params, page_size=page_size)
+        return self.raw_sql(sql, params=params)
 
     def to_pyarrow(
         self,
@@ -816,9 +813,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
         colnames = list(schema.names)
 
-        query = self._to_query(
-            table_expr, params=params, limit=limit, page_size=chunk_size, **kwargs
-        )
+        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
         batch_iter = query.to_arrow_iterable(bqstorage_client=self.storage_client)
         return pa.ipc.RecordBatchReader.from_batches(
             schema.to_pyarrow(),
