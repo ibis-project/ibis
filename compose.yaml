@@ -557,7 +557,7 @@ services:
       - impala
 
   risingwave:
-    image: ghcr.io/risingwavelabs/risingwave:v2.1.3
+    image: ghcr.io/risingwavelabs/risingwave:v2.3.2
     command: "standalone --meta-opts=\" \
       --advertise-addr 0.0.0.0:5690 \
       --backend mem \
