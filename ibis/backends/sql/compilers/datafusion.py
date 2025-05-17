@@ -609,11 +609,9 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_Clip(self, op, *, arg, lower, upper):
         ifs = []
         if lower is not None:
-            lower_case = self.if_(arg < lower, lower)
-            ifs.append(lower_case)
+            ifs.append(self.if_(arg < lower, lower))
         if upper is not None:
-            upper_case = self.if_(arg > upper, upper)
-            ifs.append(upper_case)
+            ifs.append(self.if_(arg > upper, upper))
 
         return sg.exp.Case(ifs=ifs, default=arg)
 
