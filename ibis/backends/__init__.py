@@ -12,7 +12,7 @@ import urllib.parse
 import weakref
 from collections import Counter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, overload
 
 import ibis
 import ibis.common.exceptions as exc
@@ -179,6 +179,39 @@ class _FileIOHandler:
             )
         )
 
+    @overload
+    def to_pyarrow(
+        self,
+        expr: ir.Table,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Table: ...
+
+    @overload
+    def to_pyarrow(
+        self,
+        expr: ir.Column,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Array: ...
+
+    @overload
+    def to_pyarrow(
+        self,
+        expr: ir.Scalar,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Scalar: ...
+
     @util.experimental
     def to_pyarrow(
         self,
@@ -188,8 +221,8 @@ class _FileIOHandler:
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
-    ) -> pa.Table:
-        """Execute expression and return results in as a pyarrow table.
+    ) -> pa.Table | pa.Array | pa.Scalar:
+        """Execute expression to a pyarrow object.
 
         This method is eager and will execute the associated expression
         immediately.
@@ -208,9 +241,10 @@ class _FileIOHandler:
 
         Returns
         -------
-        Table
-            A pyarrow table holding the results of the executed expression.
-
+        result
+            If the passed expression is a Table, a pyarrow table is returned.
+            If the passed expression is a Column, a pyarrow array is returned.
+            If the passed expression is a Scalar, a pyarrow scalar is returned.
         """
         pa = self._import_pyarrow()
         self._run_pre_execute_hooks(expr)
