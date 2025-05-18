@@ -2816,7 +2816,7 @@ docs = [
     { name = "altair", specifier = ">=5.0.1,<6" },
     { name = "griffe", specifier = "<2" },
     { name = "ipykernel", specifier = ">=6.25.1,<7" },
-    { name = "itables", specifier = ">=1.6.3,<2.4" },
+    { name = "itables", specifier = ">=1.6.3,<2.5" },
     { name = "jupyter-cache", specifier = ">=1.0.0,<2" },
     { name = "jupyterlab", specifier = ">=4.2.5,<5" },
     { name = "jupyterlab-night", specifier = ">=0.4.6,<1" },
@@ -3067,7 +3067,7 @@ wheels = [
 
 [[package]]
 name = "itables"
-version = "2.3.0"
+version = "2.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipython", version = "8.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -3077,9 +3077,9 @@ dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pandas" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/84/e4/627d9c41d07a7117a2147e44c96e6bdc579c31d6889d3adb5630fbd189fa/itables-2.3.0.tar.gz", hash = "sha256:ce570e3f888e7baf5e9cb0416a2e1c981c09c49e81d2fb80e8bc574b169c250b", size = 2259074, upload-time = "2025-04-05T03:12:59.774Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c2/55/9710b529fe144def4df08b39acce0c43de4383adc9c5a713e3d8e3a795e0/itables-2.4.0.tar.gz", hash = "sha256:4b91c049455fa939f2f95bb5e4c6124ab11f7c2689b8bed484339cddeb9d5562", size = 2285608, upload-time = "2025-05-17T21:59:34.056Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e5/c7/ae4ddcae20b2a7cfafa40c737d0d003c94804b68f3c168653deb468427e7/itables-2.3.0-py3-none-any.whl", hash = "sha256:1d78a38d04c13d30437a0544c16b572d2f38f5e480810f3964c4f32e558b7ee3", size = 2289497, upload-time = "2025-04-05T03:12:57.502Z" },
+    { url = "https://files.pythonhosted.org/packages/43/fb/333d7d928e9bc1724b417db12a943c48b508507e88cb15c70ed43c8e43bd/itables-2.4.0-py3-none-any.whl", hash = "sha256:ca6563eaa0a689e5bc61209543e2ffdf2db36b892b505e68646fb4d39302a132", size = 2316516, upload-time = "2025-05-17T21:59:31.619Z" },
 ]
 
 [[package]]
