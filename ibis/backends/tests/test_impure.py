@@ -143,7 +143,11 @@ impure_params_uncorrelated = pytest.mark.parametrize(
             lambda _: ibis.uuid().cast(str).contains("a").ifelse(1, 0),
             marks=[
                 *no_uuids,
-                pytest.mark.notyet(["mysql"], reason="instances are correlated"),
+                pytest.mark.notyet(
+                    ["mysql"],
+                    reason="instances are correlated",
+                    strict=sys.version_info[:2] > (3, 9),
+                ),
             ],
             id="uuid",
         ),
