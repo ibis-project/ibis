@@ -77,7 +77,7 @@ _STRUCT_LITERAL = ibis.struct(
 _NULL_STRUCT_LITERAL = ibis.null().cast("struct<a: int64, b: string, c: float64>")
 
 
-@pytest.mark.notimpl(["postgres", "risingwave"])
+@pytest.mark.notimpl(["postgres"])
 def test_literal(backend, con):
     dtype = _STRUCT_LITERAL.type().to_pandas()
     result = pd.Series([con.execute(_STRUCT_LITERAL)], dtype=dtype)
@@ -100,7 +100,7 @@ def test_null_literal(backend, con, field):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["postgres", "risingwave"])
+@pytest.mark.notimpl(["postgres"])
 def test_struct_column(alltypes, df):
     t = alltypes
     expr = t.select(s=ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)))
@@ -112,7 +112,7 @@ def test_struct_column(alltypes, df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["postgres", "risingwave"])
+@pytest.mark.notimpl(["postgres"])
 def test_collect_into_struct(alltypes):
     from ibis import _
 
@@ -136,11 +136,6 @@ def test_collect_into_struct(alltypes):
 
 @pytest.mark.notimpl(
     ["postgres"], reason="struct literals not implemented", raises=PsycoPgSyntaxError
-)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    reason="struct literals not implemented",
-    raises=PsycoPg2InternalError,
 )
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError, reason="not implemented in ibis")
@@ -245,7 +240,7 @@ def test_keyword_fields(con, nullable):
 @pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
-    reason="sqlglot doesn't implement structs for postgres correctly",
+    reason="IN struct is not yet supported in risingwave",
 )
 @pytest.mark.notyet(
     ["polars"],

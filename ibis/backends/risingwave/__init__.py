@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import itertools
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
@@ -16,16 +17,18 @@ import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.common.exceptions as exc
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanListCatalog, NoExampleLoader
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import TRUE, C, ColGen
+from ibis.backends.sql.compilers.base import TRUE, C
 from ibis.util import experimental
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -33,22 +36,68 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
+def dict_to_struct(struct):
+    return dt.Struct(
+        {
+            field: dtype if isinstance(dtype, dt.DataType) else dict_to_struct(dtype)
+            for field, dtype in struct.items()
+        }
+    )
+
+
+def shredded_to_nested(
+    shredded: Iterable[tuple[str, dt.DataType, int]],
+) -> Mapping[str, dt.DataType]:
+    """Convert a shredded struct representation to a nested representation.
+
+    Assumes `dtypes` contains a **single** shredded struct.
+
+    Examples
+    --------
+    >>> import ibis.expr.datatypes as dt
+    >>> shredded = [("a.b", dt.int64, 1), ("a.c", dt.string, 1)]
+    >>> shredded_to_nested(shredded)
+    {'b': Int64(nullable=True), 'c': String(length=None, nullable=True)}
+
+    >>> shredded = [
+    ...     ("a.b.c", dt.int, 1),
+    ...     ("a.b.d", dt.string, 1),
+    ...     ("a.x", dt.Array(dt.int), 1),
+    ... ]
+    >>> shredded_to_nested(shredded)
+    {'b': {'c': Int64(nullable=True), 'd': String(length=None, nullable=True)},
+     'x': Array(value_type=Int64(nullable=True), length=None, nullable=True)}
+    """
+    assert shredded
+    result = {}
+    for field, dtype, _ in shredded:
+        top, *components, bottom = field.split(".")
+        child = output = result.setdefault(top, {})
+        for component in components:
+            child = child.setdefault(component, {})
+        child[bottom] = dtype
+    assert len(result) == 1, f"{len(result) = }"
+    return output
+
+
 def data_and_encode_format(data_format, encode_format, encode_properties):
-    res = ""
+    res = []
     if data_format is not None:
-        res = res + " FORMAT " + data_format.upper()
+        res.append("FORMAT")
+        res.append(data_format.upper())
     if encode_format is not None:
-        res = res + " ENCODE " + encode_format.upper()
+        res.append("ENCODE")
+        res.append(encode_format.upper())
         if encode_properties is not None:
-            res = res + " " + format_properties(encode_properties)
-    return res
+            res.append(format_properties(encode_properties))
+    return " ".join(res)
 
 
 def format_properties(props):
     tokens = []
     for k, v in props.items():
         tokens.append(f"{k}='{v}'")
-    return "( {} ) ".format(", ".join(tokens))
+    return "({}) ".format(", ".join(tokens))
 
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
@@ -264,12 +313,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
         catalog: str | None = None,
         database: str | None = None,
     ):
-        a = ColGen(table="a")
-        c = ColGen(table="c")
-        n = ColGen(table="n")
-
-        format_type = self.compiler.f["pg_catalog.format_type"]
-
         # If no database is specified, assume the current database
         db = database or self.current_database
 
@@ -280,46 +323,46 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
         if database is None and (temp_table_db := self._session_temp_db) is not None:
             dbs.append(sge.convert(temp_table_db))
 
-        type_info = (
-            sg.select(
-                a.attname.as_("column_name"),
-                format_type(a.atttypid, a.atttypmod).as_("data_type"),
-                sg.not_(a.attnotnull).as_("nullable"),
-            )
-            .from_(sg.table("pg_attribute", db="pg_catalog").as_("a"))
-            .join(
-                sg.table("pg_class", db="pg_catalog").as_("c"),
-                on=c.oid.eq(a.attrelid),
-                join_type="INNER",
-            )
-            .join(
-                sg.table("pg_namespace", db="pg_catalog").as_("n"),
-                on=n.oid.eq(c.relnamespace),
-                join_type="INNER",
-            )
-            .where(
-                a.attnum > 0,
-                sg.not_(a.attisdropped),
-                n.nspname.isin(*dbs),
-                c.relname.eq(sge.convert(name)),
-            )
-            .order_by(a.attnum)
-        )
+        ident = sg.table(name, catalog=catalog, db=database, quoted=True)
+        try:
+            with self._safe_raw_sql(sge.Describe(this=ident)) as cur:
+                raw_rows = cur.fetchall()
+        except psycopg2.InternalError as exc:
+            raise com.TableNotFound(name) from exc
 
         type_mapper = self.compiler.type_mapper
 
-        with self._safe_raw_sql(type_info) as cur:
-            rows = cur.fetchall()
+        rows = []
+        field_number = 0
+        for raw_name, dtype, hidden, *_ in raw_rows:
+            if hidden == "false":
+                field_number += not dtype or "." not in raw_name
+                rows.append(
+                    (
+                        raw_name,
+                        None
+                        if not dtype
+                        else type_mapper.from_string(dtype, nullable=True),
+                        # the last element of the tuple is a unique integer representing all
+                        # the (shredded) fields of a struct type
+                        field_number,
+                    )
+                )
+        schema = {}
+        # groupby the struct number to make it easy to build an unshredded--AKA
+        # nested--schema
+        for _, values in itertools.groupby(rows, key=lambda x: x[-1]):
+            values: Iterator  # otherwise ruff complains that using the generator twice has no effect
+            name, dtype, _ = next(values)
 
-        if not rows:
-            raise com.TableNotFound(name)
+            if dtype is not None:
+                # leaf node
+                schema[name] = dtype
+            else:
+                # otherwise the first value of the group was the top of a struct type tree
+                schema[name] = dict_to_struct(shredded_to_nested(values))
 
-        return sch.Schema(
-            {
-                col: type_mapper.from_string(typestr, nullable=nullable)
-                for col, typestr, nullable in rows
-            }
-        )
+        return sch.Schema(schema)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name(f"{self.name}_metadata")
@@ -583,7 +626,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
             create_stmt = sge.Create(
                 kind="TABLE",
                 this=target,
-                properties=sge.Properties.from_dict(connector_properties),
+                properties=sge.Properties(
+                    expressions=sge.Properties.from_dict(connector_properties)
+                ),
             )
             create_stmt = create_stmt.sql(self.dialect) + data_and_encode_format(
                 data_format, encode_format, encode_properties
@@ -742,7 +787,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
         data_format: str,
         encode_format: str,
         encode_properties: dict | None = None,
-        includes: dict[str, str] | None = None,
     ) -> ir.Table:
         """Creating a source.
 
@@ -763,31 +807,22 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
             The encode format for the new source, e.g., "JSON". data_format and encode_format must be specified at the same time.
         encode_properties
             The properties of encode format, providing information like schema registry url. Refer https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
-        includes
-            A dict of `INCLUDE` clauses of the form `{field: alias, ...}`.
-            Set value(s) to `None` if no alias is needed. Refer to https://docs.risingwave.com/docs/current/sql-create-source/ for more details.
 
         Returns
         -------
         Table
             Table expression
         """
-        quoted = self.compiler.quoted
-        table = sg.table(name, db=database, quoted=quoted)
+        table = sg.table(name, db=database, quoted=self.compiler.quoted)
         target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
-        properties = sge.Properties.from_dict(connector_properties)
-        properties.expressions.extend(
-            sge.IncludeProperty(
-                this=sg.to_identifier(include_type),
-                alias=sg.to_identifier(column_name, quoted=quoted)
-                if column_name
-                else None,
-            )
-            for include_type, column_name in (includes or {}).items()
+        create_stmt = sge.Create(
+            kind="SOURCE",
+            this=target,
+            properties=sge.Properties(
+                expressions=sge.Properties.from_dict(connector_properties)
+            ),
         )
-
-        create_stmt = sge.Create(kind="SOURCE", this=target, properties=properties)
 
         create_stmt = create_stmt.sql(self.dialect) + data_and_encode_format(
             data_format, encode_format, encode_properties
