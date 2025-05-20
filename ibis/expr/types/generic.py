@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
     import rich.table
+    from typing_extensions import Self
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
@@ -428,7 +429,7 @@ class Value(Expr):
         """
         return ops.TypeOf(self).to_expr()
 
-    def fill_null(self, fill_value: Scalar, /) -> Value:
+    def fill_null(self, fill_value: Scalar, /) -> Self:
         """Replace `NULL`s with the given value. Does NOT affect `NaN` and `inf` values.
 
         This only replaces genuine `NULL` values, it does NOT affect
@@ -491,11 +492,11 @@ class Value(Expr):
         return ops.Coalesce((self, fill_value)).to_expr()
 
     @deprecated(as_of="9.1", instead="use fill_null instead")
-    def fillna(self, fill_value: Scalar, /) -> Value:
+    def fillna(self, fill_value: Scalar, /) -> Self:
         """DEPRECATED: use `fill_null` instead, which acts exactly the same."""
         return self.fill_null(fill_value)
 
-    def nullif(self, null_if_expr: Value, /) -> Value:
+    def nullif(self, null_if_expr: Value, /) -> Self:
         """Set values to null if they equal the values `null_if_expr`.
 
         Commonly used to avoid divide-by-zero problems by replacing zero with
@@ -758,7 +759,7 @@ class Value(Expr):
         value: Value | dict,
         replacement: Value | None = None,
         else_: Value | None = None,
-    ):
+    ) -> Value:
         """Replace values given in `values` with `replacement`.
 
         This is similar to the pandas `replace` method.
@@ -838,7 +839,7 @@ class Value(Expr):
         range=None,
         group_by=None,
         order_by=None,
-    ) -> Value:
+    ) -> Self:
         """Construct a window expression.
 
         Parameters
@@ -1261,7 +1262,7 @@ class Value(Expr):
     def __lt__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.Less, self, other)
 
-    def asc(self, *, nulls_first: bool = False) -> ir.Value:
+    def asc(self, *, nulls_first: bool = False) -> Self:
         """Sort an expression in ascending order.
 
         Parameters
@@ -1308,7 +1309,7 @@ class Value(Expr):
         """
         return ops.SortKey(self, ascending=True, nulls_first=nulls_first).to_expr()
 
-    def desc(self, *, nulls_first: bool = False) -> ir.Value:
+    def desc(self, *, nulls_first: bool = False) -> Self:
         """Sort an expression in descending order.
 
         Parameters
