@@ -61,7 +61,7 @@ services:
       - postgres:/data
 
   mssql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/mssql/server:2025-latest
     environment:
       MSSQL_SA_PASSWORD: 1bis_Testing!
       ACCEPT_EULA: "Y"
