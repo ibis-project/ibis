@@ -552,5 +552,5 @@ def test_window_with_count_distinct(tmp_table, expr, query):
 def test_create_job_with_custom_job_id(con):
     job_id = f"test_job_id_{uuid4()}"
     query = "SELECT 1"
-    result = con.raw_sql(query, bigquery_job_id=job_id)
+    result = con.raw_sql(query, job_id=job_id)
     assert result.job_id == job_id
