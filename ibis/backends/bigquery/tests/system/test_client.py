@@ -5,6 +5,7 @@ import datetime
 import decimal
 import os
 from urllib.parse import urlparse
+from uuid import uuid4
 
 import pandas as pd
 import pandas.testing as tm
@@ -546,3 +547,10 @@ def test_window_with_count_distinct(tmp_table, expr, query):
         .reset_index(drop=True)
     )
     tm.assert_frame_equal(result, expected)
+
+
+def test_create_job_with_custom_job_id(con):
+    job_id = f"test_job_id_{uuid4()}"
+    query = "SELECT 1"
+    result = con.raw_sql(query, bigquery_job_id=job_id)
+    assert result.job_id == job_id
