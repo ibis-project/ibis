@@ -91,6 +91,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
 
     def do_connect(
         self,
+        *,
         host: str = "localhost",
         port: int | None = None,
         database: str = "default",
