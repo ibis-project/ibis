@@ -147,5 +147,6 @@ show(
     ordering=False,
     paging=False,
     buttons=["copy", "excel", "csv"],
+    allow_html=True,
 )
 ```
