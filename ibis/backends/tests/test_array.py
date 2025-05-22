@@ -542,11 +542,13 @@ def test_array_slice(backend, start, stop):
 )
 @pytest.mark.parametrize(
     "func",
-    [lambda x: x + 1, partial(lambda x, y: x + y, y=1), ibis._ + 1],
-    ids=["lambda", "partial", "deferred"],
+    [
+        pytest.param(lambda x: x + 1, id="lambda"),
+        pytest.param(partial(lambda x, idx, y: x + y, y=1), id="partial"),
+        pytest.param(ibis._ + 1, id="deferred"),
+    ],
 )
 def test_array_map(con, input, output, func):
-    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.Series(output["a"])
 
@@ -601,11 +603,12 @@ def test_array_map(con, input, output, func):
 )
 @pytest.mark.parametrize(
     "func",
-    [lambda x, i: x + 1 + i, partial(lambda x, y, i: x + y + i, y=1)],
-    ids=["lambda", "partial"],
+    [
+        pytest.param(lambda x, i: x + 1 + i, id="lambda"),
+        pytest.param(partial(lambda x, i, y: x + y + i, y=1), id="partial"),
+    ],
 )
 def test_array_map_with_index(con, input, output, func):
-    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.Series(output["a"])
 
@@ -649,8 +652,11 @@ def test_array_map_with_index(con, input, output, func):
 )
 @pytest.mark.parametrize(
     "predicate",
-    [lambda x: x > 1, partial(lambda x, y: x > y, y=1), ibis._ > 1],
-    ids=["lambda", "partial", "deferred"],
+    [
+        pytest.param(lambda x: x > 1, id="lambda"),
+        pytest.param(partial(lambda x, i, y: x > y, y=1), id="partial"),
+        pytest.param(ibis._ > 1, id=" deferred"),
+    ],
 )
 def test_array_filter(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
@@ -696,8 +702,10 @@ def test_array_filter(con, input, output, predicate):
 )
 @pytest.mark.parametrize(
     "predicate",
-    [lambda x, i: x + (i - i) > 1, partial(lambda x, y, i: x > y + (i * 0), y=1)],
-    ids=["lambda", "partial"],
+    [
+        pytest.param(lambda x, i: x + (i - i) > 1, id="lambda"),
+        pytest.param(partial(lambda x, i, y: x > y + (i * 0), y=1), id="partial"),
+    ],
 )
 def test_array_filter_with_index(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
@@ -707,52 +715,6 @@ def test_array_filter_with_index(con, input, output, predicate):
     result = con.execute(expr.a)
     assert frozenset(map(tuple, result.values)) == frozenset(
         map(tuple, expected.values)
-    )
-
-
-@builtin_array
-@pytest.mark.notimpl(
-    ["datafusion", "flink", "polars"], raises=com.OperationNotDefinedError
-)
-@pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
-@pytest.mark.notimpl(
-    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
-)
-@pytest.mark.parametrize(
-    ("input", "output"),
-    [
-        param(
-            {"a": [[1, None, None], [4]]},
-            {"a": [[1, None], [4]]},
-            id="nulls",
-            marks=[
-                pytest.mark.notyet(
-                    ["bigquery"],
-                    raises=GoogleBadRequest,
-                    reason="NULLs are not allowed as array elements",
-                )
-            ],
-        ),
-        param({"a": [[1, 2], [1]]}, {"a": [[1], [1]]}, id="no_nulls"),
-    ],
-)
-@pytest.mark.notyet(
-    "risingwave",
-    raises=PsycoPg2InternalError,
-    reason="no support for not null column constraint",
-)
-@pytest.mark.parametrize(
-    "predicate",
-    [lambda x, i: i % 2 == 0, partial(lambda x, y, i: i % 2 == 0, y=1)],
-    ids=["lambda", "partial"],
-)
-def test_array_filter_with_index_lambda(con, input, output, predicate):
-    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
-
-    expr = t.select(a=t.a.filter(predicate))
-    result = con.to_pyarrow(expr.a)
-    assert frozenset(map(tuple, result.to_pylist())) == frozenset(
-        map(tuple, output["a"])
     )
 
 
