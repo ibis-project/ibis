@@ -5,7 +5,6 @@ import datetime
 import decimal
 import os
 from urllib.parse import urlparse
-from uuid import uuid4
 
 import pandas as pd
 import pandas.testing as tm
@@ -549,8 +548,8 @@ def test_window_with_count_distinct(tmp_table, expr, query):
     tm.assert_frame_equal(result, expected)
 
 
-def test_create_job_with_custom_job_id(con):
-    job_id = f"test_job_id_{uuid4()}"
+def test_create_job_with_custom_job_prefix(con):
+    job_id_prefix = "test_job_prefix_"
     query = "SELECT 1"
-    result = con.raw_sql(query, job_id=job_id)
-    assert result.job_id == job_id
+    result = con.raw_sql(query, job_id_prefix=job_id_prefix)
+    assert result.job_id.startswith(job_id_prefix)
