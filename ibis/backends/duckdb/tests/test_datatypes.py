@@ -174,3 +174,9 @@ def test_null_scalar(con, lit, monkeypatch):
 │ NULL │
 └──────┘"""
     assert result == expected
+
+
+def test_enum():
+    con = ibis.duckdb.connect()
+    con.raw_sql("CREATE TABLE t (e ENUM('a', 'b')); INSERT INTO t VALUES ('a'), ('b');")
+    assert con.table("t").e.to_pandas().tolist() == ["a", "b"]
