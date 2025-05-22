@@ -653,3 +653,35 @@ def subtract_one_from_array_map_filter_index(_, **kwargs):
         return ops.Subtract(y, 1)
 
     return _.copy(body=_.body.replace(argument_replacer))
+
+
+def _make_replacement(name: str):
+    pattern = getattr(p, name)
+    op = getattr(ops, name)
+
+    @replace(pattern(x @ p.Value, y @ p.Value))
+    def untype_numerics_in_comparisons(_, x, y):
+        if isinstance(x, ops.Literal) and x.dtype.is_numeric():
+            x = ops.UntypedNumericLiteral(x.value, x.dtype)
+        if isinstance(y, ops.Literal) and y.dtype.is_numeric():
+            y = ops.UntypedNumericLiteral(y.value, y.dtype)
+        return op(x, y)
+
+    return untype_numerics_in_comparisons
+
+
+numeric_comparison_replacements = [
+    _make_replacement(name)
+    for name in [
+        "Equals",
+        "NotEquals",
+        "Greater",
+        "GreaterEqual",
+        "Less",
+        "LessEqual",
+    ]
+]
+"""To enable predicate pushdown into parquet readers,
+compile comparisons to eg `x < 4`, not `x < 4::TINYINT`.
+https://github.com/ibis-project/ibis/issues/9662"""
+# TODO: rewrite ops.Between (and ops.In, ops.NotIn?)

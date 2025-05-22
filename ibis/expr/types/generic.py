@@ -423,7 +423,7 @@ class Value(Expr):
         Different backends have different names for their native types
 
         >>> ibis.duckdb.connect().execute(ibis.literal(5.4).typeof())
-        'DECIMAL(2,1)'
+        'DOUBLE'
         >>> ibis.sqlite.connect().execute(ibis.literal(5.4).typeof())
         'real'
         """
