@@ -1,14 +1,15 @@
-{ stdenv
-, lib
-, esbuild
-, fetchurl
-, dart-sass
-, makeWrapper
-, rWrapper
-, rPackages
-, autoPatchelfHook
-, libgcc
-, which
+{
+  stdenv,
+  lib,
+  esbuild,
+  fetchurl,
+  dart-sass,
+  makeWrapper,
+  rWrapper,
+  rPackages,
+  autoPatchelfHook,
+  libgcc,
+  which,
 }:
 
 let
@@ -48,7 +49,12 @@ stdenv.mkDerivation rec {
   preFixup =
     let
       rEnv = rWrapper.override {
-        packages = with rPackages; [ dplyr reticulate rmarkdown tidyr ];
+        packages = with rPackages; [
+          dplyr
+          reticulate
+          rmarkdown
+          tidyr
+        ];
       };
     in
     ''
@@ -80,6 +86,9 @@ stdenv.mkDerivation rec {
     changelog = "https://github.com/quarto-dev/quarto-cli/releases/tag/v${version}";
     license = licenses.gpl2Plus;
     platforms = builtins.attrNames platforms;
-    sourceProvenance = with sourceTypes; [ binaryNativeCode binaryBytecode ];
+    sourceProvenance = with sourceTypes; [
+      binaryNativeCode
+      binaryBytecode
+    ];
   };
 }

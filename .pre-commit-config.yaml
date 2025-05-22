@@ -6,7 +6,7 @@ ci:
     - actionlint-system
     - deadnix
     - just
-    - nixpkgs-fmt
+    - nixfmt
     - prettier
     - ruff
     - ruff-format
@@ -135,10 +135,10 @@ repos:
         args: ["--fmt", "--unstable"]
         files: ^justfile$
         pass_filenames: false
-      - id: nixpkgs-fmt
-        name: nixpkgs-fmt
+      - id: nixfmt
+        name: nixfmt
         language: system
-        entry: nixpkgs-fmt
+        entry: nixfmt
         types:
           - nix
       - id: statix

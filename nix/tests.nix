@@ -8,14 +8,20 @@ final: prev: {
       tests = old.passthru.tests or { } // {
         pytest =
           let
-            pythonEnv = final.mkVirtualEnv "ibis-framework-test-env" (deps // {
-              # Use default dependencies from overlay.nix + enabled tests group.
-              ibis-framework = deps.ibis-framework or [ ] ++ [ "tests" ];
-            });
+            pythonEnv = final.mkVirtualEnv "ibis-framework-test-env" (
+              deps
+              // {
+                # Use default dependencies from overlay.nix + enabled tests group.
+                ibis-framework = deps.ibis-framework or [ ] ++ [ "tests" ];
+              }
+            );
           in
           stdenv.mkDerivation {
             name = "ibis-framework-test";
-            nativeCheckInputs = [ pythonEnv pkgs.graphviz-nox ];
+            nativeCheckInputs = [
+              pythonEnv
+              pkgs.graphviz-nox
+            ];
             src = ../.;
             doCheck = true;
             preCheck = ''
