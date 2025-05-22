@@ -446,6 +446,13 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         project_id = client_project_id or project_id or default_project_id
 
+        if project_id is None:
+            raise ValueError(
+                "Project ID could not be identified. "
+                "Provide either explicit `project_id`, `client` with project, "
+                "or don't provide an explicit `credentials` object."
+            )
+
         (
             self.data_project,
             self.billing_project,
