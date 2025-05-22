@@ -121,13 +121,13 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.RandomUUID: "gen_random_uuid",
     }
 
-    def to_sqlglot(
+    def _to_sqlglot_expr(
         self,
         expr: ir.Expr,
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-    ):
+    ) -> sg.Expression:
         table_expr = expr.as_table()
         schema = table_expr.schema()
 
@@ -140,7 +140,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
         if conversions:
             table_expr = table_expr.mutate(**conversions)
-        return super().to_sqlglot(table_expr, limit=limit, params=params)
+        return super()._to_sqlglot_expr(table_expr, limit=limit, params=params)
 
     def _compile_python_udf(self, udf_node: ops.ScalarUDF):
         config = udf_node.__config__
