@@ -410,7 +410,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             An instance of the BigQuery backend.
 
         """
-        default_project_id = client.project if client is not None else project_id
+        client_project_id = client.project if client is not None else None
+        default_project_id = None
 
         # Only need `credentials` to create a `client` and
         # `storage_client`, so only one or the other needs to be set.
@@ -443,7 +444,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
                 use_local_webserver=auth_local_webserver,
             )
 
-        project_id = project_id or default_project_id
+        project_id = client_project_id or project_id or default_project_id
 
         (
             self.data_project,
