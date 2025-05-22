@@ -138,6 +138,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
     def do_connect(
         self,
         session: SparkSession | None = None,
+        /,
+        *,
         mode: ConnectionMode = "batch",
         **kwargs,
     ) -> None:
@@ -211,7 +213,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         kwargs
             Additional keyword arguments used to configure the SparkSession.
         """
-        return ibis.pyspark.connect(session, mode, **kwargs)
+        return ibis.pyspark.connect(session, mode=mode, **kwargs)
 
     def disconnect(self) -> None:
         self._session.stop()

@@ -170,6 +170,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
 
     def do_connect(
         self,
+        *,
         host: str | None = None,
         user: str | None = None,
         password: str | None = None,
@@ -180,6 +181,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         **kwargs: Any,
     ) -> None:
         """Create an Ibis client connected to PostgreSQL database.
+
+        This method is useful if you have individual connection parameters.
+        If you have a connection URL then you can connect directly using
+        `ibis.connect(f"postgres://{user}:{password}@{host}:{port}/{database}")`.
 
         Parameters
         ----------

@@ -91,6 +91,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
 
     def do_connect(
         self,
+        *,
         host: str = "localhost",
         port: int | None = None,
         database: str = "default",
@@ -103,6 +104,10 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
         **kwargs: Any,
     ):
         """Create a ClickHouse client for use with Ibis.
+
+        This method is useful if you have individual connection parameters.
+        If you have a connection URL then you can connect directly using
+        `ibis.connect(f"clickhouse://{user}:{password}@{host}:{port}/{database}")`.
 
         Parameters
         ----------
