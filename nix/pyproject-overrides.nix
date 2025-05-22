@@ -1,4 +1,5 @@
-{ pkgs }: final: prev:
+{ pkgs }:
+final: prev:
 let
   inherit (pkgs) lib stdenv;
   inherit (final) resolveBuildSystem;
@@ -9,36 +10,38 @@ let
       nativeBuildInputs = old.nativeBuildInputs ++ resolveBuildSystem spec;
     });
 
-  buildSystemOverrides = {
-    atpublic.hatchling = [ ];
-    packaging.flit-core = [ ];
-    parsy.setuptools = [ ];
-    pathspec.flit-core = [ ];
-    pluggy = {
-      setuptools = [ ];
-      setuptools-scm = [ ];
+  buildSystemOverrides =
+    {
+      atpublic.hatchling = [ ];
+      packaging.flit-core = [ ];
+      parsy.setuptools = [ ];
+      pathspec.flit-core = [ ];
+      pluggy = {
+        setuptools = [ ];
+        setuptools-scm = [ ];
+      };
+      pure-sasl.setuptools = [ ];
+      pydruid.setuptools = [ ];
+      pytest-clarity.setuptools = [ ];
+      sqlglot = {
+        setuptools = [ ];
+        setuptools-scm = [ ];
+      };
+      tomli.flit-core = [ ];
+      toolz.setuptools = [ ];
+      typing-extensions.flit-core = [ ];
+      debugpy.setuptools = [ ];
+      google-crc32c.setuptools = [ ];
+      lz4.setuptools = [ ];
+      snowflake-connector-python.setuptools = [ ];
+    }
+    // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
+      duckdb = {
+        setuptools = [ ];
+        setuptools-scm = [ ];
+        pybind11 = [ ];
+      };
     };
-    pure-sasl.setuptools = [ ];
-    pydruid.setuptools = [ ];
-    pytest-clarity.setuptools = [ ];
-    sqlglot = {
-      setuptools = [ ];
-      setuptools-scm = [ ];
-    };
-    tomli.flit-core = [ ];
-    toolz.setuptools = [ ];
-    typing-extensions.flit-core = [ ];
-    debugpy.setuptools = [ ];
-    google-crc32c.setuptools = [ ];
-    lz4.setuptools = [ ];
-    snowflake-connector-python.setuptools = [ ];
-  } // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
-    duckdb = {
-      setuptools = [ ];
-      setuptools-scm = [ ];
-      pybind11 = [ ];
-    };
-  };
 in
 (lib.optionalAttrs stdenv.hostPlatform.isDarwin {
   pyproj = prev.pyproj.overrideAttrs (attrs: {
@@ -50,61 +53,77 @@ in
     PROJ_DIR = "${lib.getBin pkgs.proj}";
     PROJ_INCDIR = "${lib.getDev pkgs.proj}";
   });
-}) // lib.mapAttrs (name: spec: addBuildSystems prev.${name} spec) buildSystemOverrides // {
+})
+// lib.mapAttrs (name: spec: addBuildSystems prev.${name} spec) buildSystemOverrides
+// {
   hatchling = prev.hatchling.overrideAttrs (attrs: {
     propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ final.editables ];
   });
 
   # pandas python 3.10 wheels on manylinux aarch64 somehow ships shared objects
   # for all versions of python
-  pandas = prev.pandas.overrideAttrs (attrs:
+  pandas = prev.pandas.overrideAttrs (
+    attrs:
     let
       py = final.python;
       shortVersion = lib.replaceStrings [ "." ] [ "" ] py.pythonVersion;
       impl = py.implementation;
     in
     lib.optionalAttrs (stdenv.isAarch64 && stdenv.isLinux && shortVersion == "310") {
-      postInstall = (attrs.postInstall or "") + ''
-        find $out \
-          \( -name '*.${impl}-*.so' -o -name 'libgcc*' -o -name 'libstdc*' \) \
-          -a ! -name '*.${impl}-${shortVersion}-*.so' \
-          -delete
-      '';
-    });
+      postInstall =
+        (attrs.postInstall or "")
+        + ''
+          find $out \
+            \( -name '*.${impl}-*.so' -o -name 'libgcc*' -o -name 'libstdc*' \) \
+            -a ! -name '*.${impl}-${shortVersion}-*.so' \
+            -delete
+        '';
+    }
+  );
 
-  psygnal = prev.psygnal.overrideAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
-      final.hatchling
-      final.pathspec
-      final.pluggy
-      final.packaging
-      final.trove-classifiers
-    ];
-  } // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
-    src = pkgs.fetchFromGitHub {
-      owner = "pyapp-kit";
-      repo = prev.psygnal.pname;
-      rev = "refs/tags/v${prev.psygnal.version}";
-      hash = "sha256-eGJWtmw2Ps3jII4T8E6s3djzxfqcSdyPemvejal0cn4=";
-    };
-  });
+  psygnal = prev.psygnal.overrideAttrs (
+    attrs:
+    {
+      nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
+        final.hatchling
+        final.pathspec
+        final.pluggy
+        final.packaging
+        final.trove-classifiers
+      ];
+    }
+    // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
+      src = pkgs.fetchFromGitHub {
+        owner = "pyapp-kit";
+        repo = prev.psygnal.pname;
+        rev = "refs/tags/v${prev.psygnal.version}";
+        hash = "sha256-eGJWtmw2Ps3jII4T8E6s3djzxfqcSdyPemvejal0cn4=";
+      };
+    }
+  );
 
   mysqlclient = prev.mysqlclient.overrideAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
-    buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.pkg-config pkgs.libmysqlclient ];
+    buildInputs = attrs.buildInputs or [ ] ++ [
+      pkgs.pkg-config
+      pkgs.libmysqlclient
+    ];
   });
 
   psycopg2 = prev.psycopg2.overrideAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
-    buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.libpq.pg_config ]
-    ++ lib.optionals stdenv.hostPlatform.isDarwin [ pkgs.openssl ];
+    buildInputs =
+      attrs.buildInputs or [ ]
+      ++ [ pkgs.libpq.pg_config ]
+      ++ lib.optionals stdenv.hostPlatform.isDarwin [ pkgs.openssl ];
   });
 
   pyodbc = prev.pyodbc.overrideAttrs (attrs: {
     buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.unixODBC ];
   });
 
-  pyspark = prev.pyspark.overrideAttrs (attrs:
+  pyspark = prev.pyspark.overrideAttrs (
+    attrs:
     let
       pysparkVersion = lib.versions.majorMinor attrs.version;
       jarHashes = {
@@ -123,17 +142,22 @@ in
     in
     {
       nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
-      postInstall = attrs.postInstall or "" + ''
-        cp ${icebergJar} $out/${final.python.sitePackages}/pyspark/jars/${icebergJar.name}
-      '';
-    });
+      postInstall =
+        attrs.postInstall or ""
+        + ''
+          cp ${icebergJar} $out/${final.python.sitePackages}/pyspark/jars/${icebergJar.name}
+        '';
+    }
+  );
 
   thrift = prev.thrift.overrideAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
     # avoid extremely premature optimization so that we don't have to
     # deal with a useless dependency on distutils
-    postPatch = attrs.postPatch or "" + lib.optionalString (final.python.pythonAtLeast "3.12") ''
-      substituteInPlace setup.cfg --replace 'optimize = 1' 'optimize = 0'
-    '';
+    postPatch =
+      attrs.postPatch or ""
+      + lib.optionalString (final.python.pythonAtLeast "3.12") ''
+        substituteInPlace setup.cfg --replace 'optimize = 1' 'optimize = 0'
+      '';
   });
 }
