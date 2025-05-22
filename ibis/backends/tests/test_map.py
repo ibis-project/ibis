@@ -427,7 +427,6 @@ values = pytest.mark.parametrize(
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
                 mark_notyet_postgres,
-                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
             id="struct",
         ),

@@ -283,11 +283,6 @@ builtin_array = toolz.compose(
     reason="backend does not support nullable nested types",
     raises=AssertionError,
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="Do not nest ARRAY types; ARRAY(basetype) handles multi-dimensional arrays of basetype",
-)
 @pytest.mark.never(
     ["bigquery"], reason="doesn't support arrays of arrays", raises=AssertionError
 )

@@ -76,6 +76,13 @@ class RisingWaveCompiler(PostgresCompiler):
             for col, typ in schema.items()
             if typ.is_map()
         )
+        # similar to maps are structs (spelled ROW in RisingWave), which come
+        # back as stringified tuples without first converting
+        conversions.update(
+            (col, table_expr[col].cast(dt.JSON(binary=True)))
+            for col, typ in schema.items()
+            if typ.is_struct()
+        )
 
         if conversions:
             table_expr = table_expr.mutate(**conversions)
@@ -83,6 +90,9 @@ class RisingWaveCompiler(PostgresCompiler):
 
     def visit_DateNow(self, op):
         return self.cast(sge.CurrentTimestamp(), dt.date)
+
+    def visit_Array(self, op, *, exprs):
+        return self.cast(self.f.array(*exprs), op.dtype)
 
     def visit_Cast(self, op, *, arg, to):
         if to.is_json():
@@ -154,6 +164,9 @@ class RisingWaveCompiler(PostgresCompiler):
     def _make_interval(self, arg, unit):
         return arg * sge.Interval(this=sge.convert(1), unit=self.v[unit.name])
 
+    def visit_StructColumn(self, op, *, names, values):
+        return self.cast(self.f.row(*values), op.dtype)
+
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():
             return self.cast("".join(map(r"\x{:0>2x}".format, value)), dt.binary)
@@ -165,6 +178,8 @@ class RisingWaveCompiler(PostgresCompiler):
             return self.f.map_from_key_values(
                 self.f.array(*value.keys()), self.f.array(*value.values())
             )
+        elif dtype.is_struct():
+            return self.cast(self.f.row(*value.values()), dtype)
         return None
 
     def visit_MapGet(self, op, *, arg, key, default):
@@ -192,6 +207,9 @@ class RisingWaveCompiler(PostgresCompiler):
         return self.f.map_contains(
             self.cast(arg, op.arg.dtype), self.cast(key, op.key.dtype)
         )
+
+    def visit_StructField(self, op, *, arg, field):
+        return sge.Dot(this=sge.Paren(this=arg), expression=sge.to_identifier(field))
 
 
 compiler = RisingWaveCompiler()
