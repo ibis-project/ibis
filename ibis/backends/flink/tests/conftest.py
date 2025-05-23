@@ -89,7 +89,7 @@ class TestConf(BackendTest):
     deps = "pandas", "pyflink"
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw: Any):
+    def connect(*, tmpdir, worker_id, **kw: Any):  # noqa: ARG004
         """Flink backend is created in batch mode by default. This is to
         comply with the assumption that the tests under ibis/ibis/backends/tests/
         are for batch (storage or processing) backends.
@@ -125,7 +125,7 @@ class TestConf(BackendTest):
 
 class TestConfForStreaming(TestConf):
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw: Any):
+    def connect(*, tmpdir, worker_id, **kw: Any):  # noqa: ARG004
         """Flink backend is created in streaming mode here. To be used
         in the tests under ibis/ibis/backends/flink/tests/.
         We only use mini cluster here for simplicity.

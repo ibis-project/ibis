@@ -66,7 +66,7 @@ def test_udf_determinism(determinism):
 def test_udf_int64(argument_type, return_type):
     # invalid argument type, valid return type
     @udf.scalar.python(signature=((argument_type,), return_type))
-    def my_func(x):
+    def my_func(_x):
         return 1
 
     expr = my_func(None)

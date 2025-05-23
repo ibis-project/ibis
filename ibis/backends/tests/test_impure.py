@@ -58,7 +58,7 @@ no_uuids = [
 
 
 @ibis.udf.scalar.python(side_effects=True)
-def my_random(x: float) -> float:
+def my_random(_: float) -> float:
     # need to make the whole UDF self-contained for postgres to work
     import random
 

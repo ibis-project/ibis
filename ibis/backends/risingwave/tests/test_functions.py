@@ -203,7 +203,7 @@ def test_coalesce(con, expr, expected):
         ),
     ],
 )
-def test_coalesce_all_na(con, expr, expected):
+def test_coalesce_all_na(con, expr):
     assert con.execute(expr) is None
 
 
@@ -329,43 +329,43 @@ def test_union_cte(alltypes, distinct, assert_sql):
     ("func", "pandas_func"),
     [
         param(
-            lambda t, cond: t.bool_col.count(),
-            lambda df, cond: df.bool_col.count(),
+            lambda t, _: t.bool_col.count(),
+            lambda df, _: df.bool_col.count(),
             id="count",
         ),
         param(
-            lambda t, cond: t.double_col.mean(),
-            lambda df, cond: df.double_col.mean(),
+            lambda t, _: t.double_col.mean(),
+            lambda df, _: df.double_col.mean(),
             id="mean",
         ),
         param(
-            lambda t, cond: t.double_col.min(),
-            lambda df, cond: df.double_col.min(),
+            lambda t, _: t.double_col.min(),
+            lambda df, _: df.double_col.min(),
             id="min",
         ),
         param(
-            lambda t, cond: t.double_col.max(),
-            lambda df, cond: df.double_col.max(),
+            lambda t, _: t.double_col.max(),
+            lambda df, _: df.double_col.max(),
             id="max",
         ),
         param(
-            lambda t, cond: t.double_col.var(),
-            lambda df, cond: df.double_col.var(),
+            lambda t, _: t.double_col.var(),
+            lambda df, _: df.double_col.var(),
             id="var",
         ),
         param(
-            lambda t, cond: t.double_col.std(),
-            lambda df, cond: df.double_col.std(),
+            lambda t, _: t.double_col.std(),
+            lambda df, _: df.double_col.std(),
             id="std",
         ),
         param(
-            lambda t, cond: t.double_col.var(how="sample"),
-            lambda df, cond: df.double_col.var(ddof=1),
+            lambda t, _: t.double_col.var(how="sample"),
+            lambda df, _: df.double_col.var(ddof=1),
             id="samp_var",
         ),
         param(
-            lambda t, cond: t.double_col.std(how="pop"),
-            lambda df, cond: df.double_col.std(ddof=0),
+            lambda t, _: t.double_col.std(how="pop"),
+            lambda df, _: df.double_col.std(ddof=0),
             id="pop_std",
         ),
         param(
