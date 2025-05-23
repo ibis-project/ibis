@@ -4,7 +4,7 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-from ibis.backends.pyspark import PYSPARK_LT_35
+from ibis.backends.pyspark import PYSPARK_35
 from ibis.conftest import IS_SPARK_REMOTE
 
 pytest.importorskip("pyspark")
@@ -46,7 +46,7 @@ def test_python_udf(t, df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(PYSPARK_LT_35, reason="pyarrow UDFs require PySpark 3.5+")
+@pytest.mark.xfail(not PYSPARK_35, reason="pyarrow UDFs require PySpark 3.5+")
 @pytest.mark.xfail(
     IS_SPARK_REMOTE,
     reason="pyarrow UDFs aren't tested with spark remote due to environment setup complexities",
@@ -57,7 +57,7 @@ def test_pyarrow_udf(t, df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(not PYSPARK_LT_35, reason="pyarrow UDFs require PySpark 3.5+")
+@pytest.mark.xfail(PYSPARK_35, reason="pyarrow UDFs require PySpark 3.5+")
 def test_illegal_udf_type(t):
     @ibis.udf.scalar.pyarrow
     def my_add_one(x) -> str:
