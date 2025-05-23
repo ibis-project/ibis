@@ -180,6 +180,32 @@ class SQLBackend(BaseBackend):
         return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
 
     @abc.abstractmethod
+    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
+        """Execute a raw SQL query.
+
+        One of the primary uses of this is to execute backend-specific commands
+        when the ibis APIs are not sufficient, such as
+        `INSERT OR REPLACE INTO`, `CREATE INDEX`, `CREATE TYPE`, etc.
+
+        It is backend-specific how this is implemented, but usually it is
+        something equivalent to `return self.con.execute(query)`.
+        This executes the query in no transaction.
+
+        Parameters
+        ----------
+        query
+            A SQL string or sqlglot expression
+        **kwargs
+            Extra arguments to pass to the underlying connection
+
+        Returns
+        -------
+        Any
+            The raw result of the query execution.
+            This is backend-specific, but usually a cursor or result set.
+        """
+
+    @abc.abstractmethod
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Return an ibis Schema from a backend-specific SQL string.
 
@@ -252,8 +278,7 @@ class SQLBackend(BaseBackend):
             expression=self.compile(obj),
         )
         self._register_in_memory_tables(obj)
-        with self._safe_raw_sql(src):
-            pass
+        self.raw_sql(src)
         return self.table(name, database=(catalog, db))
 
     def drop_view(
@@ -278,8 +303,7 @@ class SQLBackend(BaseBackend):
             kind="VIEW",
             exists=force,
         )
-        with self._safe_raw_sql(src):
-            pass
+        self.raw_sql(src)
 
     def execute(
         self,
@@ -348,8 +372,7 @@ class SQLBackend(BaseBackend):
             this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             exists=force,
         )
-        with self._safe_raw_sql(drop_stmt):
-            pass
+        self.raw_sql(drop_stmt)
 
     def _cursor_batches(
         self,
@@ -460,13 +483,10 @@ class SQLBackend(BaseBackend):
             obj = ibis.memtable(obj)
 
         self._run_pre_execute_hooks(obj)
-
         query = self._build_insert_from_table(
             target=name, source=obj, db=db, catalog=catalog
         )
-
-        with self._safe_raw_sql(query):
-            pass
+        self.raw_sql(query)
 
     def _build_insert_from_table(
         self, *, target: str, source, db: str | None = None, catalog: str | None = None

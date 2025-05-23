@@ -86,7 +86,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
             [(db,)] = cur.fetchall()
         return db
 
-    # TODO(kszucs): should be moved to the base SQLGLot backend
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
