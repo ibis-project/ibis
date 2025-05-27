@@ -122,7 +122,7 @@ def test_cast_to_floating_point_type(con, snapshot, typ):
     snapshot.assert_match(sql, "out.sql")
 
 
-def null_literal(array_min_size: int = 0, array_max_size: int | None = None):
+def null_literal():
     true = st.just(True)
 
     field_names = st.text(alphabet=string.ascii_lowercase + string.digits, min_size=1)
@@ -162,7 +162,7 @@ def null_literal(array_min_size: int = 0, array_max_size: int | None = None):
     )
 
 
-@h.given(lit=null_literal(array_min_size=1, array_max_size=8192))
+@h.given(lit=null_literal())
 @h.settings(suppress_health_check=[h.HealthCheck.function_scoped_fixture])
 def test_null_scalar(con, lit, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)

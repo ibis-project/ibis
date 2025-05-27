@@ -529,6 +529,7 @@ select = [
   "W",   # pycodestyle
   "YTT", # flake8-2020
   "S",   # flake8-bandit
+  "ARG",
 ]
 ignore = [
   "B028",    # required stacklevel argument to warn
@@ -604,6 +605,7 @@ required-imports = ["from __future__ import annotations"]
   "T201",
 ] # prints output using `print`
 "docs/**/{datafusion,polars}_*.py" = ["T201"] # prints output using `print`
+"!**/test*.py" = ["ARG"] # check for  unused arguments in testing
 
 [tool.ruff.format]
 docstring-code-format = true

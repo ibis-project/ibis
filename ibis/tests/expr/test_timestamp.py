@@ -125,18 +125,9 @@ def test_timestamp_field_access_on_date(
 
 
 @pytest.mark.parametrize(
-    ("field", "expected_operation", "expected_type"),
-    [
-        ("hour", ops.ExtractHour, ir.IntegerColumn),
-        ("minute", ops.ExtractMinute, ir.IntegerColumn),
-        ("second", ops.ExtractSecond, ir.IntegerColumn),
-        ("microsecond", ops.ExtractMicrosecond, ir.IntegerColumn),
-        ("millisecond", ops.ExtractMillisecond, ir.IntegerColumn),
-    ],
+    "field", ["hour", "minute", "second", "microsecond", "millisecond"]
 )
-def test_timestamp_field_access_on_date_failure(
-    field, expected_operation, expected_type, alltypes
-):
+def test_timestamp_field_access_on_date_failure(field, alltypes):
     time_col = alltypes.i.date()
     with pytest.raises(AttributeError):
         getattr(time_col, field)

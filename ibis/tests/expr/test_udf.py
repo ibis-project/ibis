@@ -33,7 +33,7 @@ def table():
 )
 def test_vectorized_udf_operations(table, klass, output_type):
     udf = klass(
-        func=lambda a, b, c: a,
+        func=lambda a, *_: a,
         func_args=[table.a, table.b, table.c],
         input_type=[dt.int8(), dt.string(), dt.boolean()],
         return_type=dt.int8(),
@@ -58,7 +58,7 @@ def test_vectorized_udf_operations(table, klass, output_type):
     with pytest.raises(ValidationError):
         # scalar type instead of column type
         klass(
-            func=lambda a, b, c: a,
+            func=lambda a, *_: a,
             func_args=[ibis.literal(1), table.b, table.c],
             input_type=[dt.int8(), dt.string(), dt.boolean()],
             return_type=dt.int8(),
@@ -67,7 +67,7 @@ def test_vectorized_udf_operations(table, klass, output_type):
     with pytest.raises(ValidationError):
         # wrong input type
         klass(
-            func=lambda a, b, c: a,
+            func=lambda a, *_: a,
             func_args=[ibis.literal(1), table.b, table.c],
             input_type="int8",
             return_type=dt.int8(),
@@ -76,7 +76,7 @@ def test_vectorized_udf_operations(table, klass, output_type):
     with pytest.raises(ValidationError):
         # wrong return type
         klass(
-            func=lambda a, b, c: a,
+            func=lambda a, *_: a,
             func_args=[ibis.literal(1), table.b, table.c],
             input_type=[dt.int8(), dt.string(), dt.boolean()],
             return_type=table,

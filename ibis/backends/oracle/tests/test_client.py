@@ -79,7 +79,7 @@ def test_from_url():
     assert result.a.iat[0] == 1
 
 
-def test_invalid_port(con):
+def test_invalid_port():
     port = 9999
     url = f"oracle://{ORACLE_USER}:{ORACLE_PASS}@{ORACLE_HOST}:{port}/IBIS_TESTING"
     with pytest.raises(

@@ -39,7 +39,7 @@ class TestConf(ServiceBackendTest):
     deps = ("pyexasol",)
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw: Any):
+    def connect(*, tmpdir, worker_id, **kw: Any):  # noqa: ARG004
         return ibis.exasol.connect(
             user=EXASOL_USER,
             password=EXASOL_PASS,

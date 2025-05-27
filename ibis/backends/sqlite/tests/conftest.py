@@ -22,10 +22,10 @@ class TestConf(BackendTest):
     deps = ("regex",)
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
+    def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
         return ibis.sqlite.connect(**kw)
 
-    def _load_data(self, **kw: Any) -> None:
+    def _load_data(self, **_: Any) -> None:
         """Load test data into a SQLite backend instance."""
         with self.connection.begin() as con:
             for stmt in self.ddl_script:
