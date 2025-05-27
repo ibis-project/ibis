@@ -502,11 +502,6 @@ def test_array_slice(backend, start, stop):
 @pytest.mark.notimpl(
     ["datafusion", "flink", "polars", "sqlite"], raises=com.OperationNotDefinedError
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="TODO(Kexiang): seems a bug",
-)
 @pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array: ..."
@@ -552,19 +547,14 @@ def test_array_map(con, input, output, func):
 
     expr = t.select(a=t.a.map(func))
     result = con.execute(expr.a)
-    assert frozenset(map(tuple, result.values)) == frozenset(
-        map(tuple, expected.values)
+    assert frozenset(map(frozenset, result.values)) == frozenset(
+        map(frozenset, expected.values)
     )
 
 
 @builtin_array
 @pytest.mark.notimpl(
     ["datafusion", "flink", "polars", "sqlite"], raises=com.OperationNotDefinedError
-)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="TODO(Kexiang): seems a bug",
 )
 @pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
 @pytest.mark.notimpl(
@@ -611,8 +601,8 @@ def test_array_map_with_index(con, input, output, func):
 
     expr = t.select(a=t.a.map(func))
     result = con.execute(expr.a)
-    assert frozenset(map(tuple, result.values)) == frozenset(
-        map(tuple, expected.values)
+    assert frozenset(map(frozenset, result.values)) == frozenset(
+        map(frozenset, expected.values)
     )
 
 
@@ -641,11 +631,6 @@ def test_array_map_with_index(con, input, output, func):
         ),
         param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
     ],
-)
-@pytest.mark.notyet(
-    "risingwave",
-    raises=PsycoPg2InternalError,
-    reason="no support for not null column constraint",
 )
 @pytest.mark.parametrize(
     "predicate",
@@ -689,11 +674,6 @@ def test_array_filter(con, input, output, predicate):
         param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
     ],
 )
-@pytest.mark.notyet(
-    "risingwave",
-    raises=PsycoPg2InternalError,
-    reason="no support for not null column constraint",
-)
 @pytest.mark.parametrize(
     "predicate",
     [lambda x, i: x + (i - i) > 1, partial(lambda x, y, i: x > y + (i * 0), y=1)],
@@ -736,11 +716,6 @@ def test_array_filter_with_index(con, input, output, predicate):
         param({"a": [[1, 2], [1]]}, {"a": [[1], [1]]}, id="no_nulls"),
     ],
 )
-@pytest.mark.notyet(
-    "risingwave",
-    raises=PsycoPg2InternalError,
-    reason="no support for not null column constraint",
-)
 @pytest.mark.parametrize(
     "predicate",
     [lambda x, i: i % 2 == 0, partial(lambda x, y, i: i % 2 == 0, y=1)],
@@ -751,8 +726,8 @@ def test_array_filter_with_index_lambda(con, input, output, predicate):
 
     expr = t.select(a=t.a.filter(predicate))
     result = con.to_pyarrow(expr.a)
-    assert frozenset(map(tuple, result.to_pylist())) == frozenset(
-        map(tuple, output["a"])
+    assert frozenset(map(frozenset, result.to_pylist())) == frozenset(
+        map(frozenset, output["a"])
     )
 
 
@@ -1095,7 +1070,7 @@ def test_array_intersect(con, data):
 
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
-@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
@@ -1118,7 +1093,7 @@ def test_unnest_struct(con):
 
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
-@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
