@@ -670,16 +670,32 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         return BigQuerySchema.to_ibis(job.schema)
 
     def raw_sql(
-        self, query: str, params=None, job_id: str | None = None
+        self,
+        query: str,
+        params: dict | None = None,
+        job_id: str | None = None,
+        query_job_props: dict | None = None,
     ) -> RowIterator:
-        query_parameters = [
+        if query_job_props is not None:
+            query_job_params = query_job_props.get("query_parameters")
+        else:
+            query_job_params = {}
+
+        # `params` will override clashing values in `query_job_params`
+        parameters = {
+            **(query_job_params or {}),
+            **(params or {}),
+        }
+        props = query_job_props.copy()  # do not modify the input
+        props["query_parameters"] = [
             bigquery_param(param.type(), value, param.get_name())
-            for param, value in (params or {}).items()
+            for param, value in parameters.items()
         ]
+
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
 
-        job_config = bq.job.QueryJobConfig(query_parameters=query_parameters or [])
+        job_config = bq.job.QueryJobConfig(**props)
 
         if job_id is not None:
             return self.client.query(
@@ -782,13 +798,14 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         job_id: str | None = None,
+        query_job_props: dict | None = None,
         **kwargs: Any,
     ) -> RowIterator:
         self._run_pre_execute_hooks(table_expr)
         sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
         self._log(sql)
 
-        return self.raw_sql(sql, params=params, job_id=job_id)
+        return self.raw_sql(sql, params=params, job_id=job_id, query_job_props=query_job_props)
 
     def to_pyarrow(
         self,
@@ -797,6 +814,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
+        query_job_props: dict | None = None,
         **kwargs: Any,
     ) -> pa.Table:
         self._import_pyarrow()
@@ -804,7 +822,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         table_expr = expr.as_table()
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
 
-        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
+        query = self._to_query(table_expr, params=params, limit=limit, query_job_props=query_job_props, **kwargs)
         table = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         )
@@ -819,6 +837,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
+        query_job_props: dict | None = None,
         **kwargs: Any,
     ):
         pa = self._import_pyarrow()
@@ -827,7 +846,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
         colnames = list(schema.names)
 
-        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
+        query = self._to_query(table_expr, params=params, limit=limit, query_job_props=query_job_props, **kwargs)
         batch_iter = query.to_arrow_iterable(bqstorage_client=self.storage_client)
         return pa.ipc.RecordBatchReader.from_batches(
             schema.to_pyarrow(),
@@ -841,6 +860,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
+        query_job_props: dict | None = None,
         **kwargs: Any,
     ) -> pd.DataFrame | pd.Series | Any:
         """Compile and execute the given Ibis expression.
@@ -857,6 +877,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             already set on the expression.
         params
             Query parameters
+        query_job_props
+            QueryJobConfig properties, if the `params` parameter is provided, "query_parameters" key must be excluded
         kwargs
             Extra arguments specific to the backend
 
@@ -870,7 +892,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         table_expr = expr.as_table()
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
-        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
+        query = self._to_query(table_expr, params=params, limit=limit, query_job_props=query_job_props, **kwargs)
         df = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         ).to_pandas(timestamp_as_object=True)
