@@ -1,14 +1,11 @@
-from collections.abc import Mapping
 from datetime import date
-from typing import Any
 
 from google.cloud.bigquery import QueryJobConfig
-from google.cloud.bigquery.query import _AbstractQueryParameter, ScalarQueryParameter
+from google.cloud.bigquery.query import ScalarQueryParameter
 from google.cloud.bigquery.table import TableReference
 import pytest
 
 import ibis
-import ibis.expr.types as ir
 from ibis.backends.bigquery import _merge_params_into_config
 
 
@@ -90,11 +87,7 @@ from ibis.backends.bigquery import _merge_params_into_config
         ),
     ],
 )
-def test__merge_params_into_config(
-    query_job_config: QueryJobConfig | None,
-    params: Mapping[ir.Scalar, Any] | None,
-    expected: list[_AbstractQueryParameter],
-):
+def test__merge_params_into_config(query_job_config, params, expected):
     # check the merge is correct
     result = _merge_params_into_config(query_job_config, params)
     assert result is not query_job_config
