@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from datetime import date
 
+import pytest
 from google.cloud.bigquery import QueryJobConfig
 from google.cloud.bigquery.query import ScalarQueryParameter
 from google.cloud.bigquery.table import TableReference
-import pytest
 
 import ibis
 from ibis.backends.bigquery import _merge_params_into_config
@@ -17,10 +19,12 @@ from ibis.backends.bigquery import _merge_params_into_config
         (None, {}, []),
         (QueryJobConfig(), {}, []),
         (
-            QueryJobConfig(query_parameters=[
-                ScalarQueryParameter("param1", "INT64", 1),
-                ScalarQueryParameter("param2", "INT64", 2),
-            ]),
+            QueryJobConfig(
+                query_parameters=[
+                    ScalarQueryParameter("param1", "INT64", 1),
+                    ScalarQueryParameter("param2", "INT64", 2),
+                ],
+            ),
             None,
             [
                 ScalarQueryParameter("param1", "INT64", 1),
@@ -39,10 +43,12 @@ from ibis.backends.bigquery import _merge_params_into_config
             ],
         ),
         (
-            QueryJobConfig(query_parameters=[
-                ScalarQueryParameter("param1", "INT64", 1),
-                ScalarQueryParameter("param2", "INT64", 2),
-            ]),
+            QueryJobConfig(
+                query_parameters=[
+                    ScalarQueryParameter("param1", "INT64", 1),
+                    ScalarQueryParameter("param2", "INT64", 2),
+                ],
+            ),
             {
                 ibis.literal(0).name("param2"): 3,
                 ibis.literal(0).name("param3"): 4,
@@ -63,7 +69,9 @@ from ibis.backends.bigquery import _merge_params_into_config
                     ScalarQueryParameter("config5", "DATE", "2025-01-01"),
                 ],
                 # ensure this is preserved
-                destination=TableReference.from_string("test_project.test_dataset.test_table"),
+                destination=TableReference.from_string(
+                    "test_project.test_dataset.test_table",
+                ),
             ),
             {
                 ibis.literal(False).name("param1"): False,

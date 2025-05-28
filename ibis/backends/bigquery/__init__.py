@@ -798,7 +798,12 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
         self._log(sql)
 
-        return self.raw_sql(sql, params=params, job_id_prefix=job_id_prefix, query_job_config=query_job_config)
+        return self.raw_sql(
+            sql,
+            params=params,
+            job_id_prefix=job_id_prefix,
+            query_job_config=query_job_config,
+        )
 
     def to_pyarrow(
         self,
@@ -815,7 +820,13 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         table_expr = expr.as_table()
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
 
-        query = self._to_query(table_expr, params=params, limit=limit, query_job_config=query_job_config, **kwargs)
+        query = self._to_query(
+            table_expr,
+            params=params,
+            limit=limit,
+            query_job_config=query_job_config,
+            **kwargs,
+        )
         table = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         )
@@ -839,7 +850,13 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
         colnames = list(schema.names)
 
-        query = self._to_query(table_expr, params=params, limit=limit, query_job_config=query_job_config, **kwargs)
+        query = self._to_query(
+            table_expr,
+            params=params,
+            limit=limit,
+            query_job_config=query_job_config,
+            **kwargs,
+        )
         batch_iter = query.to_arrow_iterable(bqstorage_client=self.storage_client)
         return pa.ipc.RecordBatchReader.from_batches(
             schema.to_pyarrow(),
@@ -885,7 +902,13 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         table_expr = expr.as_table()
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
-        query = self._to_query(table_expr, params=params, limit=limit, query_job_config=query_job_config, **kwargs)
+        query = self._to_query(
+            table_expr,
+            params=params,
+            limit=limit,
+            query_job_config=query_job_config,
+            **kwargs,
+        )
         df = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         ).to_pandas(timestamp_as_object=True)
@@ -1218,8 +1241,7 @@ def _merge_params_into_config(
     query_job_config: bq.QueryJobConfig | None = None,
     params: Mapping[ir.Scalar, Any] | None = None,
 ) -> bq.QueryJobConfig:
-    """
-    Returns a copy of `query_job_config` with the `params` merged into the `query_parameters`.
+    """Returns a copy of `query_job_config` with the `params` merged into the `query_parameters`.
     `params` will override values with a naming conflict in `query_job_config`.
     """
     if query_job_config is not None:
