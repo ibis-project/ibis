@@ -1,0 +1,99 @@
+# Databricks
+
+[https://www.databricks.com](https://www.databricks.com)
+
+## Install
+
+Install Ibis and dependencies for the Databricks backend:
+
+::: {.panel-tabset}
+
+## `pip`
+
+Install with the `databricks` extra:
+
+```{.bash}
+pip install 'ibis-framework[databricks]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.databricks.connect()  # <1>
+```
+
+1. Adjust other connection parameters as needed.
+
+## `conda`
+
+Install for Databricks:
+
+```{.bash}
+conda install -c conda-forge ibis-databricks
+```
+
+```{.python}
+import ibis
+
+con = ibis.databricks.connect()  # <1>
+```
+
+## `mamba`
+
+Install for Databricks:
+
+```{.bash}
+mamba install -c conda-forge ibis-databricks
+```
+
+```{.python}
+import ibis
+
+con = ibis.databricks.connect()  # <1>
+```
+
+1. Adjust other connection parameters as needed.
+
+:::
+
+## Connect
+
+### `ibis.databricks.connect`
+
+```python
+con = ibis.databricks.connect(  # <1>
+    server_hostname=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
+    http_path=os.getenv("DATABRICKS_HTTP_PATH"),
+    access_token=os.getenv("DATABRICKS_TOKEN"),
+)
+```
+
+::: {.callout-note}
+`ibis.databricks.connect` is a thin wrapper around [`ibis.backends.databricks.Backend.do_connect`](#ibis.backends.databricks.Backend.do_connect).
+:::
+
+### Connection Parameters
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("databricks")
+```
+
+### Authentication
+
+At a **minimum**, the `server_hostname` and `http_path` arguments must be provided.
+
+For more information on authentication, see the
+[Databricks SQL Connector for Python documentation](https://docs.databricks.com/aws/en/dev-tools/python-sql-connector#authentication).
+
+```{python}
+#| echo: false
+BACKEND = "Databricks"
+```
+
+{{< include ./_templates/api.qmd >}}

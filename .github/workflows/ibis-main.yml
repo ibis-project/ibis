@@ -66,7 +66,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v6.0.1
+        uses: astral-sh/setup-uv@v6.1.0
 
       - name: install ${{ matrix.os }} system dependencies
         if: startsWith(matrix.os, 'ubuntu')
@@ -122,7 +122,7 @@ jobs:
           python-version: "3.9"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v6.0.1
+        uses: astral-sh/setup-uv@v6.1.0
 
       - name: install system dependencies
         run: |
@@ -152,10 +152,10 @@ jobs:
         uses: actions/setup-python@v5
         id: install_python
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v6.0.1
+        uses: astral-sh/setup-uv@v6.1.0
 
       - uses: extractions/setup-just@v3
         env:

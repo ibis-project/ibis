@@ -411,7 +411,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             An instance of the BigQuery backend.
 
         """
-        default_project_id = client.project if client is not None else project_id
+        client_project_id = client.project if client is not None else None
+        default_project_id = None
 
         # Only need `credentials` to create a `client` and
         # `storage_client`, so only one or the other needs to be set.
@@ -444,7 +445,14 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
                 use_local_webserver=auth_local_webserver,
             )
 
-        project_id = project_id or default_project_id
+        project_id = client_project_id or project_id or default_project_id
+
+        if project_id is None:
+            raise ValueError(
+                "Project ID could not be identified. "
+                "Provide either explicit `project_id`, `client` with project, "
+                "or don't provide an explicit `credentials` object."
+            )
 
         (
             self.data_project,
@@ -545,7 +553,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         catalog: str | None = None,
         force: bool = False,
         collate: str | None = None,
-        job_id: str | None = None,
+        job_id_prefix: str | None = None,
         **options: Any,
     ) -> None:
         properties = [
@@ -565,7 +573,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             properties=sge.Properties(expressions=properties),
         )
 
-        self.raw_sql(stmt.sql(self.name), job_id=job_id)
+        self.raw_sql(stmt.sql(self.name), job_id_prefix=job_id_prefix)
 
     def drop_database(
         self,
@@ -575,7 +583,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         catalog: str | None = None,
         force: bool = False,
         cascade: bool = False,
-        job_id: str | None = None,
+        job_id_prefix: str | None = None,
     ) -> None:
         """Drop a BigQuery dataset."""
         stmt = sge.Drop(
@@ -585,7 +593,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             cascade=cascade,
         )
 
-        self.raw_sql(stmt.sql(self.name), job_id=job_id)
+        self.raw_sql(stmt.sql(self.name), job_id_prefix=job_id_prefix)
 
     def table(
         self,
@@ -674,7 +682,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         self,
         query: str,
         params: Mapping[ir.Scalar, Any] | None = None,
-        job_id: str | None = None,
+        job_id_prefix: str | None = None,
         query_job_config: bq.QueryJobConfig | None = None,
     ) -> RowIterator:
         job_config = _merge_params_into_config(query_job_config, params)
@@ -682,12 +690,12 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
 
-        if job_id is not None:
+        if job_id_prefix is not None:
             return self.client.query(
                 query,
                 job_config=job_config,
                 project=self.billing_project,
-                job_id=job_id,
+                job_id_prefix=job_id_prefix,
             ).result()
         else:
             return self.client.query_and_wait(
@@ -782,7 +790,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        job_id: str | None = None,
+        job_id_prefix: str | None = None,
         query_job_config: bq.QueryJobConfig | None = None,
         **kwargs: Any,
     ) -> RowIterator:
@@ -790,7 +798,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
         self._log(sql)
 
-        return self.raw_sql(sql, params=params, job_id=job_id, query_job_config=query_job_config)
+        return self.raw_sql(sql, params=params, job_id_prefix=job_id_prefix, query_job_config=query_job_config)
 
     def to_pyarrow(
         self,
@@ -989,7 +997,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         partition_by: str | None = None,
         cluster_by: Iterable[str] | None = None,
         options: Mapping[str, Any] | None = None,
-        job_id: str | None = None,
+        job_id_prefix: str | None = None,
     ) -> ir.Table:
         """Create a table in BigQuery.
 
@@ -1022,9 +1030,9 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         options
             BigQuery-specific table options; see the BigQuery documentation for
             details: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#table_option_list
-        job_id
-            Optional custom job ID; when specified, bigquery will use this job ID instead
-            of a randomly generated one
+        job_id_prefix
+            Optional custom job ID prefix; when specified, bigquery will use this as a
+            prefix for the job ID it generates
 
         Returns
         -------
@@ -1116,7 +1124,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         sql = stmt.sql(self.name)
 
-        self.raw_sql(sql, job_id=job_id)
+        self.raw_sql(sql, job_id_prefix=job_id_prefix)
         return self.table(table.name, database=(table.catalog, table.db))
 
     def drop_table(
@@ -1126,7 +1134,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         database: tuple[str | str] | str | None = None,
         force: bool = False,
-        job_id: str | None = None,
+        job_id_prefix: str | None = None,
     ) -> None:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -1139,7 +1147,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             ),
             exists=force,
         )
-        self.raw_sql(stmt.sql(self.name), job_id=job_id)
+        self.raw_sql(stmt.sql(self.name), job_id_prefix=job_id_prefix)
 
     def create_view(
         self,
@@ -1149,7 +1157,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         database: str | None = None,
         overwrite: bool = False,
-        job_id: str | None = None,
+        job_id_prefix: str | None = None,
     ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -1165,7 +1173,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             replace=overwrite,
         )
         self._run_pre_execute_hooks(obj)
-        self.raw_sql(stmt.sql(self.name), job_id=job_id)
+        self.raw_sql(stmt.sql(self.name), job_id_prefix=job_id_prefix)
         return self.table(name, database=(catalog, database))
 
     def drop_view(
@@ -1175,7 +1183,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         database: str | None = None,
         force: bool = False,
-        job_id: str | None = None,
+        job_id_prefix: str | None = None,
     ) -> None:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -1189,7 +1197,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             ),
             exists=force,
         )
-        self.raw_sql(stmt.sql(self.name), job_id=job_id)
+        self.raw_sql(stmt.sql(self.name), job_id_prefix=job_id_prefix)
 
     def _drop_cached_table(self, name):
         self.drop_table(
