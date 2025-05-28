@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import contextlib
+import copy
 import glob
 import os
 import re
@@ -672,30 +673,14 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
     def raw_sql(
         self,
         query: str,
-        params: dict | None = None,
+        params: Mapping[ir.Scalar, Any] | None = None,
         job_id: str | None = None,
-        query_job_props: dict | None = None,
+        query_job_config: bq.QueryJobConfig | None = None,
     ) -> RowIterator:
-        if query_job_props is not None:
-            query_job_params = query_job_props.get("query_parameters")
-        else:
-            query_job_params = {}
-
-        # `params` will override clashing values in `query_job_params`
-        parameters = {
-            **(query_job_params or {}),
-            **(params or {}),
-        }
-        props = query_job_props.copy()  # do not modify the input
-        props["query_parameters"] = [
-            bigquery_param(param.type(), value, param.get_name())
-            for param, value in parameters.items()
-        ]
+        job_config = _merge_params_into_config(query_job_config, params)
 
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
-
-        job_config = bq.job.QueryJobConfig(**props)
 
         if job_id is not None:
             return self.client.query(
@@ -798,14 +783,14 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         job_id: str | None = None,
-        query_job_props: dict | None = None,
+        query_job_config: bq.QueryJobConfig | None = None,
         **kwargs: Any,
     ) -> RowIterator:
         self._run_pre_execute_hooks(table_expr)
         sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
         self._log(sql)
 
-        return self.raw_sql(sql, params=params, job_id=job_id, query_job_props=query_job_props)
+        return self.raw_sql(sql, params=params, job_id=job_id, query_job_config=query_job_config)
 
     def to_pyarrow(
         self,
@@ -814,7 +799,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        query_job_props: dict | None = None,
+        query_job_config: bq.QueryJobConfig | None = None,
         **kwargs: Any,
     ) -> pa.Table:
         self._import_pyarrow()
@@ -822,7 +807,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         table_expr = expr.as_table()
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
 
-        query = self._to_query(table_expr, params=params, limit=limit, query_job_props=query_job_props, **kwargs)
+        query = self._to_query(table_expr, params=params, limit=limit, query_job_config=query_job_config, **kwargs)
         table = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         )
@@ -837,7 +822,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
-        query_job_props: dict | None = None,
+        query_job_config: bq.QueryJobConfig | None = None,
         **kwargs: Any,
     ):
         pa = self._import_pyarrow()
@@ -846,7 +831,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
         colnames = list(schema.names)
 
-        query = self._to_query(table_expr, params=params, limit=limit, query_job_props=query_job_props, **kwargs)
+        query = self._to_query(table_expr, params=params, limit=limit, query_job_config=query_job_config, **kwargs)
         batch_iter = query.to_arrow_iterable(bqstorage_client=self.storage_client)
         return pa.ipc.RecordBatchReader.from_batches(
             schema.to_pyarrow(),
@@ -860,7 +845,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        query_job_props: dict | None = None,
+        query_job_config: bq.QueryJobConfig | None = None,
         **kwargs: Any,
     ) -> pd.DataFrame | pd.Series | Any:
         """Compile and execute the given Ibis expression.
@@ -877,8 +862,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             already set on the expression.
         params
             Query parameters
-        query_job_props
-            QueryJobConfig properties, if the `params` parameter is provided, "query_parameters" key must be excluded
+        query_job_config
+            QueryJobConfig, the values in the `params` argument take precedence over the ones in this object
         kwargs
             Extra arguments specific to the backend
 
@@ -892,7 +877,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         table_expr = expr.as_table()
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
-        query = self._to_query(table_expr, params=params, limit=limit, query_job_props=query_job_props, **kwargs)
+        query = self._to_query(table_expr, params=params, limit=limit, query_job_config=query_job_config, **kwargs)
         df = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         ).to_pandas(timestamp_as_object=True)
@@ -1219,6 +1204,30 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
+
+
+def _merge_params_into_config(
+    query_job_config: bq.QueryJobConfig | None = None,
+    params: Mapping[ir.Scalar, Any] | None = None,
+) -> bq.QueryJobConfig:
+    """
+    Returns a copy of `query_job_config` with the `params` merged into the `query_parameters`.
+    `params` will override values with a naming conflict in `query_job_config`.
+    """
+    if query_job_config is not None:
+        query_job_config = copy.deepcopy(query_job_config)  # do not modify the input
+    else:
+        query_job_config = bq.QueryJobConfig()
+
+    config_params = {param.name: param for param in query_job_config.query_parameters}
+
+    params_as_bq = {
+        param.get_name(): bigquery_param(param.type(), value, param.get_name())
+        for param, value in (params or {}).items()
+    }
+
+    query_job_config.query_parameters = list({**config_params, **params_as_bq}.values())
+    return query_job_config
 
 
 def compile(expr, params=None, **kwargs):
