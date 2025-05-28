@@ -189,19 +189,16 @@ def test_coalesce(con, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ("expr", "expected"),
+    "expr",
     [
-        param(ibis.coalesce(ibis.null(), ibis.null()), None, id="all_null"),
-        param(
-            ibis.coalesce(
-                ibis.null().cast("int8"),
-                ibis.null().cast("int8"),
-                ibis.null().cast("int8"),
-            ),
-            None,
-            id="all_nulls_with_all_cast",
+        ibis.coalesce(ibis.null(), ibis.null()),
+        ibis.coalesce(
+            ibis.null().cast("int8"),
+            ibis.null().cast("int8"),
+            ibis.null().cast("int8"),
         ),
     ],
+    ids=["all_null", "all_nulls_with_all_cast"],
 )
 def test_coalesce_all_na(con, expr):
     assert con.execute(expr) is None
