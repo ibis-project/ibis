@@ -425,8 +425,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl, PyArrowExampleLoader):
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
@@ -453,7 +452,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl, PyArrowExampleLoader):
         Parameters
         ----------
         name
-            Name of the new table.
+            Name of the new table. If not provided, a unique name will be generated.
         obj
             An Ibis table expression, pandas DataFrame, or PyArrow Table that will
             be used to extract the schema and the data of the new table. An
@@ -493,6 +492,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl, PyArrowExampleLoader):
 
         import ibis.expr.types as ir
 
+        name = self._create_table_name(name)
         if obj is None and schema is None:
             raise exc.IbisError("`schema` or `obj` is required")
         if isinstance(obj, (pd.DataFrame, pa.Table)) and not temp:
