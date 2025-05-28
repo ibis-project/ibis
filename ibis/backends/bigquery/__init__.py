@@ -200,6 +200,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         table_name: str | None = None,
         job_config: bq.LoadJobConfig,
+        drop_job_id_prefix: str | None = None,
+        job_id_prefix: str | None = None,
     ) -> ir.Table:
         self._make_session()
 
@@ -218,13 +220,18 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         #
         # dropping the table first means all write_dispositions can be
         # WRITE_APPEND
-        self.drop_table(table_name, database=(catalog, database), force=True)
+        self.drop_table(
+            table_name,
+            database=(catalog, database),
+            force=True,
+            job_id_prefix=drop_job_id_prefix,
+        )
 
         if os.path.isdir(path):
             raise NotImplementedError("Reading from a directory is not supported.")
         elif str(path).startswith("gs://"):
             load_job = self.client.load_table_from_uri(
-                path, table_ref, job_config=job_config
+                path, table_ref, job_config=job_config, job_id_prefix=job_id_prefix
             )
             load_job.result()
         else:
@@ -232,7 +239,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             def load(file: str) -> None:
                 with open(file, mode="rb") as f:
                     load_job = self.client.load_table_from_file(
-                        f, table_ref, job_config=job_config
+                        f, table_ref, job_config=job_config, job_id_prefix=job_id_prefix
                     )
                     load_job.result()
 
@@ -247,7 +254,14 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         return self.table(table_name, database=(catalog, database))
 
     def read_parquet(
-        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | Path,
+        /,
+        *,
+        table_name: str | None = None,
+        drop_job_id_prefix: str | None = None,
+        job_id_prefix: str | None = None,
+        **kwargs: Any,
     ):
         """Read Parquet data into a BigQuery table.
 
@@ -257,6 +271,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             Path to a Parquet file on GCS or the local filesystem. Globs are supported.
         table_name
             Optional table name
+        drop_job_id_prefix
+            Optional - if the table already exists, it will be dropped before loading.
+            If specified any drop job will have this prefix for its job_id.
+        job_id_prefix
+            Optional - if specified, the job_id for the load job will be prefixed
         kwargs
             Additional keyword arguments passed to `google.cloud.bigquery.LoadJobConfig`.
 
@@ -271,10 +290,19 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             job_config=bq.LoadJobConfig(
                 source_format=bq.SourceFormat.PARQUET, **kwargs
             ),
+            drop_job_id_prefix=drop_job_id_prefix,
+            job_id_prefix=job_id_prefix,
         )
 
     def read_csv(
-        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | Path,
+        /,
+        *,
+        table_name: str | None = None,
+        drop_job_id_prefix: str | None = None,
+        job_id_prefix: str | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
         """Read CSV data into a BigQuery table.
 
@@ -284,6 +312,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             Path to a CSV file on GCS or the local filesystem. Globs are supported.
         table_name
             Optional table name
+        drop_job_id_prefix
+            Optional - if the table already exists, it will be dropped before loading.
+            If specified any drop job will have this prefix for its job_id.
+        job_id_prefix
+            Optional - if specified, the job_id for the load job will be prefixed
         kwargs
             Additional keyword arguments passed to
             `google.cloud.bigquery.LoadJobConfig`.
@@ -299,10 +332,23 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             skip_leading_rows=1,
             **kwargs,
         )
-        return self._read_file(path, table_name=table_name, job_config=job_config)
+        return self._read_file(
+            path,
+            table_name=table_name,
+            job_config=job_config,
+            drop_job_id_prefix=drop_job_id_prefix,
+            job_id_prefix=job_id_prefix,
+        )
 
     def read_json(
-        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | Path,
+        /,
+        *,
+        table_name: str | None = None,
+        drop_job_id_prefix: str | None = None,
+        job_id_prefix: str | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
         """Read newline-delimited JSON data into a BigQuery table.
 
@@ -313,6 +359,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             filesystem. Globs are supported.
         table_name
             Optional table name
+        drop_job_id_prefix
+            Optional - if the table already exists, it will be dropped before loading.
+            If specified any drop job will have this prefix for its job_id.
+        job_id_prefix
+            Optional - if specified, the job_id for the load job will be prefixed
         kwargs
             Additional keyword arguments passed to
             `google.cloud.bigquery.LoadJobConfig`.
@@ -327,7 +378,13 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             autodetect=True,
             **kwargs,
         )
-        return self._read_file(path, table_name=table_name, job_config=job_config)
+        return self._read_file(
+            path,
+            table_name=table_name,
+            job_config=job_config,
+            drop_job_id_prefix=drop_job_id_prefix,
+            job_id_prefix=job_id_prefix,
+        )
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         kwargs = {}
