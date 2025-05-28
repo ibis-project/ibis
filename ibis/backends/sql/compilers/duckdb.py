@@ -173,8 +173,14 @@ class DuckDBCompiler(SQLGlotCompiler):
             arg = sge.Distinct(expressions=[arg])
         return self.agg.array_agg(arg, where=where, order_by=order_by)
 
-    def visit_ArrayIndex(self, op, *, arg, index):
-        return self.f.list_extract(arg, index + self.cast(index >= 0, op.index.dtype))
+    def visit_ArrayIndex(self, op: ops.ArrayIndex, *, arg, index):
+        if isinstance(op.index, ops.Literal):
+            i = op.index.value
+            # DuckDB uses 1-based indexing, so we need to adjust the index
+            i += i >= 0
+        else:
+            i = index + self.cast(index >= 0, op.index.dtype)
+        return self.f.list_extract(arg, i)
 
     def visit_ArrayRepeat(self, op, *, arg, times):
         func = sge.Lambda(this=arg, expressions=[sg.to_identifier("_")])
