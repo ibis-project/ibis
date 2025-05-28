@@ -618,12 +618,8 @@ def test_anonymous_aggregate(alltypes, df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.fixture
-def array_types(con):
-    return con.table("array_types")
-
-
-def test_array_length(array_types):
+def test_array_length(con):
+    array_types = con.table("array_types")
     expr = array_types.select(
         array_types.x.length().name("x_length"),
         array_types.y.length().name("y_length"),
