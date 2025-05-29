@@ -7,6 +7,7 @@ import contextlib
 import glob
 import os
 import re
+import weakref
 from typing import TYPE_CHECKING, Any, Optional
 
 import google.api_core.exceptions
@@ -178,7 +179,9 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         table_ref = bq.TableReference(self._session_dataset, name)
         self.client.delete_table(table_ref, not_found_ok=True)
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+    def _register_in_memory_table(
+        self, op: ops.InMemoryTable, job_id_prefix: str | None = None
+    ) -> None:
         table_ref = bq.TableReference(self._session_dataset, op.name)
 
         bq_schema = BigQuerySchema.from_ibis(op.schema)
@@ -191,6 +194,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
                 write_disposition=bq.WriteDisposition.WRITE_EMPTY,
                 schema=bq_schema,
             ),
+            job_id_prefix=job_id_prefix,
         )
         load_job.result()
 
@@ -200,9 +204,27 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         table_name: str | None = None,
         job_config: bq.LoadJobConfig,
+        load_job_id_prefix: str | None = None,
         drop_job_id_prefix: str | None = None,
-        job_id_prefix: str | None = None,
     ) -> ir.Table:
+        """Read a file into a BigQuery table.
+
+        If the table already exists, it will be dropped before loading.
+
+        Parameters
+        ----------
+        path
+            Path to a file on GCS or the local filesystem. Globs are supported.
+        table_name
+            Optional table name
+        job_config
+            A `LoadJobConfig` object that specifies how to load the data.
+        load_job_id_prefix
+            Optional prefix for the job ID of the load job.
+        drop_job_id_prefix
+            Optional prefix for the job ID of the drop table job that may be performed if
+            the table already exists.
+        """
         self._make_session()
 
         if table_name is None:
@@ -231,7 +253,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             raise NotImplementedError("Reading from a directory is not supported.")
         elif str(path).startswith("gs://"):
             load_job = self.client.load_table_from_uri(
-                path, table_ref, job_config=job_config, job_id_prefix=job_id_prefix
+                path, table_ref, job_config=job_config, job_id_prefix=load_job_id_prefix
             )
             load_job.result()
         else:
@@ -239,7 +261,10 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             def load(file: str) -> None:
                 with open(file, mode="rb") as f:
                     load_job = self.client.load_table_from_file(
-                        f, table_ref, job_config=job_config, job_id_prefix=job_id_prefix
+                        f,
+                        table_ref,
+                        job_config=job_config,
+                        job_id_prefix=load_job_id_prefix,
                     )
                     load_job.result()
 
@@ -259,11 +284,13 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         /,
         *,
         table_name: str | None = None,
+        load_job_id_prefix: str | None = None,
         drop_job_id_prefix: str | None = None,
-        job_id_prefix: str | None = None,
         **kwargs: Any,
     ):
         """Read Parquet data into a BigQuery table.
+
+        If the table already exists, it will be dropped before loading.
 
         Parameters
         ----------
@@ -271,11 +298,10 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             Path to a Parquet file on GCS or the local filesystem. Globs are supported.
         table_name
             Optional table name
+        load_job_id_prefix
+            Optional prefix for the job ID of the load job.
         drop_job_id_prefix
-            Optional - if the table already exists, it will be dropped before loading.
-            If specified any drop job will have this prefix for its job_id.
-        job_id_prefix
-            Optional - if specified, the job_id for the load job will be prefixed
+            Optional prefix for the job ID of any drop table job if created.
         kwargs
             Additional keyword arguments passed to `google.cloud.bigquery.LoadJobConfig`.
 
@@ -290,8 +316,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             job_config=bq.LoadJobConfig(
                 source_format=bq.SourceFormat.PARQUET, **kwargs
             ),
+            load_job_id_prefix=load_job_id_prefix,
             drop_job_id_prefix=drop_job_id_prefix,
-            job_id_prefix=job_id_prefix,
         )
 
     def read_csv(
@@ -300,11 +326,13 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         /,
         *,
         table_name: str | None = None,
+        load_job_id_prefix: str | None = None,
         drop_job_id_prefix: str | None = None,
-        job_id_prefix: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
         """Read CSV data into a BigQuery table.
+
+        If the table already exists, it will be dropped before loading.
 
         Parameters
         ----------
@@ -312,11 +340,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             Path to a CSV file on GCS or the local filesystem. Globs are supported.
         table_name
             Optional table name
+        load_job_id_prefix
+            Optional prefix for the job ID of the load job.
         drop_job_id_prefix
-            Optional - if the table already exists, it will be dropped before loading.
-            If specified any drop job will have this prefix for its job_id.
-        job_id_prefix
-            Optional - if specified, the job_id for the load job will be prefixed
+            Optional prefix for the job ID of any drop table job if created.
+
         kwargs
             Additional keyword arguments passed to
             `google.cloud.bigquery.LoadJobConfig`.
@@ -336,8 +364,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             path,
             table_name=table_name,
             job_config=job_config,
+            load_job_id_prefix=load_job_id_prefix,
             drop_job_id_prefix=drop_job_id_prefix,
-            job_id_prefix=job_id_prefix,
         )
 
     def read_json(
@@ -346,11 +374,13 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         /,
         *,
         table_name: str | None = None,
+        load_job_id_prefix: str | None = None,
         drop_job_id_prefix: str | None = None,
-        job_id_prefix: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
         """Read newline-delimited JSON data into a BigQuery table.
+
+        If the table already exists, it will be dropped before loading.
 
         Parameters
         ----------
@@ -359,11 +389,10 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             filesystem. Globs are supported.
         table_name
             Optional table name
+        load_job_id_prefix
+            Optional prefix for the job ID of the load job.
         drop_job_id_prefix
-            Optional - if the table already exists, it will be dropped before loading.
-            If specified any drop job will have this prefix for its job_id.
-        job_id_prefix
-            Optional - if specified, the job_id for the load job will be prefixed
+            Optional prefix for the job ID of any drop table job if created.
         kwargs
             Additional keyword arguments passed to
             `google.cloud.bigquery.LoadJobConfig`.
@@ -382,8 +411,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             path,
             table_name=table_name,
             job_config=job_config,
+            load_job_id_prefix=load_job_id_prefix,
             drop_job_id_prefix=drop_job_id_prefix,
-            job_id_prefix=job_id_prefix,
         )
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
@@ -601,6 +630,47 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
     def dataset_id(self):
         return self.dataset
 
+    def _run_pre_execute_hooks(
+        self, expr: ir.Expr, job_id_prefix: str | None = None
+    ) -> None:
+        """Backend-specific hooks to run before an expression is executed."""
+        self._register_udfs(expr)
+        self._register_in_memory_tables(expr, job_id_prefix=job_id_prefix)
+
+    def _register_in_memory_tables(
+        self, expr, job_id_prefix: str | None = None
+    ) -> None:
+        for memtable in self._verify_in_memory_tables_are_unique(expr):
+            name = memtable.name
+
+            # this particular memtable has never been registered
+            if memtable not in self._memtables:
+                # but we have a memtable with the same name
+                if (
+                    current_memtable := self._current_memtables.pop(name, None)
+                ) is not None:
+                    # if we're here this means we overwrite, so do the following:
+                    # 1. remove the old memtable from the set of memtables
+                    # 2. grab the old finalizer and invoke it
+                    self._memtables.remove(current_memtable)
+                    finalizer = self._finalizers.pop(name)
+                    finalizer()
+            else:
+                # if memtable is in the set, then by construction it must be
+                # true that the name of this memtable is in the current
+                # memtables mapping
+                assert name in self._current_memtables
+
+            # if there's no memtable named `name` then register it, setup a
+            # finalizer, and set it as the current memtable with `name`
+            if self._current_memtables.get(name) is None:
+                self._register_in_memory_table(memtable, job_id_prefix=job_id_prefix)
+                self._memtables.add(memtable)
+                self._finalizers[name] = weakref.finalize(
+                    memtable, self._finalize_in_memory_table, name
+                )
+                self._current_memtables[name] = memtable
+
     def create_database(
         self,
         name: str,
@@ -816,6 +886,9 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         database: str | None = None,
         overwrite: bool = False,
+        load_job_id_prefix: str | None = None,
+        insert_job_id_prefix: str | None = None,
+        truncate_job_id_prefix: str | None = None,
     ) -> None:
         """Insert data into a table.
 
@@ -829,6 +902,14 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             Name of the attached database that the table is located in.
         overwrite
             If `True` then replace existing contents of table.
+        load_job_id_prefix
+            Optional prefix for the job ID of the load job.
+        insert_job_id_prefix
+            Optional prefix for the job ID of the insert job.
+        truncate_job_id_prefix
+            Optional prefix for the job ID of the truncate job that may be performed if
+            `overwrite` is `True`.
+
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -837,8 +918,52 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             catalog = self.current_catalog
         if db is None:
             db = self.current_database
+        if overwrite:
+            self.truncate_table(
+                name,
+                database=(catalog, db),
+                job_id_prefix=truncate_job_id_prefix,
+            )
 
-        return super().insert(name, obj, database=(catalog, db), overwrite=overwrite)
+        if isinstance(obj, ir.Table):
+            obj = ibis.memtable(obj)
+
+        self._run_pre_execute_hooks(obj, job_id_prefix=load_job_id_prefix)
+
+        query = self._build_insert_from_table(
+            target=name, source=obj, database=(catalog, db)
+        )
+
+        with self._safe_raw_sql(query, job_id_prefix=insert_job_id_prefix):
+            pass
+
+    def truncate_table(
+        self,
+        name: str,
+        /,
+        *,
+        database: str | None = None,
+        job_id_prefix: str | None = None,
+    ) -> None:
+        """Delete all rows from a table.
+
+        Parameters
+        ----------
+        name
+            The name of the table to truncate.
+        database
+            Name of the attached database that the table is located in.
+        job_id_prefix
+            Optional prefix for the job ID of the truncate job.
+        """
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        ident = sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
+        with self._safe_raw_sql(f"TRUNCATE TABLE {ident}", job_id_prefix=job_id_prefix):
+            pass
 
     def _to_query(
         self,
@@ -846,14 +971,15 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        job_id_prefix: str | None = None,
+        load_job_id_prefix: str | None = None,
+        insert_job_id_prefix: str | None = None,
         **kwargs: Any,
     ) -> RowIterator:
-        self._run_pre_execute_hooks(table_expr)
+        self._run_pre_execute_hooks(table_expr, job_id_prefix=load_job_id_prefix)
         sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
         self._log(sql)
 
-        return self.raw_sql(sql, params=params, job_id_prefix=job_id_prefix)
+        return self.raw_sql(sql, params=params, job_id_prefix=insert_job_id_prefix)
 
     def to_pyarrow(
         self,
@@ -862,6 +988,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
+        load_job_id_prefix: str | None = None,
+        insert_job_id_prefix: str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
         self._import_pyarrow()
@@ -869,7 +997,14 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         table_expr = expr.as_table()
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
 
-        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
+        query = self._to_query(
+            table_expr,
+            params=params,
+            limit=limit,
+            load_job_id_prefix=load_job_id_prefix,
+            insert_job_id_prefix=insert_job_id_prefix,
+            **kwargs,
+        )
         table = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         )
@@ -883,6 +1018,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
+        load_job_id_prefix: str | None = None,
+        insert_job_id_prefix: str | None = None,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
     ):
@@ -892,7 +1029,14 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
         colnames = list(schema.names)
 
-        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
+        query = self._to_query(
+            table_expr,
+            params=params,
+            limit=limit,
+            load_job_id_prefix=load_job_id_prefix,
+            insert_job_id_prefix=insert_job_id_prefix,
+            **kwargs,
+        )
         batch_iter = query.to_arrow_iterable(bqstorage_client=self.storage_client)
         return pa.ipc.RecordBatchReader.from_batches(
             schema.to_pyarrow(),
@@ -906,6 +1050,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
+        load_job_id_prefix: str | None = None,
+        insert_job_id_prefix: str | None = None,
         **kwargs: Any,
     ) -> pd.DataFrame | pd.Series | Any:
         """Compile and execute the given Ibis expression.
@@ -922,6 +1068,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             already set on the expression.
         params
             Query parameters
+        load_job_id_prefix
+            Optional prefix for the job ID of the load job which may be created.
+        insert_job_id_prefix
+            Optional prefix for the job ID of the query job which may be created to
+            insert data into a table.
         kwargs
             Extra arguments specific to the backend
 
@@ -935,7 +1086,14 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         table_expr = expr.as_table()
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
-        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
+        query = self._to_query(
+            table_expr,
+            params=params,
+            limit=limit,
+            load_job_id_prefix=load_job_id_prefix,
+            insert_job_id_prefix=insert_job_id_prefix,
+            **kwargs,
+        )
         df = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         ).to_pandas(timestamp_as_object=True)
@@ -1047,7 +1205,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         partition_by: str | None = None,
         cluster_by: Iterable[str] | None = None,
         options: Mapping[str, Any] | None = None,
-        job_id_prefix: str | None = None,
+        load_job_id_prefix: str | None = None,
+        insert_job_id_prefix: str | None = None,
     ) -> ir.Table:
         """Create a table in BigQuery.
 
@@ -1080,9 +1239,13 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         options
             BigQuery-specific table options; see the BigQuery documentation for
             details: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#table_option_list
-        job_id_prefix
-            Optional custom job ID prefix; when specified, bigquery will use this as a
-            prefix for the job ID it generates
+        load_job_id_prefix
+            Optional prefix for the job ID of the load job that may be created to upload
+            `obj` data to bigquery.
+        insert_job_id_prefix
+            Optional prefix for the job ID of the insert job that may be created to
+            insert `obj` data into the table.
+            prefix for the job ID it generates to insert the data into the table.
 
         Returns
         -------
@@ -1133,7 +1296,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             obj = ibis.memtable(obj, schema=schema)
 
         if obj is not None:
-            self._run_pre_execute_hooks(obj)
+            self._run_pre_execute_hooks(obj, job_id_prefix=load_job_id_prefix)
 
         if temp:
             dataset = self._session_dataset.dataset_id
@@ -1174,7 +1337,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         sql = stmt.sql(self.name)
 
-        self.raw_sql(sql, job_id_prefix=job_id_prefix)
+        self.raw_sql(sql, job_id_prefix=insert_job_id_prefix)
         return self.table(table.name, database=(table.catalog, table.db))
 
     def drop_table(
