@@ -1241,8 +1241,10 @@ def _merge_params_into_config(
     query_job_config: bq.QueryJobConfig | None = None,
     params: Mapping[ir.Scalar, Any] | None = None,
 ) -> bq.QueryJobConfig:
-    """Returns a copy of `query_job_config` with the `params` merged into the `query_parameters`.
-    `params` will override values with a naming conflict in `query_job_config`.
+    """Merge parameters into a QueryJobConfig.
+
+    Returns a copy of `query_job_config` with the `params` merged into the `query_parameters`
+    field. `params` will override values with a key naming conflict in `query_job_config`.
     """
 
     if query_job_config is not None:
