@@ -843,7 +843,12 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def group_by(
         self,
-        *by: str | ir.Value | Iterable[str] | Iterable[ir.Value] | None,
+        *by: str
+        | ir.Value
+        | Deferred
+        | Iterable[str]
+        | Iterable[ir.Value]
+        | Iterable[Deferred],
         **key_exprs: str | ir.Value | Iterable[str] | Iterable[ir.Value],
     ) -> GroupedTable:
         """Create a grouped table expression.
@@ -946,7 +951,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def aggregate(
         self,
-        metrics: Sequence[ir.Scalar] | None = (),
+        metrics: ir.Scalar | Deferred | Sequence[ir.Scalar | Deferred] | None = (),
         /,
         *,
         by: Sequence[ir.Value] | None = (),
@@ -1430,10 +1435,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         *by: str
         | ir.Column
         | s.Selector
-        | Sequence[str]
-        | Sequence[ir.Column]
-        | Sequence[s.Selector]
-        | None,
+        | Deferred
+        | Sequence[str | ir.Column | s.Selector | Deferred],
     ) -> Table:
         """Sort a table by one or more expressions.
 
@@ -1874,7 +1877,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             )
         return self.as_scalar()
 
-    def mutate(self, *exprs: Sequence[ir.Expr] | None, **mutations: ir.Value) -> Table:
+    def mutate(
+        self, *exprs: ir.Value | Deferred, **mutations: ir.Value | Deferred | str
+    ) -> Table:
         """Add columns to a table expression.
 
         Parameters
@@ -1971,8 +1976,8 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def select(
         self,
-        *exprs: ir.Value | str | Iterable[ir.Value | str],
-        **named_exprs: ir.Value | str,
+        *exprs: ir.Value | str | Iterable[ir.Value | str] | Deferred,
+        **named_exprs: ir.Value | str | Deferred,
     ) -> Table:
         """Compute a new table expression using `exprs` and `named_exprs`.
 
@@ -2437,7 +2442,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def filter(
         self,
-        *predicates: ir.BooleanValue | Sequence[ir.BooleanValue] | IfAnyAll,
+        *predicates: ir.BooleanValue | Sequence[ir.BooleanValue] | IfAnyAll | Deferred,
     ) -> Table:
         """Select rows from `table` based on `predicates`.
 
@@ -2509,7 +2514,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             raise com.IbisInputError("You must pass at least one predicate to filter")
         return ops.Filter(self, preds).to_expr()
 
-    def nunique(self, *, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def nunique(
+        self, *, where: ir.BooleanValue | Deferred | None = None
+    ) -> ir.IntegerScalar:
         """Compute the number of unique rows in the table.
 
         Parameters
@@ -2550,7 +2557,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             (where,) = bind(self, where)
         return ops.CountDistinctStar(self, where=where).to_expr()
 
-    def count(self, *, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def count(
+        self, *, where: ir.BooleanValue | Deferred | None = None
+    ) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
 
         Parameters
