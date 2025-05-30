@@ -87,7 +87,7 @@ class Backend(
         return importlib.metadata.version("datafusion")
 
     def do_connect(
-        self, config: Mapping[str, str | Path] | SessionContext | None = None
+        self, config: Mapping[str, str | Path] | SessionContext | None = None, /
     ) -> None:
         """Create a DataFusion `Backend` for use with Ibis.
 

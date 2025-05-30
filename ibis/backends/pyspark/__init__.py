@@ -138,6 +138,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
     def do_connect(
         self,
         session: SparkSession | None = None,
+        *,
         mode: ConnectionMode = "batch",
         **kwargs,
     ) -> None:
