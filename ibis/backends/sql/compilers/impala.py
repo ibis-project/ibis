@@ -173,7 +173,7 @@ class ImpalaCompiler(SQLGlotCompiler):
             )
         elif dtype.is_array() or dtype.is_map() or dtype.is_struct():
             raise com.UnsupportedBackendType(
-                f"Impala does not support {dtype.name.lower()} literals"
+                f"Impala does not support {dtype.__class__.__name__.lower()} literals"
             )
         elif dtype.is_uuid():
             return sge.convert(str(value))
