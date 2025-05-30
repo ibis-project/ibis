@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 import pytest
@@ -107,6 +108,8 @@ class TestConf(BackendTest):
             extension_directory = tmpdir.getbasetemp().joinpath("duckdb_extensions")
             extension_directory.mkdir(exist_ok=True)
             kw["extension_directory"] = extension_directory
+
+        kw["threads"] = 1 if worker_id != "master" else os.cpu_count() // 2
         return ibis.duckdb.connect(**kw)
 
     def _load_tpc(self, *, suite, scale_factor):
