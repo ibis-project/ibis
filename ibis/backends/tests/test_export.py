@@ -494,6 +494,9 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     reason="read_delta not yet implemented",
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
+@pytest.mark.xfail_version(
+    polars=["polars<1.30.1", "deltalake>=1"], raises=AttributeError
+)
 @pytest.mark.notyet(["mssql"], raises=PyDeltaTableError)
 def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":
