@@ -35,7 +35,7 @@ from ibis.common.deferred import var
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    import ibis.expr.operations as ir
+    from ibis.expr import types as ir
 
 y = var("y")
 start = var("start")
@@ -156,14 +156,13 @@ class MSSQLCompiler(SQLGlotCompiler):
             return None
         return spec
 
-    def to_sqlglot(
+    def _to_sqlglot_expr(
         self,
         expr: ir.Expr,
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
+    ) -> sge.Expression:
         import ibis
 
         table_expr = expr.as_table()
@@ -175,7 +174,7 @@ class MSSQLCompiler(SQLGlotCompiler):
 
         if conversions:
             table_expr = table_expr.mutate(**conversions)
-        return super().to_sqlglot(table_expr, limit=limit, params=params)
+        return super()._to_sqlglot_expr(table_expr, limit=limit, params=params)
 
     def visit_RandomScalar(self, op):
         # By default RAND() will generate the same value for all calls within a
