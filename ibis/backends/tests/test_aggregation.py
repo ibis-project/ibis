@@ -483,11 +483,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     reason="not exact, even at this tiny scale",
                     strict=False,
                 ),
-                pytest.mark.notimpl(
-                    ["datafusion"],
-                    reason="data type is not supported",
-                    raises=Exception,
-                ),
             ],
         ),
         param(
