@@ -4,6 +4,7 @@ import collections
 import datetime
 import decimal
 import os
+from pathlib import Path
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -15,7 +16,7 @@ from google.api_core.exceptions import Forbidden
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.client import bigquery_param
-from ibis.util import gen_name
+from ibis.util import gen_name, mktempd
 
 
 def test_column_execute(alltypes, df):
@@ -553,3 +554,58 @@ def test_create_job_with_custom_job_prefix(con):
     query = "SELECT 1"
     result = con.raw_sql(query, job_id_prefix=job_id_prefix)
     assert result.job_id.startswith(job_id_prefix)
+
+
+def test_read_csv_with_custom_load_job_prefix(con):
+    load_job_id_prefix = "test_load_job_prefix_"
+    drop_job_id_prefix = "test_drop_job_prefix_"
+
+    orig_load_table_from_file = con.client.load_table_from_file
+    con.client._load_table_from_file_num_calls = 0
+
+    def load_table_from_file(*args, **kwargs):
+        con.client._load_table_from_file_num_calls += 1
+        assert kwargs["job_id_prefix"] == load_job_id_prefix
+        return orig_load_table_from_file(*args, **kwargs)
+
+    con.client.load_table_from_file = load_table_from_file
+
+    orig_query = con.client.query
+    con.client._query_num_calls = 0
+
+    def query(*args, **kwargs):
+        con.client._query_num_calls += 1
+        assert kwargs["job_id_prefix"] == drop_job_id_prefix
+        return orig_query(*args, **kwargs)
+
+    con.client.query = query
+
+    orig_query_and_wait = con.client.query_and_wait
+    con.client._query_and_wait_num_calls = 0
+
+    def query_and_wait(*args, **kwargs):
+        con.client._query_and_wait_num_calls += 1
+        return orig_query_and_wait(*args, **kwargs)
+
+    con.client.query_and_wait = query_and_wait
+
+    with mktempd() as tmpdir:
+        path = Path(tmpdir, "test_data.csv")
+        df = pd.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
+        df.to_csv(path, index=False)
+    file_path = path.as_posix()
+    table_name = gen_name("test_table_with_custom_job_prefixes")
+
+    con.read_csv(
+        file_path,
+        table_name=table_name,
+        load_job_id_prefix=load_job_id_prefix,
+        drop_job_id_prefix=drop_job_id_prefix,
+    )
+
+    assert con.table(table_name).count().execute() > 0
+    assert con.client._load_table_from_file_num_calls == 1
+    assert con.client._query_num_calls == 1
+    assert con.client._query_and_wait_num_calls == 0, (
+        "query_and_wait should not be called because it may not create a job"
+    )
