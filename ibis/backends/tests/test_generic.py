@@ -1131,7 +1131,7 @@ def test_typeof(con):
 @pytest.mark.notimpl(["polars"], reason="incorrect answer")
 @pytest.mark.notyet(["impala"], reason="can't find table in subquery")
 @pytest.mark.notimpl(["datafusion", "druid"])
-@pytest.mark.xfail_version(pyspark=["pyspark<3.5"])
+@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 @pytest.mark.notyet(["exasol"], raises=ExaQueryError, reason="not supported by exasol")
 @pytest.mark.notyet(
     ["risingwave"],
