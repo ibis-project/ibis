@@ -108,9 +108,6 @@ def test_03(date_dim, store_sales, item):
 
 
 @tpc_test("ds")
-@pytest.mark.notimpl(
-    ["datafusion"], reason="Optimizer rule 'common_sub_expression_eliminate' failed"
-)
 def test_04(customer, store_sales, catalog_sales, web_sales, date_dim):
     def profile(sales, *, name):
         char = name[0]
@@ -847,10 +844,6 @@ def test_10(
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(
-    ["datafusion"],
-    reason="Exception: Optimizer rule 'common_sub_expression_eliminate' failed",
-)
 def test_11(customer, store_sales, web_sales, date_dim):
     def agg(*, sale_type: str, table, join_key):
         prefix = f"{sale_type}s"
