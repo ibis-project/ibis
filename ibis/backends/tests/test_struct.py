@@ -142,7 +142,6 @@ def test_collect_into_struct(alltypes):
     reason="struct literals not implemented",
     raises=PsycoPg2InternalError,
 )
-@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError, reason="not implemented in ibis")
 def test_field_access_after_case(con):
     s = ibis.struct({"a": 3})

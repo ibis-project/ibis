@@ -524,6 +524,9 @@ class DataFusionCompiler(SQLGlotCompiler):
             args.append(value)
         return self.f.named_struct(*args)
 
+    def visit_StructField(self, op, *, arg, field):
+        return sge.Bracket(this=arg, expressions=[sge.convert(field)])
+
     def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
         if order_by:
             raise com.UnsupportedOperationError(
