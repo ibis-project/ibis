@@ -10,7 +10,7 @@ import ibis.expr.datatypes as dt
 
 pytest.importorskip("rich")
 
-from ibis.expr.types.pretty import format_column, format_values
+from ibis.expr.types._rich import format_column, format_values
 
 pd = pytest.importorskip("pandas")
 
