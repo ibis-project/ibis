@@ -45,48 +45,48 @@ def test_reduction_invalid_where(alltypes, reduction):
     ("func", "pandas_func"),
     [
         (
-            lambda t, cond: t.bool_col.count(),
-            lambda df, cond: df.bool_col.count(),
+            lambda t, _: t.bool_col.count(),
+            lambda df, _: df.bool_col.count(),
         ),
         (
-            lambda t, cond: t.bool_col.approx_nunique(),
-            lambda df, cond: df.bool_col.nunique(),
+            lambda t, _: t.bool_col.approx_nunique(),
+            lambda df, _: df.bool_col.nunique(),
         ),
         (
-            lambda t, cond: t.double_col.sum(),
-            lambda df, cond: df.double_col.sum(),
+            lambda t, _: t.double_col.sum(),
+            lambda df, _: df.double_col.sum(),
         ),
         (
-            lambda t, cond: t.double_col.mean(),
-            lambda df, cond: df.double_col.mean(),
+            lambda t, _: t.double_col.mean(),
+            lambda df, _: df.double_col.mean(),
         ),
         (
-            lambda t, cond: t.int_col.approx_median(),
-            lambda df, cond: df.int_col.median(),
+            lambda t, _: t.int_col.approx_median(),
+            lambda df, _: df.int_col.median(),
         ),
         (
-            lambda t, cond: t.double_col.min(),
-            lambda df, cond: df.double_col.min(),
+            lambda t, _: t.double_col.min(),
+            lambda df, _: df.double_col.min(),
         ),
         (
-            lambda t, cond: t.double_col.max(),
-            lambda df, cond: df.double_col.max(),
+            lambda t, _: t.double_col.max(),
+            lambda df, _: df.double_col.max(),
         ),
         (
-            lambda t, cond: t.double_col.var(),
-            lambda df, cond: df.double_col.var(),
+            lambda t, _: t.double_col.var(),
+            lambda df, _: df.double_col.var(),
         ),
         (
-            lambda t, cond: t.double_col.std(),
-            lambda df, cond: df.double_col.std(),
+            lambda t, _: t.double_col.std(),
+            lambda df, _: df.double_col.std(),
         ),
         (
-            lambda t, cond: t.double_col.var(how="sample"),
-            lambda df, cond: df.double_col.var(ddof=1),
+            lambda t, _: t.double_col.var(how="sample"),
+            lambda df, _: df.double_col.var(ddof=1),
         ),
         (
-            lambda t, cond: t.double_col.std(how="pop"),
-            lambda df, cond: df.double_col.std(ddof=0),
+            lambda t, _: t.double_col.std(how="pop"),
+            lambda df, _: df.double_col.std(ddof=0),
         ),
         (
             lambda t, cond: t.bool_col.count(where=cond),

@@ -192,7 +192,7 @@ class TestConf(BackendTest):
                     future.result()
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
+    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:  # noqa: ARG004
         if os.environ.get("SNOWFLAKE_SNOWPARK"):
             import snowflake.snowpark as sp
 

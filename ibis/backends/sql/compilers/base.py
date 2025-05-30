@@ -641,7 +641,7 @@ class SQLGlotCompiler(abc.ABC):
         aliases = {}
         counter = itertools.count()
 
-        def fn(node, _, **kwargs):
+        def fn(node, __unused__, **kwargs):
             result = self.visit_node(node, **kwargs)
 
             # if it's not a relation then we don't need to do anything special

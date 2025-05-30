@@ -671,7 +671,7 @@ def test_interval_comparisons(unit, operands, operator, table):
 @pytest.mark.parametrize(
     "operands",
     [
-        lambda t: (api.date("2016-01-01"), api.date("2016-02-02")),
+        lambda _: (api.date("2016-01-01"), api.date("2016-02-02")),
         lambda t: (t.j, api.date("2016-01-01")),
         lambda t: (api.date("2016-01-01"), t.j),
         lambda t: (t.j, t.i.date()),
@@ -748,7 +748,7 @@ def test_interval_column_name(table):
 
 @pytest.mark.parametrize(
     "operand",
-    [lambda t: api.timestamp(datetime.datetime.now()), lambda t: t.i],
+    [lambda _: api.timestamp(datetime.datetime.now()), lambda t: t.i],
     ids=["column", "literal"],
 )
 @pytest.mark.parametrize(
@@ -806,7 +806,7 @@ def test_timestamp_truncate(table, operand, unit):
     assert isinstance(expr.op(), ops.TimestampTruncate)
 
 
-@pytest.mark.parametrize("operand", [lambda t: api.date("2018-01-01"), lambda t: t.j])
+@pytest.mark.parametrize("operand", [lambda _: api.date("2018-01-01"), lambda t: t.j])
 @pytest.mark.parametrize("unit", ["Y", "Q", "M", "D", "W"])
 def test_date_truncate(table, operand, unit):
     expr = operand(table).truncate(unit)
@@ -814,7 +814,7 @@ def test_date_truncate(table, operand, unit):
     assert isinstance(expr.op(), ops.DateTruncate)
 
 
-@pytest.mark.parametrize("operand", [lambda t: api.time("18:00"), lambda t: t.k])
+@pytest.mark.parametrize("operand", [lambda _: api.time("18:00"), lambda t: t.k])
 @pytest.mark.parametrize("unit", ["h", "m", "s", "ms", "us", "ns"])
 def test_time_truncate(table, operand, unit):
     expr = operand(table).truncate(unit)

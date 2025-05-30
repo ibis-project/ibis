@@ -201,7 +201,7 @@ def test_projection_sort_keys_errors(table):
         table.mutate(new=table.c.asc())
 
 
-def test_projection_invalid_root(table):
+def test_projection_invalid_root():
     schema1 = {"foo": "double", "bar": "int32"}
 
     left = api.table(schema1, name="foo")
@@ -1100,7 +1100,7 @@ def test_self_join_no_view_convenience(table):
     assert result.columns == expected_cols
 
 
-def test_join_project_after(table):
+def test_join_project_after():
     # e.g.
     #
     # SELECT L.foo, L.bar, R.baz, R.qux
@@ -1127,7 +1127,7 @@ def test_join_project_after(table):
     assert projected.schema().names == ("key2", "stuff", "key1")
 
 
-def test_semi_join_schema(table):
+def test_semi_join_schema():
     # A left semi join discards the schema of the right table
     table1 = ibis.table([("key1", "string"), ("value1", "double")])
     table2 = ibis.table([("key2", "string"), ("stuff", "double")])
@@ -1231,12 +1231,12 @@ def test_inner_join_overlapping_column_names():
     "key_maker",
     [
         lambda t1, t2: t1.foo_id == t2.foo_id,
-        lambda t1, t2: [("foo_id", "foo_id")],
+        lambda *__: [("foo_id", "foo_id")],
         lambda t1, t2: [(t1.foo_id, t2.foo_id)],
-        lambda t1, t2: [(_.foo_id, _.foo_id)],
-        lambda t1, t2: [(t1.foo_id, _.foo_id)],
+        lambda *__: [(_.foo_id, _.foo_id)],
+        lambda t1, __: [(t1.foo_id, _.foo_id)],
         lambda t1, t2: [(t1[2], t2[0])],  # foo_id is 2nd in t1, 0th in t2
-        lambda t1, t2: [(lambda t: t.foo_id, lambda t: t.foo_id)],
+        lambda *_: [(lambda t: t.foo_id, lambda t: t.foo_id)],
     ],
 )
 def test_join_key_alternatives(con, key_maker):
@@ -1303,7 +1303,7 @@ def test_join_non_boolean_expr(con):
         t1.inner_join(t2, [predicate])
 
 
-def test_unravel_compound_equijoin(table):
+def test_unravel_compound_equijoin():
     t1 = ibis.table(
         [
             ("key1", "string"),
@@ -2103,7 +2103,7 @@ def test_table_bind():
     # no args
     assert t.bind() == ()
 
-    def utter_failure(x):
+    def utter_failure(_):
         raise ValueError("¡moo!")
 
     with pytest.raises(ValueError, match="¡moo!"):

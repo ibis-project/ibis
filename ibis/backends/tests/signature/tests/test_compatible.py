@@ -35,20 +35,20 @@ def b5(posarg2: str, /): ...
     "a, b, check_annotations",
     [
         param(
-            lambda posarg, *, kwarg1=None, kwarg2=None: ...,
-            lambda posarg, *, kwarg2=None, kwarg1=None: ...,
+            lambda posarg, *, kwarg1=None, kwarg2=None: ...,  # noqa: ARG005
+            lambda posarg, *, kwarg2=None, kwarg1=None: ...,  # noqa: ARG005
             True,
             id="swapped kwarg order",
         ),
         param(
-            lambda posarg, *, kwarg1=None, kwarg2=None, kwarg3=None: ...,
-            lambda posarg, *, kwarg2=None, kwarg1=None: ...,
+            lambda posarg, *, kwarg1=None, kwarg2=None, kwarg3=None: ...,  # noqa: ARG005
+            lambda posarg, *, kwarg2=None, kwarg1=None: ...,  # noqa: ARG005
             True,
             id="swapped kwarg order w/extra kwarg first",
         ),
         param(
-            lambda posarg, *, kwarg2=None, kwarg1=None: ...,
-            lambda posarg, *, kwarg1=None, kwarg2=None, kwarg3=None: ...,
+            lambda posarg, *, kwarg2=None, kwarg1=None: ...,  # noqa: ARG005
+            lambda posarg, *, kwarg1=None, kwarg2=None, kwarg3=None: ...,  # noqa: ARG005
             True,
             id="swapped kwarg order w/extra kwarg second",
         ),
@@ -93,14 +93,14 @@ def test_sigs_compatible(a, b, check_annotations):
     "a, b, check_annotations",
     [
         param(
-            lambda posarg, /, *, kwarg2=None, kwarg1=None: ...,
-            lambda posarg, *, kwarg1=None, kwarg2=None, kwarg3=None: ...,
+            lambda posarg, /, *, kwarg2=None, kwarg1=None: ...,  # noqa: ARG005
+            lambda posarg, *, kwarg1=None, kwarg2=None, kwarg3=None: ...,  # noqa: ARG005
             True,
             id="one positional only",
         ),
         param(
-            lambda posarg, *, kwarg1=None, kwarg2=None: ...,
-            lambda posarg, kwarg1=None, kwarg2=None: ...,
+            lambda posarg, *, kwarg1=None, kwarg2=None: ...,  # noqa: ARG005
+            lambda posarg, kwarg1=None, kwarg2=None: ...,  # noqa: ARG005
             True,
             id="not kwarg only",
         ),

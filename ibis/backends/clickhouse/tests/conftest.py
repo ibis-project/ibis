@@ -79,7 +79,11 @@ class TestConf(ServiceBackendTest):
 
     @staticmethod
     def connect(
-        *, tmpdir, worker_id, settings: Mapping[str, Any] | None = None, **kw: Any
+        *,
+        tmpdir,  # noqa: ARG004
+        worker_id,  # noqa: ARG004
+        settings: Mapping[str, Any] | None = None,
+        **kw: Any,
     ):
         if settings is None:
             settings = {}
