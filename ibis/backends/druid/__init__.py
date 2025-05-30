@@ -190,8 +190,7 @@ class Backend(SQLBackend, NoExampleLoader):
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,

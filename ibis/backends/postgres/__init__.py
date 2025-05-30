@@ -583,8 +583,7 @@ ORDER BY a.attnum ASC"""
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -617,7 +616,14 @@ ORDER BY a.attnum ASC"""
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
+
+        Returns
+        -------
+        Table
+            The table that was just created
         """
+        name = self._create_table_name(name)
+
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
         if schema is not None:
