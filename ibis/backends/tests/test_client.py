@@ -1112,21 +1112,50 @@ def test_dunder_array_column(alltypes, dtype):
     np.testing.assert_array_equal(result, expected)
 
 
-@pytest.mark.parametrize("interactive", [True, False])
-def test_repr(alltypes, interactive, monkeypatch):
+@pytest.mark.parametrize(
+    "interactive", [True, False], ids=["interactive", "non-interactive"]
+)
+@pytest.mark.parametrize("is_jupyter", [True, False], ids=["jupyter", "not-jupyter"])
+@pytest.mark.parametrize("method", ["repr", "_repr_mimebundle_"])
+def test_reprs(alltypes, interactive, is_jupyter, method, monkeypatch):
     pytest.importorskip("rich")
 
     monkeypatch.setattr(ibis.options, "interactive", interactive)
+    monkeypatch.setattr(rich.console, "_is_jupyter", lambda: is_jupyter)
 
-    expr = alltypes.select("date_string_col")
+    wide_table = alltypes.select(
+        *alltypes.columns,
+        *[alltypes[c].name(f"{c}_2") for c in alltypes.columns],
+        *[alltypes[c].name(f"{c}_3") for c in alltypes.columns],
+    )
 
-    s = repr(expr)
-    # no control characters
-    assert all(c.isprintable() or c in "\n\r\t" for c in s)
-    if interactive:
-        assert "/" in s
+    if method == "repr":
+        s = repr(wide_table)
+    elif method == "_repr_mimebundle_":
+        s = wide_table._repr_mimebundle_(["text/plain"], [])["text/plain"]
     else:
-        assert "/" not in s
+        raise AssertionError(f"Unknown method: {method}")
+
+    non_printables = {c for c in s if not c.isprintable() and c not in "\n\r\t"}
+    if method == "_repr_mimebundle_" and interactive and is_jupyter:
+        # There should be ANSI color codes in the output
+        assert len(non_printables) > 0
+    else:
+        # Should be no ANSI color codes or other control characters in the output
+        assert non_printables == set()
+
+    # ┃ characters separate columns in the table
+    n_columns_seen = max(line.count("┃") for line in s.splitlines()) - 1
+    n_columns_seen = max(n_columns_seen, 0)
+    if interactive:
+        if is_jupyter:
+            # table should have unbounded width, every column should be shown
+            assert n_columns_seen == len(wide_table.columns)
+        else:
+            # table should be truncated to fit the console width
+            assert n_columns_seen < len(alltypes.columns)
+    else:
+        assert n_columns_seen == 0
 
 
 @pytest.mark.parametrize("show_types", [True, False])
