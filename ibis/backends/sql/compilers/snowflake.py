@@ -740,14 +740,12 @@ $$""",
                 )
             )
             .from_(
-                sge.Table(
-                    this=sge.Unnest(
-                        expressions=[
-                            self.f.array_generate_range(
-                                0, self.f.datediff(unit, start, stop), step
-                            )
-                        ]
-                    )
+                sge.Unnest(
+                    expressions=[
+                        self.f.array_generate_range(
+                            0, self.f.datediff(unit, start, stop), step
+                        )
+                    ]
                 )
             )
             .subquery()
