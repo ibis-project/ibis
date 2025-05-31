@@ -35,6 +35,9 @@ let
       lz4.setuptools = [ ];
       snowflake-connector-python.setuptools = [ ];
     }
+    // lib.optionalAttrs (lib.versionAtLeast prev.python.pythonVersion "3.13") {
+      pyyaml-ft.setuptools = [ ];
+    }
     // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
       duckdb = {
         setuptools = [ ];
