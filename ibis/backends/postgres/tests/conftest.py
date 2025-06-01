@@ -64,7 +64,7 @@ class TestConf(ServiceBackendTest):
         return self.data_dir.joinpath("csv").glob("*.csv")
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
+    def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
         return ibis.postgres.connect(
             host=PG_HOST,
             port=PG_PORT,

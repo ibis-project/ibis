@@ -34,7 +34,7 @@ class TestConf(BackendTest):
         con.create_table("topk", topk)
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
+    def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
         return ibis.datafusion.connect(**kw)
 
     def _load_tpc(self, *, suite, scale_factor):

@@ -47,7 +47,7 @@ class TestConf(ServiceBackendTest):
         super()._load_data(database=database, **_)
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
+    def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
         return ibis.mssql.connect(
             host=MSSQL_HOST,
             user=MSSQL_USER,

@@ -443,7 +443,7 @@ def test_egraph_rewrite_to_pattern():
 
 
 def test_egraph_rewrite_dynamic():
-    def applier(egraph, match, a, mul, times):
+    def applier(egraph, match, a, *_, **__):  # noqa: ARG001
         return ENode(ops.Add, (a, a))
 
     node = (one * 2).op()
@@ -518,7 +518,7 @@ def test_math_associate_adds(benchmark):
     benchmark(is_equal, expr_a, expr_b, math_rules, iters=500)
 
 
-def replace_add(egraph, enode, **kwargs):
+def replace_add(egraph, enode, **_):
     node = egraph.extract(enode)
     enode = egraph.add(node)
     return enode

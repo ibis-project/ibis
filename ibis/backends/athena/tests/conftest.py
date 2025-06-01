@@ -101,7 +101,7 @@ class TestConf(BackendTest):
         self.connection = self.connect(schema_name=IBIS_ATHENA_TEST_DATABASE, **kw)
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
+    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:  # noqa: ARG004
         return ibis.athena.connect(**CONNECT_ARGS, **kw)
 
     def _remap_column_names(self, table_name: str) -> dict[str, str]:

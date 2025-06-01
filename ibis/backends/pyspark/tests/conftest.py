@@ -246,7 +246,7 @@ if IS_SPARK_REMOTE:
             return self.data_dir.joinpath("parquet").glob("*.parquet")
 
         @staticmethod
-        def connect(*, tmpdir, worker_id, **kw):
+        def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
             from pyspark.sql import SparkSession
 
             spark = (
@@ -257,10 +257,10 @@ if IS_SPARK_REMOTE:
             return ibis.pyspark.connect(spark, **kw)
 
     @pytest.fixture(scope="session")
-    def con_streaming(data_dir, tmp_path_factory, worker_id):
+    def con_streaming(data_dir, tmp_path_factory, worker_id):  # noqa: ARG001
         pytest.skip("Streaming tests are not supported in remote mode")
 
-    def write_to_memory(self, expr, table_name):
+    def write_to_memory(self, *_):
         assert self.mode == "batch"
         raise NotImplementedError
 else:
@@ -273,7 +273,7 @@ else:
             return str(self.data_dir / "parquet")
 
         @staticmethod
-        def connect(*, tmpdir, worker_id, **kw):
+        def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
             from pyspark.sql import SparkSession
 
             config = SparkSession.builder.appName("ibis_testing")
@@ -372,7 +372,7 @@ else:
                 return inst
 
         @staticmethod
-        def connect(*, tmpdir, worker_id, **kw):
+        def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
             from pyspark.sql import SparkSession
 
             # SparkContext is shared globally; only one SparkContext should be active

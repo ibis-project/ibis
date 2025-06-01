@@ -61,7 +61,7 @@ class TestConf(ServiceBackendTest):
                 cur.execute("\n".join(lines))
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
+    def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
         return ibis.mysql.connect(
             host=MYSQL_HOST,
             user=MYSQL_USER,

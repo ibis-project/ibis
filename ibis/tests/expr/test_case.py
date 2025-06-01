@@ -170,7 +170,7 @@ def test_case_mixed_type():
     assert result["label"].type().equals(dt.string)
 
 
-def test_err_on_bad_args(table):
+def test_err_on_bad_args():
     with pytest.raises(ValueError):
         ibis.cases((True,))
     with pytest.raises(ValueError):

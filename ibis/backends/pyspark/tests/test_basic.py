@@ -110,7 +110,7 @@ def test_cast(t, df):
     tm.assert_frame_equal(result, df)
 
 
-def test_alias_after_select(t, df):
+def test_alias_after_select(t):
     # Regression test for issue 2136
     table = t[["id"]]
     table = table.mutate(id2=table["id"])

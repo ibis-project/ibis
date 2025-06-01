@@ -74,7 +74,7 @@ from ibis.util import Namespace
 
 
 class Double(Pattern):
-    def match(self, value, *, context):
+    def match(self, value, **_):
         return value * 2
 
     def __eq__(self, other):
@@ -90,7 +90,7 @@ class Min(Pattern):
     def __init__(self, min):
         self.min = min
 
-    def match(self, value, context):
+    def match(self, value, *_, **__):
         if value >= self.min:
             return value
         else:
@@ -679,7 +679,7 @@ def test_callable_with():
     def func_with_args(a, b, *args):
         return sum((a, b) + args)
 
-    def func_with_kwargs(a, b, c=1, **kwargs):
+    def func_with_kwargs(a, b, c=1, **_):
         return str(a) + b + str(c)
 
     def func_with_optional_keyword_only_kwargs(a, *, c=1):
@@ -1083,7 +1083,7 @@ def test_various_not_matching_patterns(pattern, value):
 
 
 @pattern
-def endswith_d(s, ctx):
+def endswith_d(s, *_, **__):
     if not s.endswith("d"):
         return NoMatch
     return s

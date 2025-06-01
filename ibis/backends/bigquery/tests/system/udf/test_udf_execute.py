@@ -45,7 +45,7 @@ def test_udf(alltypes, df):
     )
 
 
-def test_udf_with_struct(alltypes, df, snapshot):
+def test_udf_with_struct(alltypes, df):
     @udf.scalar.python
     def my_struct_thing(a: float, b: float) -> dt.Struct(
         {"width": float, "height": float}

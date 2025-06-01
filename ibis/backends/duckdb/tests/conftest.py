@@ -98,7 +98,7 @@ class TestConf(BackendTest):
         yield from super().ddl_script
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
+    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:  # noqa: ARG004
         # use an extension directory per test worker to prevent simultaneous
         # downloads on windows
         #
@@ -153,12 +153,12 @@ def gpd():
 
 
 @pytest.fixture(scope="session")
-def zones(con, data_dir, gpd):
+def zones(con, data_dir):
     return con.read_geo(data_dir / "geojson" / "zones.geojson")
 
 
 @pytest.fixture(scope="session")
-def lines(con, data_dir, gpd):
+def lines(con, data_dir):
     return con.read_geo(data_dir / "geojson" / "lines.geojson")
 
 
@@ -173,7 +173,7 @@ def lines_gdf(data_dir, gpd):
 
 
 @pytest.fixture(scope="session")
-def geotable(con, gpd):
+def geotable(con):
     return con.table("geo")
 
 

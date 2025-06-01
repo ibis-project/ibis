@@ -1868,7 +1868,12 @@ def test_identically_named_memtables_cannot_be_joined(con):
 
 @pytest.mark.parametrize("i", range(5))
 def test_stateful_data_is_loaded_once(
-    con, data_dir, tmp_path_factory, worker_id, mocker, i
+    con,
+    data_dir,
+    tmp_path_factory,
+    worker_id,
+    mocker,
+    i,  # noqa: ARG001
 ):
     TestConf = pytest.importorskip(f"ibis.backends.{con.name}.tests.conftest").TestConf
     if not TestConf.stateful:
