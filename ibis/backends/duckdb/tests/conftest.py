@@ -98,7 +98,7 @@ class TestConf(BackendTest):
         yield from super().ddl_script
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:  # noqa: ARG004
+    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
         # use an extension directory per test worker to prevent simultaneous
         # downloads on windows
         #
