@@ -10,16 +10,18 @@
 
 ## What is Ibis?
 
-Ibis is the portable Python dataframe library:
+Ibis is the portable Python dataframe library designed to bring the familiarity of pandas-like operations to various data backends, from local files to distributed databases. It allows you to express data transformations in Python and then execute them efficiently on your chosen backend without writing backend-specific SQL.
 
-- Fast local dataframes (via DuckDB by default)
-- Lazy dataframe expressions
-- Interactive mode for iterative data exploration
-- [Compose Python dataframe and SQL code](#python--sql-better-together)
-- Use the same dataframe API for [nearly 20 backends](#backends)
-- Iterate locally and deploy remotely by [changing a single line of code](#portability)
+### Key Features:
 
-See the documentation on ["Why Ibis?"](https://ibis-project.org/why) to learn more.
+-   **Backend Agnostic:** Use the same Python dataframe API for nearly 20 different backends, including DuckDB, Snowflake, BigQuery, and many more.
+-   **Lazy Evaluation:** Build complex queries as lazy expressions, which are optimized and compiled to efficient SQL (or other native operations) only when you explicitly `execute` them.
+-   **Fast Local Dataframes:** Get started quickly with DuckDB as the default high-performance local backend.
+-   **Interactive Data Exploration:** Leverage interactive mode for rapid, iterative data analysis.
+-   **Python + SQL Synergy:** Seamlessly compose Python dataframe expressions with raw SQL, giving you flexibility and power.
+-   **Portability:** Develop and iterate locally with a smaller dataset or backend, then deploy the *exact same code* to a remote, large-scale database by changing just a single line.
+
+See the documentation on ["Why Ibis?"](https://ibis-project.org/why) to learn more about the problem Ibis solves.
 
 ## Getting started
 
@@ -27,15 +29,14 @@ You can `pip install` Ibis with a backend and example data:
 
 ```bash
 pip install 'ibis-framework[duckdb,examples]'
-```
 
-> 💡 **Tip**
->
-> See the [installation guide](https://ibis-project.org/install) for more installation options.
+
+💡 Tip
+
+See the installation guide for more installation options and to learn how to install specific backends.
 
 Then use Ibis:
 
-```python
 >>> import ibis
 >>> ibis.options.interactive = True
 >>> t = ibis.examples.penguins.fetch()
@@ -70,17 +71,15 @@ Then use Ibis:
 │ Chinstrap │ Dream     │    68 │
 │ Gentoo    │ Biscoe    │   124 │
 └───────────┴───────────┴───────┘
-```
 
-> 💡 **Tip**
->
-> See the [getting started tutorial](https://ibis-project.org/tutorials/basics) for a full introduction to Ibis.
+💡 Tip
 
-## Python + SQL: better together
+See the getting started tutorial for a full introduction to Ibis.
+
+Python + SQL: better together
 
 For most backends, Ibis works by compiling its dataframe expressions into SQL:
 
-```python
 >>> ibis.to_sql(g)
 SELECT
   "t1"."species",
@@ -98,11 +97,8 @@ FROM (
 ) AS "t1"
 ORDER BY
   "t1"."count" ASC
-```
-
 You can mix SQL and Python code:
 
-```python
 >>> a = t.sql("SELECT species, island, count(*) AS count FROM penguins GROUP BY 1, 2")
 >>> a
 ┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
@@ -129,96 +125,117 @@ You can mix SQL and Python code:
 │ Chinstrap │ Dream     │    68 │
 │ Gentoo    │ Biscoe    │   124 │
 └───────────┴───────────┴───────┘
-```
-
 This allows you to combine the flexibility of Python with the scale and performance of modern SQL.
 
-## Backends
+Backends
 
 Ibis supports nearly 20 backends:
 
-- [Apache DataFusion](https://ibis-project.org/backends/datafusion/)
-- [Apache Druid](https://ibis-project.org/backends/druid/)
-- [Apache Flink](https://ibis-project.org/backends/flink)
-- [Apache Impala](https://ibis-project.org/backends/impala/)
-- [Apache PySpark](https://ibis-project.org/backends/pyspark/)
-- [BigQuery](https://ibis-project.org/backends/bigquery/)
-- [ClickHouse](https://ibis-project.org/backends/clickhouse/)
-- [DuckDB](https://ibis-project.org/backends/duckdb/)
-- [Exasol](https://ibis-project.org/backends/exasol)
-- [MySQL](https://ibis-project.org/backends/mysql/)
-- [Oracle](https://ibis-project.org/backends/oracle/)
-- [Polars](https://ibis-project.org/backends/polars/)
-- [PostgreSQL](https://ibis-project.org/backends/postgresql/)
-- [RisingWave](https://ibis-project.org/backends/risingwave/)
-- [SQL Server](https://ibis-project.org/backends/mssql/)
-- [SQLite](https://ibis-project.org/backends/sqlite/)
-- [Snowflake](https://ibis-project.org/backends/snowflake)
-- [Theseus](https://voltrondata.com/start)
-- [Trino](https://ibis-project.org/backends/trino/)
+Apache DataFusion
 
-## How it works
+Apache Druid
+
+Apache Flink
+
+Apache Impala
+
+Apache PySpark
+
+BigQuery
+
+ClickHouse
+
+DuckDB
+
+Exasol
+
+MySQL
+
+Oracle
+
+Polars
+
+PostgreSQL
+
+RisingWave
+
+SQL Server
+
+SQLite
+
+Snowflake
+
+Theseus
+
+Trino
+
+How it works
 
 Most Python dataframes are tightly coupled to their execution engine. And many databases only support SQL, with no Python API. Ibis solves this problem by providing a common API for data manipulation in Python, and compiling that API into the backend’s native language. This means you can learn a single API and use it across any supported backend (execution engine).
 
 Ibis broadly supports two types of backend:
 
-1. SQL-generating backends
-2. DataFrame-generating backends
+SQL-generating backends
 
-![Ibis backend types](./docs/images/backends.png)
+DataFrame-generating backends
 
-## Portability
+![alt text](./docs/images/backends.png)
+
+Portability
 
 To use different backends, you can set the backend Ibis uses:
 
-```python
 >>> ibis.set_backend("duckdb")
 >>> ibis.set_backend("polars")
 >>> ibis.set_backend("datafusion")
-```
 
 Typically, you'll create a connection object:
 
-```python
 >>> con = ibis.duckdb.connect()
 >>> con = ibis.polars.connect()
 >>> con = ibis.datafusion.connect()
-```
 
 And work with tables in that backend:
 
-```python
 >>> con.list_tables()
 ['penguins']
 >>> t = con.table("penguins")
-```
 
 You can also read from common file formats like CSV or Apache Parquet:
 
-```python
 >>> t = con.read_csv("penguins.csv")
 >>> t = con.read_parquet("penguins.parquet")
-```
 
 This allows you to iterate locally and deploy remotely by changing a single line of code.
 
-> 💡 **Tip**
->
-> Check out [the blog on backend agnostic arrays](https://ibis-project.org/posts/backend-agnostic-arrays/) for one example using the same code across DuckDB and BigQuery.
+💡 Tip
 
-## Community and contributing
+Check out the blog on backend agnostic arrays for one example using the same code across DuckDB and BigQuery.
 
-Ibis is an open source project and welcomes contributions from anyone in the community.
+Community and Contributing
 
-- Read [the contributing guide](https://github.com/ibis-project/ibis/blob/main/docs/CONTRIBUTING.md).
-- We care about keeping the community welcoming for all. Check out [the code of conduct](https://github.com/ibis-project/ibis/blob/main/CODE_OF_CONDUCT.md).
-- The Ibis project is open sourced under the [Apache License](https://github.com/ibis-project/ibis/blob/main/LICENSE.txt).
+Ibis is a vibrant open source project that thrives on community contributions. We welcome contributions from anyone, regardless of experience level!
 
-Join our community by interacting on GitHub or chatting with us on [Zulip](https://ibis-project.zulipchat.com/).
+Getting Started as a Contributor:
 
-For more information visit https://ibis-project.org/.
+Read the Contributing Guide: Your first stop should be the official contributing guide. It outlines how to set up your development environment, run tests, adhere to code style, and submit your changes.
 
-## Governance
+Understand the Code of Conduct: We are committed to fostering a welcoming and inclusive community. Please review our Code of Conduct to understand the community expectations.
 
-The Ibis project is an [independently governed](https://github.com/ibis-project/governance/blob/main/governance.md) open source community project to build and maintain the portable Python dataframe library. Ibis has contributors across a range of data companies and institutions.
+Find a Good First Issue: Check the GitHub Issues page for issues labeled good first issue or help wanted. These are often smaller, more manageable tasks perfect for new contributors.
+
+Engage with the Community:
+
+GitHub Discussions: Have questions, ideas, or want to discuss a potential feature? The GitHub Discussions are a great place to engage with maintainers and other community members [1, 3].
+
+Zulip Chat: Join our real-time chat on Zulip for immediate questions and discussions.
+
+Submit a Pull Request: Once you've made your changes, submit a pull request! The CONTRIBUTING.md guide will walk you through the process. Be prepared for feedback; it's a normal and healthy part of open source collaboration.
+
+Licensing:
+
+The Ibis project is open sourced under the Apache License.
+
+Governance
+
+The Ibis project is an independently governed open source community project to build and maintain the portable Python dataframe library. Ibis has contributors across a range of data companies and institutions.
