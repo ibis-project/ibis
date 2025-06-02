@@ -76,7 +76,8 @@ frozenlist==1.6.0
 fsspec==2025.5.1
 gcsfs==2025.5.1
 geoarrow-types==0.3.0
-geopandas==1.0.1
+geopandas==1.0.1 ; python_full_version < '3.10'
+geopandas==1.1.0 ; python_full_version >= '3.10'
 google-api-core==2.24.2
 google-auth==2.40.2
 google-auth-oauthlib==1.2.2
@@ -90,13 +91,13 @@ googleapis-common-protos==1.70.0
 graphviz==0.20.3
 greenlet==3.2.2 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
 griffe==1.7.3
-grpcio==1.71.0
-grpcio-status==1.71.0
+grpcio==1.72.1
+grpcio-status==1.72.1
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 humanize==4.12.3
-hypothesis==6.132.0
+hypothesis==6.133.0
 identify==2.6.12
 idna==3.10
 importlib-metadata==8.7.0
@@ -189,7 +190,7 @@ prometheus-client==0.22.0
 prompt-toolkit==3.0.51
 propcache==0.3.1
 proto-plus==1.26.1
-protobuf==5.29.5
+protobuf==6.31.1
 psutil==7.0.0
 psycopg==3.2.9
 psycopg-binary==3.2.9 ; implementation_name != 'pypy'
