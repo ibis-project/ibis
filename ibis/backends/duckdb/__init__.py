@@ -199,7 +199,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
         final_table = sg.table(name, catalog=catalog, db=database, quoted=quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.insert(query, into=initial_table).sql(dialect)
+                insert_stmt = sge.insert(
+                    query, into=initial_table, columns=table.columns
+                ).sql(dialect)
                 cur.execute(insert_stmt).fetchall()
 
             if overwrite:
