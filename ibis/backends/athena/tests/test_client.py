@@ -40,3 +40,22 @@ def test_column_name_with_slash(con):
         .dummy
     )
     assert set(renamed_table.values) == {1, 2, 3}
+
+
+@pytest.mark.parametrize("partitioned_by", [{"d": "date"}, [("d", "date")]])
+def test_simple_partitioned_by(con, partitioned_by):
+    name = gen_name("partitioned_by")
+    # create a table
+    t = con.create_table(
+        name, schema={"x": "int", "y": "int"}, partitioned_by=partitioned_by
+    )
+    try:
+        assert t.columns == ("x", "y", "d")
+        assert t.execute().empty
+        # check that it exists
+        assert name in con.list_tables()
+    finally:
+        # drop the table
+        con.drop_table(name)
+        # check that it no longer exists
+        assert name not in con.list_tables()

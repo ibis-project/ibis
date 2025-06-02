@@ -87,6 +87,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         properties: Mapping[str, Any] | None = None,
         location: str | None = None,
         stored_as: str = "PARQUET",
+        partitioned_by: sch.SchemaLike = (),
     ) -> ir.Table:
         """Create a table in Amazon Athena.
 
@@ -122,6 +123,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             bucket with the table name as the bucket key.
         stored_as
             The file format in which to store table data. Defaults to parquet.
+        partitioned_by
+            Iterable of column name and type pairs/mapping/schema by which to
+            partition the table.
         """
         if overwrite is not None:
             raise com.UnsupportedOperationError(
@@ -170,6 +174,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
 
         if comment:
             property_list.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
+
+        if partitioned_by:
+            property_list.append(
+                sge.PartitionedByProperty(
+                    this=sge.Schema(
+                        expressions=ibis.schema(partitioned_by).to_sqlglot(self.dialect)
+                    )
+                )
+            )
 
         if obj is not None:
             if isinstance(obj, ir.Table):
@@ -275,12 +288,16 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
 
         (table,) = tables
 
-        return sch.Schema(
-            {
-                metacol.name: self.compiler.type_mapper.from_string(metacol.type)
-                for metacol in table.columns
-            }
-        )
+        type_mapper = self.compiler.type_mapper
+        fields = {
+            metacol.name: type_mapper.from_string(metacol.type)
+            for metacol in table.columns
+        }
+
+        for key in table.partition_keys:
+            fields[key.name] = type_mapper.from_string(key.type)
+
+        return sch.Schema(fields)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query, *args, unload: bool = True, **kwargs):
