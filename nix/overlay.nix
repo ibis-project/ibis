@@ -133,7 +133,7 @@ in
 
   changelog = pkgs.writeShellApplication {
     name = "changelog";
-    runtimeInputs = [ pkgs.nodejs_20.pkgs.conventional-changelog-cli ];
+    runtimeInputs = [ pkgs.nodejs.pkgs.conventional-changelog-cli ];
     text = ''
       conventional-changelog --config ./.conventionalcommits.js "$@"
     '';
@@ -155,15 +155,6 @@ in
         exit 1
       fi
     '';
-  };
-
-  update-lock-files = pkgs.writeShellApplication {
-    name = "update-lock-files";
-    runtimeInputs = with pkgs; [
-      just
-      uv
-    ];
-    text = "just lock";
   };
 
   gen-examples = pkgs.writeShellApplication {
