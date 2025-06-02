@@ -24,9 +24,9 @@ else:
         """JupyterMixin adds a spurious newline to text, this fixes the issue."""
 
         def _repr_mimebundle_(
-            self, include: Iterable[str], exclude: Iterable[str], **kwargs
+            self, include: Iterable[str] | None, exclude: Iterable[str] | None, **kwargs
         ):
-            exclude = [*exclude, "text/plain"]
+            exclude = [*(exclude or []), "text/plain"]
             try:
                 bundle = super()._repr_mimebundle_(include, exclude, **kwargs)
             except Exception:  # noqa: BLE001
