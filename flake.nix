@@ -106,7 +106,7 @@
           git
           just
           nixfmt-rfc-style
-          nodejs_20.pkgs.prettier
+          nodejs.pkgs.prettier
           shellcheck
           shfmt
           statix
@@ -136,7 +136,7 @@
                 # link checking
                 lychee
                 # release automation
-                nodejs_20
+                nodejs
                 # used in notebooks to download data
                 curl
                 # docs
@@ -173,7 +173,6 @@
             ibis311
             ibis312
             ibis313
-            update-lock-files
             check-release-notes-spelling
             ;
         };
@@ -191,7 +190,7 @@
           ibis312 = mkDevShell pkgs.ibisDevEnv312;
           ibis313 = mkDevShell pkgs.ibisDevEnv313;
 
-          default = ibis312;
+          default = ibis313;
 
           preCommit = pkgs.mkShell {
             name = "preCommit";
@@ -211,7 +210,7 @@
             packages = with pkgs; [
               git
               uv
-              nodejs_20
+              nodejs
               unzip
               gnugrep
               (python3.withPackages (p: [ p.packaging ]))
