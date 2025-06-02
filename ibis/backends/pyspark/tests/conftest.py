@@ -323,7 +323,9 @@ else:
                     "io.delta.sql.DeltaSparkSessionExtension",
                 )
 
-            spark = configure_spark_with_delta_pip(config).getOrCreate()
+            spark = (
+                configure_spark_with_delta_pip(config).enableHiveSupport().getOrCreate()
+            )
             return ibis.pyspark.connect(spark, **kw)
 
     class TestConfForStreaming(BackendTest):
