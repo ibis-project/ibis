@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import getpass
-import json
+import itertools
 import os
 import sys
 import tempfile
@@ -21,7 +21,6 @@ import sqlglot.expressions as sge
 import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as exc
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -29,63 +28,14 @@ from ibis import util
 from ibis.backends import CanCreateDatabase, PyArrowExampleLoader, UrlFromPath
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, RenameTable
-from ibis.backends.sql.datatypes import DatabricksType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Mapping
 
     import pandas as pd
     import polars as pl
 
     from ibis.expr.schema import SchemaLike
-
-
-def _databricks_type_to_ibis(typ, nullable: bool = True) -> dt.DataType:
-    """Convert a Databricks type to an Ibis type."""
-    typname = typ["name"]
-    if typname == "array":
-        return dt.Array(
-            _databricks_type_to_ibis(
-                typ["element_type"], nullable=typ["element_nullable"]
-            ),
-            nullable=nullable,
-        )
-    elif typname == "map":
-        return dt.Map(
-            key_type=_databricks_type_to_ibis(typ["key_type"]),
-            value_type=_databricks_type_to_ibis(
-                typ["value_type"], nullable=typ["value_nullable"]
-            ),
-            nullable=nullable,
-        )
-    elif typname == "struct":
-        return dt.Struct(
-            {
-                field["name"]: _databricks_type_to_ibis(
-                    field["type"], nullable=field["nullable"]
-                )
-                for field in typ["fields"]
-            },
-            nullable=nullable,
-        )
-    elif typname == "decimal":
-        return dt.Decimal(
-            precision=typ["precision"], scale=typ["scale"], nullable=nullable
-        )
-    else:
-        return DatabricksType.from_string(typname, nullable=nullable)
-
-
-def _databricks_schema_to_ibis(schema: Iterable[Mapping[str, Any]]) -> sch.Schema:
-    """Convert a Databricks schema to an Ibis schema."""
-    return sch.Schema(
-        {
-            item["name"]: _databricks_type_to_ibis(
-                item["type"], nullable=item["nullable"]
-            )
-            for item in schema
-        }
-    )
 
 
 class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
@@ -310,15 +260,26 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         ).sql(self.dialect)
         try:
             with self.con.cursor() as cur:
-                [(out,)] = cur.execute(f"DESCRIBE EXTENDED {table} AS JSON").fetchall()
+                rows = cur.execute(f"DESCRIBE EXTENDED {table}").fetchall()
         except databricks.sql.exc.ServerOperationError as e:
             raise exc.TableNotFound(
                 f"Table {table_name!r} not found in "
                 f"{catalog or self.current_catalog}.{database or self.current_database}"
             ) from e
 
-        js = json.loads(out)
-        return _databricks_schema_to_ibis(js["columns"])
+        type_mapper = self.compiler.type_mapper
+        return sch.Schema(
+            {
+                row.col_name: type_mapper.from_string(row.data_type, nullable=True)
+                # takewhile is here because we can't use DESCRIBE EXTENDED AS
+                # JSON; older Databricks runtime versions don't support it
+                #
+                # The EXTENDED non-JSON format has a row of empty strings that
+                # serves a sentinel value to indicate the end of the column
+                # name and data type information
+                for row in itertools.takewhile(lambda row: row.col_name, rows)
+            }
+        )
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query, *args, **kwargs):
