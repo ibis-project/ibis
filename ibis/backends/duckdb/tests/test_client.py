@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from datetime import datetime
 
 import duckdb
 import numpy as np
@@ -473,3 +474,12 @@ def test_create_temp_table_in_nondefault_schema():
     con.create_database(database)
     con.con.execute(f"USE {database}")
     con.create_table("foo", {"id": [1, 2, 3]}, temp=True)
+
+
+def test_create_table_with_out_of_order_columns(con):
+    name = gen_name("out_of_order_columns_table")
+    df = pd.DataFrame({"value": ["E1"], "id": [1], "date": [datetime(2025, 5, 13)]})
+    schema = ibis.schema({"id": "int", "value": "str", "date": "timestamp"})
+    assert list(df.columns) == ["value", "id", "date"]
+    assert list(schema.names) == ["id", "value", "date"]
+    con.create_table(name, df, schema=schema, temp=True)
