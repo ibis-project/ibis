@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import ibis
+from ibis.util import gen_name
 
 
 @pytest.mark.xfail_version(pyspark=["pyspark<3.4"], reason="no catalog support")
@@ -186,3 +187,19 @@ def test_create_table_with_partition_no_catalog(con):
     # Cleanup
     con.drop_table(table_name)
     assert table_name not in con.list_tables()
+
+
+def test_insert_bug(con):
+    dbname = gen_name("test_insert_bug_tb")
+    name = gen_name("test_insert_bug_table")
+
+    con.create_database(dbname, force=True)
+    try:
+        con.create_table(name, schema=ibis.schema([("id", "string")]), database=dbname)
+        try:
+            con.insert(name, ibis.memtable([{"id": "my_id"}]), database=dbname)
+            con.insert(name, ibis.memtable([{"id": "my_id_2"}]), database=dbname)
+        finally:
+            con.drop_table(name, force=True, database=dbname)
+    finally:
+        con.drop_database(dbname, force=True)
