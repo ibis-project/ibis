@@ -333,12 +333,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         return self.table(table_name, database=(catalog, database))
 
     def read_parquet(
-        self,
-        path: str | Path,
-        /,
-        *,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ):
         """Read Parquet data into a BigQuery table.
 
@@ -367,12 +362,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         )
 
     def read_csv(
-        self,
-        path: str | Path,
-        /,
-        *,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read CSV data into a BigQuery table.
 
@@ -384,7 +374,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             Path to a CSV file on GCS or the local filesystem. Globs are supported.
         table_name
             Optional table name
-
         kwargs
             Additional keyword arguments passed to
             `google.cloud.bigquery.LoadJobConfig`.
@@ -400,11 +389,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             skip_leading_rows=1,
             **kwargs,
         )
-        return self._read_file(
-            path,
-            table_name=table_name,
-            job_config=job_config,
-        )
+        return self._read_file(path, table_name=table_name, job_config=job_config)
 
     def read_json(
         self,
@@ -888,7 +873,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             Name of the attached database that the table is located in.
         overwrite
             If `True` then replace existing contents of table.
-
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -898,31 +882,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         if db is None:
             db = self.current_database
 
-        return super().insert(
-            name,
-            obj,
-            database=(catalog, db),
-            overwrite=overwrite,
-        )
-
-    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
-        """Delete all rows from a table.
-
-        Parameters
-        ----------
-        name
-            The name of the table to truncate.
-        database
-            Name of the attached database that the table is located in.
-        """
-        table_loc = self._to_sqlglot_table(database)
-        catalog, db = self._to_catalog_db_tuple(table_loc)
-
-        ident = sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted).sql(
-            self.dialect
-        )
-        with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
-            pass
+        return super().insert(name, obj, database=(catalog, db), overwrite=overwrite)
 
     def _to_query(
         self,
@@ -952,12 +912,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         table_expr = expr.as_table()
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
 
-        query = self._to_query(
-            table_expr,
-            params=params,
-            limit=limit,
-            **kwargs,
-        )
+        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
         table = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         )
@@ -980,12 +935,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
         colnames = list(schema.names)
 
-        query = self._to_query(
-            table_expr,
-            params=params,
-            limit=limit,
-            **kwargs,
-        )
+        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
         batch_iter = query.to_arrow_iterable(bqstorage_client=self.storage_client)
         return pa.ipc.RecordBatchReader.from_batches(
             schema.to_pyarrow(),
@@ -1028,12 +978,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         table_expr = expr.as_table()
         schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
-        query = self._to_query(
-            table_expr,
-            params=params,
-            limit=limit,
-            **kwargs,
-        )
+        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
         df = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         ).to_pandas(timestamp_as_object=True)
