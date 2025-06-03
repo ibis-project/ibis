@@ -89,6 +89,22 @@ def con2(credentials, project_id, dataset_id):
 
 
 @pytest.fixture(scope="session")
+def con3(credentials, project_id, dataset_id):
+    con = ibis.bigquery.connect(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        credentials=credentials,
+        generate_job_id_prefix=lambda: "ibis_test_",
+    )
+    try:
+        con.sql("SELECT 1")
+    except gexc.Forbidden:
+        pytest.skip("Cannot access BigQuery")
+    else:
+        return con
+
+
+@pytest.fixture(scope="session")
 def alltypes(con):
     return con.table("functional_alltypes")
 
