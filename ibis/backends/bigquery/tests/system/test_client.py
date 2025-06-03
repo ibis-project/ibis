@@ -5,6 +5,7 @@ import datetime
 import decimal
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -17,6 +18,9 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.client import bigquery_param
 from ibis.util import gen_name, mktempd
+
+if TYPE_CHECKING:
+    from ibis.backends.bigquery import Backend
 
 
 def test_column_execute(alltypes, df):
@@ -549,63 +553,59 @@ def test_window_with_count_distinct(tmp_table, expr, query):
     tm.assert_frame_equal(result, expected)
 
 
-def test_create_job_with_custom_job_prefix(con):
-    job_id_prefix = "test_job_prefix_"
+def test_query_with_job_id_prefix(con3: Backend):
+    job_id_prefix = "ibis_test_"  # defined in con3 fixture
     query = "SELECT 1"
-    result = con.raw_sql(query, job_id_prefix=job_id_prefix)
+    result = con3.raw_sql(query)
     assert result.job_id.startswith(job_id_prefix)
 
 
-def test_read_csv_with_custom_load_job_prefix(con):
-    load_job_id_prefix = "test_load_job_prefix_"
-    drop_job_id_prefix = "test_drop_job_prefix_"
+def test_read_csv_with_custom_load_job_prefix(con3: Backend):
+    job_id_prefix = "ibis_test_"  # defined in con3 fixture
 
-    orig_load_table_from_file = con.client.load_table_from_file
-    con.client._load_table_from_file_num_calls = 0
+    orig_load_table_from_file = con3.client.load_table_from_file
+    con3.client._load_table_from_file_num_calls = 0
 
     def load_table_from_file(*args, **kwargs):
-        con.client._load_table_from_file_num_calls += 1
-        assert kwargs["job_id_prefix"] == load_job_id_prefix
-        return orig_load_table_from_file(*args, **kwargs)
+        con3.client._load_table_from_file_num_calls += 1
+        load_job = orig_load_table_from_file(*args, **kwargs)
+        assert load_job.job_id.startswith(job_id_prefix)
+        return load_job
 
-    con.client.load_table_from_file = load_table_from_file
+    con3.client.load_table_from_file = load_table_from_file
 
-    orig_query = con.client.query
-    con.client._query_num_calls = 0
+    orig_query = con3.client.query
+    con3.client._query_num_calls = 0
 
     def query(*args, **kwargs):
-        con.client._query_num_calls += 1
-        assert kwargs["job_id_prefix"] == drop_job_id_prefix
-        return orig_query(*args, **kwargs)
+        con3.client._query_num_calls += 1
+        query_job = orig_query(*args, **kwargs)
+        assert query_job.job_id.startswith(job_id_prefix)
+        return query_job
 
-    con.client.query = query
+    con3.client.query = query
 
-    orig_query_and_wait = con.client.query_and_wait
-    con.client._query_and_wait_num_calls = 0
+    orig_query_and_wait = con3.client.query_and_wait
+    con3.client._query_and_wait_num_calls = 0
 
     def query_and_wait(*args, **kwargs):
-        con.client._query_and_wait_num_calls += 1
+        con3.client._query_and_wait_num_calls += 1
         return orig_query_and_wait(*args, **kwargs)
 
-    con.client.query_and_wait = query_and_wait
+    con3.client.query_and_wait = query_and_wait
 
     with mktempd() as tmpdir:
         path = Path(tmpdir, "test_data.csv")
-        df = pd.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
+        df = pd.DataFrame({"a": [1], "b": ["x"]})
         df.to_csv(path, index=False)
     file_path = path.as_posix()
     table_name = gen_name("test_table_with_custom_job_prefixes")
 
-    con.read_csv(
-        file_path,
-        table_name=table_name,
-        load_job_id_prefix=load_job_id_prefix,
-        drop_job_id_prefix=drop_job_id_prefix,
-    )
+    con3.read_csv(file_path, table_name=table_name)
 
-    assert con.table(table_name).count().execute() > 0
-    assert con.client._load_table_from_file_num_calls == 1
-    assert con.client._query_num_calls == 1
-    assert con.client._query_and_wait_num_calls == 0, (
+    assert con3.table(table_name).count().execute() > 0
+    assert con3.client._load_table_from_file_num_calls == 1
+    assert con3.client._query_num_calls == 1
+    assert con3.client._query_and_wait_num_calls == 0, (
         "query_and_wait should not be called because it may not create a job"
     )
