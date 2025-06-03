@@ -392,12 +392,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         return self._read_file(path, table_name=table_name, job_config=job_config)
 
     def read_json(
-        self,
-        path: str | Path,
-        /,
-        *,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read newline-delimited JSON data into a BigQuery table.
 
@@ -424,11 +419,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             autodetect=True,
             **kwargs,
         )
-        return self._read_file(
-            path,
-            table_name=table_name,
-            job_config=job_config,
-        )
+        return self._read_file(path, table_name=table_name, job_config=job_config)
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         kwargs = {}
@@ -779,7 +770,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         return None
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        job = self.client.query(
+        job = self._client_query(
             query,
             job_config=bq.QueryJobConfig(dry_run=True, use_query_cache=False),
             project=self.billing_project,
@@ -796,11 +787,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         job_config = bq.job.QueryJobConfig(query_parameters=query_parameters or [])
 
-        self._client_query(
-            query,
-            job_config=job_config,
-            project=self.billing_project,
-        )
+        self._client_query(query, job_config=job_config, project=self.billing_project)
 
     @property
     def current_catalog(self) -> str:
