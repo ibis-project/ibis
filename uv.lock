@@ -2871,7 +2871,7 @@ docs = [
     { name = "jupyterlab", specifier = ">=4.2.5,<5" },
     { name = "jupyterlab-night", specifier = ">=0.4.6,<1" },
     { name = "jupyterlite-core", specifier = ">=0.5,<0.6" },
-    { name = "jupyterlite-pyodide-kernel", specifier = ">=0.5,<0.6" },
+    { name = "jupyterlite-pyodide-kernel", specifier = ">=0.5,<0.7" },
     { name = "lonboard", specifier = "==0.10.4" },
     { name = "nbclient", specifier = ">=0.8.0,<1" },
     { name = "plotly", specifier = ">=5.16.1,<6" },
