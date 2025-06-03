@@ -14,6 +14,7 @@ let
     {
       atpublic.hatchling = [ ];
       packaging.flit-core = [ ];
+      pandas-gbq.setuptools = [ ];
       parsy.setuptools = [ ];
       pathspec.flit-core = [ ];
       pluggy = {
