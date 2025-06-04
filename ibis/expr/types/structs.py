@@ -215,7 +215,10 @@ class StructValue(Value):
             return op.values[op.names.index(name)].to_expr()
         # and then do the same if the underlying value is a field access
         elif isinstance(op, ops.Literal):
-            return ops.Literal(op.value[name], dtype=self.fields[name]).to_expr()
+            return ops.Literal(
+                op.value[name] if op.value is not None else None,
+                dtype=self.fields[name],
+            ).to_expr()
         else:
             return ops.StructField(self, name).to_expr()
 

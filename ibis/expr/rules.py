@@ -92,7 +92,7 @@ def _promote_integral_binop(exprs, op):
     bounds, dtypes = [], []
     for arg in exprs:
         dtypes.append(arg.dtype)
-        if isinstance(arg, ops.Literal):
+        if isinstance(arg, ops.Literal) and arg.value is not None:
             bounds.append([arg.value])
         else:
             bounds.append(arg.dtype.bounds)

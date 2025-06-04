@@ -793,6 +793,14 @@ def test_literal_promotions(table, op, name, case, ex_type):
     assert result.type() == dt.dtype(ex_type)
 
 
+def test_null_literal_promotions():
+    added = ibis.literal(12, "int8") + ibis.literal(None, type="int16")
+    assert added.type() == dt.int32
+
+    added = ibis.null("int8") + ibis.literal(None, type="int16")
+    assert added.type() == dt.int32
+
+
 @pytest.mark.parametrize(
     ("op", "left_fn", "right_fn", "ex_type"),
     [
