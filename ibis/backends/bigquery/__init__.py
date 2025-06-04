@@ -168,6 +168,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.__session_dataset: bq.DatasetReference | None = None
+        self._generate_job_id_prefix: Callable[[], str | None] = lambda: None
 
     @property
     def _session_dataset(self):
@@ -175,29 +176,19 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             self.__session_dataset = self._make_session()
         return self.__session_dataset
 
-    @staticmethod
-    def _generate_job_id_prefix() -> str | None:
-        return None
-
     def _client_query(self, query: str, **kwargs) -> RowIterator:
-        """Run a query using the BigQuery client with a job_id_prefix if specified."""
+        """Run a query using the BigQuery client, possibly injecting a job_id_prefix."""
 
-        job_id_prefix = kwargs.pop("job_id_prefix", self._generate_job_id_prefix())
+        job_id_prefix = self._generate_job_id_prefix()
 
         if job_id_prefix is None:
             # If no job_id_prefix is provided, use the most efficient method
-            return self.client.query_and_wait(
-                query,
-                **kwargs,
-            )
+            return self.client.query_and_wait(query, **kwargs)
         else:
             # If a job_id_prefix is provided, use the method that allows for job_id_prefix
             # to be passed in
-            return self.client.query(
-                query,
-                **kwargs,
-                job_id_prefix=job_id_prefix,
-            ).result()
+            kwargs["job_id_prefix"] = job_id_prefix
+            return self.client.query(query, **kwargs).result()
 
     def _client_load_table_from_dataframe(
         self,
@@ -205,15 +196,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         destination: bq.TableReference | bq.Table | str,
         **kwargs,
     ) -> bq.LoadJob:
-        """Load a DataFrame into a BigQuery table with a job_id_prefix if specified."""
+        """Load a DataFrame into a BigQuery table, possibly with a job_id_prefix."""
 
-        job_id_prefix = kwargs.pop("job_id_prefix", self._generate_job_id_prefix())
-        return self.client.load_table_from_dataframe(
-            dataframe,
-            destination,
-            **kwargs,
-            job_id_prefix=job_id_prefix,
-        )
+        kwargs["job_id_prefix"] = self._generate_job_id_prefix()
+
+        return self.client.load_table_from_dataframe(dataframe, destination, **kwargs)
 
     def _client_load_table_from_file(
         self,
@@ -221,15 +208,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         destination: bq.TableReference | bq.Table | BqTableListItem | str,
         **kwargs,
     ) -> bq.LoadJob:
-        """Load a file into a BigQuery table with a job_id_prefix if specified."""
+        """Load data from a file into a BigQuery table, possibly with a job_id_prefix."""
 
-        job_id_prefix = kwargs.pop("job_id_prefix", self._generate_job_id_prefix())
-        return self.client.load_table_from_file(
-            file_obj,
-            destination,
-            **kwargs,
-            job_id_prefix=job_id_prefix,
-        )
+        kwargs["job_id_prefix"] = self._generate_job_id_prefix()
+
+        return self.client.load_table_from_file(file_obj, destination, **kwargs)
 
     def _client_load_table_from_uri(
         self,
@@ -237,15 +220,10 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         destination: bq.TableReference | bq.Table | BqTableListItem | str,
         **kwargs,
     ) -> bq.LoadJob:
-        """Load a file into a BigQuery table with a job_id_prefix if specified."""
+        """Load data from a URI into a BigQuery table, possibly with a job_id_prefix."""
 
-        job_id_prefix = kwargs.pop("job_id_prefix", self._generate_job_id_prefix())
-        return self.client.load_table_from_uri(
-            source_uris,
-            destination,
-            **kwargs,
-            job_id_prefix=job_id_prefix,
-        )
+        kwargs["job_id_prefix"] = self._generate_job_id_prefix()
+        return self.client.load_table_from_uri(source_uris, destination, **kwargs)
 
     def _finalize_memtable(self, name: str) -> None:
         table_ref = bq.TableReference(self._session_dataset, name)
@@ -583,9 +561,10 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         self.partition_column = partition_column
 
-        self._generate_job_id_prefix = (
-            generate_job_id_prefix or self._generate_job_id_prefix
-        )
+        if generate_job_id_prefix:
+            if not callable(generate_job_id_prefix):
+                raise TypeError("generate_job_id_prefix must be a callable function")
+            self._generate_job_id_prefix = generate_job_id_prefix
 
     @util.experimental
     @classmethod
@@ -787,7 +766,9 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         job_config = bq.job.QueryJobConfig(query_parameters=query_parameters or [])
 
-        self._client_query(query, job_config=job_config, project=self.billing_project)
+        return self._client_query(
+            query, job_config=job_config, project=self.billing_project
+        )
 
     @property
     def current_catalog(self) -> str:
