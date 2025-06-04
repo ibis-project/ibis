@@ -278,7 +278,6 @@ else:
 
             config = SparkSession.builder.appName("ibis_testing")
 
-            # load from properties file, yuck
             with Path(
                 os.environ.get(
                     "SPARK_CONFIG",
@@ -323,9 +322,7 @@ else:
                     "io.delta.sql.DeltaSparkSessionExtension",
                 )
 
-            spark = (
-                configure_spark_with_delta_pip(config).enableHiveSupport().getOrCreate()
-            )
+            spark = configure_spark_with_delta_pip(config).getOrCreate()
             return ibis.pyspark.connect(spark, **kw)
 
     class TestConfForStreaming(BackendTest):
