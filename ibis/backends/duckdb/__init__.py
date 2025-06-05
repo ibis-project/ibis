@@ -1419,13 +1419,24 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
+    ) -> pa.Table | pa.Array | pa.Scalar:
+        pa_table = self._to_pyarrow_table(expr, params=params, limit=limit, **kwargs)
+        return expr.__pyarrow_result__(pa_table)
+
+    def _to_pyarrow_table(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
     ) -> pa.Table:
         from ibis.backends.duckdb.converter import DuckDBPyArrowData
 
-        table = self._to_duckdb_relation(
-            expr, params=params, limit=limit, **kwargs
-        ).arrow()
-        return expr.__pyarrow_result__(table, data_mapper=DuckDBPyArrowData)
+        rel = self._to_duckdb_relation(expr, params=params, limit=limit, **kwargs)
+        pa_table = rel.arrow()
+        return DuckDBPyArrowData.convert_table(pa_table, expr.as_table().schema())
 
     def execute(
         self,
@@ -1443,9 +1454,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
 
         from ibis.backends.duckdb.converter import DuckDBPandasData
 
-        rel = self._to_duckdb_relation(expr, params=params, limit=limit, **kwargs)
-        table = rel.arrow()
-
+        pa_table = self._to_pyarrow_table(expr, params=params, limit=limit, **kwargs)
         df = pd.DataFrame(
             {
                 name: (
@@ -1459,11 +1468,10 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
                     )
                     else col.to_pandas()
                 )
-                for name, col in zip(table.column_names, table.columns)
+                for name, col in zip(pa_table.column_names, pa_table.columns)
             }
         )
-        df = DuckDBPandasData.convert_table(df, expr.as_table().schema())
-        return expr.__pandas_result__(df)
+        return expr.__pandas_result__(df, data_mapper=DuckDBPandasData)
 
     @util.experimental
     def to_torch(
