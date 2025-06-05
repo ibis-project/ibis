@@ -1496,7 +1496,7 @@ def test_list_catalogs_databases(con_create_catalog_database):
     ["trino", "clickhouse", "impala", "bigquery", "flink"],
     reason="Backend client does not conform to DB-API, subsequent op does not raise",
 )
-@pytest.mark.skip()
+@pytest.mark.skip
 def test_close_connection(con):
     if con.name == "pyspark":
         # It would be great if there were a simple way to say "give me a new

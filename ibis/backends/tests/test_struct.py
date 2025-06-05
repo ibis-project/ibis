@@ -252,8 +252,8 @@ def test_keyword_fields(con, nullable):
     reason="doesn't seem to support IN-style subqueries on structs",
 )
 @pytest.mark.xfail_version(
-    pyspark=["pyspark<3.5"],
-    reason="requires pyspark 3.5",
+    pyspark=["pyspark<3.4"],
+    reason="requires pyspark 3.4",
     raises=PySparkAnalysisException,
 )
 @pytest.mark.notimpl(

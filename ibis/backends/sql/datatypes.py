@@ -1383,6 +1383,15 @@ class DatabricksType(SqlglotType):
 
     _from_sqlglot_JSON = _from_sqlglot_VARIANT
 
+    @classmethod
+    def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+        code = typecode.TIMESTAMPNTZ if dtype.timezone is None else typecode.TIMESTAMPTZ
+        if dtype.scale is not None:
+            scale = sge.DataTypeParam(this=sge.Literal.number(dtype.scale))
+            return sge.DataType(this=code, expressions=[scale])
+        else:
+            return sge.DataType(this=code)
+
 
 class AthenaType(SqlglotType):
     dialect = "athena"

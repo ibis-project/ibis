@@ -1,19 +1,14 @@
 from __future__ import annotations
 
-import pyspark
+from functools import partial
+from inspect import isclass
+
 import pyspark.sql.types as pt
-from packaging.version import parse as vparse
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats import SchemaMapper, TypeMapper
-
-# DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
-# PySpark until version 3.3
-PYSPARK_33 = vparse(pyspark.__version__) >= vparse("3.3")
-PYSPARK_35 = vparse(pyspark.__version__) >= vparse("3.5")
-
 
 _from_pyspark_dtypes = {
     pt.BinaryType: dt.Binary,
@@ -27,52 +22,64 @@ _from_pyspark_dtypes = {
     pt.NullType: dt.Null,
     pt.ShortType: dt.Int16,
     pt.StringType: dt.String,
-    pt.TimestampType: dt.Timestamp,
 }
 
-_to_pyspark_dtypes = {v: k for k, v in _from_pyspark_dtypes.items()}
+try:
+    _from_pyspark_dtypes[pt.TimestampNTZType] = dt.Timestamp
+except AttributeError:
+    _from_pyspark_dtypes[pt.TimestampType] = dt.Timestamp
+else:
+    _from_pyspark_dtypes[pt.TimestampType] = partial(dt.Timestamp, timezone="UTC")
+
+_to_pyspark_dtypes = {
+    v: k
+    for k, v in _from_pyspark_dtypes.items()
+    if isclass(v) and not issubclass(v, dt.Timestamp) and not isinstance(v, partial)
+}
 _to_pyspark_dtypes[dt.JSON] = pt.StringType
 _to_pyspark_dtypes[dt.UUID] = pt.StringType
-
-
-if PYSPARK_33:
-    _pyspark_interval_units = {
-        pt.DayTimeIntervalType.SECOND: "s",
-        pt.DayTimeIntervalType.MINUTE: "m",
-        pt.DayTimeIntervalType.HOUR: "h",
-        pt.DayTimeIntervalType.DAY: "D",
-    }
 
 
 class PySparkType(TypeMapper):
     @classmethod
     def to_ibis(cls, typ, nullable=True):
         """Convert a pyspark type to an ibis type."""
+        from ibis.backends.pyspark import SUPPORTS_TIMESTAMP_NTZ
+
         if isinstance(typ, pt.DecimalType):
             return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
         elif isinstance(typ, pt.ArrayType):
             return dt.Array(cls.to_ibis(typ.elementType), nullable=nullable)
         elif isinstance(typ, pt.MapType):
             return dt.Map(
-                cls.to_ibis(typ.keyType),
-                cls.to_ibis(typ.valueType),
-                nullable=nullable,
+                cls.to_ibis(typ.keyType), cls.to_ibis(typ.valueType), nullable=nullable
             )
         elif isinstance(typ, pt.StructType):
             fields = {f.name: cls.to_ibis(f.dataType) for f in typ.fields}
 
             return dt.Struct(fields, nullable=nullable)
-        elif PYSPARK_33 and isinstance(typ, pt.DayTimeIntervalType):
+        elif isinstance(typ, pt.DayTimeIntervalType):
+            pyspark_interval_units = {
+                pt.DayTimeIntervalType.SECOND: "s",
+                pt.DayTimeIntervalType.MINUTE: "m",
+                pt.DayTimeIntervalType.HOUR: "h",
+                pt.DayTimeIntervalType.DAY: "D",
+            }
+
             if (
                 typ.startField == typ.endField
-                and typ.startField in _pyspark_interval_units
+                and typ.startField in pyspark_interval_units
             ):
-                unit = _pyspark_interval_units[typ.startField]
+                unit = pyspark_interval_units[typ.startField]
                 return dt.Interval(unit, nullable=nullable)
             else:
                 raise com.IbisTypeError(f"{typ!r} couldn't be converted to Interval")
-        elif PYSPARK_35 and isinstance(typ, pt.TimestampNTZType):
-            return dt.Timestamp(nullable=nullable)
+        elif isinstance(typ, pt.TimestampNTZType):
+            if SUPPORTS_TIMESTAMP_NTZ:
+                return dt.Timestamp(nullable=nullable)
+            raise com.UnsupportedBackendType(
+                "PySpark<3.4 doesn't properly support timestamps without a timezone"
+            )
         elif isinstance(typ, pt.UserDefinedType):
             return cls.to_ibis(typ.sqlType(), nullable=nullable)
         else:
@@ -85,6 +92,8 @@ class PySparkType(TypeMapper):
 
     @classmethod
     def from_ibis(cls, dtype):
+        from ibis.backends.pyspark import SUPPORTS_TIMESTAMP_NTZ
+
         if dtype.is_decimal():
             return pt.DecimalType(dtype.precision, dtype.scale)
         elif dtype.is_array():
@@ -97,11 +106,21 @@ class PySparkType(TypeMapper):
             value_contains_null = dtype.value_type.nullable
             return pt.MapType(key_type, value_type, value_contains_null)
         elif dtype.is_struct():
-            fields = [
-                pt.StructField(n, cls.from_ibis(t), t.nullable)
-                for n, t in dtype.fields.items()
-            ]
-            return pt.StructType(fields)
+            return pt.StructType(
+                [
+                    pt.StructField(field, cls.from_ibis(dtype), dtype.nullable)
+                    for field, dtype in dtype.fields.items()
+                ]
+            )
+        elif dtype.is_timestamp():
+            if dtype.timezone is not None:
+                return pt.TimestampType()
+            else:
+                if not SUPPORTS_TIMESTAMP_NTZ:
+                    raise com.UnsupportedBackendType(
+                        "PySpark<3.4 doesn't properly support timestamps without a timezone"
+                    )
+                return pt.TimestampNTZType()
         else:
             try:
                 return _to_pyspark_dtypes[type(dtype)]()
@@ -114,11 +133,7 @@ class PySparkType(TypeMapper):
 class PySparkSchema(SchemaMapper):
     @classmethod
     def from_ibis(cls, schema):
-        fields = [
-            pt.StructField(name, PySparkType.from_ibis(dtype), dtype.nullable)
-            for name, dtype in schema.items()
-        ]
-        return pt.StructType(fields)
+        return PySparkType.from_ibis(schema.as_struct())
 
     @classmethod
     def to_ibis(cls, schema):

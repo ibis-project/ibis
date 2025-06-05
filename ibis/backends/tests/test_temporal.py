@@ -42,6 +42,7 @@ from ibis.backends.tests.errors import (
 )
 from ibis.common.annotations import ValidationError
 from ibis.conftest import IS_SPARK_REMOTE
+from ibis.util import gen_name
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -292,9 +293,42 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
 @pytest.mark.parametrize(
     ("ibis_unit", "pandas_unit"),
     [
-        param("Y", "Y", id="year"),
-        param("Q", "Q", id="quarter"),
-        param("M", "M", id="month"),
+        param(
+            "Y",
+            "Y",
+            id="year",
+            marks=[
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                    raises=UserWarning,
+                ),
+            ],
+        ),
+        param(
+            "Q",
+            "Q",
+            id="quarter",
+            marks=[
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                    raises=UserWarning,
+                ),
+            ],
+        ),
+        param(
+            "M",
+            "M",
+            id="month",
+            marks=[
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                    raises=UserWarning,
+                ),
+            ],
+        ),
         param(
             "W",
             "W",
@@ -305,9 +339,24 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                     raises=AssertionError,
                     reason="implemented, but doesn't match other backends",
                 ),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                    raises=UserWarning,
+                ),
             ],
         ),
-        param("D", "D"),
+        param(
+            "D",
+            "D",
+            marks=[
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                    raises=UserWarning,
+                ),
+            ],
+        ),
         param(
             "h",
             "h",
@@ -430,6 +479,11 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
             ],
         ),
     ],
+)
+@pytest.mark.xfail_version(
+    pyspark=["pyspark<3.4"],
+    reason="no support for timezoneless timestamps",
+    raises=UserWarning,
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 def test_date_truncate(backend, alltypes, df, unit):
@@ -767,6 +821,10 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=PySparkConnectGrpcException,
                     reason="arrow conversion breaks",
                 ),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
+                ),
                 pytest.mark.notyet(
                     ["databricks"],
                     raises=AssertionError,
@@ -826,6 +884,10 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     condition=IS_SPARK_REMOTE,
                     raises=PySparkConnectGrpcException,
                     reason="arrow conversion breaks",
+                ),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4"],
+                    reason="no support for timezoneless timestamps",
                 ),
                 pytest.mark.notyet(
                     ["databricks"],
@@ -937,7 +999,8 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
         comparison_fn(alltypes.timestamp_col.cast("timestamp('UTC')"), ts)
     )
 
-    col = df.timestamp_col.dt.tz_localize("UTC")
+    if getattr((col := df.timestamp_col).dtype, "tz", None) is None:
+        col = df.timestamp_col.dt.tz_localize("UTC")
     expected = df[comparison_fn(col, ts)]
     result = con.execute(expr)
 
@@ -970,7 +1033,8 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
 
     ts = pd.Timestamp(ts.item(), tz="UTC")
 
-    col = df.timestamp_col.dt.tz_localize("UTC")
+    if getattr((col := df.timestamp_col).dtype, "tz", None) is None:
+        col = df.timestamp_col.dt.tz_localize("UTC")
     expected = df[comparison_fn(col, ts)]
     result = con.execute(expr)
 
@@ -2343,3 +2407,43 @@ def test_simple_unix_date_offset(con):
     result = con.execute(expr)
     delta = datetime.date(2023, 4, 7) - datetime.date(1970, 1, 1)
     assert result == delta.days
+
+
+timestamp_with_timezone_params = {
+    "clickhouse": ("UTC", 0, True),
+    "datafusion": ("+00:00", 9, False),
+    "duckdb": ("UTC", 6, True),
+    "impala": (None, None, True),
+    "oracle": ("UTC", 6, True),
+    "polars": ("UTC", 9, True),
+    "trino": ("UTC", 3, True),
+}
+
+
+@pytest.mark.notyet(
+    ["druid"],
+    raises=NotImplementedError,
+    reason="druid doesn't implement `create_table`",
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=com.IbisError,
+    reason="Flink can only use in-memory objects for `create_table`",
+)
+def test_basic_timestamp_with_timezone(con):
+    name = gen_name("tmp_tz")
+    ts = "2023-01-07 13:20:05.561021"
+    dtype = dt.Timestamp(timezone="UTC")
+    colname = "ts"
+    timezone, scale, nullable = timestamp_with_timezone_params.get(
+        con.name, ("UTC", None, True)
+    )
+    result = con.create_table(
+        name, ibis.timestamp(ts).cast(dtype).name(colname).as_table()
+    )
+    try:
+        assert result.schema() == ibis.schema(
+            {colname: dtype.copy(timezone=timezone, scale=scale, nullable=nullable)}
+        )
+    finally:
+        con.drop_table(name, force=True)

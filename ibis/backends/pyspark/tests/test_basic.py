@@ -9,7 +9,7 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.common.exceptions import IbisTypeError
+import ibis.common.exceptions as com
 
 pyspark = pytest.importorskip("pyspark")
 
@@ -119,30 +119,31 @@ def test_alias_after_select(t):
 
 
 def test_interval_columns_invalid(con):
-    df_interval_invalid = con._session.createDataFrame(
-        [[timedelta(days=10, hours=10, minutes=10, seconds=10)]],
-        pt.StructType(
-            [
-                pt.StructField(
-                    "interval_day_hour",
-                    pt.DayTimeIntervalType(
-                        pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.SECOND
-                    ),
-                )
-            ]
-        ),
+    data = [[timedelta(days=10, hours=10, minutes=10, seconds=10)]]
+    schema = pt.StructType(
+        [
+            pt.StructField(
+                "interval_day_hour",
+                pt.DayTimeIntervalType(
+                    pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.SECOND
+                ),
+            )
+        ]
     )
 
-    df_interval_invalid.createTempView("invalid_interval_table")
-    msg = r"DayTimeIntervalType.+ couldn't be converted to Interval"
-    with pytest.raises(IbisTypeError, match=msg):
-        con.table("invalid_interval_table")
+    name = "invalid_interval_table"
+
+    con._session.createDataFrame(data, schema).createTempView(name)
+
+    with pytest.raises(
+        com.IbisTypeError, match="DayTimeIntervalType.+ couldn't be converted"
+    ):
+        con.table(name)
 
 
 def test_string_literal_backslash_escaping(con):
-    expr = ibis.literal("\\d\\e")
-    result = con.execute(expr)
-    assert result == "\\d\\e"
+    input = r"\d\e"
+    assert con.execute(ibis.literal(input)) == input
 
 
 def test_connect_without_explicit_session():
