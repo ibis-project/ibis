@@ -22,7 +22,13 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, DirectExampleLoader, UrlFromPath
+from ibis.backends import (
+    CanCreateDatabase,
+    DirectExampleLoader,
+    HasCurrentCatalog,
+    HasCurrentDatabase,
+    UrlFromPath,
+)
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
 from ibis.common.dispatch import lazy_singledispatch
@@ -66,7 +72,14 @@ class _Settings:
         return repr(self.con.sql("from duckdb_settings()"))
 
 
-class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
+class Backend(
+    SQLBackend,
+    CanCreateDatabase,
+    HasCurrentCatalog,
+    HasCurrentDatabase,
+    UrlFromPath,
+    DirectExampleLoader,
+):
     name = "duckdb"
     compiler = sc.duckdb.compiler
 
@@ -237,21 +250,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
         return self.table(name, database=(catalog, database))
 
     def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
-        """Construct a table expression.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Database name
-
-        Returns
-        -------
-        Table
-            Table expression
-
-        """
         table_loc = self._to_sqlglot_table(database)
 
         # TODO: set these to better defaults
@@ -857,57 +855,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
     def list_tables(
         self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
-        """List tables and views.
-
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            Regex to filter by table/view name.
-        database
-            Database location. If not passed, uses the current database.
-
-            By default uses the current `database` (`self.current_database`) and
-            `catalog` (`self.current_catalog`).
-
-            To specify a table in a separate catalog, you can pass in the
-            catalog and database as a string `"catalog.database"`, or as a tuple of
-            strings `("catalog", "database")`.
-
-        Returns
-        -------
-        list[str]
-            List of table and view names.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> con = ibis.duckdb.connect()
-        >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
-        >>> con.list_tables()
-        ['foo']
-        >>> bar = con.create_view("bar", foo)
-        >>> con.list_tables()
-        ['bar', 'foo']
-        >>> con.create_database("my_database")
-        >>> con.list_tables(database="my_database")
-        []
-        >>> con.raw_sql("CREATE TABLE my_database.baz (a INTEGER)")  # doctest: +ELLIPSIS
-        <duckdb.duckdb.DuckDBPyConnection object at 0x...>
-        >>> con.list_tables(database="my_database")
-        ['baz']
-
-        """
         table_loc = self._to_sqlglot_table(database)
 
         catalog = table_loc.catalog or self.current_catalog

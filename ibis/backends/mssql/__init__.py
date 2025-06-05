@@ -22,7 +22,13 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateCatalog, CanCreateDatabase, PyArrowExampleLoader
+from ibis.backends import (
+    CanCreateCatalog,
+    CanCreateDatabase,
+    HasCurrentCatalog,
+    HasCurrentDatabase,
+    PyArrowExampleLoader,
+)
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, C
 
@@ -75,7 +81,14 @@ def datetimeoffset_to_datetime(value):
 # Databases: sys.schemas
 
 
-class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, PyArrowExampleLoader):
+class Backend(
+    SQLBackend,
+    CanCreateCatalog,
+    CanCreateDatabase,
+    HasCurrentCatalog,
+    HasCurrentDatabase,
+    PyArrowExampleLoader,
+):
     name = "mssql"
     compiler = sc.mssql.compiler
     supports_create_or_replace = False
@@ -544,30 +557,6 @@ GO"""
     def list_tables(
         self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
-        """List the tables in the database.
-
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Table location. If not passed, uses the current catalog and database.
-
-            To specify a table in a separate catalog, you can pass in the
-            catalog and database as a string `"catalog.database"`, or as a tuple of
-            strings `("catalog", "database")`.
-        """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
