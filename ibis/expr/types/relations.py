@@ -21,8 +21,9 @@ from ibis import util
 from ibis.common.deferred import Deferred, Resolver
 from ibis.common.selectors import Expandable, Selector
 from ibis.expr.rewrites import DerefMap
-from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
+from ibis.expr.types.core import Expr
 from ibis.expr.types.generic import Value, literal
+from ibis.expr.types.rich import FixedTextJupyterMixin, to_rich
 from ibis.expr.types.temporal import TimestampColumn
 from ibis.util import deprecated, experimental
 
@@ -143,7 +144,7 @@ def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
 
 
 @public
-class Table(Expr, _FixedTextJupyterMixin):
+class Table(Expr, FixedTextJupyterMixin):
     """An immutable and lazy dataframe.
 
     Analogous to a SQL table or a pandas DataFrame. A table expression contains
@@ -569,8 +570,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …        │ … │
         └─────────┴──────────┴───┘
         """
-        from ibis.expr.types.pretty import to_rich
-
         return to_rich(
             self,
             max_columns=max_columns,

@@ -13,7 +13,8 @@ import ibis.expr.operations as ops
 from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
-from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
+from ibis.expr.types.core import Expr, _binop
+from ibis.expr.types.rich import FixedTextJupyterMixin, to_rich
 from ibis.util import deprecated, experimental, promote_list
 
 if TYPE_CHECKING:
@@ -1514,7 +1515,7 @@ class Scalar(Value):
 
 
 @public
-class Column(Value, _FixedTextJupyterMixin):
+class Column(Value, FixedTextJupyterMixin):
     # Higher than numpy objects
     __array_priority__ = 20
 
@@ -1575,8 +1576,6 @@ class Column(Value, _FixedTextJupyterMixin):
         │ …      │
         └────────┘
         """
-        from ibis.expr.types.pretty import to_rich
-
         return to_rich(
             self,
             max_rows=max_rows,
