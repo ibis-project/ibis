@@ -166,6 +166,7 @@ website:
             - reference/expression-collections.qmd
             - reference/expression-json.qmd
             - reference/expression-geospatial.qmd
+            - reference/expression-misc.qmd
 
         - section: Type system
           contents:
