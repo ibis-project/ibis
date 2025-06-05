@@ -6,6 +6,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
+from ibis.backends.tests.conftest import NO_MAP_SUPPORT_MARKS
 from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     Py4JJavaError,
@@ -17,18 +18,7 @@ pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
 pa = pytest.importorskip("pyarrow")
 
-pytestmark = [
-    pytest.mark.never(
-        ["sqlite", "mysql", "mssql"], reason="Unlikely to ever add map support"
-    ),
-    pytest.mark.notyet(
-        ["bigquery", "impala"], reason="Backend doesn't yet implement map types"
-    ),
-    pytest.mark.notimpl(
-        ["exasol", "polars", "druid", "oracle"],
-        reason="Not yet implemented in ibis",
-    ),
-]
+pytestmark = NO_MAP_SUPPORT_MARKS
 
 mark_notyet_postgres = pytest.mark.notyet(
     "postgres", reason="only supports string -> string"
