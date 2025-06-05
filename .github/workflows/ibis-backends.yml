@@ -116,6 +116,7 @@ jobs:
               - --extra examples
           - name: sqlite
             title: SQLite
+            serial: true
             extras:
               - --extra sqlite
           - name: datafusion
@@ -130,6 +131,7 @@ jobs:
               - --extra deltalake
           - name: mysql
             title: MySQL
+            serial: true
             services:
               - mysql
             extras:
@@ -299,6 +301,7 @@ jobs:
             backend:
               name: mysql
               title: MySQL
+              serial: true
               extras:
                 - --extra mysql
                 - --extra geospatial
