@@ -1248,8 +1248,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
     @abc.abstractmethod
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: ibis.Schema | None = None,
@@ -1263,6 +1262,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         ----------
         name
             Name of the new table.
+            If None, a unique name will be generated.
         obj
             An Ibis table expression or pandas table that will be used to
             extract the schema and the data of the new table. If not provided,
@@ -1283,6 +1283,13 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         Table
             The table that was created.
         """
+
+    @staticmethod
+    def _create_table_name(name: str | None) -> str:
+        """Util for subclasses to generate a table name."""
+        if name is None:
+            name = util.gen_name("table")
+        return name
 
     @abc.abstractmethod
     def drop_table(
