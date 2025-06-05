@@ -197,7 +197,7 @@ postgres = [
   "rich>=12.4.4",
 ]
 pyspark = [
-  "pyspark>=3.3.3,<4",
+  "pyspark>=3.3.3,<5",
   "packaging>=21.3",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
