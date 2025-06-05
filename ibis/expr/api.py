@@ -45,6 +45,7 @@ from ibis.expr.types import (
 from ibis.util import deprecated, experimental
 
 if TYPE_CHECKING:
+    import uuid as pyuuid
     from collections.abc import Iterable, Sequence
     from pathlib import Path
 
@@ -777,22 +778,33 @@ def random() -> ir.FloatingScalar:
     return ops.RandomScalar().to_expr()
 
 
-def uuid() -> ir.UUIDScalar:
-    """Return a random UUID version 4 value.
+def uuid(value: str | pyuuid.UUID | None = None, /) -> ir.UUIDScalar:
+    """Return or generate a UUID value.
 
-    Similar to [('uuid.uuid4`) in the Python standard library.
+    Parameters
+    ----------
+    value
+        A `uuid.UUID` object or a UUID str such as
+        'b41c7dfd-1513-4358-917e-9ea322b0d3c5'.
+        If `None`, a random UUIDv4 is generated, similar to
+        [`uuid.uuid4()`](https://docs.python.org/3/library/uuid.html#uuid.uuid4)
+        from the Python standard library.
 
     Examples
     --------
     >>> from ibis.interactive import *
     >>> ibis.uuid()  # doctest: +SKIP
     UUID('e57e927b-aed2-483b-9140-dc32a26cad95')
+    >>> ibis.uuid("b41c7dfd-1513-4358-917e-9ea322b0d3c5")  # doctest: +SKIP
+    UUID('b41c7dfd-1513-4358-917e-9ea322b0d3c5')
 
     Returns
     -------
     UUIDScalar
         Random UUID value expression
     """
+    if value is not None:
+        return literal(value, type=dt.UUID())
     return ops.RandomUUID().to_expr()
 
 

@@ -156,6 +156,11 @@ def infer_null(value: dt.Null | None) -> dt.Null:
     return dt.null
 
 
+@infer.register(uuid.UUID)
+def infer_uuid(value: uuid.UUID) -> dt.UUID:
+    return dt.uuid
+
+
 @infer.register((ipaddress.IPv4Address, ipaddress.IPv6Address))
 def infer_ipaddr(
     _: ipaddress.IPv4Address | ipaddress.IPv6Address | None,
