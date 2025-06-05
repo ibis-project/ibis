@@ -588,19 +588,23 @@ class Value(Expr):
     def isin(
         self, values: ir.ArrayValue | ir.Column | Iterable[Value], /
     ) -> ir.BooleanValue:
-        """Check whether this expression's values are in `values`.
+        """Check whether this expression is in `values`.
 
-        `NULL` values are propagated in the output. See examples for details.
+        `NULL` values in the input are propagated in the output.
+        If the `values` argument contains any `NULL` values,
+        then ibis follows the SQL behavior of returning `NULL` (not False)
+        when `self` is not present.
+        See examples below for details.
 
         Parameters
         ----------
         values
-            Values or expression to check for membership
+            Values or expression to check for membership.
 
         Returns
         -------
         BooleanValue
-            Expression indicating membership
+            True if `self` is contained in `values`, False otherwise.
 
         See Also
         --------
@@ -610,91 +614,67 @@ class Value(Expr):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"a": [1, 2, 3], "b": [2, 3, 4]})
-        >>> t
-        ┏━━━━━━━┳━━━━━━━┓
-        ┃ a     ┃ b     ┃
-        ┡━━━━━━━╇━━━━━━━┩
-        │ int64 │ int64 │
-        ├───────┼───────┤
-        │     1 │     2 │
-        │     2 │     3 │
-        │     3 │     4 │
-        └───────┴───────┘
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "a": [1, 2, 3, None],
+        ...         "b": [1, 2, 9, None],
+        ...     },
+        ...     schema={"a": int, "b": int},
+        ... )
 
-        Check against a literal sequence of values
+        Checking for values in literals:
 
-        >>> t.a.isin([1, 2])
-        ┏━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ InValues(a, (1, 2)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean             │
-        ├─────────────────────┤
-        │ True                │
-        │ True                │
-        │ False               │
-        └─────────────────────┘
+        >>> t.mutate(
+        ...     a_in_12=t.a.isin([1, 2]),
+        ...     a_in_12None=t.a.isin([1, 2, None]),
+        ... )
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ a     ┃ b     ┃ a_in_12 ┃ a_in_12None ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ int64 │ int64 │ boolean │ boolean     │
+        ├───────┼───────┼─────────┼─────────────┤
+        │     1 │     1 │ True    │ True        │
+        │     2 │     2 │ True    │ True        │
+        │     3 │     9 │ False   │ NULL        │
+        │  NULL │  NULL │ NULL    │ NULL        │
+        └───────┴───────┴─────────┴─────────────┘
 
-        Check against a derived expression
+        Checking for values in columns of the same table:
 
-        >>> t.a.isin(t.b + 1)
-        ┏━━━━━━━━━━━━━━━┓
-        ┃ InSubquery(a) ┃
-        ┡━━━━━━━━━━━━━━━┩
-        │ boolean       │
-        ├───────────────┤
-        │ False         │
-        │ False         │
-        │ True          │
-        └───────────────┘
+        >>> t.mutate(
+        ...     a_in_b=t.a.isin(t.b),
+        ...     a_in_b_no_null=t.a.isin(t.b.fill_null(0)),
+        ...     a_in_b_plus_1=t.a.isin(t.b + 1),
+        ... )
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+        ┃ a     ┃ b     ┃ a_in_b  ┃ a_in_b_no_null ┃ a_in_b_plus_1 ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+        │ int64 │ int64 │ boolean │ boolean        │ boolean       │
+        ├───────┼───────┼─────────┼────────────────┼───────────────┤
+        │     1 │     1 │ True    │ True           │ NULL          │
+        │     2 │     2 │ True    │ True           │ True          │
+        │     3 │     9 │ NULL    │ False          │ True          │
+        │  NULL │  NULL │ NULL    │ NULL           │ NULL          │
+        └───────┴───────┴─────────┴────────────────┴───────────────┘
 
-        Check against a column from a different table
+        Checking for values in a column from a different table:
 
-        >>> t2 = ibis.memtable({"x": [99, 2, 99]})
-        >>> t.a.isin(t2.x)
-        ┏━━━━━━━━━━━━━━━┓
-        ┃ InSubquery(a) ┃
-        ┡━━━━━━━━━━━━━━━┩
-        │ boolean       │
-        ├───────────────┤
-        │ False         │
-        │ True          │
-        │ False         │
-        └───────────────┘
-
-        `NULL` behavior
-
-        >>> t = ibis.memtable({"x": [1, 2]})
-        >>> t.x.isin([1, None])
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ InValues(x, (1, None)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean                │
-        ├────────────────────────┤
-        │ True                   │
-        │ NULL                   │
-        └────────────────────────┘
-        >>> t = ibis.memtable({"x": [1, None, 2]})
-        >>> t.x.isin([1])
-        ┏━━━━━━━━━━━━━━━━━━━┓
-        ┃ InValues(x, (1,)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━┩
-        │ boolean           │
-        ├───────────────────┤
-        │ True              │
-        │ NULL              │
-        │ False             │
-        └───────────────────┘
-        >>> t.x.isin([3])
-        ┏━━━━━━━━━━━━━━━━━━━┓
-        ┃ InValues(x, (3,)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━┩
-        │ boolean           │
-        ├───────────────────┤
-        │ False             │
-        │ NULL              │
-        │ False             │
-        └───────────────────┘
+        >>> t2 = ibis.memtable({"x": [1, 2, 99], "y": [1, 2, None]})
+        >>> t.mutate(
+        ...     a_in_x=t.a.isin(t2.x),
+        ...     a_in_y=t.a.isin(t2.y),
+        ...     a_in_y_plus_1=t.a.isin(t2.y + 1),
+        ... )
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+        ┃ a     ┃ b     ┃ a_in_x  ┃ a_in_y  ┃ a_in_y_plus_1 ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+        │ int64 │ int64 │ boolean │ boolean │ boolean       │
+        ├───────┼───────┼─────────┼─────────┼───────────────┤
+        │     1 │     1 │ True    │ True    │ NULL          │
+        │     2 │     2 │ True    │ True    │ True          │
+        │     3 │     9 │ False   │ NULL    │ True          │
+        │  NULL │  NULL │ NULL    │ NULL    │ NULL          │
+        └───────┴───────┴─────────┴─────────┴───────────────┘
         """
         from ibis.expr.types import ArrayValue
 
@@ -708,49 +688,91 @@ class Value(Expr):
     def notin(
         self, values: ir.ArrayValue | ir.Column | Iterable[Value], /
     ) -> ir.BooleanValue:
-        """Check whether this expression's values are not in `values`.
+        """Check whether this expression is not in `values`.
 
         Opposite of [`Value.isin()`](./expression-generic.qmd#ibis.expr.types.generic.Value.isin).
+
+        `NULL` values in the input are propagated in the output.
+        If the `values` argument contains any `NULL` values,
+        then ibis follows the SQL behavior of returning `NULL` (not False)
+        when `self` is present.
+        See examples below for details.
 
         Parameters
         ----------
         values
-            Values or expression to check for lack of membership
+            Values or expression to check for lack of membership.
 
         Returns
         -------
         BooleanValue
-            Whether `self`'s values are not contained in `values`
+            True if self is not in `values`, False otherwise.
 
         Examples
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch().limit(5)
-        >>> t.bill_depth_mm
-        ┏━━━━━━━━━━━━━━━┓
-        ┃ bill_depth_mm ┃
-        ┡━━━━━━━━━━━━━━━┩
-        │ float64       │
-        ├───────────────┤
-        │          18.7 │
-        │          17.4 │
-        │          18.0 │
-        │          NULL │
-        │          19.3 │
-        └───────────────┘
-        >>> t.bill_depth_mm.notin([18.7, 18.1])
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ Not(InValues(bill_depth_mm, (18.7, 18.1))) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean                                    │
-        ├────────────────────────────────────────────┤
-        │ False                                      │
-        │ True                                       │
-        │ True                                       │
-        │ NULL                                       │
-        │ True                                       │
-        └────────────────────────────────────────────┘
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "a": [1, 2, 3, None],
+        ...         "b": [1, 2, 9, None],
+        ...     },
+        ...     schema={"a": int, "b": int},
+        ... )
+
+        Checking for values in literals:
+
+        >>> t.mutate(
+        ...     a_notin_12=t.a.notin([1, 2]),
+        ...     a_notin_12None=t.a.notin([1, 2, None]),
+        ... )
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ a     ┃ b     ┃ a_notin_12 ┃ a_notin_12None ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ int64 │ int64 │ boolean    │ boolean        │
+        ├───────┼───────┼────────────┼────────────────┤
+        │     1 │     1 │ False      │ False          │
+        │     2 │     2 │ False      │ False          │
+        │     3 │     9 │ True       │ NULL           │
+        │  NULL │  NULL │ NULL       │ NULL           │
+        └───────┴───────┴────────────┴────────────────┘
+
+        Checking for values in columns of the same table:
+
+        >>> t.mutate(
+        ...     a_notin_b=t.a.notin(t.b),
+        ...     a_notin_b_no_null=t.a.notin(t.b.fill_null(0)),
+        ...     a_notin_b_plus_1=t.a.notin(t.b + 1),
+        ... )
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+        ┃ a     ┃ b     ┃ a_notin_b ┃ a_notin_b_no_null ┃ a_notin_b_plus_1 ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+        │ int64 │ int64 │ boolean   │ boolean           │ boolean          │
+        ├───────┼───────┼───────────┼───────────────────┼──────────────────┤
+        │     1 │     1 │ False     │ False             │ NULL             │
+        │     2 │     2 │ False     │ False             │ False            │
+        │     3 │     9 │ NULL      │ True              │ False            │
+        │  NULL │  NULL │ NULL      │ NULL              │ NULL             │
+        └───────┴───────┴───────────┴───────────────────┴──────────────────┘
+
+        Checking for values in a column from a different table:
+
+        >>> t2 = ibis.memtable({"x": [1, 2, 99], "y": [1, 2, None]})
+        >>> t.mutate(
+        ...     a_notin_x=t.a.notin(t2.x),
+        ...     a_notin_y=t.a.notin(t2.y),
+        ...     a_notin_y_plus_1=t.a.notin(t2.y + 1),
+        ... )
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+        ┃ a     ┃ b     ┃ a_notin_x ┃ a_notin_y ┃ a_notin_y_plus_1 ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+        │ int64 │ int64 │ boolean   │ boolean   │ boolean          │
+        ├───────┼───────┼───────────┼───────────┼──────────────────┤
+        │     1 │     1 │ False     │ False     │ NULL             │
+        │     2 │     2 │ False     │ False     │ False            │
+        │     3 │     9 │ True      │ NULL      │ False            │
+        │  NULL │  NULL │ NULL      │ NULL      │ NULL             │
+        └───────┴───────┴───────────┴───────────┴──────────────────┘
         """
         return ~self.isin(values)
 
