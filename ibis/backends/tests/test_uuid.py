@@ -10,8 +10,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import PyAthenaOperationalError
 
-RAW_TEST_UUID = "08f48812-7948-4718-96c7-27fa6a398db6"
-TEST_UUID = uuid.UUID(RAW_TEST_UUID)
+TEST_UUID_STR = "08f48812-7948-4718-96c7-27fa6a398db6"
+TEST_UUID = uuid.UUID(TEST_UUID_STR)
 
 UUID_BACKEND_TYPE = {
     "bigquery": "STRING",
@@ -32,10 +32,24 @@ UUID_BACKEND_TYPE = {
 
 @pytest.mark.notimpl(["polars"], raises=NotImplementedError)
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
-def test_uuid_literal(con, backend):
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param(
+            lambda: ibis.literal(TEST_UUID_STR, type=dt.uuid), id="literal_str"
+        ),
+        pytest.param(
+            lambda: ibis.literal(TEST_UUID, type=dt.uuid), id="literal_uuid_typed"
+        ),
+        pytest.param(lambda: ibis.literal(TEST_UUID), id="literal_uuid_untyped"),
+        pytest.param(lambda: ibis.uuid(TEST_UUID_STR), id="uuid_str"),
+        pytest.param(lambda: ibis.uuid(TEST_UUID), id="uuid_uuid"),
+    ],
+)
+def test_uuid_literal(con, backend, value):
     backend_name = backend.name()
 
-    expr = ibis.literal(RAW_TEST_UUID, type=dt.uuid)
+    expr = value()
     result = con.execute(expr)
 
     assert result == TEST_UUID
