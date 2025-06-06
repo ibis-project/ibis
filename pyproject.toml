@@ -302,8 +302,8 @@ docs = [
   "jupyter-cache>=1.0.0,<2",
   "jupyterlab>=4.2.5,<5",
   "jupyterlab-night>=0.4.6,<1",
-  "jupyterlite-core>=0.5,<0.6",
-  "jupyterlite-pyodide-kernel>=0.5,<0.6",
+  "jupyterlite-core>=0.6,<0.7",
+  "jupyterlite-pyodide-kernel>=0.6,<0.7",
 ]
 
 [project.entry-points."ibis.backends"]
@@ -631,4 +631,6 @@ omit = [
   "*tests*",
   "ibis/interactive.py",
   "ibis/examples/gen_registry.py",
+  "ibis/common/tests/test_grounds_py310.py",
+  "ibis/expr/operations/tests/test_core_py310.py",
 ]
