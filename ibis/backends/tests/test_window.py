@@ -1286,3 +1286,77 @@ def test_duplicate_ordered_sum(con):
     # final position, since the *output* order doesn't depend on ORDER BY
     # provided by the user
     assert result[2:] in ([60, 100], [70, 100], [100, 60], [100, 70])
+
+
+mark_sqlite_no_collect = pytest.mark.never(
+    ["sqlite"],
+    raises=com.OperationNotDefinedError,
+    reason="sqlite doesn't have array types",
+)
+mark_no_ignore_nulls = pytest.mark.never(
+    ["mysql", "postgres", "sqlite"],
+    reason="don't support the `IGNORE NULLS` option for first_value() and last_value()",
+)
+
+
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=com.OperationNotDefinedError,
+    reason="window functions aren't yet implemented for the polars backend",
+)
+@pytest.mark.parametrize(
+    "aggname,include_null,expected",
+    [
+        ("first", True, [None, None, 6, 6]),
+        pytest.param(
+            "first",
+            False,
+            [5, 5, 6, 6],
+            marks=[mark_no_ignore_nulls],
+        ),
+        ("last", True, [5, 5, None, None]),
+        pytest.param(
+            "last",
+            False,
+            [5, 5, 6, 6],
+            marks=[mark_no_ignore_nulls],
+        ),
+        pytest.param(
+            "collect",
+            True,
+            [[None, 5], [None, 5], [6, None], [6, None]],
+            marks=[
+                mark_sqlite_no_collect,
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="`include_null=True` is not supported by these backend",
+                ),
+            ],
+        ),
+        pytest.param(
+            "collect",
+            False,
+            [[5], [5], [6], [6]],
+            marks=[mark_sqlite_no_collect],
+        ),
+    ],
+)
+def test_include_null(con, aggname, include_null, expected):
+    t = ibis.memtable(
+        [
+            (0, 0, None),
+            (0, 1, 5),
+            (1, 2, 6),
+            (1, 3, None),
+        ],
+        schema={"group_by": "int64", "order_by": "int64", "val": "int64"},
+    )
+    agg = getattr(t.val, aggname)
+    t = t.mutate(
+        val_first=agg(include_null=include_null).over(
+            group_by="group_by", order_by="order_by"
+        )
+    ).order_by("order_by")
+    result = con.to_pyarrow(t.val_first).to_pylist()
+    assert expected == result

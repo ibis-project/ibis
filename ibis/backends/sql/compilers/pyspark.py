@@ -243,11 +243,17 @@ class PySparkCompiler(SQLGlotCompiler):
         ]
         return self.f.count(sge.Distinct(expressions=cols))
 
-    def visit_FirstValue(self, op, *, arg):
-        return sge.IgnoreNulls(this=self.f.first(arg))
+    def visit_FirstValue(self, op, *, arg, include_null):
+        if include_null:
+            return sge.RespectNulls(this=self.f.first(arg))
+        else:
+            return sge.IgnoreNulls(this=self.f.first(arg))
 
-    def visit_LastValue(self, op, *, arg):
-        return sge.IgnoreNulls(this=self.f.last(arg))
+    def visit_LastValue(self, op, *, arg, include_null):
+        if include_null:
+            return sge.RespectNulls(this=self.f.last(arg))
+        else:
+            return sge.IgnoreNulls(this=self.f.last(arg))
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if where is not None and include_null:
@@ -255,7 +261,9 @@ class PySparkCompiler(SQLGlotCompiler):
                 "Combining `include_null=True` and `where` is not supported by pyspark"
             )
         out = self.agg.first(arg, where=where, order_by=order_by)
-        if not include_null:
+        if include_null:
+            out = sge.RespectNulls(this=out)
+        else:
             out = sge.IgnoreNulls(this=out)
         return out
 
@@ -265,7 +273,9 @@ class PySparkCompiler(SQLGlotCompiler):
                 "Combining `include_null=True` and `where` is not supported by pyspark"
             )
         out = self.agg.last(arg, where=where, order_by=order_by)
-        if not include_null:
+        if include_null:
+            out = sge.RespectNulls(this=out)
+        else:
             out = sge.IgnoreNulls(this=out)
         return out
 
