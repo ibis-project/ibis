@@ -262,7 +262,7 @@ def test_attach_sqlite(sqlite_path):
     catalogs_before = con.list_catalogs()
     assert con.list_tables() == []
     for i in range(2):
-        name = con.attach_sqlite(sqlite_path, name="foo", skip_if_exists=True)
+        name = con.attach_sqlite(sqlite_path, name="foo", on_exists="ignore")
         if i == 0:
             assert isinstance(name, str)
         else:
