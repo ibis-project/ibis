@@ -15,6 +15,7 @@ from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 from ibis.backends.sql.rewrites import (
+    first_to_firstvalue,
     lower_sample,
     subtract_one_from_array_map_filter_index,
 )
@@ -45,7 +46,15 @@ class DuckDBCompiler(SQLGlotCompiler):
     type_mapper = DuckDBType
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
-    rewrites = (subtract_one_from_array_map_filter_index, *SQLGlotCompiler.rewrites)
+    rewrites = (
+        subtract_one_from_array_map_filter_index,
+        # Do not replace first() with first_value() because, per
+        # https://duckdb.org/docs/stable/sql/functions/window_functions#aggregate-window-functions
+        # The first and last aggregate functions are shadowed by the respective
+        # general-purpose window functions, with the minor consequence that the
+        # FILTER clause is not available for these but IGNORE NULLS is.
+        *[rw for rw in SQLGlotCompiler.rewrites if rw is not first_to_firstvalue],
+    )
 
     supports_qualify = True
 
@@ -535,10 +544,11 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.cast(super().visit_TimestampNow(op), dt.timestamp)
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
-        if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
-            where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.agg.first(arg, where=where, order_by=order_by)
+        if include_null:
+            f = self.agg.first
+        else:
+            f = self.agg.any_value
+        return f(arg, where=where, order_by=order_by)
 
     def visit_Last(self, op, *, arg, where, order_by, include_null):
         if not include_null:
