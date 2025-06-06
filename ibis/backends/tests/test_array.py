@@ -15,6 +15,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis.backends.tests.conftest import NO_ARRAY_SUPPORT_MARKS
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     DatabricksServerOperationError,
@@ -39,39 +40,7 @@ np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
 
-pytestmark = [
-    pytest.mark.never(
-        ["sqlite", "mysql", "exasol"], reason="No array support", raises=Exception
-    ),
-    pytest.mark.never(
-        ["mssql"],
-        reason="No array support",
-        raises=(
-            com.UnsupportedBackendType,
-            com.OperationNotDefinedError,
-            AssertionError,
-        ),
-    ),
-    pytest.mark.never(
-        ["mysql"],
-        reason="No array support",
-        raises=(
-            com.UnsupportedBackendType,
-            com.OperationNotDefinedError,
-            MySQLOperationalError,
-        ),
-    ),
-    pytest.mark.notyet(
-        ["impala"],
-        reason="No array support",
-        raises=(
-            com.UnsupportedBackendType,
-            com.OperationNotDefinedError,
-            com.TableNotFound,
-        ),
-    ),
-    pytest.mark.notimpl(["druid", "oracle"], raises=Exception),
-]
+pytestmark = NO_ARRAY_SUPPORT_MARKS
 
 # NB: We don't check whether results are numpy arrays or lists because this
 # varies across backends. At some point we should unify the result type to be
