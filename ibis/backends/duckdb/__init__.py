@@ -37,7 +37,7 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, MutableMapping, Sequence
+    from collections.abc import Generator, Iterable, Mapping, MutableMapping, Sequence
 
     import pandas as pd
     import polars as pl
@@ -333,7 +333,9 @@ class Backend(
         )
 
     @contextlib.contextmanager
-    def _safe_raw_sql(self, *args, **kwargs):
+    def _safe_raw_sql(
+        self, *args, **kwargs
+    ) -> Generator[duckdb.DuckDBPyConnection, None, None]:
         yield self.raw_sql(*args, **kwargs)
 
     def list_catalogs(self, *, like: str | None = None) -> list[str]:
@@ -1161,32 +1163,83 @@ class Backend(
         self.con.execute(copy_cmd).fetchall()
 
     def attach(
-        self, path: str | Path, name: str | None = None, read_only: bool = False
+        self,
+        path_or_url: str | Path,
+        /,
+        *,
+        name: str | None = None,
+        on_exists: Literal["error", "ignore"] = "error",
+        read_only: bool = False,
+        type: Literal["duckdb", "sqlite", "postgres", "mysql"] | None = None,
+        more_options: Iterable[str] = [],
     ) -> None:
-        """Attach another DuckDB database to the current DuckDB session.
+        """Attach a DuckDB, sqlite, postgres, or mysql database to the current DuckDB session.
+
+        See [DuckDB documentation](https://duckdb.org/docs/stable/sql/statements/attach.html)
+        for more information.
 
         Parameters
         ----------
-        path
-            Path to the database to attach.
+        path_or_url
+            Path or url to the database to attach.
         name
             Name to attach the database as. Defaults to the basename of `path`.
+        on_exists
+            What to do if the database already exists.
+            If set to `"error"`, raise an error if the database already exists.
+            If set to `"ignore"`, do nothing if the database already exists.
         read_only
             Whether to attach the database as read-only.
+        type
+            The type of the database to attach. If none, infers from the file extension.
+        more_options
+            Additional options, e.g. `["STORAGE_VERSION 'v1.2.0'", "block_size 262144"]`.
 
+        Returns
+        -------
+        None | str
+            The name of the attached database, or `None` if the database already exists.
         """
-        code = f"ATTACH '{path}'"
+        if on_exists == "ignore":
+            if_not_exists = "IF NOT EXISTS"
+        elif on_exists == "error":
+            if_not_exists = ""
+        else:
+            raise ValueError(
+                f"Invalid value for `on_exists`: {on_exists!r}. "
+                "Must be one of 'error' or 'ignore'."
+            )
 
-        if name is not None:
-            name = sg.to_identifier(name).sql(self.name)
-            code += f" AS {name}"
+        as_name = (
+            f"AS {sg.to_identifier(name, self.compiler.quoted).sql(self.name)}"
+            if name
+            else ""
+        )
 
+        options = [*more_options]
         if read_only:
-            code += " (READ_ONLY)"
+            options.append("READ_ONLY true")
+        else:
+            options.append("READ_ONLY false")
+        if type is not None:
+            options.append(f"TYPE {type.upper()}")
+        option_string = ", ".join(options)
 
-        self.con.execute(code).fetchall()
+        sql = f"ATTACH {if_not_exists} '{path_or_url}' {as_name} ({option_string})"
+        databases_before = set(self.list_catalogs())
+        self.con.execute(sql).fetchall()
+        databases_after = set(self.list_catalogs())
+        added_databases = databases_after - databases_before
+        if not added_databases:
+            if on_exists == "ignore":
+                return None
+            raise AssertionError((databases_before, databases_after))
+        assert len(added_databases) == 1, (databases_before, databases_after)
+        return added_databases.pop()
 
-    def detach(self, name: str) -> None:
+    def detach(
+        self, name: str, /, *, on_missing: Literal["error", "ignore"] = "error"
+    ) -> None:
         """Detach a database from the current DuckDB session.
 
         See [DuckDB documentation](https://duckdb.org/docs/stable/sql/statements/attach.html)
@@ -1196,10 +1249,23 @@ class Backend(
         ----------
         name
             The name of the database to detach.
+        on_missing
+            What to do if the database does not exist.
+            If set to `"error"`, raise an error if the database does not exist.
+            If set to `"ignore"`, do nothing if the database does not exist.
 
         """
+        if on_missing == "ignore":
+            if_exists = "IF EXISTS"
+        elif on_missing == "error":
+            if_exists = ""
+        else:
+            raise ValueError(
+                f"Invalid value for `on_missing`: {on_missing!r}. "
+                "Must be one of 'error' or 'ignore'."
+            )
         name = sg.to_identifier(name).sql(self.name)
-        self.con.execute(f"DETACH {name}").fetchall()
+        self.con.execute(f"DETACH DATABASE {if_exists} {name}").fetchall()
 
     def attach_sqlite(
         self,
@@ -1207,9 +1273,10 @@ class Backend(
         /,
         *,
         name: str | None = None,
-        skip_if_exists: bool = False,
+        on_exists: Literal["error", "ignore"] = "error",
         read_only: bool = False,
         all_varchar: bool = False,
+        more_options: Iterable[str] = [],
     ) -> str | None:
         """Attach a SQLite database to the current DuckDB session.
 
@@ -1224,13 +1291,18 @@ class Backend(
             The name to attach the database as.
             If `None`, use the default behavior of DuckDB
             (as of duckdb==1.2.0 this is the basename of the path).
-        skip_if_exists
-            If `True`, do not attach the database if it already exists.
+        on_exists
+            What to do if the database already exists.
+            If set to `"error"`, raise an error if the database already exists.
+            If set to `"ignore"`, do nothing if the database already exists.
         read_only
             Whether to attach the database as read-only.
         all_varchar
             Whether to read SQLite columns as `VARCHAR` to avoid type errors on ingestion.
             See https://duckdb.org/docs/stable/extensions/sqlite.html#data-types
+        more_options
+            Additional options to pass to the `ATTACH` statement.
+            These are passed as a list of strings, e.g. `["STORAGE_VERSION 'v1.2.0'"]`.
 
         Returns
         -------
@@ -1260,31 +1332,15 @@ class Backend(
         ['t']
         """
         self.load_extension("sqlite")
-        if_not_exists = "IF NOT EXISTS" if skip_if_exists else ""
-        as_name = (
-            f"AS {sg.to_identifier(name, self.compiler.quoted).sql(self.name)}"
-            if name
-            else ""
+        self.raw_sql(f"SET GLOBAL sqlite_all_varchar={all_varchar}")
+        return self.attach(
+            path,
+            name=name,
+            on_exists=on_exists,
+            read_only=read_only,
+            type="sqlite",
+            more_options=more_options,
         )
-        options = ["TYPE sqlite"]
-        if read_only:
-            options.append("READ_ONLY true")
-        else:
-            options.append("READ_ONLY false")
-        option_string = ", ".join(options)
-        databases_before = set(self.list_catalogs())
-        with self._safe_raw_sql(f"SET GLOBAL sqlite_all_varchar={all_varchar}") as cur:
-            cur.execute(
-                f"ATTACH {if_not_exists} '{path}' {as_name} ({option_string})"
-            ).fetchall()
-        databases_after = set(self.list_catalogs())
-        added_databases = databases_after - databases_before
-        if not added_databases:
-            if skip_if_exists:
-                return None
-            raise AssertionError((databases_before, databases_after))
-        assert len(added_databases) == 1, (databases_before, databases_after)
-        return added_databases.pop()
 
     def register_filesystem(self, filesystem: AbstractFileSystem):
         """Register an `fsspec` filesystem object with DuckDB.
