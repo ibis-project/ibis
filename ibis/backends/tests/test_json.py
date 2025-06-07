@@ -8,17 +8,14 @@ import pytest
 from packaging.version import parse as vparse
 
 import ibis.expr.types as ir
+from ibis.backends.tests.conftest import NO_JSON_SUPPORT_MARKS
 from ibis.backends.tests.errors import PySparkPythonException
 from ibis.conftest import IS_SPARK_REMOTE
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 
-pytestmark = [
-    pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
-    pytest.mark.notyet(["clickhouse"], reason="upstream is broken"),
-    pytest.mark.notimpl(["datafusion", "exasol", "mssql", "druid", "oracle"]),
-]
+pytestmark = NO_JSON_SUPPORT_MARKS
 
 
 @pytest.mark.notyet(
