@@ -73,3 +73,19 @@ def test_rank_followed_by_over_call_merge_frames(alltypes):
     expr1 = t.f.percent_rank().over(ibis.window(group_by=t.f.notnull()))
     expr2 = ibis.percent_rank().over(group_by=t.f.notnull(), order_by=t.f)
     assert expr1.equals(expr2)
+
+
+def test_duplicate_order_by_errors():
+    """If you specify the order_by argument multiple times, it should raise an error."""
+    t = ibis.table(
+        {
+            "a": "int64",
+            "b": "int64",
+            "c": "int64",
+            "d": "int64",
+        }
+    )
+    with pytest.raises(ExpressionError):
+        t = t.group_by("a").order_by("b").mutate(t.c.first(order_by="d"))
+    with pytest.raises(ExpressionError):
+        t.mutate(t.c.first(order_by="d").over(group_by="a", order_by="b"))

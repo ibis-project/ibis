@@ -18,6 +18,7 @@ from ibis.backends.tests.errors import (
     Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
+    PySparkAnalysisException,
     PySparkPythonException,
     SnowflakeProgrammingError,
 )
@@ -1286,3 +1287,116 @@ def test_duplicate_ordered_sum(con):
     # final position, since the *output* order doesn't depend on ORDER BY
     # provided by the user
     assert result[2:] in ([60, 100], [70, 100], [100, 60], [100, 70])
+
+
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=com.OperationNotDefinedError,
+    reason="window functions aren't yet implemented for polars",
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=(PyDruidProgrammingError, com.OperationNotDefinedError),
+    reason="class org.apache.calcite.plan.RelCompositeTrait cannot be cast to class org.apache.calcite.rel.RelCollation (org.apache.calcite.plan.RelCompositeTrait and org.apache.calcite.rel.RelCollation are in unnamed module of loader 'app'",
+)
+@pytest.mark.parametrize(
+    "aggname,expected",
+    [
+        ("first", ["b", "b", "d", "d", "d"]),
+        ("last", ["a", "a", "e", "e", "e"]),
+        pytest.param(
+            "collect",
+            [["b", "a"], ["b", "a"], ["d", "c", "e"], ["d", "c", "e"], ["d", "c", "e"]],
+            marks=[
+                pytest.mark.never(
+                    [
+                        "druid",
+                        "exasol",
+                        "mysql",
+                        "impala",
+                        "mysql",
+                        "mssql",
+                        "oracle",
+                        "sqlite",
+                    ],
+                    reason="no arrays",
+                ),
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=Exception,
+                    reason="FILTER is not yet supported for window functions",
+                ),
+                pytest.mark.notyet(
+                    ["risingwave"],
+                    raises=PsycoPg2InternalError,
+                    reason="Feature is not yet implemented: `FILTER` is not supported yet",
+                ),
+            ],
+        ),
+        pytest.param(
+            "group_concat",
+            ["b,a", "b,a", "d,c,e", "d,c,e", "d,c,e"],
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    raises=ClickHouseDatabaseError,
+                    reason="Expected one of: token, Comma, FROM, PREWHERE, WHERE, GROUP BY, WITH, HAVING, WINDOW, QUALIFY, ORDER BY, LIMIT, OFFSET, FETCH, SETTINGS, UNION, EXCEPT, INTERSECT. (SYNTAX_ERROR)",
+                ),
+                pytest.mark.notyet(
+                    ["impala"],
+                    raises=ImpalaHiveServer2Error,
+                    reason="AnalysisException: Aggregate function 'group_concat(t0.val, ',')' not supported with OVER clause.",
+                ),
+                pytest.mark.notyet(
+                    ["mysql", "mssql"],
+                    raises=Exception,
+                    reason="Don't support 'GROUP_CONCAT() aggregate as window function'",
+                ),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=PyODBCProgrammingError,
+                    reason="ORDER BY not allowed here",
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    raises=PySparkAnalysisException,
+                    reason="We have a hacky way we compile this that doesn't work here.",
+                ),
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=Exception,
+                    reason="groupby must be an aggregate expression or appear in GROUP BY clause",
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.parametrize("spelling", ["group_by_agg", "over_window"])
+def test_order_by_is_hoisted(con, aggname, expected, spelling):
+    """If you specify the order_by argument to an agg, it is hoisted to the window."""
+    t = ibis.memtable(
+        [
+            (1, 2, "a"),
+            (1, 1, "b"),
+            (2, 4, "c"),
+            (2, 3, "d"),
+            (2, 5, "e"),
+        ],
+        schema={"groupby": "int", "orderby": "int", "val": "string"},
+    )
+    agg = getattr(t.val, aggname)
+    if spelling == "group_by_agg":
+        t = (
+            t.group_by("groupby")
+            .mutate(first_val_ordered=agg(order_by="orderby"))
+            .order_by("orderby")
+        )
+    elif spelling == "over_window":
+        t = t.mutate(
+            first_val_ordered=agg(order_by="orderby").over(group_by="groupby")
+        ).order_by("orderby")
+    else:
+        raise ValueError(f"Unknown spelling: {spelling}")
+
+    result = con.to_pyarrow(t.first_val_ordered).to_pylist()
+    assert expected == result
