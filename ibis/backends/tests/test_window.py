@@ -1300,13 +1300,22 @@ def test_duplicate_ordered_sum(con):
     reason="class org.apache.calcite.plan.RelCompositeTrait cannot be cast to class org.apache.calcite.rel.RelCollation (org.apache.calcite.plan.RelCompositeTrait and org.apache.calcite.rel.RelCollation are in unnamed module of loader 'app'",
 )
 @pytest.mark.parametrize(
-    "aggname,expected",
+    "agg,expected",
     [
-        ("first", ["b", "b", "d", "d", "d"]),
-        ("last", ["a", "a", "e", "e", "e"]),
         pytest.param(
-            "collect",
-            [["b", "a"], ["b", "a"], ["d", "c", "e"], ["d", "c", "e"], ["d", "c", "e"]],
+            lambda v: v.first(order_by="orderby"),
+            [2, 2, 4, 4, 4],
+            id="first",
+        ),
+        pytest.param(
+            lambda v: v.last(order_by="orderby"),
+            [1, 1, 5, 5, 5],
+            id="last",
+        ),
+        pytest.param(
+            lambda v: v.collect(order_by="orderby"),
+            [[2, 1], [2, 1], [4, 3, 5], [4, 3, 5], [4, 3, 5]],
+            id="collect",
             marks=[
                 pytest.mark.never(
                     [
@@ -1331,11 +1340,17 @@ def test_duplicate_ordered_sum(con):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: `FILTER` is not supported yet",
                 ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=Exception,
+                    reason="SQL validation failed. From line 1, column 90 to line 1, column 147: OVER must be applied to aggregate function",
+                ),
             ],
         ),
         pytest.param(
-            "group_concat",
-            ["b,a", "b,a", "d,c,e", "d,c,e", "d,c,e"],
+            lambda v: v.cast(str).group_concat(sep=",", order_by="orderby"),
+            ["2,1", "2,1", "4,3,5", "4,3,5", "4,3,5"],
+            id="group_concat",
             marks=[
                 pytest.mark.notyet(
                     ["clickhouse"],
@@ -1367,34 +1382,38 @@ def test_duplicate_ordered_sum(con):
                     raises=Exception,
                     reason="groupby must be an aggregate expression or appear in GROUP BY clause",
                 ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    raises=Exception,
+                    reason="SQL parse failed. Incorrect syntax near the keyword 'GROUP_CONCAT'",
+                ),
             ],
         ),
     ],
 )
 @pytest.mark.parametrize("spelling", ["group_by_agg", "over_window"])
-def test_order_by_is_hoisted(con, aggname, expected, spelling):
+def test_order_by_is_hoisted(con, agg, expected, spelling):
     """If you specify the order_by argument to an agg, it is hoisted to the window."""
     t = ibis.memtable(
         [
-            (1, 2, "a"),
-            (1, 1, "b"),
-            (2, 4, "c"),
-            (2, 3, "d"),
-            (2, 5, "e"),
+            (1, 2, 1),
+            (1, 1, 2),
+            (2, 4, 3),
+            (2, 3, 4),
+            (2, 5, 5),
         ],
-        schema={"groupby": "int", "orderby": "int", "val": "string"},
+        schema={"groupby": "int", "orderby": "int", "val": "int"},
     )
-    agg = getattr(t.val, aggname)
     if spelling == "group_by_agg":
         t = (
             t.group_by("groupby")
-            .mutate(first_val_ordered=agg(order_by="orderby"))
+            .mutate(first_val_ordered=agg(t.val))
             .order_by("orderby")
         )
     elif spelling == "over_window":
-        t = t.mutate(
-            first_val_ordered=agg(order_by="orderby").over(group_by="groupby")
-        ).order_by("orderby")
+        t = t.mutate(first_val_ordered=agg(t.val).over(group_by="groupby")).order_by(
+            "orderby"
+        )
     else:
         raise ValueError(f"Unknown spelling: {spelling}")
 
