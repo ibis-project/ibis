@@ -9,6 +9,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.backends.tests.conftest import NO_ARRAY_SUPPORT_MARKS
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     GoogleBadRequest,
@@ -1294,11 +1295,6 @@ def test_duplicate_ordered_sum(con):
     raises=com.OperationNotDefinedError,
     reason="window functions aren't yet implemented for polars",
 )
-@pytest.mark.notimpl(
-    ["druid"],
-    raises=(PyDruidProgrammingError, com.OperationNotDefinedError),
-    reason="class org.apache.calcite.plan.RelCompositeTrait cannot be cast to class org.apache.calcite.rel.RelCollation (org.apache.calcite.plan.RelCompositeTrait and org.apache.calcite.rel.RelCollation are in unnamed module of loader 'app'",
-)
 @pytest.mark.parametrize(
     "agg,expected",
     [
@@ -1317,19 +1313,7 @@ def test_duplicate_ordered_sum(con):
             [[2, 1], [2, 1], [4, 3, 5], [4, 3, 5], [4, 3, 5]],
             id="collect",
             marks=[
-                pytest.mark.never(
-                    [
-                        "druid",
-                        "exasol",
-                        "mysql",
-                        "impala",
-                        "mysql",
-                        "mssql",
-                        "oracle",
-                        "sqlite",
-                    ],
-                    reason="no arrays",
-                ),
+                *NO_ARRAY_SUPPORT_MARKS,
                 pytest.mark.notyet(
                     ["trino"],
                     raises=Exception,
