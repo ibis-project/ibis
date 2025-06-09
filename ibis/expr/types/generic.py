@@ -2238,18 +2238,14 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.relations import bind
 
+        if by is None:
+            return self.as_table().topk(k=k, name=name)
+
         try:
-            (table,) = self.op().relations
+            (table_op,) = self.op().relations
         except ValueError:
             raise com.IbisTypeError("TopK must depend on exactly one table.")
-
-        table = table.to_expr()
-
-        if by is None and name is None:
-            # if `by` is something more complex, the _count doesn't make sense.
-            name = f"{self.get_name()}_count"
-        if by is None:
-            by = lambda t: t.count()
+        table: ibis.Table = table_op.to_expr()
 
         (metric,) = bind(table, by)
         if name is not None:
