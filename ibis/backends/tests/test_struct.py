@@ -171,11 +171,6 @@ def test_field_access_after_case(con):
                     raises=AssertionError,
                     reason="polars doesn't support non-nullable types",
                 ),
-                pytest.mark.notyet(
-                    ["risingwave"],
-                    reason="non-nullable struct types not implemented",
-                    raises=PsycoPg2InternalError,
-                ),
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=AssertionError,
