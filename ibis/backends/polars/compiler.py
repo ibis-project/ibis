@@ -750,6 +750,14 @@ for cls in _reductions:
     translate.register(cls, execute_reduction)
 
 
+@translate.register(ops.Sum)
+def execute_sum(op, **kw):
+    arg = translate(op.arg, **kw)
+    if (where := op.where) is not None:
+        arg = arg.filter(translate(where, **kw))
+    return pl.when(arg.count() > 0).then(arg.sum()).otherwise(None)
+
+
 @translate.register(ops.First)
 @translate.register(ops.Last)
 @translate.register(ops.Arbitrary)
