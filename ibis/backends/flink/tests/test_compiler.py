@@ -3,6 +3,8 @@ from __future__ import annotations
 import pytest
 from pytest import param
 
+import ibis
+
 
 def test_sum(simple_table, assert_sql):
     expr = simple_table.a.sum()
@@ -98,3 +100,9 @@ def test_having(simple_table, assert_sql):
         .aggregate(simple_table.b.sum().name("b_sum"))
     )
     assert_sql(expr)
+
+
+def test_timestamp_cast_to_seconds_respects_unit():
+    expr = ibis.now()
+    compiled = expr.cast("timestamp('s')").compile(dialect="flink")
+    assert "yyyy-MM-dd HH:mm:ss.SSS" not in compiled
