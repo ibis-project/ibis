@@ -278,7 +278,6 @@ else:
 
             config = SparkSession.builder.appName("ibis_testing")
 
-            # load from properties file, yuck
             with Path(
                 os.environ.get(
                     "SPARK_CONFIG",

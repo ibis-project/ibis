@@ -1736,7 +1736,7 @@ def test_cross_database_join(con_create_database, monkeypatch):
 @pytest.mark.notyet(["flink"], raises=AttributeError, reason="no _safe_raw_sql method")
 @pytest.mark.notyet(["polars"], reason="Doesn't support insert")
 @pytest.mark.notimpl(
-    ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
+    ["impala", "trino"], reason="Default constraints are not supported"
 )
 @pytest.mark.notimpl(
     ["databricks"],
@@ -1745,6 +1745,7 @@ def test_cross_database_join(con_create_database, monkeypatch):
     raises=DatabricksServerOperationError,
 )
 @pytest.mark.notimpl(["athena"], reason="insert isn't implemented yet")
+@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_insert_into_table_missing_columns(con, temp_table):
     db = getattr(con, "current_database", None)
 
