@@ -1290,6 +1290,13 @@ def test_duplicate_ordered_sum(con):
     assert result[2:] in ([60, 100], [70, 100], [100, 60], [100, 70])
 
 
+mark_druid_no_first_last = pytest.mark.notimpl(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="class org.apache.calcite.plan.RelCompositeTrait cannot be cast to class org.apache.calcite.rel.RelCollation (org.apache.calcite.plan.RelCompositeTrait and org.apache.calcite.rel.RelCollation are in unnamed module of loader 'app')",
+)
+
+
 @pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,
@@ -1302,11 +1309,13 @@ def test_duplicate_ordered_sum(con):
             lambda v: v.first(order_by="orderby"),
             [2, 2, 4, 4, 4],
             id="first",
+            marks=mark_druid_no_first_last,
         ),
         pytest.param(
             lambda v: v.last(order_by="orderby"),
             [1, 1, 5, 5, 5],
             id="last",
+            marks=mark_druid_no_first_last,
         ),
         pytest.param(
             lambda v: v.collect(order_by="orderby"),
