@@ -1731,3 +1731,12 @@ def test_group_by_scalar(alltypes, df, value):
     result = expr.execute()
     n = result["n"].values[0].item()
     assert n == len(df)
+
+
+def test_empty_sum(con):
+    t = ibis.memtable({"x": [1]}, schema={"x": "int"})
+    result = con.execute(t.count())
+    assert result == 1
+
+    result = con.to_pyarrow(t.x.sum(where=t.x > 1)).as_py()
+    assert result is None
