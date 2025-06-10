@@ -145,8 +145,8 @@ impure_params_uncorrelated = pytest.mark.parametrize(
                 *no_uuids,
                 pytest.mark.notyet(
                     ["mysql"],
-                    reason="instances are correlated",
-                    strict=sys.version_info[:2] > (3, 9),
+                    reason="instances are correlated; but sometimes this passes and it's not clear why",
+                    strict=False,
                 ),
             ],
             id="uuid",

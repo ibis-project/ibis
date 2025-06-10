@@ -246,6 +246,12 @@ class Flink(Hive):
             sge.Interval: _interval_with_precision,
         }
 
+        def columndef_sql(self, expression: sge.ColumnDef, sep: str = " ") -> str:
+            # override this method to avoid inserting spurious colons
+            # (and continue using spaces) between field names and types inside
+            # of a struct
+            return sgn.Generator.columndef_sql(self, expression, sep=" ")
+
         # Flink is like Hive except where it might actually be convenient
         #
         # UNNEST works like the SQL standard, and not like Hive, so we have to
