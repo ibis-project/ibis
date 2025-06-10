@@ -483,3 +483,23 @@ def test_create_table_with_out_of_order_columns(con):
     assert list(df.columns) == ["value", "id", "date"]
     assert list(schema.names) == ["id", "value", "date"]
     con.create_table(name, df, schema=schema, temp=True)
+
+
+@pytest.mark.parametrize(
+    "converter",
+    [
+        lambda expr: expr.to_pyarrow().to_pylist(),
+        lambda expr: expr.to_pandas().tolist(),
+    ],
+    ids=["pyarrow", "pandas"],
+)
+def test_basic_enum_schema_inference(con, converter):
+    name = gen_name("basic_enum_schema_inference")
+    con.con.execute(
+        f"CREATE TEMP TABLE {name} AS "
+        "SELECT CAST('a' AS ENUM('a', 'b')) e UNION ALL "
+        "SELECT CAST('b' AS ENUM('a', 'b')) e"
+    )
+    t = con.table(name)
+    assert t.e.type() == dt.string
+    assert set(converter(t.e)) == {"a", "b"}

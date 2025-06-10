@@ -5,7 +5,6 @@ from operator import attrgetter, methodcaller
 
 import numpy.testing as npt
 import pandas.testing as tm
-import pyarrow as pa
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -54,7 +53,9 @@ def test_geospatial_dwithin(assert_sql):
             "geometry_type",
             "geom_type",
             id="geometry_type",
-            marks=pytest.mark.xfail(raises=pa.lib.ArrowTypeError),
+            marks=pytest.mark.xfail(
+                raises=AssertionError, reason="capitalization is different"
+            ),
         ),
     ],
 )
