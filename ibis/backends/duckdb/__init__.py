@@ -1452,6 +1452,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
                     col.to_pylist()
                     if (
                         pat.is_nested(col.type)
+                        or pat.is_dictionary(col.type)
                         or
                         # pyarrow / duckdb type null literals columns as int32?
                         # but calling `to_pylist()` will render it as None

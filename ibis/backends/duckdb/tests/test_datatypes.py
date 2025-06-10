@@ -25,6 +25,7 @@ from ibis.backends.sql.datatypes import DuckDBType
             ("DATE", dt.date),
             ("DOUBLE", dt.float64),
             ("DECIMAL(10, 3)", dt.Decimal(10, 3)),
+            ("ENUM('a', 'b')", dt.string),
             ("INTEGER", dt.int32),
             ("INTERVAL", dt.Interval("us")),
             ("FLOAT", dt.float32),
