@@ -2417,16 +2417,16 @@ wheels = [
 
 [[package]]
 name = "hypothesis"
-version = "6.135.4"
+version = "6.135.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
     { name = "sortedcontainers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/59/7022ef95715701cd90ac0cf04582e3507492ab200f370fd7ef12d80dda75/hypothesis-6.135.4.tar.gz", hash = "sha256:c63f6fc56840558c5c5e2441dd91fad1709da60bde756b816d4b89944e50a52f", size = 451895, upload-time = "2025-06-09T02:31:38.766Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/3a/7a7c54d72b1e1fad01b86613ba48a8cedef0da829f12c0e3e901fc20ec2c/hypothesis-6.135.6.tar.gz", hash = "sha256:998ca337c4ac4608dff53f42a14ce1b4c64a4297e7f06576e5dac2b2de700227", size = 452044, upload-time = "2025-06-11T00:00:39.068Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/d4/25b3a9f35199eb1904967ca3e6db4afd636911fa39695760b0afac84f38a/hypothesis-6.135.4-py3-none-any.whl", hash = "sha256:6a3b13ce35d43e14aaf6a6ca4cc411e5342be5d05b77977499d07cf6a61e6e71", size = 517950, upload-time = "2025-06-09T02:31:34.463Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/15/9e03f8485942794b826f69c718c27a1decc6af66fa71d473e0ab906b1f08/hypothesis-6.135.6-py3-none-any.whl", hash = "sha256:e3c5cdc5e0e17767705cecaedfb407cac0fd8ad3b1193df83e232b7a86879062", size = 518107, upload-time = "2025-06-11T00:00:35.567Z" },
 ]
 
 [[package]]
@@ -2897,7 +2897,7 @@ dev = [
 ]
 docs = [
     { name = "altair", specifier = ">=5.0.1,<6" },
-    { name = "griffe", specifier = "<2" },
+    { name = "griffe", specifier = ">=1.7.3" },
     { name = "ipykernel", specifier = ">=6.25.1,<7" },
     { name = "itables", specifier = ">=1.6.3,<2.5" },
     { name = "jupyter-cache", specifier = ">=1.0.0,<2" },
@@ -2907,7 +2907,7 @@ docs = [
     { name = "jupyterlite-pyodide-kernel", specifier = ">=0.6,<0.7" },
     { name = "lonboard", specifier = "==0.10.4" },
     { name = "nbclient", specifier = ">=0.8.0,<1" },
-    { name = "plotly", specifier = ">=5.16.1,<6" },
+    { name = "plotly", specifier = ">=5.16.1" },
     { name = "plotnine", specifier = ">=0.12.2,<1" },
     { name = "py-cpuinfo", specifier = ">=9,<10" },
     { name = "quartodoc", specifier = ">=0.6.1,<1" },
@@ -3150,7 +3150,7 @@ wheels = [
 
 [[package]]
 name = "itables"
-version = "2.4.0"
+version = "2.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipython", version = "8.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -3161,9 +3161,9 @@ dependencies = [
     { name = "numpy", version = "2.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c2/55/9710b529fe144def4df08b39acce0c43de4383adc9c5a713e3d8e3a795e0/itables-2.4.0.tar.gz", hash = "sha256:4b91c049455fa939f2f95bb5e4c6124ab11f7c2689b8bed484339cddeb9d5562", size = 2285608, upload-time = "2025-05-17T21:59:34.056Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/34/4c297740b778e2bb8f3929829dd1ec0347a22e2f9952c599cd26c1f0901f/itables-2.4.1.tar.gz", hash = "sha256:107252edb08e0f120f8756db41928b94a2caf9a8012bf03e8e89880c8d0b1c5a", size = 2230130, upload-time = "2025-06-10T21:24:45.668Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/43/fb/333d7d928e9bc1724b417db12a943c48b508507e88cb15c70ed43c8e43bd/itables-2.4.0-py3-none-any.whl", hash = "sha256:ca6563eaa0a689e5bc61209543e2ffdf2db36b892b505e68646fb4d39302a132", size = 2316516, upload-time = "2025-05-17T21:59:31.619Z" },
+    { url = "https://files.pythonhosted.org/packages/96/26/5aa67c2a120a94a39edf4ab3598129d918b1870239a81ca7f9cce3ad6d72/itables-2.4.1-py3-none-any.whl", hash = "sha256:e0e71938ae952ccb9f0335eada612d69b5aa088633c97b8d60d8301972642491", size = 2260471, upload-time = "2025-06-10T21:24:43.74Z" },
 ]
 
 [[package]]
@@ -4612,6 +4612,9 @@ dependencies = [
     { name = "setuptools" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/6b/0c/18b893b071144bbd8c841987042e218c8e4d1fc590d8302842580d419a7b/pandas_gbq-0.29.1.tar.gz", hash = "sha256:a6ead6199174094317e05729677d30384460335bb2a138d02c1f2edbfdb78fc3", size = 65744, upload-time = "2025-06-09T14:24:48.112Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/13/5e/b2363eedadcdfca4588689d7240d09781a7a2bf7f3e1f60f914e0575ab00/pandas_gbq-0.29.1-py3-none-any.whl", hash = "sha256:21aaaf6f62723aeb3a8751f3fd8afff00f4b237ae722cbe6c4e79f17c8677086", size = 41065, upload-time = "2025-06-10T14:37:34.241Z" },
+]
 
 [[package]]
 name = "pandocfilters"
@@ -4812,15 +4815,15 @@ wheels = [
 
 [[package]]
 name = "plotly"
-version = "5.24.1"
+version = "6.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "narwhals" },
     { name = "packaging" },
-    { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/79/4f/428f6d959818d7425a94c190a6b26fbc58035cbef40bf249be0b62a9aedd/plotly-5.24.1.tar.gz", hash = "sha256:dbc8ac8339d248a4bcc36e08a5659bacfe1b079390b8953533f4eb22169b4bae", size = 9479398, upload-time = "2024-09-12T15:36:31.068Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ae/77/431447616eda6a432dc3ce541b3f808ecb8803ea3d4ab2573b67f8eb4208/plotly-6.1.2.tar.gz", hash = "sha256:4fdaa228926ba3e3a213f4d1713287e69dcad1a7e66cf2025bd7d7026d5014b4", size = 7662971, upload-time = "2025-05-27T20:21:52.56Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e5/ae/580600f441f6fc05218bd6c9d5794f4aef072a7d9093b291f1c50a9db8bc/plotly-5.24.1-py3-none-any.whl", hash = "sha256:f67073a1e637eb0dc3e46324d9d51e2fe76e9727c892dde64ddf1e1b51f29089", size = 19054220, upload-time = "2024-09-12T15:36:24.08Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/6f/759d5da0517547a5d38aabf05d04d9f8adf83391d2c7fc33f904417d3ba2/plotly-6.1.2-py3-none-any.whl", hash = "sha256:f1548a8ed9158d59e03d7fed548c7db5549f3130d9ae19293c8638c202648f6d", size = 16265530, upload-time = "2025-05-27T20:21:46.6Z" },
 ]
 
 [[package]]
@@ -6217,7 +6220,7 @@ wheels = [
 
 [[package]]
 name = "quartodoc"
-version = "0.11.0"
+version = "0.11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "black" },
@@ -6236,9 +6239,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0a/98/5f4127fcc71426dbf9affe6dc8a186766618377bb7f423f4543d2542d44b/quartodoc-0.11.0.tar.gz", hash = "sha256:1a840ec13e9ffd6e5c29686c147d47d69f9f65c97380d2feb936aba5af8b01ed", size = 778507, upload-time = "2025-06-09T17:12:49.413Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/b9/0bb44cc62a5d63728d04fd6b1e14bcb64945fabad4aa8c03b9d70315fb06/quartodoc-0.11.1.tar.gz", hash = "sha256:c121626e1a36392d168631f33c4d3e7fd48d185de178859f8eafbda14fbfe92f", size = 778611, upload-time = "2025-06-10T14:50:08.185Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/28/776c7c6274de4d5fb6dfedeb7a782b11e8f99a39b2dd3b6f4002882e0eed/quartodoc-0.11.0-py3-none-any.whl", hash = "sha256:04ab7526ce4d3b974ab6057d8c04d1092a851867bc23bd1e238b2b0183612ee0", size = 88052, upload-time = "2025-06-09T17:12:47.677Z" },
+    { url = "https://files.pythonhosted.org/packages/75/d9/0b48d4184f9ca6a996c4fac46897a968698c9d1e0f0e43a6906746201323/quartodoc-0.11.1-py3-none-any.whl", hash = "sha256:0776eb8e53d89385e2c9a8ae0ec08e8c307c1410dd1bd78bb28e8b1823dbb6ad", size = 88053, upload-time = "2025-06-10T14:50:06.443Z" },
 ]
 
 [[package]]

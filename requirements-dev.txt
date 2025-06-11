@@ -98,7 +98,7 @@ h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 humanize==4.12.3
-hypothesis==6.135.4
+hypothesis==6.135.6
 identify==2.6.12
 idna==3.10
 importlib-metadata==8.7.0
@@ -112,7 +112,7 @@ ipython==9.3.0 ; python_full_version >= '3.11'
 ipython-pygments-lexers==1.1.1 ; python_full_version >= '3.11'
 ipywidgets==8.1.7
 isoduration==20.11.0
-itables==2.4.0
+itables==2.4.1
 jedi==0.19.2
 jinja2==3.1.6
 jmespath==1.0.1
@@ -179,7 +179,7 @@ pillow==11.2.1
 pins==0.9.0
 pkginfo==1.12.1.2
 platformdirs==4.3.8
-plotly==5.24.1
+plotly==6.1.2
 plotnine==0.13.6 ; python_full_version < '3.10'
 plotnine==0.14.5 ; python_full_version >= '3.10'
 pluggy==1.6.0
@@ -242,7 +242,7 @@ pywin32==310 ; platform_python_implementation != 'PyPy' and sys_platform == 'win
 pywinpty==2.0.15 ; os_name == 'nt'
 pyyaml==6.0.2
 pyzmq==26.4.0
-quartodoc==0.11.0
+quartodoc==0.11.1
 referencing==0.36.2
 regex==2024.11.6
 requests==2.32.4
