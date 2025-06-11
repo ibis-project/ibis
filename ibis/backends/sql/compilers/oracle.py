@@ -18,6 +18,7 @@ from ibis.backends.sql.rewrites import (
     lower_log10,
     lower_sample,
     rewrite_empty_order_by_window,
+    split_select_distinct_with_order_by,
 )
 
 
@@ -34,6 +35,8 @@ class OracleCompiler(SQLGlotCompiler):
         rewrite_empty_order_by_window,
         *SQLGlotCompiler.rewrites,
     )
+
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     NAN = sge.Literal.number("binary_double_nan")
     """Backend's NaN literal."""

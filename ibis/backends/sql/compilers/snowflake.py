@@ -33,6 +33,7 @@ from ibis.backends.sql.rewrites import (
     lower_log10,
     lower_sample,
     rewrite_empty_order_by_window,
+    split_select_distinct_with_order_by,
     x,
 )
 from ibis.common.patterns import replace
@@ -88,6 +89,8 @@ class SnowflakeCompiler(SQLGlotCompiler):
         multiple_args_to_zipped_struct_field_access,
         *SQLGlotCompiler.rewrites,
     )
+
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     LOWERED_OPS = {
         ops.Log2: lower_log2,

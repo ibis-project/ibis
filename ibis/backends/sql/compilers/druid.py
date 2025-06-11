@@ -10,6 +10,7 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import NULL, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DruidType
 from ibis.backends.sql.dialects import Druid
+from ibis.backends.sql.rewrites import split_select_distinct_with_order_by
 from ibis.common.temporal import TimestampUnit
 
 
@@ -20,6 +21,7 @@ class DruidCompiler(SQLGlotCompiler):
     type_mapper = DruidType
 
     agg = AggGen(supports_filter=True)
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     LOWERED_OPS = {ops.Capitalize: None, ops.Sample: None}
 
