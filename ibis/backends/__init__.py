@@ -1135,6 +1135,9 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
         Examples
         --------
+        This example uses the DuckDB backend, but the list_tables API
+        works the same for other backends.
+
         >>> import ibis
         >>> con = ibis.duckdb.connect()
         >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
