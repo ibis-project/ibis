@@ -1201,7 +1201,6 @@ def test_zip_null(con, fn):
 @pytest.mark.notyet(
     ["flink"], raises=ValueError, reason="array of struct is not supported"
 )
-@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_array_of_struct_unnest(con):
     jobs = ibis.memtable(
         {
@@ -1744,7 +1743,6 @@ def test_table_unnest_column_expr(backend):
 
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["trino"], raises=TrinoUserError)
-@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notyet(
