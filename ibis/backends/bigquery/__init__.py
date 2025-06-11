@@ -187,8 +187,9 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         else:
             # If a job_id_prefix is provided, use the method that allows for job_id_prefix
             # to be passed in
-            kwargs["job_id_prefix"] = job_id_prefix
-            return self.client.query(query, **kwargs).result()
+            return self.client.query(
+                query, job_id_prefix=job_id_prefix, **kwargs
+            ).result()
 
     def _client_load_table_from_dataframe(
         self,
@@ -197,10 +198,12 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         **kwargs,
     ) -> bq.LoadJob:
         """Load a DataFrame into a BigQuery table, possibly with a job_id_prefix."""
-
-        kwargs["job_id_prefix"] = self._generate_job_id_prefix()
-
-        return self.client.load_table_from_dataframe(dataframe, destination, **kwargs)
+        return self.client.load_table_from_dataframe(
+            dataframe,
+            destination,
+            job_id_prefix=self._generate_job_id_prefix(),
+            **kwargs,
+        )
 
     def _client_load_table_from_file(
         self,
@@ -209,10 +212,12 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         **kwargs,
     ) -> bq.LoadJob:
         """Load data from a file into a BigQuery table, possibly with a job_id_prefix."""
-
-        kwargs["job_id_prefix"] = self._generate_job_id_prefix()
-
-        return self.client.load_table_from_file(file_obj, destination, **kwargs)
+        return self.client.load_table_from_file(
+            file_obj,
+            destination,
+            job_id_prefix=self._generate_job_id_prefix(),
+            **kwargs,
+        )
 
     def _client_load_table_from_uri(
         self,
@@ -221,9 +226,12 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         **kwargs,
     ) -> bq.LoadJob:
         """Load data from a URI into a BigQuery table, possibly with a job_id_prefix."""
-
-        kwargs["job_id_prefix"] = self._generate_job_id_prefix()
-        return self.client.load_table_from_uri(source_uris, destination, **kwargs)
+        return self.client.load_table_from_uri(
+            source_uris,
+            destination,
+            job_id_prefix=self._generate_job_id_prefix(),
+            **kwargs,
+        )
 
     def _finalize_memtable(self, name: str) -> None:
         table_ref = bq.TableReference(self._session_dataset, name)
@@ -277,7 +285,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         # drop the table if it exists
         #
-        # we could do this with write_disposition = WRITE_TRUNCATE but then the
+        # we could do this with write_disposition = WRITE_TRUNCATE but then
         # concurrent append jobs aren't possible
         #
         # dropping the table first means all write_dispositions can be
