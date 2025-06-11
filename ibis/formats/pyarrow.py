@@ -90,11 +90,10 @@ class PyArrowType(TypeMapper):
             return dt.Interval(typ.unit, nullable=nullable)
         elif pa.types.is_interval(typ):
             raise ValueError("Arrow interval type is not supported")
-        elif (
-            pa.types.is_list(typ)
-            or pa.types.is_large_list(typ)
-            or pa.types.is_fixed_size_list(typ)
-        ):
+        elif pa.types.is_fixed_size_list(typ):
+            value_dtype = cls.to_ibis(typ.value_type, typ.value_field.nullable)
+            return dt.Array(value_dtype, length=typ.list_size, nullable=nullable)
+        elif pa.types.is_list(typ) or pa.types.is_large_list(typ):
             value_dtype = cls.to_ibis(typ.value_type, typ.value_field.nullable)
             return dt.Array(value_dtype, nullable=nullable)
         elif pa.types.is_struct(typ):
@@ -196,7 +195,10 @@ class PyArrowType(TypeMapper):
                 cls.from_ibis(dtype.value_type),
                 nullable=dtype.value_type.nullable,
             )
-            return pa.list_(value_field)
+            if dtype.length is None:
+                return pa.list_(value_field)
+            else:
+                return pa.list_(value_field, dtype.length)
         elif dtype.is_struct():
             fields = [
                 pa.field(name, cls.from_ibis(dtype), nullable=dtype.nullable)

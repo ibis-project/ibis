@@ -41,6 +41,9 @@ roundtripable_types = st.deferred(
         | past.binary_type
         | past.timestamp_types
         | st.builds(pa.list_, roundtripable_types)
+        | st.builds(
+            pa.list_, roundtripable_types, st.integers(min_value=1, max_value=2**31 - 1)
+        )
         | past.struct_types(roundtripable_types)
         | past.map_types(roundtripable_types, roundtripable_types)
     )
@@ -72,11 +75,6 @@ def test_roundtripable_types(arrow_type):
         (pa.large_string(), dt.String(nullable=False), pa.string()),
         (
             pa.large_list(pa.int64()),
-            dt.Array(dt.Int64(nullable=True), nullable=False),
-            pa.list_(pa.int64()),
-        ),
-        (
-            pa.list_(pa.int64(), list_size=3),
             dt.Array(dt.Int64(nullable=True), nullable=False),
             pa.list_(pa.int64()),
         ),
