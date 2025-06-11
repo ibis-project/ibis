@@ -14,6 +14,7 @@ from operator import itemgetter
 from typing import TYPE_CHECKING
 
 import pytest
+import rich
 import rich.console
 import sqlglot as sg
 import toolz
@@ -1112,21 +1113,71 @@ def test_dunder_array_column(alltypes, dtype):
     np.testing.assert_array_equal(result, expected)
 
 
-@pytest.mark.parametrize("interactive", [True, False])
-def test_repr(alltypes, interactive, monkeypatch):
-    pytest.importorskip("rich")
-
+@pytest.mark.parametrize(
+    "interactive", [True, False], ids=["interactive", "non-interactive"]
+)
+@pytest.mark.parametrize("is_jupyter", [True, False], ids=["jupyter", "not-jupyter"])
+@pytest.mark.parametrize("method", ["repr", "_repr_mimebundle_", "preview"])
+def test_reprs(alltypes, interactive, is_jupyter, method, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
-    expr = alltypes.select("date_string_col")
+    # Depending on the order that tests are run, someone may have already
+    # called rich.get_console() and created the default console,
+    # which will have inferred is_jupyter from the environment,
+    # leading to False in pytest.
+    # 1. Make it so any newly-created Consoles will use the right value of `is_jupyter`
+    # 2. Update the default console to use the right value of `is_jupyter`
+    monkeypatch.setattr("rich.console._is_jupyter", lambda: is_jupyter)
+    default_console = rich.get_console()
+    new_console = rich.console.Console(force_jupyter=is_jupyter)
+    monkeypatch.setattr(default_console, "__dict__", new_console.__dict__)
+    expected_color_system = "truecolor" if is_jupyter else None
+    assert new_console.is_jupyter == is_jupyter
+    assert default_console.is_jupyter == is_jupyter
+    assert new_console.color_system == expected_color_system
+    assert default_console.color_system == expected_color_system
 
-    s = repr(expr)
-    # no control characters
-    assert all(c.isprintable() or c in "\n\r\t" for c in s)
-    if interactive:
-        assert "/" in s
+    wide_table = alltypes.select(
+        *alltypes.columns,
+        *[alltypes[c].name(f"{c}_2") for c in alltypes.columns],
+        *[alltypes[c].name(f"{c}_3") for c in alltypes.columns],
+    )
+
+    if method == "repr":
+        s = repr(wide_table)
+    elif method == "_repr_mimebundle_":
+        s = wide_table._repr_mimebundle_(["text/plain"], [])["text/plain"]
+    elif method == "preview":
+        rich_table = wide_table.preview()
+        s = rich_table._repr_mimebundle_(None, None)["text/plain"]
     else:
-        assert "/" not in s
+        raise AssertionError(f"Unknown method: {method}")
+
+    color_or_control_codes = {c for c in s if not c.isprintable() and c not in "\n\r\t"}
+    if (method == "_repr_mimebundle_" and interactive and is_jupyter) or (
+        method == "preview" and is_jupyter
+    ):
+        assert color_or_control_codes != set()
+    else:
+        assert color_or_control_codes == set()
+
+    # ┃ characters separate columns in the table
+    n_columns_seen = max(line.count("┃") for line in s.splitlines()) - 1
+    n_columns_seen = max(n_columns_seen, 0)
+
+    n_wide_columns = len(wide_table.columns)
+    n_original_columns = len(alltypes.columns)
+    if method == "preview":
+        assert n_columns_seen == n_wide_columns
+    elif interactive:
+        if is_jupyter:
+            # table should have unbounded width, every column should be shown
+            assert n_columns_seen == n_wide_columns
+        else:
+            # table should be truncated to fit the console width
+            assert n_columns_seen < n_original_columns
+    else:
+        assert n_columns_seen == 0
 
 
 @pytest.mark.parametrize("show_types", [True, False])
@@ -1138,6 +1189,7 @@ def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
 
     expr = alltypes.select("id")
     s = repr(expr)
+    print(s)
     if show_types:
         assert "int" in s
     else:
