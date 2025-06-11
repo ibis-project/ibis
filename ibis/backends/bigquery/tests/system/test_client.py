@@ -4,6 +4,7 @@ import collections
 import datetime
 import decimal
 import os
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -16,6 +17,11 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.client import bigquery_param
 from ibis.util import gen_name
+
+if TYPE_CHECKING:
+    from pytest_mock import MockerFixture
+
+    from ibis.backends.bigquery import Backend
 
 
 def test_column_execute(alltypes, df):
@@ -548,8 +554,66 @@ def test_window_with_count_distinct(tmp_table, expr, query):
     tm.assert_frame_equal(result, expected)
 
 
-def test_create_job_with_custom_job_prefix(con):
-    job_id_prefix = "test_job_prefix_"
+def test_query_with_job_id_prefix(con3: Backend):
+    job_id_prefix = "ibis_test_"  # defined in con3 fixture
     query = "SELECT 1"
-    result = con.raw_sql(query, job_id_prefix=job_id_prefix)
+    result = con3.raw_sql(query)
     assert result.job_id.startswith(job_id_prefix)
+
+
+def test_read_csv_with_custom_load_job_prefix(
+    con3: Backend, mocker: MockerFixture, tmpdir
+):
+    """
+    Since methods that upload data to BigQuery (like `read_csv`) don't return any data,
+    they also don't return a job where we can inspect the job ID, so it's a little
+    awkward to test that the job ID prefix is set correctly. This does it indirectly
+    by spying on the `query` method of the client, which is called with the job ID
+    prefix when the data is uploaded, and we trust that the BQ library uses it correctly.
+    Else, this test tries to be flexible to allow internal changes in the implementation
+    of the `read_csv` method.
+    """
+    job_id_prefix = "ibis_test_"  # defined in con3 fixture
+    table_name = gen_name("test_table_with_custom_job_prefixes")
+
+    path = tmpdir.join("test_data.csv")
+
+    pd.DataFrame({"a": [1], "b": ["x"]}).to_csv(path, index=False)
+
+    t = con3.read_csv(path, table_name=table_name)
+
+    query_spy = mocker.spy(con3.client, "query")
+
+    assert t.count().execute() > 0
+    args, kwargs = query_spy.call_args
+    kwargs = kwargs.copy()
+    del kwargs["job_id_prefix"]
+    query_spy.assert_called_once_with(*args, job_id_prefix=job_id_prefix, **kwargs)
+
+
+def test_insert_with_custom_load_job_prefix(con3: Backend, mocker: MockerFixture):
+    """
+    Since methods that upload data to BigQuery (like `insert`) don't return any data,
+    they also don't return a job where we can inspect the job ID, so it's a little
+    awkward to test that the job ID prefix is set correctly. This does it indirectly
+    by spying on the `query` method of the client, which is called with the job ID
+    prefix when the data is uploaded, and we trust that the BQ library uses it correctly.
+    Else, this test tries to be flexible to allow internal changes in the implementation
+    of the `insert` method.
+    """
+    job_id_prefix = "ibis_test_"  # defined in con3 fixture
+
+    df = pd.DataFrame({"a": [1], "b": ["x"]})
+    table_name = gen_name("test_table_with_custom_job_prefixes")
+
+    con3.create_table(table_name, schema={"a": "int", "b": "string"})
+    con3.insert(table_name, obj=df)
+
+    expr = con3.table(table_name).count()
+
+    query_spy = mocker.spy(con3.client, "query")
+    assert expr.execute()
+    args, kwargs = query_spy.call_args
+    kwargs = kwargs.copy()
+    del kwargs["job_id_prefix"]
+    query_spy.assert_called_once_with(*args, job_id_prefix=job_id_prefix, **kwargs)
