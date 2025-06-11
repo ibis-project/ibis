@@ -286,13 +286,11 @@ tests = [
 ]
 docs = [
   "altair>=5.0.1,<6",
-  # pin griffe until https://github.com/ibis-project/ibis/pull/9865 is
-  # addressed
-  "griffe<2",
+  "griffe>=1.7.3",
   "ipykernel>=6.25.1,<7",
   "itables>=1.6.3,<2.5",
   "nbclient>=0.8.0,<1",
-  "plotly>=5.16.1,<6",
+  "plotly>=5.16.1",
   "plotnine>=0.12.2,<1",
   "py-cpuinfo>=9,<10",
   "quartodoc>=0.6.1,<1",
