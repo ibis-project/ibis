@@ -104,5 +104,5 @@ def test_having(simple_table, assert_sql):
 
 def test_timestamp_cast_to_seconds_respects_unit():
     expr = ibis.now()
-    compiled = expr.cast("timestamp('s')").compile(dialect="flink")
+    compiled = ibis.to_sql(expr.cast("timestamp('s')"), dialect="flink")
     assert "yyyy-MM-dd HH:mm:ss.SSS" not in compiled
