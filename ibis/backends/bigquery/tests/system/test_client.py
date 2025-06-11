@@ -4,7 +4,6 @@ import collections
 import datetime
 import decimal
 import os
-from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -17,7 +16,7 @@ from google.api_core.exceptions import Forbidden
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.client import bigquery_param
-from ibis.util import gen_name, mktempd
+from ibis.util import gen_name
 
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
@@ -562,7 +561,9 @@ def test_query_with_job_id_prefix(con3: Backend):
     assert result.job_id.startswith(job_id_prefix)
 
 
-def test_read_csv_with_custom_load_job_prefix(con3: Backend, mocker: MockerFixture):
+def test_read_csv_with_custom_load_job_prefix(
+    con3: Backend, mocker: MockerFixture, tmpdir
+):
     """
     Since methods that upload data to BigQuery (like `read_csv`) don't return any data,
     they also don't return a job where we can inspect the job ID, so it's a little
@@ -573,29 +574,21 @@ def test_read_csv_with_custom_load_job_prefix(con3: Backend, mocker: MockerFixtu
     of the `read_csv` method.
     """
     job_id_prefix = "ibis_test_"  # defined in con3 fixture
-
-    query_spy = mocker.spy(con3.client, "query")
-    original_query_call_count = query_spy.call_count
-
-    with mktempd() as tmpdir:
-        path = Path(tmpdir, "test_data.csv")
-        df = pd.DataFrame({"a": [1], "b": ["x"]})
-        df.to_csv(path, index=False)
-    file_path = path.as_posix()
     table_name = gen_name("test_table_with_custom_job_prefixes")
 
-    con3.read_csv(file_path, table_name=table_name)
+    path = tmpdir.join("test_data.csv")
 
-    assert con3.table(table_name).count().execute() > 0, (
-        "Data should have been uploaded to this table"
-    )
-    assert query_spy.call_count >= original_query_call_count, (
-        "query should have been called"
-    )
-    _, kwargs = query_spy.call_args_list[-1]  # get the last call args & kwargs
-    assert kwargs.get("job_id_prefix") == job_id_prefix, (
-        "query should be called with the specified job_id_prefix"
-    )
+    pd.DataFrame({"a": [1], "b": ["x"]}).to_csv(path, index=False)
+
+    t = con3.read_csv(path, table_name=table_name)
+
+    query_spy = mocker.spy(con3.client, "query")
+
+    assert t.count().execute() > 0
+    args, kwargs = query_spy.call_args
+    kwargs = kwargs.copy()
+    del kwargs["job_id_prefix"]
+    query_spy.assert_called_once_with(*args, job_id_prefix=job_id_prefix, **kwargs)
 
 
 def test_insert_with_custom_load_job_prefix(con3: Backend, mocker: MockerFixture):
@@ -610,20 +603,17 @@ def test_insert_with_custom_load_job_prefix(con3: Backend, mocker: MockerFixture
     """
     job_id_prefix = "ibis_test_"  # defined in con3 fixture
 
-    query_spy = mocker.spy(con3.client, "query")
-    original_query_call_count = query_spy.call_count
-
     df = pd.DataFrame({"a": [1], "b": ["x"]})
     table_name = gen_name("test_table_with_custom_job_prefixes")
+
+    con3.create_table(table_name, schema={"a": "int", "b": "string"})
     con3.insert(table_name, obj=df)
 
-    assert con3.table(table_name).count().execute() > 0, (
-        "Data should have been uploaded to this table"
-    )
-    assert query_spy.call_count > original_query_call_count, (
-        "query should have been called"
-    )
-    _, kwargs = query_spy.call_args_list[-1]  # get the last call args & kwargs
-    assert kwargs.get("job_id_prefix") == job_id_prefix, (
-        "query should be called with the specified job_id_prefix"
-    )
+    expr = con3.table(table_name).count()
+
+    query_spy = mocker.spy(con3.client, "query")
+    assert expr.execute()
+    args, kwargs = query_spy.call_args
+    kwargs = kwargs.copy()
+    del kwargs["job_id_prefix"]
+    query_spy.assert_called_once_with(*args, job_id_prefix=job_id_prefix, **kwargs)
