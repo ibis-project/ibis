@@ -749,10 +749,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         return None
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        job = self._client_query(
+        job = self.client.query(
             query,
             job_config=bq.QueryJobConfig(dry_run=True, use_query_cache=False),
             project=self.billing_project,
+            job_id_prefix=self._generate_job_id_prefix(),
         )
         return BigQuerySchema.to_ibis(job.schema)
 
