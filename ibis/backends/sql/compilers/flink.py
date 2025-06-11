@@ -423,6 +423,10 @@ class FlinkCompiler(SQLGlotCompiler):
                     self.f.convert_tz(self.cast(arg, dt.string), "UTC+0", tz)
                 )
             else:
+                from ibis.common.temporal import TimestampUnit
+
+                if to.unit == TimestampUnit.SECOND:
+                    return self.f.to_timestamp(arg)
                 return self.f.to_timestamp(arg, "yyyy-MM-dd HH:mm:ss.SSS")
         elif to.is_json():
             return arg
