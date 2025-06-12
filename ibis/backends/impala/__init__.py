@@ -20,7 +20,7 @@ import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, NoExampleLoader
+from ibis.backends import HasCurrentDatabase, NoExampleLoader
 from ibis.backends.impala import ddl, udf
 from ibis.backends.impala.udf import (
     aggregate_function,
@@ -51,7 +51,7 @@ __all__ = (
 )
 
 
-class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
+class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
     name = "impala"
     compiler = sc.impala.compiler
 
@@ -211,22 +211,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
     def list_tables(
         self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """Return the list of table names in the current database.
-
-        Parameters
-        ----------
-        like
-            A pattern in Python's regex format.
-        database
-            The database from which to list tables.
-            If not provided, the current database is used.
-
-        Returns
-        -------
-        list[str]
-            The list of the table names that match the pattern `like`.
-        """
-
         statement = "SHOW TABLES"
         if database is not None:
             statement += f" IN {database}"

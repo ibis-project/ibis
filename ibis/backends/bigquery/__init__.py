@@ -1007,33 +1007,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
     def list_tables(
         self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
-        """List the tables in the database.
-
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            The database location to perform the list against.
-
-            By default uses the current `dataset` (`self.current_database`) and
-            `project` (`self.current_catalog`).
-
-            To specify a table in a separate BigQuery dataset, you can pass in the
-            dataset and project as a string `"dataset.project"`, or as a tuple of
-            strings `(dataset, project)`.
-        """
         table_loc = self._to_sqlglot_table(database)
 
         project, dataset = self._parse_project_and_dataset(table_loc)
