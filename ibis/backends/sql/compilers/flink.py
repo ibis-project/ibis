@@ -15,6 +15,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
+    split_select_distinct_with_order_by,
 )
 
 
@@ -65,6 +66,7 @@ class FlinkCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_rank,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     UNSUPPORTED_OPS = (
         ops.AnalyticVectorizedUDF,
