@@ -24,6 +24,7 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlglot as sg
+import sqlglot.expressions as sge
 from pytest import param
 
 import ibis
@@ -292,7 +293,9 @@ def test_pgvector_type_load(con, vector_size):
     assert t.schema() == ibis.schema(
         {
             "id": dt.int64(nullable=False),
-            "embedding": dt.unknown,
+            "embedding": dt.Unknown(
+                raw_type=sge.DataType(this=sge.DataType.Type.VECTOR)
+            ),
         }
     )
 
@@ -311,7 +314,9 @@ CREATE TABLE itemsvrandom (id bigserial PRIMARY KEY, embedding vector({vector_si
     assert t.schema() == ibis.schema(
         {
             "id": dt.int64(nullable=False),
-            "embedding": dt.unknown,
+            "embedding": dt.Unknown(
+                raw_type=sge.DataType(this=sge.DataType.Type.VECTOR)
+            ),
         }
     )
 

@@ -539,11 +539,27 @@ class DataType(Concrete, Coercible):
 
 
 @public
-class Unknown(DataType, Singleton):
+class Unknown(DataType):
     """An unknown type."""
+
+    raw_type: Any = None
+    """The raw type from the underlying type system, such as pa.DataType | sge.DataType if available.
+
+    The idea is that `type_mapper.from_ibis(type_mapper.to_ibis(original_type))`
+    should roundtrip back to the original type.
+    For example, when reading a user defined datatype from postgres,
+    eg "MySchema"."MyEnum", the `raw_type` will be
+    a `sqlglot.expressions.DataType` object holding that.
+    Ibis won't know how to interact with the expression, but
+    we can still pass it around, and cast.
+    """
 
     scalar = "UnknownScalar"
     column = "UnknownColumn"
+
+    @property
+    def _pretty_piece(self) -> str:
+        return f"({self.raw_type!r})" if self.raw_type is not None else ""
 
 
 @public

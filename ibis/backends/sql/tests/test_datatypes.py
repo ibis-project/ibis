@@ -5,6 +5,7 @@ import hypothesis.strategies as st
 import pytest
 import sqlglot.expressions as sge
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
@@ -71,17 +72,64 @@ def test_interval_without_unit():
 
 
 @pytest.mark.parametrize(
-    "typ",
+    "sgetyp",
     [
-        sge.DataType.Type.UINT256,
-        sge.DataType.Type.UINT128,
-        sge.DataType.Type.BIGSERIAL,
-        sge.DataType.Type.HLLSKETCH,
+        sge.DataType(this=sge.DataType.Type.UINT256),
+        sge.DataType(this=sge.DataType.Type.UINT128),
+        sge.DataType(this=sge.DataType.Type.BIGSERIAL),
+        sge.DataType(this=sge.DataType.Type.HLLSKETCH),
+        sge.DataType(this=sge.DataType.Type.USERDEFINED, kind='"MySchema"."MyEnum"'),
     ],
 )
 @pytest.mark.parametrize(
     "typengine",
     [ClickHouseType, PostgresType, DuckDBType],
 )
-def test_unsupported_dtypes_are_unknown(typengine, typ):
-    assert typengine.to_ibis(sge.DataType(this=typ)) == dt.unknown
+def test_unsupported_dtypes_are_unknown(typengine, sgetyp):
+    ibis_type = typengine.to_ibis(sgetyp)
+    assert ibis_type.is_unknown()
+    assert ibis_type.raw_type == sgetyp
+
+
+@pytest.mark.parametrize(
+    "s,parsed",
+    [
+        ("VARCHAR", dt.String()),
+        ("VECTOR", dt.Unknown(sge.DataType(this=sge.DataType.Type.VECTOR))),
+        (
+            '"MySchema"."MyEnum"',
+            dt.Unknown(
+                sge.DataType(
+                    this=sge.DataType.Type.USERDEFINED, kind='"MySchema"."MyEnum"'
+                )
+            ),
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "typengine",
+    [ClickHouseType, PostgresType, DuckDBType],
+)
+def test_from_string(typengine, s, parsed):
+    ibis_type = typengine.from_string(s)
+    # different backends have different default nullability, normalize to True
+    ibis_type = ibis_type.copy(nullable=True)
+    assert ibis_type == parsed
+
+
+def test_cast_to_unknown():
+    dtype = dt.Unknown(
+        sge.DataType(this=sge.DataType.Type.USERDEFINED, kind='"MySchema"."MyEnum"')
+    )
+    e = ibis.literal(4).cast(dtype)
+    sql = ibis.to_sql(e)
+    assert """CAST(4 AS "MySchema"."MyEnum")""" in sql
+
+
+def test_unknown_repr():
+    dtype = dt.Unknown(
+        sge.DataType(this=sge.DataType.Type.USERDEFINED, kind='"MySchema"."MyEnum"')
+    )
+    result = str(dtype)
+    expected = 'unknown(DataType(this=Type.USERDEFINED, kind="MySchema"."MyEnum"))'
+    assert result == expected

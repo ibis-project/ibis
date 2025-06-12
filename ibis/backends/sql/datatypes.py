@@ -162,7 +162,7 @@ class SqlglotType(TypeMapper):
         elif (known_typ := _from_sqlglot_types.get(typecode)) is not None:
             dtype = known_typ(nullable=nullable)
         else:
-            dtype = dt.unknown
+            dtype = dt.Unknown(raw_type=typ)
 
         if nullable is not None:
             return dtype.copy(nullable=nullable)
@@ -189,10 +189,10 @@ class SqlglotType(TypeMapper):
         try:
             sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
         except sg.errors.ParseError:
-            # If sqlglot can't parse the type fall back to `dt.unknown`
-            return dt.unknown
-        else:
-            return cls.to_ibis(sgtype, nullable=nullable)
+            # If sqlglot can't parse the type fall back to USERDEFINED,
+            # which will then get turned into ibis.dt.Unknown
+            sgtype = sge.DataType(this=typecode.USERDEFINED, kind=text)
+        return cls.to_ibis(sgtype, nullable=nullable)
 
     @classmethod
     def to_string(cls, dtype: dt.DataType) -> str:
@@ -486,6 +486,12 @@ class SqlglotType(TypeMapper):
         this = getattr(typecode, dtype.geotype.upper())
         return sge.DataType(this=this, expressions=expressions)
 
+    @classmethod
+    def _from_ibis_Unknown(cls, dtype: dt.Unknown) -> sge.DataType:
+        if isinstance(dtype.raw_type, sge.DataType):
+            return dtype.raw_type
+        return sge.DataType(this=typecode.UNKNOWN)
+
     # warning: this does early binding, so if you call eg `PostgresType._from_ibis_Point`
     # this will resolve to `SqlglotType._from_ibis_SpecificGeometry`, not
     # `PostgresType._from_ibis_SpecificGeometry`.
@@ -502,8 +508,8 @@ class PostgresType(SqlglotType):
 
     unknown_type_strings = FrozenDict(
         {
-            "vector": dt.unknown,
-            "tsvector": dt.unknown,
+            # "vector": dt.Unknown(sge.DataType(this=typecode.VECTOR)),
+            # "tsvector": dt.unknown,
             "line": dt.linestring,
             "line[]": dt.Array(dt.linestring),
             "polygon": dt.polygon,
