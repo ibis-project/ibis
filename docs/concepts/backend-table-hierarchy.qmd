@@ -1,0 +1,93 @@
+---
+title: Backend Table Hierarchy
+---
+
+Most SQL backends organize tables into groups, and some use a two-level hierarchy.
+They use terms such as `catalog`, `database`, and/or `schema` to refer to these groups.
+
+Ibis uses the following terminology throughout its codebase, API, and documentation:
+
+- `database`: a collection of tables
+- `catalog`: a collection of databases
+
+In other words, the full specification of a table in Ibis is either
+- `catalog.database.table`
+- `database.table`
+
+For example, to access the `t` table in the `d` database in the `c` catalog,
+you would do `conn.table("t", database=("c", "d"))`.
+See the [Backend.table() documentation](backends/duckdb.qmd#ibis.backends.duckdb.Backend.table)
+for more details.
+
+We use this common terminology in the API of every Backend, **once constructed**.
+However, when you initially **create** a Backend, you will use the
+backend-specific terminology. We made this design decision so that
+
+- You can use the same API for constructing a Backend as for constructing the Backend's
+  native connection.
+- But, once you have the Backend, you can use the ibis common terminology
+  no matter which Backend you are using,
+  which makes it so that if you want to switch from one Backend to another,
+  you only have to change your code that **creates** the connection,
+  not the code that **uses** the connection.
+
+For example, when connecting to a PostgreSQL database using the native
+`psycopg` driver, you would use the following code:
+
+```python
+psycopg.connect(
+    user="me",
+    password="supersecret",
+    host="abc.com",
+    port=5432,
+    dbname="my_database",
+    options="-csearch_path=my_schema",
+)
+```
+
+In ibis, you would use the following code (note how it is analogous to the above)
+
+```python
+conn = ibis.postgres.connect(
+    user="me",
+    password="supersecret",
+    host="abc.com",
+    port=5432,
+    database="my_database",
+    schema="my_schema",
+)
+```
+
+AFTER you have constructed the Backend however, now use the common terminology:
+
+```python
+conn.table("my_table", database=("my_database", "my_schema"))
+conn.list_catalogs()  # results in something like ["my_database"]
+conn.list_databases()  # results in ["my_schema"]
+```
+
+Below is a table with the terminology used by each backend for the two levels of
+hierarchy. This is provided as a reference, note that when using Ibis, we will
+use the terms `catalog` and `database` and map them onto the appropriate fields.
+
+
+| Backend    | Catalog        | Database   |
+|------------|----------------|------------|
+| bigquery   | project        | database   |
+| clickhouse |                | database   |
+| datafusion | catalog        | schema     |
+| druid      | dataSourceType | dataSource |
+| duckdb     | database       | schema     |
+| flink      | catalog        | database   |
+| impala     |                | database   |
+| mssql      | database       | schema     |
+| mysql      |                | database   |
+| oracle     |                | database   |
+| pandas     |                | NA         |
+| polars     |                | NA         |
+| postgres   | database       | schema     |
+| pyspark    | database       | schema     |
+| risingwave | database       | schema     |
+| sqlite     |                | schema     |
+| snowflake  | database       | schema     |
+| trino      | catalog        | schema     |

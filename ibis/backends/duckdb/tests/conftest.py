@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 import pytest
@@ -107,6 +108,8 @@ class TestConf(BackendTest):
             extension_directory = tmpdir.getbasetemp().joinpath("duckdb_extensions")
             extension_directory.mkdir(exist_ok=True)
             kw["extension_directory"] = extension_directory
+
+        kw["threads"] = 1 if worker_id != "master" else os.cpu_count() // 2
         return ibis.duckdb.connect(**kw)
 
     def _load_tpc(self, *, suite, scale_factor):
@@ -150,12 +153,12 @@ def gpd():
 
 
 @pytest.fixture(scope="session")
-def zones(con, data_dir, gpd):
+def zones(con, data_dir):
     return con.read_geo(data_dir / "geojson" / "zones.geojson")
 
 
 @pytest.fixture(scope="session")
-def lines(con, data_dir, gpd):
+def lines(con, data_dir):
     return con.read_geo(data_dir / "geojson" / "lines.geojson")
 
 
@@ -170,7 +173,7 @@ def lines_gdf(data_dir, gpd):
 
 
 @pytest.fixture(scope="session")
-def geotable(con, gpd):
+def geotable(con):
     return con.table("geo")
 
 

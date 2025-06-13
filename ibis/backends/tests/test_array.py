@@ -15,6 +15,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis.backends.tests.conftest import NO_ARRAY_SUPPORT_MARKS
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     DatabricksServerOperationError,
@@ -39,39 +40,7 @@ np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
 
-pytestmark = [
-    pytest.mark.never(
-        ["sqlite", "mysql", "exasol"], reason="No array support", raises=Exception
-    ),
-    pytest.mark.never(
-        ["mssql"],
-        reason="No array support",
-        raises=(
-            com.UnsupportedBackendType,
-            com.OperationNotDefinedError,
-            AssertionError,
-        ),
-    ),
-    pytest.mark.never(
-        ["mysql"],
-        reason="No array support",
-        raises=(
-            com.UnsupportedBackendType,
-            com.OperationNotDefinedError,
-            MySQLOperationalError,
-        ),
-    ),
-    pytest.mark.notyet(
-        ["impala"],
-        reason="No array support",
-        raises=(
-            com.UnsupportedBackendType,
-            com.OperationNotDefinedError,
-            com.TableNotFound,
-        ),
-    ),
-    pytest.mark.notimpl(["druid", "oracle"], raises=Exception),
-]
+pytestmark = NO_ARRAY_SUPPORT_MARKS
 
 # NB: We don't check whether results are numpy arrays or lists because this
 # varies across backends. At some point we should unify the result type to be
@@ -743,7 +712,10 @@ def test_array_filter_with_index(con, input, output, predicate):
 )
 @pytest.mark.parametrize(
     "predicate",
-    [lambda x, i: i % 2 == 0, partial(lambda x, y, i: i % 2 == 0, y=1)],
+    [
+        lambda _, i: i % 2 == 0,
+        partial(lambda _, y, i: i % 2 == 0, y=1),  # noqa: ARG005
+    ],
     ids=["lambda", "partial"],
 )
 def test_array_filter_with_index_lambda(con, input, output, predicate):
@@ -1229,7 +1201,6 @@ def test_zip_null(con, fn):
 @pytest.mark.notyet(
     ["flink"], raises=ValueError, reason="array of struct is not supported"
 )
-@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_array_of_struct_unnest(con):
     jobs = ibis.memtable(
         {
@@ -1772,7 +1743,6 @@ def test_table_unnest_column_expr(backend):
 
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["trino"], raises=TrinoUserError)
-@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notyet(

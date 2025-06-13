@@ -58,7 +58,7 @@ no_uuids = [
 
 
 @ibis.udf.scalar.python(side_effects=True)
-def my_random(x: float) -> float:
+def my_random(x: float) -> float:  # noqa: ARG001
     # need to make the whole UDF self-contained for postgres to work
     import random
 
@@ -145,8 +145,8 @@ impure_params_uncorrelated = pytest.mark.parametrize(
                 *no_uuids,
                 pytest.mark.notyet(
                     ["mysql"],
-                    reason="instances are correlated",
-                    strict=sys.version_info[:2] > (3, 9),
+                    reason="instances are correlated; but sometimes this passes and it's not clear why",
+                    strict=False,
                 ),
             ],
             id="uuid",

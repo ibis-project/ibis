@@ -1,3 +1,5 @@
+"""The internal rich rendering logic. To import, requires rich to be installed."""
+
 from __future__ import annotations
 
 import datetime
@@ -19,7 +21,7 @@ import ibis
 import ibis.expr.datatypes as dt
 
 if TYPE_CHECKING:
-    from ibis.expr.types import Column, Expr, Scalar, Table
+    from ibis.expr.types import Column, Scalar, Table
 
 
 def _format_nested(
@@ -258,42 +260,13 @@ def format_dtype(dtype, max_string: int) -> Text:
     return Text.styled(strtyp, "dim")
 
 
-def to_rich(
-    expr: Expr,
-    *,
-    max_rows: int | None = None,
-    max_columns: int | None = None,
-    max_length: int | None = None,
-    max_string: int | None = None,
-    max_depth: int | None = None,
-    console_width: int | float | None = None,
-) -> Pretty:
-    """Truncate, evaluate, and render an Ibis expression as a rich object."""
-    from ibis.expr.types import Scalar
-
-    if isinstance(expr, Scalar):
-        return _to_rich_scalar(
-            expr, max_length=max_length, max_string=max_string, max_depth=max_depth
-        )
-    else:
-        return _to_rich_table(
-            expr,
-            max_rows=max_rows,
-            max_columns=max_columns,
-            max_length=max_length,
-            max_string=max_string,
-            max_depth=max_depth,
-            console_width=console_width,
-        )
-
-
-def _to_rich_scalar(
+def to_rich_scalar(
     expr: Scalar,
     *,
     max_length: int | None = None,
     max_string: int | None = None,
     max_depth: int | None = None,
-) -> Pretty:
+) -> Panel:
     value = expr.to_pyarrow().as_py()
 
     if value is None:
@@ -310,7 +283,7 @@ def _to_rich_scalar(
     return Panel(formatted_value, expand=False, box=box.SQUARE)
 
 
-def _to_rich_table(
+def to_rich_table(
     tablish: Table | Column,
     *,
     max_rows: int | None = None,

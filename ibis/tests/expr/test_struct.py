@@ -43,6 +43,14 @@ def test_struct_getattr():
         expr.bad  # # noqa: B018
 
 
+def test_null_literal_getitem():
+    expr = ibis.literal(None, type="struct<a: int64, b: string>")
+    field = expr["a"]
+    assert isinstance(field, ir.IntegerValue)
+    assert isinstance(field.op(), ops.Literal)
+    assert field.op().value is None
+
+
 def test_struct_tab_completion():
     t = ibis.table([("struct_col", "struct<my_field: string, for: int64>")])
     # Only valid python identifiers in getattr completions

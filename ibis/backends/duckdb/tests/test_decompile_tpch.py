@@ -73,7 +73,7 @@ def set_database(con, db):
         param(3, id="tpch03"),
     ],
 )
-def test_parse_sql_tpch(tpch_query, snapshot, con, data_dir):
+def test_parse_sql_tpch(tpch_query, snapshot, con):
     tpch_query_file = SQL_QUERY_PATH / f"{tpch_query:02d}.sql"
     with open(tpch_query_file) as f:
         sql = f.read()

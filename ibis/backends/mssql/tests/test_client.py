@@ -347,3 +347,11 @@ def test_mssql_without_password_is_valid():
 )
 def test_list_tables_with_dash(con, database):
     assert con.list_tables(database=database)
+
+
+def test_rank_no_window_frame(snapshot):
+    t = ibis.table(schema=dict(color=str, price=int), name="diamonds_sample")
+    expr = t.mutate(ibis.rank().over(group_by="color", order_by="price"))
+    sql = ibis.to_sql(expr, dialect="mssql")
+
+    snapshot.assert_match(sql, "out.sql")

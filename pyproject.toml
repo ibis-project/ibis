@@ -121,7 +121,7 @@ druid = [
   "rich>=12.4.4",
 ]
 duckdb = [
-  "duckdb>=0.10.3",
+  "duckdb>=0.10.3,!=1.3.0", # 1.3.0 has a bug that breaks ORDER BY + LIMIT in any Python query
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
@@ -197,7 +197,7 @@ postgres = [
   "rich>=12.4.4",
 ]
 pyspark = [
-  "pyspark>=3.3.3",
+  "pyspark>=3.3.3,<4",
   "packaging>=21.3",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
@@ -268,7 +268,9 @@ tests = [
   "fsspec[s3]",
   "hypothesis>=6.58.0,<7",
   "packaging>=21.3,<26",
-  "pytest>=8.2.0,<9",
+  # without this constraint, pyspark starts to fail some memtable cleanup tests
+  # with pytest 8.4.0
+  "pytest>=8.2.0,<8.4.0",
   "pytest-benchmark>=3.4.1,<6",
   "pytest-deadfixtures>=2.2.1,<3",
   "pytest-clarity>=1.0.1,<2",
@@ -284,13 +286,11 @@ tests = [
 ]
 docs = [
   "altair>=5.0.1,<6",
-  # pin griffe until https://github.com/ibis-project/ibis/pull/9865 is
-  # addressed
-  "griffe<2",
+  "griffe>=1.7.3",
   "ipykernel>=6.25.1,<7",
   "itables>=1.6.3,<2.5",
   "nbclient>=0.8.0,<1",
-  "plotly>=5.16.1,<6",
+  "plotly>=5.16.1",
   "plotnine>=0.12.2,<1",
   "py-cpuinfo>=9,<10",
   "quartodoc>=0.6.1,<1",
@@ -302,8 +302,8 @@ docs = [
   "jupyter-cache>=1.0.0,<2",
   "jupyterlab>=4.2.5,<5",
   "jupyterlab-night>=0.4.6,<1",
-  "jupyterlite-core>=0.5,<0.6",
-  "jupyterlite-pyodide-kernel>=0.5,<0.6",
+  "jupyterlite-core>=0.6,<0.7",
+  "jupyterlite-pyodide-kernel>=0.6,<0.7",
 ]
 
 [project.entry-points."ibis.backends"]
@@ -439,6 +439,8 @@ filterwarnings = [
   'ignore:Downcasting object dtype arrays on \.fillna, \.ffill, \.bfill is deprecated:FutureWarning',
   # pandas 2.2 warnings coming directly from the way flink uses pandas
   "ignore:Passing a BlockManager to DataFrame is deprecated:DeprecationWarning",
+  # flink is STILL using pkg_resources
+  "ignore:pkg_resources is deprecated as an API.:UserWarning",
   # snowpark logging warnings
   "ignore:The 'warn' method is deprecated, use 'warning' instead:DeprecationWarning",
   # botocore is still using utcnow
@@ -529,6 +531,7 @@ select = [
   "W",   # pycodestyle
   "YTT", # flake8-2020
   "S",   # flake8-bandit
+  "ARG",
 ]
 ignore = [
   "B028",    # required stacklevel argument to warn
@@ -604,6 +607,7 @@ required-imports = ["from __future__ import annotations"]
   "T201",
 ] # prints output using `print`
 "docs/**/{datafusion,polars}_*.py" = ["T201"] # prints output using `print`
+"!**/test*.py" = ["ARG"] # check for  unused arguments in testing
 
 [tool.ruff.format]
 docstring-code-format = true

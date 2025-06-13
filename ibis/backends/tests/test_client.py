@@ -1736,7 +1736,7 @@ def test_cross_database_join(con_create_database, monkeypatch):
 @pytest.mark.notyet(["flink"], raises=AttributeError, reason="no _safe_raw_sql method")
 @pytest.mark.notyet(["polars"], reason="Doesn't support insert")
 @pytest.mark.notimpl(
-    ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
+    ["impala", "trino"], reason="Default constraints are not supported"
 )
 @pytest.mark.notimpl(
     ["databricks"],
@@ -1745,6 +1745,7 @@ def test_cross_database_join(con_create_database, monkeypatch):
     raises=DatabricksServerOperationError,
 )
 @pytest.mark.notimpl(["athena"], reason="insert isn't implemented yet")
+@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_insert_into_table_missing_columns(con, temp_table):
     db = getattr(con, "current_database", None)
 
@@ -1868,7 +1869,12 @@ def test_identically_named_memtables_cannot_be_joined(con):
 
 @pytest.mark.parametrize("i", range(5))
 def test_stateful_data_is_loaded_once(
-    con, data_dir, tmp_path_factory, worker_id, mocker, i
+    con,
+    data_dir,
+    tmp_path_factory,
+    worker_id,
+    mocker,
+    i,  # noqa: ARG001
 ):
     TestConf = pytest.importorskip(f"ibis.backends.{con.name}.tests.conftest").TestConf
     if not TestConf.stateful:

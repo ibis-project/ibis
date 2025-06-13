@@ -373,7 +373,7 @@ def test_coerce_finder():
 
 
 def test_coerce_replacer():
-    r = _coerce_replacer(lambda x, children: D if children else C)
+    r = _coerce_replacer(lambda _, children: D if children else C)
     assert r(C, {"children": []}) is D
     assert r(C, None) is C
 
@@ -475,7 +475,7 @@ def test_map_clear():
     X = MyNode(name="X", children=[Z, Y])
     result_sequence = {}
 
-    def record_result_keys(node, results, **kwargs):
+    def record_result_keys(node, results, **_):
         result_sequence[node] = tuple(results.keys())
         return node
 

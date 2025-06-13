@@ -8,7 +8,7 @@ import copy
 import glob
 import os
 import re
-from typing import TYPE_CHECKING, Any, Optional
+from typing import IO, TYPE_CHECKING, Any, Callable, Optional
 
 import google.api_core.exceptions
 import google.auth.credentials
@@ -37,7 +37,7 @@ from ibis.backends.bigquery.datatypes import BigQuerySchema
 from ibis.backends.sql import SQLBackend
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Mapping, Sequence
     from pathlib import Path
     from urllib.parse import ParseResult
 
@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
     from google.cloud.bigquery.table import RowIterator
+    from google.cloud.bigquery.table import TableListItem as BqTableListItem
 
 
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]
@@ -168,12 +169,70 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.__session_dataset: bq.DatasetReference | None = None
+        self._generate_job_id_prefix: Callable[[], str | None] = lambda: None
 
     @property
     def _session_dataset(self):
         if self.__session_dataset is None:
             self.__session_dataset = self._make_session()
         return self.__session_dataset
+
+    def _client_query(self, query: str, **kwargs) -> RowIterator:
+        """Run a query using the BigQuery client, possibly injecting a job_id_prefix."""
+
+        job_id_prefix = self._generate_job_id_prefix()
+
+        if job_id_prefix is None:
+            # If no job_id_prefix is provided, use the most efficient method
+            return self.client.query_and_wait(query, **kwargs)
+        else:
+            # If a job_id_prefix is provided, use the method that allows for job_id_prefix
+            # to be passed in
+            return self.client.query(
+                query, job_id_prefix=job_id_prefix, **kwargs
+            ).result()
+
+    def _client_load_table_from_dataframe(
+        self,
+        dataframe: Any,
+        destination: bq.TableReference | bq.Table | str,
+        **kwargs,
+    ) -> bq.LoadJob:
+        """Load a DataFrame into a BigQuery table, possibly with a job_id_prefix."""
+        return self.client.load_table_from_dataframe(
+            dataframe,
+            destination,
+            job_id_prefix=self._generate_job_id_prefix(),
+            **kwargs,
+        )
+
+    def _client_load_table_from_file(
+        self,
+        file_obj: IO[bytes],
+        destination: bq.TableReference | bq.Table | BqTableListItem | str,
+        **kwargs,
+    ) -> bq.LoadJob:
+        """Load data from a file into a BigQuery table, possibly with a job_id_prefix."""
+        return self.client.load_table_from_file(
+            file_obj,
+            destination,
+            job_id_prefix=self._generate_job_id_prefix(),
+            **kwargs,
+        )
+
+    def _client_load_table_from_uri(
+        self,
+        source_uris: str | Sequence[str],
+        destination: bq.TableReference | bq.Table | BqTableListItem | str,
+        **kwargs,
+    ) -> bq.LoadJob:
+        """Load data from a URI into a BigQuery table, possibly with a job_id_prefix."""
+        return self.client.load_table_from_uri(
+            source_uris,
+            destination,
+            job_id_prefix=self._generate_job_id_prefix(),
+            **kwargs,
+        )
 
     def _finalize_memtable(self, name: str) -> None:
         table_ref = bq.TableReference(self._session_dataset, name)
@@ -184,7 +243,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         bq_schema = BigQuerySchema.from_ibis(op.schema)
 
-        load_job = self.client.load_table_from_dataframe(
+        load_job = self._client_load_table_from_dataframe(
             op.data.to_frame(),
             table_ref,
             job_config=bq.LoadJobConfig(
@@ -202,6 +261,19 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         table_name: str | None = None,
         job_config: bq.LoadJobConfig,
     ) -> ir.Table:
+        """Read a file into a BigQuery table.
+
+        If the table already exists, it will be dropped before loading.
+
+        Parameters
+        ----------
+        path
+            Path to a file on GCS or the local filesystem. Globs are supported.
+        table_name
+            Optional table name
+        job_config
+            A `LoadJobConfig` object that specifies how to load the data.
+        """
         self._make_session()
 
         if table_name is None:
@@ -214,7 +286,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         # drop the table if it exists
         #
-        # we could do this with write_disposition = WRITE_TRUNCATE but then the
+        # we could do this with write_disposition = WRITE_TRUNCATE but then
         # concurrent append jobs aren't possible
         #
         # dropping the table first means all write_dispositions can be
@@ -224,7 +296,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         if os.path.isdir(path):
             raise NotImplementedError("Reading from a directory is not supported.")
         elif str(path).startswith("gs://"):
-            load_job = self.client.load_table_from_uri(
+            load_job = self._client_load_table_from_uri(
                 path, table_ref, job_config=job_config
             )
             load_job.result()
@@ -232,7 +304,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
             def load(file: str) -> None:
                 with open(file, mode="rb") as f:
-                    load_job = self.client.load_table_from_file(
+                    load_job = self._client_load_table_from_file(
                         f, table_ref, job_config=job_config
                     )
                     load_job.result()
@@ -251,6 +323,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ):
         """Read Parquet data into a BigQuery table.
+
+        If the table already exists, it will be dropped before loading.
 
         Parameters
         ----------
@@ -279,6 +353,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
     ) -> ir.Table:
         """Read CSV data into a BigQuery table.
 
+        If the table already exists, it will be dropped before loading.
+
         Parameters
         ----------
         path
@@ -306,6 +382,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read newline-delimited JSON data into a BigQuery table.
+
+        If the table already exists, it will be dropped before loading.
 
         Parameters
         ----------
@@ -352,6 +430,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         client: bq.Client | None = None,
         storage_client: bqstorage.BigQueryReadClient | None = None,
         location: str | None = None,
+        generate_job_id_prefix: Callable[[], str | None] | None = None,
     ) -> Backend:
         """Create a `Backend` for use with Ibis.
 
@@ -404,6 +483,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             created using the `project_id` and `credentials`.
         location
             Default location for BigQuery objects.
+        generate_job_id_prefix
+            Optional callable that generates a bigquery job ID prefix. If specified, for
+            any query job, jobs will always be created rather than optionally created by
+            BigQuery's `Client.query_and_wait`.
+
 
         Returns
         -------
@@ -486,6 +570,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         self.partition_column = partition_column
 
+        if generate_job_id_prefix:
+            if not callable(generate_job_id_prefix):
+                raise TypeError("generate_job_id_prefix must be a callable function")
+            self._generate_job_id_prefix = generate_job_id_prefix
+
     @util.experimental
     @classmethod
     def from_connection(
@@ -553,7 +642,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         catalog: str | None = None,
         force: bool = False,
         collate: str | None = None,
-        job_id_prefix: str | None = None,
         **options: Any,
     ) -> None:
         properties = [
@@ -573,7 +661,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             properties=sge.Properties(expressions=properties),
         )
 
-        self.raw_sql(stmt.sql(self.name), job_id_prefix=job_id_prefix)
+        self.raw_sql(stmt.sql(self.name))
 
     def drop_database(
         self,
@@ -583,7 +671,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         catalog: str | None = None,
         force: bool = False,
         cascade: bool = False,
-        job_id_prefix: str | None = None,
     ) -> None:
         """Drop a BigQuery dataset."""
         stmt = sge.Drop(
@@ -593,7 +680,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             cascade=cascade,
         )
 
-        self.raw_sql(stmt.sql(self.name), job_id_prefix=job_id_prefix)
+        self.raw_sql(stmt.sql(self.name))
 
     def table(
         self,
@@ -675,6 +762,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             query,
             job_config=bq.QueryJobConfig(dry_run=True, use_query_cache=False),
             project=self.billing_project,
+            job_id_prefix=self._generate_job_id_prefix(),
         )
         return BigQuerySchema.to_ibis(job.schema)
 
@@ -682,7 +770,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         self,
         query: str,
         params: Mapping[ir.Scalar, Any] | None = None,
-        job_id_prefix: str | None = None,
         query_job_config: bq.QueryJobConfig | None = None,
     ) -> RowIterator:
         job_config = _merge_params_into_config(query_job_config, params)
@@ -690,17 +777,9 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
 
-        if job_id_prefix is not None:
-            return self.client.query(
-                query,
-                job_config=job_config,
-                project=self.billing_project,
-                job_id_prefix=job_id_prefix,
-            ).result()
-        else:
-            return self.client.query_and_wait(
-                query, job_config=job_config, project=self.billing_project
-            )
+        return self.client.query_and_wait(
+            query, job_config=job_config, project=self.billing_project
+        )
 
     @property
     def current_catalog(self) -> str:
@@ -790,7 +869,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        job_id_prefix: str | None = None,
         query_job_config: bq.QueryJobConfig | None = None,
         **kwargs: Any,
     ) -> RowIterator:
@@ -801,7 +879,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         return self.raw_sql(
             sql,
             params=params,
-            job_id_prefix=job_id_prefix,
             query_job_config=query_job_config,
         )
 
@@ -960,33 +1037,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
     def list_tables(
         self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
-        """List the tables in the database.
-
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            The database location to perform the list against.
-
-            By default uses the current `dataset` (`self.current_database`) and
-            `project` (`self.current_catalog`).
-
-            To specify a table in a separate BigQuery dataset, you can pass in the
-            dataset and project as a string `"dataset.project"`, or as a tuple of
-            strings `(dataset, project)`.
-        """
         table_loc = self._to_sqlglot_table(database)
 
         project, dataset = self._parse_project_and_dataset(table_loc)
@@ -1020,7 +1070,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         partition_by: str | None = None,
         cluster_by: Iterable[str] | None = None,
         options: Mapping[str, Any] | None = None,
-        job_id_prefix: str | None = None,
     ) -> ir.Table:
         """Create a table in BigQuery.
 
@@ -1053,9 +1102,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         options
             BigQuery-specific table options; see the BigQuery documentation for
             details: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#table_option_list
-        job_id_prefix
-            Optional custom job ID prefix; when specified, bigquery will use this as a
-            prefix for the job ID it generates
 
         Returns
         -------
@@ -1147,7 +1193,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
         sql = stmt.sql(self.name)
 
-        self.raw_sql(sql, job_id_prefix=job_id_prefix)
+        self.raw_sql(sql)
         return self.table(table.name, database=(table.catalog, table.db))
 
     def drop_table(
@@ -1157,7 +1203,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         database: tuple[str | str] | str | None = None,
         force: bool = False,
-        job_id_prefix: str | None = None,
     ) -> None:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -1170,7 +1215,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             ),
             exists=force,
         )
-        self.raw_sql(stmt.sql(self.name), job_id_prefix=job_id_prefix)
+        self.raw_sql(stmt.sql(self.name))
 
     def create_view(
         self,
@@ -1180,7 +1225,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         *,
         database: str | None = None,
         overwrite: bool = False,
-        job_id_prefix: str | None = None,
     ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -1196,17 +1240,11 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             replace=overwrite,
         )
         self._run_pre_execute_hooks(obj)
-        self.raw_sql(stmt.sql(self.name), job_id_prefix=job_id_prefix)
+        self.raw_sql(stmt.sql(self.name))
         return self.table(name, database=(catalog, database))
 
     def drop_view(
-        self,
-        name: str,
-        /,
-        *,
-        database: str | None = None,
-        force: bool = False,
-        job_id_prefix: str | None = None,
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -1220,7 +1258,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             ),
             exists=force,
         )
-        self.raw_sql(stmt.sql(self.name), job_id_prefix=job_id_prefix)
+        self.raw_sql(stmt.sql(self.name))
 
     def _drop_cached_table(self, name):
         self.drop_table(
@@ -1269,80 +1307,4 @@ def compile(expr, params=None, **kwargs):
     return backend.compile(expr, params=params, **kwargs)
 
 
-def connect(
-    project_id: str | None = None,
-    dataset_id: str = "",
-    credentials: google.auth.credentials.Credentials | None = None,
-    application_name: str | None = None,
-    auth_local_webserver: bool = False,
-    auth_external_data: bool = False,
-    auth_cache: str = "default",
-    partition_column: str | None = "PARTITIONTIME",
-) -> Backend:
-    """Create a :class:`Backend` for use with Ibis.
-
-    Parameters
-    ----------
-    project_id
-        A BigQuery project id.
-    dataset_id
-        A dataset id that lives inside of the project indicated by
-        `project_id`.
-    credentials
-        Optional credentials.
-    application_name
-        A string identifying your application to Google API endpoints.
-    auth_local_webserver
-        Use a local webserver for the user authentication.  Binds a
-        webserver to an open port on localhost between 8080 and 8089,
-        inclusive, to receive authentication token. If not set, defaults
-        to False, which requests a token via the console.
-    auth_external_data
-        Authenticate using additional scopes required to `query external
-        data sources
-        <https://cloud.google.com/bigquery/external-data-sources>`_,
-        such as Google Sheets, files in Google Cloud Storage, or files in
-        Google Drive. If not set, defaults to False, which requests the
-        default BigQuery scopes.
-    auth_cache
-        Selects the behavior of the credentials cache.
-
-        `'default'``
-            Reads credentials from disk if available, otherwise
-            authenticates and caches credentials to disk.
-
-        `'reauth'``
-            Authenticates and caches credentials to disk.
-
-        `'none'``
-            Authenticates and does **not** cache credentials.
-
-        Defaults to `'default'`.
-    partition_column
-        Identifier to use instead of default `_PARTITIONTIME` partition
-        column. Defaults to `'PARTITIONTIME'`.
-
-    Returns
-    -------
-    Backend
-        An instance of the BigQuery backend
-
-    """
-    backend = Backend()
-    return backend.connect(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        credentials=credentials,
-        application_name=application_name,
-        auth_local_webserver=auth_local_webserver,
-        auth_external_data=auth_external_data,
-        auth_cache=auth_cache,
-        partition_column=partition_column,
-    )
-
-
-__all__ = [
-    "Backend",
-    "compile",
-    "connect",
-]
+__all__ = ["Backend", "compile"]

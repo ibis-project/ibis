@@ -90,45 +90,45 @@ def test_comparisons(functional_alltypes, opname, snapshot):
 
 
 @pytest.mark.parametrize(
-    "opname, dtype, associative",
+    ("opname", "dtype"),
     [
         param(*v, id=f"{v[0]}-{v[1]}")
         for v in [
             # Numeric
-            ("add", "int8", True),
-            ("mul", "int8", True),
-            ("sub", "int8", False),
-            ("truediv", "int8", False),
-            ("mod", "int8", False),
-            ("pow", "int8", False),
-            ("and_", "int8", True),
-            ("or_", "int8", True),
-            ("xor", "int8", True),
-            ("lshift", "int8", False),
-            ("rshift", "int8", False),
+            ("add", "int8"),
+            ("mul", "int8"),
+            ("sub", "int8"),
+            ("truediv", "int8"),
+            ("mod", "int8"),
+            ("pow", "int8"),
+            ("and_", "int8"),
+            ("or_", "int8"),
+            ("xor", "int8"),
+            ("lshift", "int8"),
+            ("rshift", "int8"),
             # Logical
-            ("and_", "bool", True),
-            ("or_", "bool", True),
-            ("xor", "bool", True),
+            ("and_", "bool"),
+            ("or_", "bool"),
+            ("xor", "bool"),
             # Date
-            ("add", "date,interval('D')", True),
-            ("sub", "date,interval('D')", False),
+            ("add", "date,interval('D')"),
+            ("sub", "date,interval('D')"),
             # Time
-            ("add", "time,interval", True),
-            ("sub", "time,interval", False),
+            ("add", "time,interval"),
+            ("sub", "time,interval"),
             # Timestamp
-            ("add", "timestamp,interval", True),
-            ("sub", "timestamp,interval", False),
+            ("add", "timestamp,interval"),
+            ("sub", "timestamp,interval"),
             # Interval
-            ("add", "interval", True),
-            ("sub", "interval", False),
-            ("mul", "interval,int8", True),
+            ("add", "interval"),
+            ("sub", "interval"),
+            ("mul", "interval,int8"),
         ]
     ],
 )
-def test_binop_parens(snapshot, opname, dtype, associative):
+def test_binop_parens(snapshot, opname, dtype):
     op = getattr(operator, opname)
-    dtypes = [ibis.dtype(d) for d in dtype.split(",")]
+    dtypes = list(map(ibis.dtype, dtype.split(",")))
     while len(dtypes) < 3:
         dtypes.append(dtypes[-1])  # repeat last dtype
 

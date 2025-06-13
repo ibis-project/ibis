@@ -15,6 +15,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
+    split_select_distinct_with_order_by,
 )
 
 
@@ -65,6 +66,7 @@ class FlinkCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_rank,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     UNSUPPORTED_OPS = (
         ops.AnalyticVectorizedUDF,
@@ -423,6 +425,10 @@ class FlinkCompiler(SQLGlotCompiler):
                     self.f.convert_tz(self.cast(arg, dt.string), "UTC+0", tz)
                 )
             else:
+                from ibis.common.temporal import TimestampUnit
+
+                if to.unit == TimestampUnit.SECOND:
+                    return self.f.to_timestamp(arg)
                 return self.f.to_timestamp(arg, "yyyy-MM-dd HH:mm:ss.SSS")
         elif to.is_json():
             return arg

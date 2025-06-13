@@ -105,8 +105,8 @@ class Deferred(Slotted, Immutable, Final):
             f"The truth value of {self.__class__.__name__} objects is not defined"
         )
 
-    def __getitem__(self, name: str) -> Deferred:
-        return Deferred(Item(self, name))
+    def __getitem__(self, indexer: str | int | slice) -> Deferred:
+        return Deferred(Item(self, indexer))
 
     def __call__(self, *args, **kwargs):
         return Deferred(Call(self, *args, **kwargs))
@@ -348,23 +348,23 @@ class Attr(FrozenSlotted, Resolver):
 
 
 class Item(FrozenSlotted, Resolver):
-    __slots__ = ("name", "obj")
+    __slots__ = ("indexer", "obj")
     obj: Resolver
-    name: str
+    indexer: str | int | slice
 
-    def __init__(self, obj, name):
-        super().__init__(obj=resolver(obj), name=resolver(name))
+    def __init__(self, obj, indexer):
+        super().__init__(obj=resolver(obj), indexer=resolver(indexer))
 
     def __repr__(self):
-        if isinstance(self.name, Just):
-            return f"{self.obj!r}[{self.name.value!r}]"
+        if isinstance(self.indexer, Just):
+            return f"{self.obj!r}[{self.indexer.value!r}]"
         else:
-            return f"Item({self.obj!r}, {self.name!r})"
+            return f"Item({self.obj!r}, {self.indexer!r})"
 
     def resolve(self, context):
         obj = self.obj.resolve(context)
-        name = self.name.resolve(context)
-        return obj[name]
+        idx = self.indexer.resolve(context)
+        return obj[idx]
 
 
 class Call(FrozenSlotted, Resolver):

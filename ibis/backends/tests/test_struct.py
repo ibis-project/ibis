@@ -9,6 +9,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
+from ibis.backends.tests.conftest import NO_STRUCT_SUPPORT_MARKS
 from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
     PolarsColumnNotFoundError,
@@ -25,11 +26,7 @@ np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
 
-pytestmark = [
-    pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
-    pytest.mark.notyet(["impala"]),
-    pytest.mark.notimpl(["druid", "oracle", "exasol"]),
-]
+pytestmark = NO_STRUCT_SUPPORT_MARKS
 
 
 @pytest.mark.parametrize(
@@ -142,7 +139,6 @@ def test_collect_into_struct(alltypes):
     reason="struct literals not implemented",
     raises=PsycoPg2InternalError,
 )
-@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError, reason="not implemented in ibis")
 def test_field_access_after_case(con):
     s = ibis.struct({"a": 3})

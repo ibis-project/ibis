@@ -15,6 +15,7 @@ from ibis.backends.sql.rewrites import (
     LastValue,
     lower_sample,
     rewrite_empty_order_by_window,
+    split_select_distinct_with_order_by,
 )
 
 
@@ -27,6 +28,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         rewrite_empty_order_by_window,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     LOWERED_OPS = {
         ops.Sample: lower_sample(

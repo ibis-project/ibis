@@ -135,7 +135,7 @@ class TestConf(ServiceBackendTest):
         return self.data_dir.joinpath("parquet").glob("*.parquet")
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
+    def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
         return ibis.trino.connect(
             host=TRINO_HOST,
             port=TRINO_PORT,

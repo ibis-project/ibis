@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from datetime import datetime
 
 import duckdb
 import numpy as np
@@ -473,3 +474,32 @@ def test_create_temp_table_in_nondefault_schema():
     con.create_database(database)
     con.con.execute(f"USE {database}")
     con.create_table("foo", {"id": [1, 2, 3]}, temp=True)
+
+
+def test_create_table_with_out_of_order_columns(con):
+    name = gen_name("out_of_order_columns_table")
+    df = pd.DataFrame({"value": ["E1"], "id": [1], "date": [datetime(2025, 5, 13)]})
+    schema = ibis.schema({"id": "int", "value": "str", "date": "timestamp"})
+    assert list(df.columns) == ["value", "id", "date"]
+    assert list(schema.names) == ["id", "value", "date"]
+    con.create_table(name, df, schema=schema, temp=True)
+
+
+@pytest.mark.parametrize(
+    "converter",
+    [
+        lambda expr: expr.to_pyarrow().to_pylist(),
+        lambda expr: expr.to_pandas().tolist(),
+    ],
+    ids=["pyarrow", "pandas"],
+)
+def test_basic_enum_schema_inference(con, converter):
+    name = gen_name("basic_enum_schema_inference")
+    con.con.execute(
+        f"CREATE TEMP TABLE {name} AS "
+        "SELECT CAST('a' AS ENUM('a', 'b')) e UNION ALL "
+        "SELECT CAST('b' AS ENUM('a', 'b')) e"
+    )
+    t = con.table(name)
+    assert t.e.type() == dt.string
+    assert set(converter(t.e)) == {"a", "b"}

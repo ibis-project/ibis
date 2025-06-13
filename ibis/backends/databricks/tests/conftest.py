@@ -66,7 +66,7 @@ class TestConf(BackendTest):
                     cur.execute(stmt)
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
+    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:  # noqa: ARG004
         return ibis.databricks.connect(
             server_hostname=env["DATABRICKS_SERVER_HOSTNAME"],
             http_path=env["DATABRICKS_HTTP_PATH"],

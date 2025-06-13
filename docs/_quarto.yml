@@ -166,6 +166,7 @@ website:
             - reference/expression-collections.qmd
             - reference/expression-json.qmd
             - reference/expression-geospatial.qmd
+            - reference/expression-misc.qmd
 
         - section: Type system
           contents:
@@ -547,6 +548,22 @@ quartodoc:
             - GeoSpatialColumn
             - name: NumericValue.point
               package: ibis.expr.types.numeric
+        - kind: page
+          path: expression-misc
+          package: ibis
+          summary:
+            name: UUIDs, INET, MACADDR expressions
+            desc: Expressions of miscellaneous other types.
+          contents:
+            - name: uuid
+              dynamic: true
+              signature_name: full
+            - name: UUIDValue
+              package: ibis.expr.types.uuid
+            - name: INETValue
+              package: ibis.expr.types.inet
+            - name: MACADDRValue
+              package: ibis.expr.types.inet
 
         - kind: page
           path: operations

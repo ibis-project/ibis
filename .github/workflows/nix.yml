@@ -79,6 +79,7 @@ jobs:
           nix build ".#ibis${version//./}" --fallback --keep-going --print-build-logs
 
       - name: nix test
+        timeout-minutes: 60
         run: |
           set -euo pipefail
 

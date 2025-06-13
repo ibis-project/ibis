@@ -40,7 +40,7 @@ def test_variable_declaration(snapshot):
 
 
 def test_yield(snapshot):
-    def f(a):
+    def f(_):
         yield from [1, 2, 3]
 
     js = compile(f)
@@ -235,7 +235,7 @@ def test_class_with_properties(snapshot):
 
 
 def test_set_to_object(snapshot):
-    def f(a):
+    def f(_):
         x = set()
         y = 1
         x.add(y)
@@ -246,7 +246,7 @@ def test_set_to_object(snapshot):
 
 
 def test_setitem(snapshot):
-    def f(a):
+    def f(_):
         x = {}
         y = "2"
         x[y] = y
@@ -271,7 +271,7 @@ def test_delete(snapshot):
 
 def test_scope_with_while(snapshot):
     def f():
-        class Foo:
+        class _:
             def do_stuff(self):
                 while True:
                     i = 1

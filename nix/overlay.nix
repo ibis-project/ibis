@@ -1,7 +1,9 @@
-{ uv2nix
-, pyproject-nix
-, pyproject-build-systems
-}: pkgs: super:
+{
+  uv2nix,
+  pyproject-nix,
+  pyproject-build-systems,
+}:
+pkgs: super:
 let
   # Create package overlay from workspace.
   workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ../.; };
@@ -12,10 +14,9 @@ let
 
   # Create an overlay enabling editable mode for all local dependencies.
   # This is for usage with `nix develop`
-  editableOverlay =
-    workspace.mkEditablePyprojectOverlay {
-      root = "$REPO_ROOT";
-    };
+  editableOverlay = workspace.mkEditablePyprojectOverlay {
+    root = "$REPO_ROOT";
+  };
 
   # Build fixups overlay
   pyprojectOverrides = import ./pyproject-overrides.nix { inherit pkgs; };
@@ -43,12 +44,12 @@ let
   mkEnv' =
     {
       # Python dependency specification
-      deps
-    , # Installs ibis-framework as an editable package for use with `nix develop`.
+      deps,
+      # Installs ibis-framework as an editable package for use with `nix develop`.
       # This means that any changes done to your local files do not require a rebuild.
-      editable
-    ,
-    }: python:
+      editable,
+    }:
+    python:
     let
       inherit (stdenv) targetPlatform;
       # Construct package set
@@ -62,13 +63,17 @@ let
             };
           };
         }).overrideScope
-          (lib.composeManyExtensions ([
-            pyproject-build-systems.overlays.default
-            envOverlay
-            pyprojectOverrides
-          ]
-          ++ lib.optionals editable [ editableOverlay ]
-          ++ lib.optionals (!editable) [ testOverlay ]));
+          (
+            lib.composeManyExtensions (
+              [
+                pyproject-build-systems.overlays.default
+                envOverlay
+                pyprojectOverrides
+              ]
+              ++ lib.optionals editable [ editableOverlay ]
+              ++ lib.optionals (!editable) [ testOverlay ]
+            )
+          );
     in
     # Build virtual environment
     (pythonSet.mkVirtualEnv "ibis-${python.pythonVersion}" deps).overrideAttrs (_old: {
@@ -109,17 +114,16 @@ in
   ibisDevEnv312 = mkDevEnv pkgs.python312;
   ibisDevEnv313 = mkDevEnv pkgs.python313;
 
-  ibisSmallDevEnv = mkEnv'
-    {
-      deps = {
-        ibis-framework = [ "dev" ];
-      };
-      editable = false;
-    }
-    pkgs.python313;
+  ibisSmallDevEnv = mkEnv' {
+    deps = {
+      ibis-framework = [ "dev" ];
+    };
+    editable = false;
+  } pkgs.python313;
 
   duckdb = super.duckdb.overrideAttrs (
-    _: lib.optionalAttrs (stdenv.isAarch64 && stdenv.isLinux) {
+    _:
+    lib.optionalAttrs (stdenv.isAarch64 && stdenv.isLinux) {
       doInstallCheck = false;
     }
   );
@@ -129,7 +133,7 @@ in
 
   changelog = pkgs.writeShellApplication {
     name = "changelog";
-    runtimeInputs = [ pkgs.nodejs_20.pkgs.conventional-changelog-cli ];
+    runtimeInputs = [ pkgs.nodejs.pkgs.conventional-changelog-cli ];
     text = ''
       conventional-changelog --config ./.conventionalcommits.js "$@"
     '';
@@ -137,7 +141,11 @@ in
 
   check-release-notes-spelling = pkgs.writeShellApplication {
     name = "check-release-notes-spelling";
-    runtimeInputs = [ pkgs.changelog pkgs.coreutils pkgs.codespell ];
+    runtimeInputs = [
+      pkgs.changelog
+      pkgs.coreutils
+      pkgs.codespell
+    ];
     text = ''
       tmp="$(mktemp)"
       changelog --release-count 1 --output-unreleased --outfile "$tmp"
@@ -147,12 +155,6 @@ in
         exit 1
       fi
     '';
-  };
-
-  update-lock-files = pkgs.writeShellApplication {
-    name = "update-lock-files";
-    runtimeInputs = with pkgs; [ just uv ];
-    text = "just lock";
   };
 
   gen-examples = pkgs.writeShellApplication {

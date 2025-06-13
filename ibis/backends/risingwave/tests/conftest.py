@@ -53,7 +53,7 @@ class TestConf(ServiceBackendTest):
             pass
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, port: int | None = None, **kw):
+    def connect(*, tmpdir, worker_id, port: int | None = None, **kw):  # noqa: ARG004
         con = ibis.risingwave.connect(
             host=PG_HOST,
             port=port or PG_PORT,

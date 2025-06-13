@@ -35,20 +35,23 @@
   };
 
   outputs =
-    { self
-    , flake-utils
-    , gitignore
-    , nixpkgs
-    , pyproject-nix
-    , uv2nix
-    , pyproject-build-systems
-    , ...
-    }: {
+    {
+      self,
+      flake-utils,
+      gitignore,
+      nixpkgs,
+      pyproject-nix,
+      uv2nix,
+      pyproject-build-systems,
+      ...
+    }:
+    {
       overlays.default = nixpkgs.lib.composeManyExtensions [
         gitignore.overlay
         (import ./nix/overlay.nix { inherit uv2nix pyproject-nix pyproject-build-systems; })
       ];
-    } // flake-utils.lib.eachDefaultSystem (
+    }
+    // flake-utils.lib.eachDefaultSystem (
       localSystem:
       let
         pkgs = import nixpkgs {
@@ -102,67 +105,76 @@
           deadnix
           git
           just
-          nixpkgs-fmt
-          nodejs_20.pkgs.prettier
+          nixfmt-rfc-style
+          nodejs.pkgs.prettier
           shellcheck
           shfmt
           statix
           taplo-cli
         ];
 
-        mkDevShell = env: pkgs.mkShell {
-          inherit (env) name;
-          packages = [
-            # python dev environment
-            env
-          ] ++ (with pkgs; [
-            # uv executable
-            uv
-            # rendering release notes
-            changelog
-            glow
-            # used in the justfile
-            jq
-            yj
-            # commit linting
-            commitlint
-            # link checking
-            lychee
-            # release automation
-            nodejs_20
-            # used in notebooks to download data
-            curl
-            # docs
-            quarto
-          ])
-          ++ preCommitDeps
-          ++ backendDevDeps;
+        mkDevShell =
+          env:
+          pkgs.mkShell {
+            inherit (env) name;
+            packages =
+              [
+                # python dev environment
+                env
+              ]
+              ++ (with pkgs; [
+                # uv executable
+                uv
+                # rendering release notes
+                changelog
+                glow
+                # used in the justfile
+                jq
+                yj
+                # commit linting
+                commitlint
+                # link checking
+                lychee
+                # release automation
+                nodejs
+                # used in notebooks to download data
+                curl
+                # docs
+                quarto
+              ])
+              ++ preCommitDeps
+              ++ backendDevDeps;
 
-          inherit shellHook;
+            inherit shellHook;
 
-          PYSPARK_PYTHON = "${env}/bin/python";
+            PYSPARK_PYTHON = "${env}/bin/python";
 
-          AWS_PROFILE = "ibis-testing";
-          AWS_REGION = "us-east-2";
+            AWS_PROFILE = "ibis-testing";
+            AWS_REGION = "us-east-2";
 
-          # needed for mssql+pyodbc
-          ODBCSYSINI = pkgs.writeTextDir "odbcinst.ini" ''
-            [FreeTDS]
-            Driver = ${pkgs.lib.makeLibraryPath [ pkgs.freetds ]}/libtdsodbc.so
-          '';
+            # needed for mssql+pyodbc
+            ODBCSYSINI = pkgs.writeTextDir "odbcinst.ini" ''
+              [FreeTDS]
+              Driver = ${pkgs.lib.makeLibraryPath [ pkgs.freetds ]}/libtdsodbc.so
+            '';
 
-          GDAL_DATA = "${pkgs.gdal}/share/gdal";
-          PROJ_DATA = "${pkgs.proj}/share/proj";
+            GDAL_DATA = "${pkgs.gdal}/share/gdal";
+            PROJ_DATA = "${pkgs.proj}/share/proj";
 
-          __darwinAllowLocalNetworking = true;
-        };
+            __darwinAllowLocalNetworking = true;
+          };
       in
       rec {
         packages = {
           default = packages.ibis313;
 
-          inherit (pkgs) ibis310 ibis311 ibis312 ibis313
-            update-lock-files check-release-notes-spelling;
+          inherit (pkgs)
+            ibis310
+            ibis311
+            ibis312
+            ibis313
+            check-release-notes-spelling
+            ;
         };
 
         checks = {
@@ -178,7 +190,7 @@
           ibis312 = mkDevShell pkgs.ibisDevEnv312;
           ibis313 = mkDevShell pkgs.ibisDevEnv313;
 
-          default = ibis312;
+          default = ibis313;
 
           preCommit = pkgs.mkShell {
             name = "preCommit";
@@ -187,7 +199,10 @@
 
           links = pkgs.mkShell {
             name = "links";
-            packages = with pkgs; [ just lychee ];
+            packages = with pkgs; [
+              just
+              lychee
+            ];
           };
 
           release = pkgs.mkShell {
@@ -195,7 +210,7 @@
             packages = with pkgs; [
               git
               uv
-              nodejs_20
+              nodejs
               unzip
               gnugrep
               (python3.withPackages (p: [ p.packaging ]))

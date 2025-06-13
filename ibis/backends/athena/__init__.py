@@ -87,6 +87,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         properties: Mapping[str, Any] | None = None,
         location: str | None = None,
         stored_as: str = "PARQUET",
+        partitioned_by: sch.SchemaLike = (),
     ) -> ir.Table:
         """Create a table in Amazon Athena.
 
@@ -122,6 +123,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             bucket with the table name as the bucket key.
         stored_as
             The file format in which to store table data. Defaults to parquet.
+        partitioned_by
+            Iterable of column name and type pairs/mapping/schema by which to
+            partition the table.
         """
         if overwrite is not None:
             raise com.UnsupportedOperationError(
@@ -171,6 +175,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         if comment:
             property_list.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
+        if partitioned_by:
+            property_list.append(
+                sge.PartitionedByProperty(
+                    this=sge.Schema(
+                        expressions=ibis.schema(partitioned_by).to_sqlglot(self.dialect)
+                    )
+                )
+            )
+
         if obj is not None:
             if isinstance(obj, ir.Table):
                 table = obj
@@ -210,20 +223,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         return self.table(orig_table_ref.name, database=(catalog, db))
 
     def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
-        """Construct a table expression.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Database name
-
-        Returns
-        -------
-        Table
-            Table expression
-        """
         table_loc = self._to_sqlglot_table(database)
 
         # TODO: set these to better defaults
@@ -275,12 +274,16 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
 
         (table,) = tables
 
-        return sch.Schema(
-            {
-                metacol.name: self.compiler.type_mapper.from_string(metacol.type)
-                for metacol in table.columns
-            }
-        )
+        type_mapper = self.compiler.type_mapper
+        fields = {
+            metacol.name: type_mapper.from_string(metacol.type)
+            for metacol in table.columns
+        }
+
+        for key in table.partition_keys:
+            fields[key.name] = type_mapper.from_string(key.type)
+
+        return sch.Schema(fields)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query, *args, unload: bool = True, **kwargs):
@@ -311,20 +314,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
     def list_databases(
         self, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
-        """List databases.
-
-        Parameters
-        ----------
-        like
-            Regular expression to use to match database names.
-        catalog
-            Catalog in which to search for databases.
-
-        Returns
-        -------
-        list[str]
-            A list of databases in `catalog` matching the pattern `like`.
-        """
         if catalog is None:
             catalog = self.current_catalog
         with self.con.cursor() as cur:
@@ -483,57 +472,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
     def list_tables(
         self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
-        """List tables and views.
-
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            Regex to filter by table/view name.
-        database
-            Database location. If not passed, uses the current database.
-
-            By default uses the current `database` (`self.current_database`) and
-            `catalog` (`self.current_catalog`).
-
-            To specify a table in a separate catalog, you can pass in the
-            catalog and database as a string `"catalog.database"`, or as a tuple of
-            strings `("catalog", "database")`.
-
-        Returns
-        -------
-        list[str]
-            List of table and view names.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> con = ibis.athena.connect()
-        >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
-        >>> con.list_tables()
-        ['foo']
-        >>> bar = con.create_view("bar", foo)
-        >>> con.list_tables()
-        ['bar', 'foo']
-        >>> con.create_database("my_database")
-        >>> con.list_tables(database="my_database")
-        []
-        >>> con.raw_sql("CREATE TABLE my_database.baz (a INTEGER)")  # doctest: +ELLIPSIS
-        <... object at 0x...>
-        >>> con.list_tables(database="my_database")
-        ['baz']
-
-        """
         table_loc = self._to_sqlglot_table(database)
 
         catalog = table_loc.catalog or self.current_catalog

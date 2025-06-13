@@ -162,7 +162,7 @@ class SqlglotType(TypeMapper):
         elif (known_typ := _from_sqlglot_types.get(typecode)) is not None:
             dtype = known_typ(nullable=nullable)
         else:
-            dtype = dt.unknown
+            dtype = dt.Unknown(raw_type=typ)
 
         if nullable is not None:
             return dtype.copy(nullable=nullable)
@@ -189,10 +189,10 @@ class SqlglotType(TypeMapper):
         try:
             sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
         except sg.errors.ParseError:
-            # If sqlglot can't parse the type fall back to `dt.unknown`
-            return dt.unknown
-        else:
-            return cls.to_ibis(sgtype, nullable=nullable)
+            # If sqlglot can't parse the type fall back to USERDEFINED,
+            # which will then get turned into ibis.dt.Unknown
+            sgtype = sge.DataType(this=typecode.USERDEFINED, kind=text)
+        return cls.to_ibis(sgtype, nullable=nullable)
 
     @classmethod
     def to_string(cls, dtype: dt.DataType) -> str:
@@ -220,9 +220,29 @@ class SqlglotType(TypeMapper):
             nullable=nullable,
         )
 
-    _from_sqlglot_NVARCHAR = _from_sqlglot_NCHAR = _from_sqlglot_CHAR = (
-        _from_sqlglot_FIXEDSTRING
-    ) = _from_sqlglot_VARCHAR
+    @classmethod
+    def _from_sqlglot_NVARCHAR(
+        cls, length: sge.DataTypeParam | None = None, nullable: bool | None = None
+    ) -> dt.String:
+        return cls._from_sqlglot_VARCHAR(length, nullable=nullable)
+
+    @classmethod
+    def _from_sqlglot_NCHAR(
+        cls, length: sge.DataTypeParam | None = None, nullable: bool | None = None
+    ) -> dt.String:
+        return cls._from_sqlglot_VARCHAR(length, nullable=nullable)
+
+    @classmethod
+    def _from_sqlglot_CHAR(
+        cls, length: sge.DataTypeParam | None = None, nullable: bool | None = None
+    ) -> dt.String:
+        return cls._from_sqlglot_VARCHAR(length, nullable=nullable)
+
+    @classmethod
+    def _from_sqlglot_FIXEDSTRING(
+        cls, length: sge.DataTypeParam | None = None, nullable: bool | None = None
+    ) -> dt.String:
+        return cls._from_sqlglot_VARCHAR(length, nullable=nullable)
 
     @classmethod
     def _from_sqlglot_MAP(
@@ -466,6 +486,16 @@ class SqlglotType(TypeMapper):
         this = getattr(typecode, dtype.geotype.upper())
         return sge.DataType(this=this, expressions=expressions)
 
+    @classmethod
+    def _from_ibis_Unknown(cls, dtype: dt.Unknown) -> sge.DataType:
+        if isinstance(dtype.raw_type, sge.DataType):
+            return dtype.raw_type
+        return sge.DataType(this=typecode.UNKNOWN)
+
+    # warning: this does early binding, so if you call eg `PostgresType._from_ibis_Point`
+    # this will resolve to `SqlglotType._from_ibis_SpecificGeometry`, not
+    # `PostgresType._from_ibis_SpecificGeometry`.
+    # At this point, not a problem, but be careful if you override this in subclasses.
     _from_ibis_Point = _from_ibis_LineString = _from_ibis_Polygon = (
         _from_ibis_MultiLineString
     ) = _from_ibis_MultiPoint = _from_ibis_MultiPolygon = _from_ibis_SpecificGeometry
@@ -478,8 +508,8 @@ class PostgresType(SqlglotType):
 
     unknown_type_strings = FrozenDict(
         {
-            "vector": dt.unknown,
-            "tsvector": dt.unknown,
+            # "vector": dt.Unknown(sge.DataType(this=typecode.VECTOR)),
+            # "tsvector": dt.unknown,
             "line": dt.linestring,
             "line[]": dt.Array(dt.linestring),
             "polygon": dt.polygon,

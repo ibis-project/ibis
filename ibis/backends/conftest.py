@@ -354,9 +354,9 @@ def pytest_runtest_call(item):
         failing_specs = []
         for spec in specs:
             req = Requirement(spec)
-            if req.specifier.contains(
-                importlib.import_module(req.name).__version__
-            ) and ((not req.marker) or req.marker.evaluate()):
+            if req.specifier.contains(pytest.importorskip(req.name).__version__) and (
+                (not req.marker) or req.marker.evaluate()
+            ):
                 failing_specs.append(spec)
         reason = f"{backend} backend test fails with {backend}{specs}"
         if provided_reason is not None:

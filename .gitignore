@@ -95,6 +95,7 @@ junit.xml
 
 # spark generated files
 spark-warehouse
+metastore_db
 
 # bytecode
 __pycache__
