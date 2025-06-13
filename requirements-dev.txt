@@ -1,5 +1,5 @@
 -e .
-aiobotocore==2.22.0
+aiobotocore==2.23.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.12
 aioitertools==0.12.0
@@ -32,8 +32,8 @@ beautifulsoup4==4.13.4
 bitarray==2.9.3
 black==25.1.0
 bleach==6.2.0
-boto3==1.37.3
-botocore==1.37.3
+boto3==1.38.27
+botocore==1.38.27
 cachetools==5.5.2
 certifi==2025.4.26
 cffi==1.17.1
@@ -71,7 +71,7 @@ execnet==2.1.1
 executing==2.2.0
 fastjsonschema==2.21.1
 filelock==3.18.0
-fonttools==4.58.2
+fonttools==4.58.3
 fqdn==1.5.1
 frozenlist==1.7.0
 fsspec==2025.5.1
@@ -98,7 +98,7 @@ h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 humanize==4.12.3
-hypothesis==6.135.7
+hypothesis==6.135.9
 identify==2.6.12
 idna==3.10
 importlib-metadata==8.7.0
@@ -209,7 +209,7 @@ pyasn1==0.6.1
 pyasn1-modules==0.4.2
 pyathena==3.14.1
 pycparser==2.22
-pydantic==2.11.5
+pydantic==2.11.6
 pydantic-core==2.33.2
 pydata-google-auth==1.9.1
 pydruid==0.6.9
@@ -254,7 +254,7 @@ rpds-py==0.25.1
 rsa==4.9.1
 ruff==0.11.13
 s3fs==2025.5.1
-s3transfer==0.11.3
+s3transfer==0.13.0
 scikit-learn==1.6.1 ; python_full_version < '3.10'
 scikit-learn==1.7.0 ; python_full_version >= '3.10'
 scipy==1.13.1 ; python_full_version < '3.10'
