@@ -559,7 +559,7 @@ def _read_in_memory(source: Any, table_name: str, _conn: Backend, **kwargs: Any)
 
 @_read_in_memory.register("ibis.expr.types.Table")
 def _table(source, table_name, _conn, **kwargs: Any):
-    _conn._add_table(table_name, source.to_polars())
+    _conn._add_table(table_name, _conn.to_polars(source))
 
 
 @_read_in_memory.register("polars.DataFrame")

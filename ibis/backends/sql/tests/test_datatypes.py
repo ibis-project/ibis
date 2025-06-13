@@ -10,6 +10,7 @@ import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
 from ibis.backends.sql.datatypes import (
     ClickHouseType,
+    DatabricksType,
     DuckDBType,
     PostgresType,
     SqlglotType,
@@ -85,3 +86,22 @@ def test_interval_without_unit():
 )
 def test_unsupported_dtypes_are_unknown(typengine, typ):
     assert typengine.to_ibis(sge.DataType(this=typ)) == dt.unknown
+
+
+@pytest.mark.parametrize(
+    ("dtype", "expected"),
+    [
+        (
+            dt.Timestamp(timezone="UTC"),
+            sge.DataType(this=sge.DataType.Type.TIMESTAMPTZ),
+        ),
+        (
+            dt.Timestamp(timezone=None),
+            sge.DataType(this=sge.DataType.Type.TIMESTAMPNTZ),
+        ),
+    ],
+    ids=["timezone", "no_timezone"],
+)
+def test_timestamp_with_timezone(dtype, expected):
+    assert DatabricksType.from_ibis(dtype) == expected
+    assert DatabricksType.to_ibis(expected) == dtype

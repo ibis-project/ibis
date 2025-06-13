@@ -560,6 +560,13 @@ jobs:
               - pyspark==3.3.4
               - pandas==1.5.3
               - numpy==1.23.5
+          - python-version: "3.9"
+            pyspark-minor-version: "3.4"
+            tag: local
+            deps:
+              - pyspark==3.4.4
+              - pandas==1.5.3
+              - numpy==1.23.5
           - python-version: "3.11"
             pyspark-minor-version: "3.5"
             tag: local
@@ -612,7 +619,7 @@ jobs:
 
         # it requires a version of pandas that pyspark is not compatible with
       - name: remove lonboard
-        if: matrix.pyspark-minor-version == '3.3'
+        if: matrix.pyspark-minor-version != '3.5'
         run: uv remove --group docs --no-sync lonboard
 
       - name: install pyspark-specific dependencies

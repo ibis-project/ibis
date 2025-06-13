@@ -57,9 +57,12 @@ if TYPE_CHECKING:
 
     from ibis.expr.api import Watermark
 
+
 PYSPARK_VERSION = vparse(pyspark.__version__)
-PYSPARK_LT_34 = PYSPARK_VERSION < vparse("3.4")
-PYSPARK_LT_35 = PYSPARK_VERSION < vparse("3.5")
+PYSPARK_33 = vparse("3.3") <= PYSPARK_VERSION < vparse("3.4")
+PYSPARK_35 = vparse("3.5") <= PYSPARK_VERSION
+SUPPORTS_TIMESTAMP_NTZ = vparse("3.4") <= PYSPARK_VERSION
+
 ConnectionMode = Literal["streaming", "batch"]
 
 
@@ -257,7 +260,7 @@ class Backend(
         if catalog is None and db is None:
             yield
             return
-        if catalog is not None and PYSPARK_LT_34:
+        if catalog is not None and PYSPARK_33:
             raise com.UnsupportedArgumentError(
                 "Catalogs are not supported in pyspark < 3.4"
             )
@@ -326,7 +329,7 @@ class Backend(
 
     @contextlib.contextmanager
     def _active_catalog(self, name: str | None):
-        if name is None or PYSPARK_LT_34:
+        if name is None or PYSPARK_33:
             yield
             return
 
@@ -407,7 +410,7 @@ class Backend(
                 spark_udf = F.udf(udf_func, udf_return)
             elif udf.__input_type__ == InputType.PYARROW:
                 # raise not implemented error if running on pyspark < 3.5
-                if PYSPARK_LT_35:
+                if not PYSPARK_35:
                     raise NotImplementedError(
                         "pyarrow UDFs are only supported in pyspark >= 3.5"
                     )

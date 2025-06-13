@@ -132,6 +132,7 @@ in
       pysparkVersion = lib.versions.majorMinor attrs.version;
       jarHashes = {
         "3.5" = "sha256-h+cYTzHvDKrEFbvfzxvElDNGpYuY10fcg0NPcTnhKss=";
+        "3.4" = "sha256-iYNMs1jNNOMTM3PWP88J94V92oCtUdsMzxda2bZ+KlY=";
         "3.3" = "sha256-3D++9VCiLoMP7jPvdCtBn7xnxqHnyQowcqdGUe0M3mk=";
       };
       icebergVersion = "1.6.1";
