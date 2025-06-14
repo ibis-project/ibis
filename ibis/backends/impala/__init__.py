@@ -95,19 +95,24 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
 
     def do_connect(
         self,
+        *,
+        user: str | None = None,
+        password: str | None = None,
         host: str = "localhost",
         port: int = 21050,
         database: str = "default",
         timeout: int = 45,
         use_ssl: bool = False,
         ca_cert: str | Path | None = None,
-        user: str | None = None,
-        password: str | None = None,
         auth_mechanism: Literal["NOSASL", "PLAIN", "GSSAPI", "LDAP"] = "NOSASL",
         kerberos_service_name: str = "impala",
         **params: Any,
     ):
         """Create an Impala `Backend` for use with Ibis.
+
+        This method is useful if you have individual connection parameters.
+        If you have a connection URL then you can connect directly using
+        `ibis.connect(f"impala://{user}:{password}@{host}:{port}/{database}")`.
 
         Parameters
         ----------
