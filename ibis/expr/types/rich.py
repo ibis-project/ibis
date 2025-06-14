@@ -6,6 +6,7 @@ require rich to be installed to use any of the functions in this module.
 
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING
 
 from ibis.expr import types as ir
@@ -29,7 +30,8 @@ else:
 
         def _repr_mimebundle_(self, *args, **kwargs):
             try:
-                bundle = super()._repr_mimebundle_(*args, **kwargs)
+                with _with_rich_display_disabled():
+                    bundle = super()._repr_mimebundle_(*args, **kwargs)
             except Exception:  # noqa: BLE001
                 return None
             else:
@@ -42,7 +44,7 @@ def capture_rich_renderable(renderable: RenderableType) -> str:
     from rich.console import Console
 
     console = Console(force_terminal=False)
-    with console.capture() as capture:
+    with _with_rich_display_disabled(), console.capture() as capture:
         console.print(renderable)
     return capture.get().rstrip()
 
@@ -74,3 +76,30 @@ def to_rich(
             max_depth=max_depth,
             console_width=console_width,
         )
+
+
+@contextlib.contextmanager
+def _with_rich_display_disabled():
+    """Workaround to keep rich from doing spurious display() calls in Jupyter.
+
+    When you display(ibis.Table), without this, an extra output cell is created
+    in the notebook. With this, there is no extra output cell.
+
+    See https://github.com/Textualize/rich/pull/3329
+    """
+    try:
+        from IPython import display as ipython_display
+    except ImportError:
+        # IPython is not installed, so nothing to do
+        yield
+    else:
+
+        def noop_display(*args, **kwargs):
+            pass
+
+        original_display = ipython_display.display
+        try:
+            ipython_display.display = noop_display
+            yield
+        finally:
+            ipython_display.display = original_display
