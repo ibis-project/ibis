@@ -34,11 +34,7 @@ else:
             self, include: Sequence[str], exclude: Sequence[str], **kwargs
         ) -> dict[str, str]:
             bundle = capture_rich_renderable(self, no_color=False)
-            if include:
-                bundle = {k: v for (k, v) in bundle.items() if k in include}
-            if exclude:
-                bundle = {k: v for (k, v) in bundle.items() if k not in exclude}
-            return bundle
+            return {k: bundle[k] for k in (bundle.keys() & include).difference(exclude)}
 
 
 def capture_rich_renderable(
