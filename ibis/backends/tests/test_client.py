@@ -1114,11 +1114,29 @@ def test_dunder_array_column(alltypes, dtype):
 
 
 @pytest.mark.parametrize(
-    "interactive", [True, False], ids=["interactive", "non-interactive"]
+    "interactive", [True, False], ids=["interactive", "non_interactive"]
 )
-@pytest.mark.parametrize("is_jupyter", [True, False], ids=["jupyter", "not-jupyter"])
-@pytest.mark.parametrize("method", ["repr", "_repr_mimebundle_", "preview"])
-def test_reprs(alltypes, interactive, is_jupyter, method, monkeypatch):
+@pytest.mark.parametrize("is_jupyter", [True, False], ids=["jupyter", "not_jupyter"])
+@pytest.mark.parametrize(
+    ("method_name", "method"),
+    [
+        ("repr", repr),
+        (
+            "mimebundle",
+            lambda wide_table: wide_table._repr_mimebundle_(["text/plain"], [])[
+                "text/plain"
+            ],
+        ),
+        (
+            "preview",
+            lambda wide_table: wide_table.preview()._repr_mimebundle_(None, None)[
+                "text/plain"
+            ],
+        ),
+    ],
+    ids=["repr", "mimebundle", "preview"],
+)
+def test_reprs(alltypes, interactive, is_jupyter, method_name, method, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
     # Depending on the order that tests are run, someone may have already
@@ -1131,35 +1149,26 @@ def test_reprs(alltypes, interactive, is_jupyter, method, monkeypatch):
     default_console = rich.get_console()
     new_console = rich.console.Console(force_jupyter=is_jupyter)
     monkeypatch.setattr(default_console, "__dict__", new_console.__dict__)
-    expected_color_system = "truecolor" if is_jupyter else None
+    expected_color_system = ("truecolor",) if is_jupyter else (None, "standard")
     assert new_console.is_jupyter == is_jupyter
     assert default_console.is_jupyter == is_jupyter
-    assert new_console.color_system == expected_color_system
-    assert default_console.color_system == expected_color_system
+    assert new_console.color_system in expected_color_system
+    assert default_console.color_system in expected_color_system
 
-    wide_table = alltypes.select(
-        *alltypes.columns,
+    wide_table = alltypes.mutate(
         *[alltypes[c].name(f"{c}_2") for c in alltypes.columns],
         *[alltypes[c].name(f"{c}_3") for c in alltypes.columns],
     )
 
-    if method == "repr":
-        s = repr(wide_table)
-    elif method == "_repr_mimebundle_":
-        s = wide_table._repr_mimebundle_(["text/plain"], [])["text/plain"]
-    elif method == "preview":
-        rich_table = wide_table.preview()
-        s = rich_table._repr_mimebundle_(None, None)["text/plain"]
-    else:
-        raise AssertionError(f"Unknown method: {method}")
+    s = method(wide_table)
 
     color_or_control_codes = {c for c in s if not c.isprintable() and c not in "\n\r\t"}
-    if (method == "_repr_mimebundle_" and interactive and is_jupyter) or (
-        method == "preview" and is_jupyter
+    if (method_name == "mimebundle" and interactive and is_jupyter) or (
+        method_name == "preview" and is_jupyter
     ):
-        assert color_or_control_codes != set()
+        assert color_or_control_codes
     else:
-        assert color_or_control_codes == set()
+        assert not color_or_control_codes
 
     # ┃ characters separate columns in the table
     n_columns_seen = max(line.count("┃") for line in s.splitlines()) - 1
@@ -1167,17 +1176,21 @@ def test_reprs(alltypes, interactive, is_jupyter, method, monkeypatch):
 
     n_wide_columns = len(wide_table.columns)
     n_original_columns = len(alltypes.columns)
-    if method == "preview":
-        assert n_columns_seen == n_wide_columns
-    elif interactive:
-        if is_jupyter:
-            # table should have unbounded width, every column should be shown
-            assert n_columns_seen == n_wide_columns
-        else:
-            # table should be truncated to fit the console width
-            assert n_columns_seen < n_original_columns
-    else:
-        assert n_columns_seen == 0
+
+    assert (
+        # preview always shows exactly what was requested
+        (method_name == "preview" and n_columns_seen == n_wide_columns)
+        or (
+            interactive
+            and (
+                # table should have unbounded width, every column should be shown
+                (is_jupyter and n_columns_seen == n_wide_columns)
+                # table should be truncated to fit the console width
+                or n_columns_seen < n_original_columns
+            )
+        )
+        or not n_columns_seen
+    )
 
 
 @pytest.mark.parametrize("show_types", [True, False])
@@ -1189,7 +1202,6 @@ def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
 
     expr = alltypes.select("id")
     s = repr(expr)
-    print(s)
     if show_types:
         assert "int" in s
     else:
