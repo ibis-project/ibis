@@ -14,7 +14,7 @@ from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
 from ibis.expr.types.core import Expr, _binop
-from ibis.expr.types.rich import FixedTextJupyterMixin, to_rich
+from ibis.expr.types.rich import RichJupyterMixin, to_rich
 from ibis.util import deprecated, experimental, promote_list
 
 if TYPE_CHECKING:
@@ -1537,7 +1537,7 @@ class Scalar(Value):
 
 
 @public
-class Column(Value, FixedTextJupyterMixin):
+class Column(Value, RichJupyterMixin):
     # Higher than numpy objects
     __array_priority__ = 20
 
