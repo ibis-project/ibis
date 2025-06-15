@@ -269,3 +269,20 @@ def test_order_by_no_deference_literals(backend_name, snapshot):
     o = s.order_by("a", "i", "s")
     sql = ibis.to_sql(o, dialect=backend_name)
     snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.parametrize("backend_name", _get_backends_to_test())
+@pytest.mark.notimpl(["polars"], raises=ValueError, reason="not a SQL backend")
+def test_literal_casting(backend_name, snapshot):
+    # We expect this to have an explicit cast, eg `CAST(12.34 AS DOUBLE)`
+    sql = ibis.to_sql(ibis.literal(12.34), dialect=backend_name)
+    snapshot.assert_match(sql, "out_bare.sql")
+
+    x = ibis.table([("x", "int64")], name="t").x
+    # We expect this to have an explicit cast, eg `x * CAST(12.34 AS DOUBLE)`
+    sql = ibis.to_sql(x * ibis.literal(12.34), dialect=backend_name)
+    snapshot.assert_match(sql, "out_multiply.sql")
+
+    # We expect this to NOT have an explicit cast, eg `x > 12.34`
+    sql = ibis.to_sql(x > ibis.literal(12.34), dialect=backend_name)
+    snapshot.assert_match(sql, "out_compare.sql")
