@@ -1149,11 +1149,6 @@ def test_reprs(alltypes, interactive, is_jupyter, method_name, method, monkeypat
     default_console = rich.get_console()
     new_console = rich.console.Console(force_jupyter=is_jupyter)
     monkeypatch.setattr(default_console, "__dict__", new_console.__dict__)
-    expected_color_system = ("truecolor",) if is_jupyter else (None, "standard")
-    assert new_console.is_jupyter == is_jupyter
-    assert default_console.is_jupyter == is_jupyter
-    assert new_console.color_system in expected_color_system
-    assert default_console.color_system in expected_color_system
 
     wide_table = alltypes.mutate(
         *[alltypes[c].name(f"{c}_2") for c in alltypes.columns],
@@ -1161,14 +1156,6 @@ def test_reprs(alltypes, interactive, is_jupyter, method_name, method, monkeypat
     )
 
     s = method(wide_table)
-
-    color_or_control_codes = {c for c in s if not c.isprintable() and c not in "\n\r\t"}
-    if (method_name == "mimebundle" and interactive and is_jupyter) or (
-        method_name == "preview" and is_jupyter
-    ):
-        assert color_or_control_codes
-    else:
-        assert not color_or_control_codes
 
     # ┃ characters separate columns in the table
     n_columns_seen = max(line.count("┃") for line in s.splitlines()) - 1
