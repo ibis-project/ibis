@@ -101,6 +101,7 @@ class Backend(
 
     def do_connect(
         self,
+        *,
         host: str = "localhost",
         user: str | None = None,
         password: str | None = None,
@@ -110,6 +111,10 @@ class Backend(
         **kwargs: Any,
     ) -> None:
         """Connect to MSSQL database.
+
+        This method is useful if you have individual connection parameters.
+        If you have a connection URL then you can connect directly using
+        `ibis.connect(f"mssql://{user}:{password}@{host}:{port}/{database}")`.
 
         Parameters
         ----------
