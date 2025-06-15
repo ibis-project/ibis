@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
 import toolz
 
@@ -16,6 +17,9 @@ from ibis.common.grounds import Concrete
 from ibis.common.patterns import Check, pattern, replace
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.util import Namespace, promote_list
+
+if TYPE_CHECKING:
+    from ibis.expr.builders import LegacyWindowBuilder
 
 p = Namespace(pattern, module=ops)
 d = Namespace(deferred, module=ops)
@@ -278,21 +282,39 @@ def rewrite_filter_input(value):
 
 
 @replace(p.Analytic | p.Reduction)
-def window_wrap_reduction(_, window):
-    # Wrap analytic and reduction functions in a window function. Used in the
-    # value.over() API.
+def window_wrap_reduction(_: ops.Analytic | ops.Reduction, window: LegacyWindowBuilder):
+    # Wrap analytic and reduction functions in a window function, merging their ordering.
+    # Used in the value.over() API.
+    order_by_specified_in_op = ("order_by" in _.argnames) and bool(_.order_by)
+    order_by_specified_in_window = bool(window.orderings)
+    if order_by_specified_in_op and order_by_specified_in_window:
+        raise ExpressionError(
+            'Cannot do eg t.group_by("a").order_by("b").mutate(t.c.first(order_by="d"))'
+            'or t.mutate(t.c.first(order_by="d").over(group_by="a", order_by="b"))'
+            'because the "order_by" is specified twice, and is ambiguous.'
+            "Only specify it once, in either place."
+        )
+    if order_by_specified_in_op:
+        order_by = _.order_by
+        # remove the order from the operation, it should just be in the window
+        _ = _.copy(order_by=tuple())
+    elif order_by_specified_in_window:
+        order_by = window.orderings
+    else:
+        order_by = tuple()
+
     return ops.WindowFunction(
         _,
         how=window.how,
         start=window.start,
         end=window.end,
         group_by=window.groupings,
-        order_by=window.orderings,
+        order_by=order_by,
     )
 
 
 @replace(p.WindowFunction)
-def window_merge_frames(_, window):
+def window_merge_frames(_: ops.WindowFunction, window: LegacyWindowBuilder):
     # Merge window frames, used in the value.over() and groupby.select() APIs.
     if _.how != window.how:
         raise ExpressionError(
@@ -320,10 +342,10 @@ def window_merge_frames(_, window):
     return _.copy(start=start, end=end, group_by=group_by, order_by=order_by)
 
 
-def rewrite_window_input(value, window):
+def rewrite_window_input(node: ops.Node, window: LegacyWindowBuilder):
     context = {"window": window}
     # if self is a reduction or analytic function, wrap it in a window function
-    node = value.replace(
+    node = node.replace(
         window_wrap_reduction,
         filter=p.Value & ~p.WindowFunction,
         context=context,
