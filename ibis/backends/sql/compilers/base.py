@@ -7,7 +7,7 @@ import math
 import operator
 import string
 from functools import partial, reduce
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Literal
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -1058,6 +1058,15 @@ class SQLGlotCompiler(abc.ABC):
 
     def visit_CountStar(self, op, *, arg, where):
         return self.agg.count(STAR, where=where)
+
+    def visit_Kurtosis(self, op, *, arg, where, how: Literal["sample", "pop"]):
+        if op.arg.dtype.is_boolean():
+            arg = self.cast(arg, dt.int32)
+
+        if how == "sample":
+            return self.agg.kurtosis(arg, where=where)
+        else:
+            return self.agg.kurtosis_pop(arg, where=where)
 
     def visit_Sum(self, op, *, arg, where):
         if op.arg.dtype.is_boolean():

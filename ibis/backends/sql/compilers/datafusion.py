@@ -44,6 +44,10 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.StringToDate,
         ops.StringToTimestamp,
         ops.StringToTime,
+        # in theory possible via
+        # https://github.com/datafusion-contrib/datafusion-functions-extra but
+        # not clear how to use that library from Python
+        ops.Kurtosis,
     )
 
     SIMPLE_OPS = {

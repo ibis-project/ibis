@@ -47,6 +47,7 @@ class DruidCompiler(SQLGlotCompiler):
         ops.IntervalFromInteger,
         ops.IsNan,
         ops.IsInf,
+        ops.Kurtosis,
         ops.Levenshtein,
         ops.Median,
         ops.RandomScalar,

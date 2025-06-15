@@ -100,6 +100,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.Covariance,
         ops.CountDistinctStar,
         ops.DateDiff,
+        ops.Kurtosis,
         ops.IntervalAdd,
         ops.IntervalSubtract,
         ops.IntervalMultiply,

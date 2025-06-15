@@ -62,6 +62,7 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.RowID,
         ops.TimeDelta,
         ops.ArrayFlatten,
+        ops.Kurtosis,
     )
 
     SIMPLE_OPS = {

@@ -792,6 +792,16 @@ def execute_std_var(op, **kw):
     return getattr(arg, method)(ddof=ddof)
 
 
+@translate.register(ops.Kurtosis)
+def execute_kurtosis(op, **kw):
+    arg = translate(op.arg, **kw)
+
+    if (where := op.where) is not None:
+        arg = arg.filter(translate(where, **kw))
+
+    return arg.kurtosis(bias=op.how == "pop")
+
+
 @translate.register(ops.Mode)
 def execute_mode(op, **kw):
     arg = translate(op.arg, **kw)

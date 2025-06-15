@@ -58,6 +58,7 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.IntervalFromInteger,
         ops.IsInf,
         ops.IsNan,
+        ops.Kurtosis,
         ops.Levenshtein,
         ops.MultiQuantile,
         ops.RandomUUID,

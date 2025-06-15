@@ -64,6 +64,7 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.TimestampBucket,
         ops.RandomUUID,
         ops.StringToTime,
+        ops.Kurtosis,
     )
 
     LOWERED_OPS = {
