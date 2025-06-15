@@ -412,28 +412,7 @@ def to_rich_table(
             if not next_flex_cols:
                 break
 
-    # If the console width is unbounded, then explicitly make each column
-    # take up its full width.
-    # Otherwise, when you render the returned rich.Table in a rich.Console,
-    # if the Console width is skinny, each table might be scrunched.
-    # This happens for example when display()ing a rich.Table in a Jupyter notebook,
-    # and you end up with
-    # ┏┳┳━━━━━┳━━━━┳━━━━━━━━┳━━┳┳┳┳┳┳┳┳┳┳┳┳┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳━┳┳━┳┳━┳┳━┓
-    # ┃┃┃ bi… ┃ b… ┃ flipp… ┃  ┃┃┃┃┃┃┃┃┃┃┃┃┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃ ┃┃ ┃┃ ┃┃ ┃
-    # ┡╇╇━━━━━╇━━━━╇━━━━━━━━╇━━╇╇╇╇╇╇╇╇╇╇╇╇╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇━╇╇━╇╇━╇╇━┩
-    # │││ fl… │ f… │ int64  │  │││││││││││││ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ ││ ││ ││ │
-    # ├┼┼─────┼────┼────────┼──┼┼┼┼┼┼┼┼┼┼┼┼┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼┼─┼┼─┼┼─┤
-    # │││ 39… │ 1… │    181 │  │││││││││││││ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ ││ ││ ││ │
-    # │││ 39… │ 1… │    186 │  │││││││││││││ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ ││ ││ ││ │
-    # │││ 40… │ 1… │    195 │  │││││││││││││ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ ││ ││ ││ │
-    # └┴┴─────┴────┴────────┴──┴┴┴┴┴┴┴┴┴┴┴┴┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴┴─┴┴─┴┴─┘
-    # unless you set the width of the table explicitly.
-    table_width = (
-        1 + sum(col_widths.values()) + len(col_info) * 3
-        if console_width == float("inf")
-        else None
-    )
-    rich_table = rich.table.Table(padding=(0, 1, 0, 1), width=table_width)
+    rich_table = rich.table.Table(padding=(0, 1, 0, 1))
 
     # Configure the columns on the rich table.
     for name, dtype, _, max_width in col_info:

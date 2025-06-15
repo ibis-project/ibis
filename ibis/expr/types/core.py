@@ -51,7 +51,7 @@ class Expr(Immutable, Coercible):
 
     def __repr__(self) -> str:
         if ibis.options.interactive:
-            return capture_rich_renderable(self, no_color=True)["text/plain"]
+            return capture_rich_renderable(self)
         else:
             return self._noninteractive_repr()
 
