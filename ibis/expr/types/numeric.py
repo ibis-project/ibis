@@ -766,6 +766,55 @@ class NumericScalar(Scalar, NumericValue):
 
 @public
 class NumericColumn(Column, NumericValue):
+    def kurtosis(
+        self,
+        *,
+        where: ir.BooleanValue | None = None,
+        how: Literal["sample", "pop"] = "sample",
+    ) -> NumericScalar:
+        """Return the kurtosis of a numeric column.
+
+        Parameters
+        ----------
+        where
+            Filter
+        how
+            Whether to include bias correction. `"sample"` includes the
+            correction while `"pop"` does not.
+
+        Returns
+        -------
+        NumericScalar
+            Kurtosis of `arg`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "keys": ["a", "a", "b", "b", "a", "a", "b", "b"],
+        ...         "values": [1, 2, 3, 3, 6, 4, 5, 7],
+        ...     }
+        ... )
+        >>> t.values.kurtosis()
+        ┌──────────┐
+        │ -0.88595 │
+        └──────────┘
+        >>> t.group_by("keys").agg(kurt=t.values.kurtosis()).order_by("keys")
+        ┏━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ keys   ┃ kurt      ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━┩
+        │ string │ float64   │
+        ├────────┼───────────┤
+        │ a      │ -1.699512 │
+        │ b      │ -1.289256 │
+        └────────┴───────────┘
+        """
+        return ops.Kurtosis(
+            self, how=how, where=self._bind_to_parent_table(where)
+        ).to_expr()
+
     def std(
         self,
         *,

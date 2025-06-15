@@ -55,6 +55,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.StringToDate,
         ops.StringToTime,
         ops.Levenshtein,
+        ops.Kurtosis,
     )
 
     SIMPLE_OPS = {

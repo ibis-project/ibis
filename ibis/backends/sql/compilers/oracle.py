@@ -65,6 +65,7 @@ class OracleCompiler(SQLGlotCompiler):
         ops.StringSplit,
         ops.TimeTruncate,
         ops.Bucket,
+        ops.Kurtosis,
         ops.TimestampBucket,
         ops.TimeDelta,
         ops.TimestampDelta,

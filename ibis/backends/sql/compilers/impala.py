@@ -57,6 +57,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.TimestampBucket,
         ops.TimestampDelta,
         ops.Unnest,
+        ops.Kurtosis,
     )
 
     SIMPLE_OPS = {

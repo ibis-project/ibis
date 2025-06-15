@@ -298,6 +298,21 @@ class Covariance(Filterable, Reduction):
 
 
 @public
+class Kurtosis(Filterable, Reduction):
+    """Compute the kurtosis of a column."""
+
+    arg: Column[dt.Numeric | dt.Boolean]
+    how: Literal["sample", "pop"]
+
+    @attribute
+    def dtype(self):
+        if self.arg.dtype.is_decimal():
+            return self.arg.dtype
+        else:
+            return dt.float64
+
+
+@public
 class Mode(Filterable, Reduction):
     """Compute the mode of a column."""
 

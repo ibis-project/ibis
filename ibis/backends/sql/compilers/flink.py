@@ -90,6 +90,7 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.RowID,
         ops.Translate,
         ops.StringToTime,
+        ops.Kurtosis,
     )
 
     SIMPLE_OPS = {

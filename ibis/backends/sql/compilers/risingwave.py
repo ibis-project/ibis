@@ -35,6 +35,7 @@ class RisingWaveCompiler(PostgresCompiler):
         ops.MultiQuantile,
         ops.ApproxMultiQuantile,
         ops.Sample,
+        ops.Kurtosis,
         *(
             op
             for op in ALL_OPERATIONS
