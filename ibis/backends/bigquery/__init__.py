@@ -777,7 +777,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
 
-        return self.client.query_and_wait(
+        return self._client_query(
             query, job_config=job_config, project=self.billing_project
         )
 
