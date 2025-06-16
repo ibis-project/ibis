@@ -1,6 +1,72 @@
 ---
 ---
 
+## [10.6.0](https://github.com/ibis-project/ibis/compare/10.5.0...10.6.0) (2025-06-16)
+
+### Features
+
+* add Deferred to signatures of many Table methods ([d73a040](https://github.com/ibis-project/ibis/commit/d73a0406b6fb3d031109eed74f0aacaa2c8bad06))
+* **api:** allow creating specific uuid values and add to docs ([#11304](https://github.com/ibis-project/ibis/issues/11304)) ([476fa9f](https://github.com/ibis-project/ibis/commit/476fa9fbc01a9a17d0ddd04dd57d7af9f5082a64))
+* **athena:** support partitioning in `create_table` ([6ea5cd4](https://github.com/ibis-project/ibis/commit/6ea5cd4b9380067893fa0d1987dbb317cbf9c9b7))
+* **bigquery:** add job_id_prefix to functions that produce bigquery jobs ([#11265](https://github.com/ibis-project/ibis/issues/11265)) ([4006d68](https://github.com/ibis-project/ibis/commit/4006d6874c42c2a9e19bc66e1282deef7cff9ed7))
+* **bigquery:** add QueryJobConfig properties to bigquery backend specified at query time ([#11255](https://github.com/ibis-project/ibis/issues/11255)) ([6d7defc](https://github.com/ibis-project/ibis/commit/6d7defc132c7738cd7a8530ac6434ca79a96f40b))
+* **bigquery:** add the ability to specify a bigquery job id in a query ([3a383d8](https://github.com/ibis-project/ibis/commit/3a383d864ab8d9625a3701764297922936d5b62a))
+* **bigquery:** add the ability to specify a bigquery job id in a query ([e0ad6ea](https://github.com/ibis-project/ibis/commit/e0ad6eabf948c12b6e664e70a641499373cfc6a4))
+* **datafusion:** add BitwiseNot, Clip and IntervalFromInteger ([1666e33](https://github.com/ibis-project/ibis/commit/1666e3339e925bec21e55d6263eacd43d5cdc13f))
+* **datafusion:** add Greatest and Least ([10aa7d7](https://github.com/ibis-project/ibis/commit/10aa7d7dbc86050bc4d6497657b7b24c8541dc00))
+* **datafusion:** add support for anys and alls ([#11162](https://github.com/ibis-project/ibis/issues/11162)) ([0f23dc5](https://github.com/ibis-project/ibis/commit/0f23dc5fda6765e66a93f711fb1f46a21fa0348c))
+* improve typing and docstring for to_pyarrow ([2600c65](https://github.com/ibis-project/ibis/commit/2600c65f72ec7a2fa93e9d81443aff8767930585))
+* make Backend._from_url() consistently use kwargs as overrides ([14d103a](https://github.com/ibis-project/ibis/commit/14d103a3bfe72fbc58dfc6863067d7b197f802e5))
+* **risingwave:** add support for `includes` in `create_source` ([f88c0dc](https://github.com/ibis-project/ibis/commit/f88c0dc9ab5eab7374ae15a24fa68e5f2594def7))
+* **types:** add `raw_type` to dt.Unknown ([#11337](https://github.com/ibis-project/ibis/issues/11337)) ([9296107](https://github.com/ibis-project/ibis/commit/92961076e61796434af4263a15372e30abe1896f))
+* **typing:** improve type hints of .isin and .notin ([#11156](https://github.com/ibis-project/ibis/issues/11156)) ([c10b627](https://github.com/ibis-project/ibis/commit/c10b627a8728ffc5d8baa1d4f9d7b31e66caad55))
+* **typing:** return Self from .fill_null() and similar ([4218644](https://github.com/ibis-project/ibis/commit/4218644684d8e27a8d2c214cc8fb6a8d032cca97))
+* **ux:** improve rich rendering ([#11326](https://github.com/ibis-project/ibis/issues/11326)) ([1b8038c](https://github.com/ibis-project/ibis/commit/1b8038c66e02d6758a2a8e15b2f3fea25d7a9a50))
+
+### Bug Fixes
+
+* **api:** deal with null literals in `Struct.__getitem__` ([#11299](https://github.com/ibis-project/ibis/issues/11299)) ([ccd9359](https://github.com/ibis-project/ibis/commit/ccd9359cf8f8d30064426897700543d128ca5305))
+* **bigquery:** maintain custom client project id when provided ([12bc4c0](https://github.com/ibis-project/ibis/commit/12bc4c0c3f3285bf9d4a4e30efb3dc5444a219af))
+* **bigquery:** raise error if bigquery project id cannot be identified ([a93b7d9](https://github.com/ibis-project/ibis/commit/a93b7d9ad515440f8b3ade68f382c15459cc6d4e))
+* **bigquery:** undo removal of `job_id_prefix` functionality from `raw_sql` ([#11349](https://github.com/ibis-project/ibis/issues/11349)) ([cf404c2](https://github.com/ibis-project/ibis/commit/cf404c27857181082d498af7c0987174bb40b843))
+* **bigquery:** use job_id_prefix instead of job_id ([364e33a](https://github.com/ibis-project/ibis/commit/364e33aae4ad0b03cd1b085cdc62888a8492127c))
+* **builds:** ensure that python 3.13 builds ([601ea3e](https://github.com/ibis-project/ibis/commit/601ea3e00924527e1370d1d5e71857d6e81f8efe))
+* **datafusion:** override struct syntax to use bracket ([dae8e7a](https://github.com/ibis-project/ibis/commit/dae8e7a33f7f0aa95f5801e70eb0d2e44019ceef))
+* **datatype:** convert from sqlglot VARCHAR(MAX) correctly ([#11202](https://github.com/ibis-project/ibis/issues/11202)) ([dc37796](https://github.com/ibis-project/ibis/commit/dc3779624a032b3a4dbf6e054a2a2c96e30d4509))
+* **duckdb:** allow creating tables using data with a different column order ([cf83480](https://github.com/ibis-project/ibis/commit/cf83480c0226385b54bd0fc4f6008a1141ea7d0b))
+* **duckdb:** support materializing enum types to pyarrow ([#11214](https://github.com/ibis-project/ibis/issues/11214)) ([d2f8839](https://github.com/ibis-project/ibis/commit/d2f8839dc0e0d2202139aa66fc97194f630ffd18))
+* **flink:** unit is ignored when str cast to timestamp ([#11167](https://github.com/ibis-project/ibis/issues/11167)) ([cfa5768](https://github.com/ibis-project/ibis/commit/cfa5768b6fb6020f712aadc842c9c35966e2acac))
+* **impala:** make create_database follow the CanCreateDatabase API ([#11149](https://github.com/ibis-project/ibis/issues/11149)) ([15ff868](https://github.com/ibis-project/ibis/commit/15ff868ef1a74bd37991d2d267721339ec1d7785))
+* **oracle:** cast string to int for the precision and scale of decimal ([969453e](https://github.com/ibis-project/ibis/commit/969453e0c18e55a2bd3ab52faba15872fe1c0eac))
+* **polars:** make sure sum is NULL to match other backends ([#11321](https://github.com/ibis-project/ibis/issues/11321)) ([f778f03](https://github.com/ibis-project/ibis/commit/f778f037cabe8785591176721c819e8c01f9aabf)), closes [#11318](https://github.com/ibis-project/ibis/issues/11318)
+* **postgres:** move more configuration to _post_connect() so that .from_connection() also uses it ([15df443](https://github.com/ibis-project/ibis/commit/15df443b191f7546e1de47d012fbe4fc1fab211e))
+* **postgres:** set search path more compliantly ([1c284a1](https://github.com/ibis-project/ibis/commit/1c284a16d102c99f64d2446611d109a66e163831))
+* **pyarrow:** properly support round tripping of fixed size list types ([#11330](https://github.com/ibis-project/ibis/issues/11330)) ([e2937a4](https://github.com/ibis-project/ibis/commit/e2937a4efe49937970ad29fd8c4a68ba2de06a5b))
+* **snowflake:** allow pyarrow 20 to work ([#11173](https://github.com/ibis-project/ibis/issues/11173)) ([0ed7862](https://github.com/ibis-project/ibis/commit/0ed7862500431b625456bf69b97762d83707eb3a))
+* **snowflake:** use newer sqlglot syntax for unnest ([0b57361](https://github.com/ibis-project/ibis/commit/0b5736137ed43c249fe56c66186601705c236867))
+* **sql:** ensure that when distinct with order by is split that all fields are considered for rewrites ([#11334](https://github.com/ibis-project/ibis/issues/11334)) ([e4df7a8](https://github.com/ibis-project/ibis/commit/e4df7a8bb34d9f296331d7e52f407302d57f0332))
+* **trino:** fix nested row casting inside of lambda ([#11146](https://github.com/ibis-project/ibis/issues/11146)) ([755e2a3](https://github.com/ibis-project/ibis/commit/755e2a3bbc3b759256521a6d1f1ec351bb029b83))
+
+### Documentation
+
+* actually include expression-misc.qmd in the navbar ([#11306](https://github.com/ibis-project/ibis/issues/11306)) ([4a935dc](https://github.com/ibis-project/ibis/commit/4a935dc02d0385822e6df26b1b2d8804c39a59fe))
+* add concepts doc on casting ([cea8ed8](https://github.com/ibis-project/ibis/commit/cea8ed879063d4f5fc8ca9af97b7e0cc8569119f))
+* add examples of .isin(<contains NULL>) ([#11154](https://github.com/ibis-project/ibis/issues/11154)) ([b4e6272](https://github.com/ibis-project/ibis/commit/b4e6272535cba7bb1b4ded624b380b4aec4dab6b))
+* **databricks:** add a backend documentation page ([2665f53](https://github.com/ibis-project/ibis/commit/2665f53591846c1d828fc91529ee18314bc27bae))
+* improve docstrings on methods using the `database` param ([#11112](https://github.com/ibis-project/ibis/issues/11112)) ([458f06d](https://github.com/ibis-project/ibis/commit/458f06dec659f0e9f14ae370e2a98378e7452eee))
+* **postgres:** show passing schema to Postgres.from_url() ([46cce76](https://github.com/ibis-project/ibis/commit/46cce767e4a7b39269716a5e1eb291d03bc22cce))
+* **support-matrix:** do not escape the HTML links ([895eb58](https://github.com/ibis-project/ibis/commit/895eb58543f5ef519d3c50fca075797106d84b3a))
+
+### Refactors
+
+* **bigquery:** remove unused `connect` function in `ibis/__init__.py` ([#11305](https://github.com/ibis-project/ibis/issues/11305)) ([77a6dff](https://github.com/ibis-project/ibis/commit/77a6dffc78d82ecbb78cce1fb4d34f2bb6ac5b63))
+* **rich:** consolidate rich logic into a more central place ([#11283](https://github.com/ibis-project/ibis/issues/11283)) ([44d5e6b](https://github.com/ibis-project/ibis/commit/44d5e6b69fdb65cc6884fdbaeba287155e0ded50))
+* **test:** centralize marks for no array, struct, etc support ([#11315](https://github.com/ibis-project/ibis/issues/11315)) ([c581afe](https://github.com/ibis-project/ibis/commit/c581afecef7e317f6617c2e7c27a98efdb229c5c))
+
+### Performance
+
+* **duckdb:** optimize ArrayIndex sql when index is a Literal ([3f32794](https://github.com/ibis-project/ibis/commit/3f327947b110035c950937f7f85374a4f1a43034))
+
 ## [10.5.0](https://github.com/ibis-project/ibis/compare/10.4.0...10.5.0) (2025-04-18)
 
 ### Features
