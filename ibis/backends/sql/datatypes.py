@@ -862,7 +862,6 @@ class SnowflakeType(SqlglotType):
         length: sge.Literal | None = None,
         nullable: bool | None = None,
     ) -> dt.Array:
-        assert value_type is None
         return dt.Array(dt.json, nullable=nullable)
 
     @classmethod
