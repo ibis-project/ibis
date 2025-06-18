@@ -301,8 +301,10 @@ quartodoc:
             # types
             - name: Value
               package: ibis.expr.types.generic
+              include_inherited: true
             - name: Column
               package: ibis.expr.types.generic
+              include_inherited: true
             - name: Deferred
               package: ibis.common.deferred
             - name: Scalar
