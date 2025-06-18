@@ -32,11 +32,13 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
     import pyarrow as pa
+    from typing_extensions import Self
 
 
 def metadata_row_to_type(
@@ -628,3 +630,38 @@ class Backend(
                 bind.execute(drop)
 
     _finalize_memtable = _drop_cached_table = _clean_up_tmp_table
+
+    @util.experimental
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **_: Any,
+    ) -> pa.ipc.RecordBatchReader:
+        import pandas as pd
+        import pyarrow as pa
+
+        def handle_lob(x):
+            if isinstance(x, oracledb.LOB):
+                # LOBs are not supported by pyarrow, so we convert them to strings
+                return x.read()
+            return x
+
+        def _batches(self: Self, *, schema: pa.Schema, query: str):
+            con = self.con
+            columns = schema.names
+            with con.cursor() as cursor:
+                cur = cursor.execute(query)
+                while batch := cur.fetchmany(chunk_size):
+                    df = pd.DataFrame(batch, columns=columns).map(handle_lob)
+                    yield pa.RecordBatch.from_pandas(df, schema=schema)
+
+        schema = expr.as_table().schema().to_pyarrow()
+        query = self.compile(expr, limit=limit, params=params)
+        return pa.RecordBatchReader.from_batches(
+            schema, _batches(self, schema=schema, query=query)
+        )
