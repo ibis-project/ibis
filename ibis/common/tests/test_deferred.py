@@ -235,6 +235,8 @@ class TableMock(dict):
     def __eq__(self, other):
         return isinstance(other, TableMock) and super().__eq__(other)
 
+    __hash__ = None
+
 
 def _binop(name, switch=False):
     def method(self, other):

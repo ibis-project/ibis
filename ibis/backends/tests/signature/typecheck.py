@@ -5,8 +5,6 @@
 Utilities for typed interfaces.
 """
 
-# ruff: noqa: D205, D415, D400
-
 from __future__ import annotations
 
 from functools import partial

@@ -55,7 +55,7 @@ def test_import_object():
 
 
 def test_pseudo_hashable():
-    class Unhashable:
+    class Unhashable:  # noqa: PLW1641
         def __init__(self, value):
             self.value = value
 

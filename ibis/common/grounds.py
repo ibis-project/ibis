@@ -161,6 +161,8 @@ class Annotable(Abstract, metaclass=AnnotableMeta):
                 return False
         return True
 
+    __hash__ = None
+
     @property
     def __args__(self) -> tuple[Any, ...]:
         return tuple(getattr(self, name) for name in self.__argnames__)

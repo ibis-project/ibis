@@ -435,11 +435,10 @@ class GeoSpatialValue(NumericValue):
         >>> import shapely
         >>> t = ibis.examples.zones.fetch()
         >>> penn_station = shapely.Point(986345.399, 211974.446)
-        >>> penn_lit = ibis.literal(penn_station, "geometry")
 
-        Check zones within 1000ft of Penn Station centroid
+        Check zones within 1000 feet of the Penn Station centroid
 
-        >>> t.geom.d_within(penn_lit, distance=1000).name("d_within_1000")
+        >>> t.geom.d_within(penn_station, distance=1000).name("d_within_1000")
         ┏━━━━━━━━━━━━━━━┓
         ┃ d_within_1000 ┃
         ┡━━━━━━━━━━━━━━━┩
@@ -457,16 +456,19 @@ class GeoSpatialValue(NumericValue):
         │ False         │
         │ …             │
         └───────────────┘
-        >>> t.filter(t.geom.d_within(penn_lit, distance=1000))[["zone"]]
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ zone                         ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                       │
-        ├──────────────────────────────┤
-        │ East Chelsea                 │
-        │ Midtown South                │
-        │ Penn Station/Madison Sq West │
-        └──────────────────────────────┘
+        >>> filtered = t.filter(
+        ...     t.geom.distance(penn_station) > 0.0,
+        ...     t.geom.d_within(penn_station, distance=1000),
+        ... )
+        >>> filtered.zone
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ zone          ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ string        │
+        ├───────────────┤
+        │ East Chelsea  │
+        │ Midtown South │
+        └───────────────┘
         """
         return ops.GeoDWithin(self, right, distance).to_expr()
 
@@ -765,8 +767,7 @@ class GeoSpatialValue(NumericValue):
         Penn station zone centroid
 
         >>> penn_station = shapely.Point(986345.399, 211974.446)
-        >>> penn_lit = ibis.literal(penn_station, "geometry")
-        >>> t.geom.distance(penn_lit).name("distance_penn")
+        >>> t.geom.distance(penn_station).name("distance_penn")
         ┏━━━━━━━━━━━━━━━┓
         ┃ distance_penn ┃
         ┡━━━━━━━━━━━━━━━┩
@@ -886,8 +887,7 @@ class GeoSpatialValue(NumericValue):
         Penn station zone centroid
 
         >>> penn_station = shapely.Point(986345.399, 211974.446)
-        >>> penn_lit = ibis.literal(penn_station, "geometry")
-        >>> t.geom.centroid().union(penn_lit).name("union_centroid_penn")
+        >>> t.geom.centroid().union(penn_station).name("union_centroid_penn")
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ union_centroid_penn                                              ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1311,9 +1311,8 @@ class GeoSpatialValue(NumericValue):
         >>> ibis.options.interactive = True
         >>> import shapely
         >>> t = ibis.examples.zones.fetch()
-        >>> penn_station_buff = shapely.Point(986345.399, 211974.446).buffer(5000)
-        >>> penn_lit = ibis.literal(penn_station_buff, "geometry")
-        >>> t.filter(t.geom.within(penn_lit))["zone"]
+        >>> penn_station_buf = shapely.Point(986345.399, 211974.446).buffer(5000)
+        >>> t.filter(t.geom.within(penn_station_buf))["zone"]
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ zone                         ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1659,10 +1658,9 @@ class GeoSpatialColumn(NumericColumn, GeoSpatialValue):
         >>> t = ibis.examples.zones.fetch()
         >>> t.geom.unary_union()
         ┌──────────────────────────────────────────────────────────────────────────────┐
-        │ <MULTIPOLYGON (((934491.267 196304.019, 934656.105 196375.819, 934810.948    │
-        │ 19...>                                                                       │
+        │ <MULTIPOLYGON (((952297.812 138910.318, 952225.737 138802.845, 952215.37     │
+        │ 138...>                                                                      │
         └──────────────────────────────────────────────────────────────────────────────┘
-
         """
         return ops.GeoUnaryUnion(self, where=where).to_expr()
 
