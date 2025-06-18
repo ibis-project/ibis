@@ -164,6 +164,8 @@ class Comparable(Abstract):
             self.__cache__.setdefault(id2, {})[id1] = result
             return result
 
+    __hash__ = None
+
     def __del__(self):
         id1 = id(self)
         for id2 in self.__cache__.pop(id1, ()):
@@ -199,6 +201,8 @@ class Slotted(Abstract, metaclass=SlottedMeta):
         if type(self) is not type(other):
             return NotImplemented
         return all(getattr(self, n) == getattr(other, n) for n in self.__fields__)
+
+    __hash__ = None
 
     def __getstate__(self) -> dict[str, Any]:
         return {k: getattr(self, k) for k in self.__fields__}

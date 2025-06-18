@@ -44,6 +44,9 @@ class Resolver(Coercible, Hashable):
     @abstractmethod
     def __eq__(self, other: Resolver) -> bool: ...
 
+    @abstractmethod
+    def __hash__(self) -> int: ...
+
     @classmethod
     def __coerce__(cls, value):
         if isinstance(value, cls):
@@ -173,6 +176,8 @@ class Deferred(Slotted, Immutable, Final):
 
     def __eq__(self, other: Any) -> Deferred:  # type: ignore
         return Deferred(BinaryOperator(operator.eq, self, other))
+
+    __hash__ = None
 
     def __ne__(self, other: Any) -> Deferred:  # type: ignore
         return Deferred(BinaryOperator(operator.ne, self, other))

@@ -1841,9 +1841,7 @@ def test_subsecond_cast_to_timestamp(con, dtype):
     raises=AssertionError,
 )
 @pytest.mark.notimpl(["flink"], raises=ArrowInvalid)
-@pytest.mark.notyet(
-    ["polars"], raises=AssertionError, reason="produces an incorrect result"
-)
+@pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
 def test_big_timestamp(con):
     # TODO: test with a timezone
     ts = "2419-10-11 10:10:25"
@@ -1903,7 +1901,7 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
 @pytest.mark.notimpl(
     ["pyspark"], condition=not IS_SPARK_REMOTE, raises=pd.errors.OutOfBoundsDatetime
 )
-@pytest.mark.notimpl(["polars"], raises=AssertionError, reason="returns NaT")
+@pytest.mark.notimpl(["polars"], raises=PolarsInvalidOperationError)
 @pytest.mark.notyet(
     ["flink"],
     reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",
