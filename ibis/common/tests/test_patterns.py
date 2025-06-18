@@ -304,7 +304,7 @@ def test_coerced_to():
 
 
 def test_generic_coerced_to():
-    class DataType:
+    class DataType:  # noqa: PLW1641
         def __eq__(self, other):
             return type(self) is type(other)
 
@@ -314,7 +314,7 @@ def test_generic_coerced_to():
     class String(DataType):
         pass
 
-    class DataShape:
+    class DataShape:  # noqa: PLW1641
         def __eq__(self, other):
             return type(self) is type(other)
 
@@ -333,7 +333,7 @@ def test_generic_coerced_to():
 
         def shape(self) -> S: ...
 
-    class Literal(Value[T, Scalar]):
+    class Literal(Value[T, Scalar]):  # noqa: PLW1641
         __slots__ = ("_dtype", "_value")
 
         def __init__(self, value, dtype):
@@ -532,7 +532,7 @@ def test_mapping_of():
     assert p.match({"foo": 1}, context={}) is NoMatch
 
 
-class Foo:
+class Foo:  # noqa: PLW1641
     __match_args__ = ("a", "b")
 
     def __init__(self, a, b):
@@ -543,7 +543,7 @@ class Foo:
         return type(self) is type(other) and self.a == other.a and self.b == other.b
 
 
-class Bar:
+class Bar:  # noqa: PLW1641
     __match_args__ = ("c", "d")
 
     def __init__(self, c, d):
@@ -610,7 +610,7 @@ def test_object_pattern_from_coerced_to():
 
 
 def test_object_pattern_matching_order():
-    class Foo:
+    class Foo:  # noqa: PLW1641
         __match_args__ = ("a", "b", "c")
 
         def __init__(self, a, b, c):
@@ -811,7 +811,7 @@ def test_matching():
 
 
 def test_replace_passes_matched_value_as_underscore():
-    class MyInt:
+    class MyInt:  # noqa: PLW1641
         def __init__(self, value):
             self.value = value
 
@@ -1150,7 +1150,7 @@ def test_pattern_from_typehint_disable_coercion():
     assert isinstance(p, InstanceOf)
 
 
-class PlusOne(Coercible):
+class PlusOne(Coercible):  # noqa: PLW1641
     __slots__ = ("value",)
 
     def __init__(self, value):

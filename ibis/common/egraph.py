@@ -121,6 +121,8 @@ class DisjointSet(Mapping[K, set[K]]):
             return NotImplemented
         return self._parents == other._parents
 
+    __hash__ = None  # disjoint sets are mutable, so they are not hashable
+
     def copy(self) -> DisjointSet:
         """Make a copy of the disjoint set.
 

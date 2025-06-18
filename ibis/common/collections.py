@@ -150,6 +150,8 @@ class Mapping(Collection[K], Generic[K, V]):
             return NotImplemented
         return dict(self.items()) == dict(other.items())
 
+    __hash__ = None
+
 
 @public
 class MapSet(Mapping[K, V]):
