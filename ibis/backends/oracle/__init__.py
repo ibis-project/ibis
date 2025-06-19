@@ -652,6 +652,7 @@ class Backend(
             return x
 
         def _batches(self: Self, *, schema: pa.Schema, query: str):
+            self._run_pre_execute_hooks(expr)
             con = self.con
             columns = schema.names
             with con.cursor() as cursor:
@@ -665,3 +666,8 @@ class Backend(
         return pa.RecordBatchReader.from_batches(
             schema, _batches(self, schema=schema, query=query)
         )
+
+    def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
+        """Backend-specific hooks to run before an expression is executed."""
+        self._register_udfs(expr)
+        self._register_in_memory_tables(expr)
