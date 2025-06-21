@@ -83,6 +83,20 @@ def dtype(
 ) -> DataType: ...
 
 
+if TYPE_CHECKING:
+    import numpy as np
+    import polars as pl
+    import pyarrow as pa
+    import sqlglot as sg
+    import sqlglot.expressions as sge
+    from pandas.api.extensions import ExtensionDtype
+
+
+if TYPE_CHECKING:
+    import sqlglot as sg
+    import sqlglot.expressions as sge
+
+
 @lazy_singledispatch
 def dtype(value, nullable=True) -> DataType:
     """Create a DataType object.
@@ -328,6 +342,34 @@ class DataType(Concrete, Coercible):
         from ibis.formats.polars import PolarsType
 
         return PolarsType.to_ibis(polars_type, nullable=nullable)
+
+    def to_sqlglot(self, dialect: str | sg.Dialect | None = None) -> sge.DataType:
+        """Convert to the equivalent sqlglot.DataType.
+
+        Parameters
+        ----------
+        dialect
+            The SQL dialect to use.
+            For example, some dialects convert an ibis string to TEXT,
+            while others use VARCHAR.
+            If not provided, the dialect from `ibis.get_backend()` is used.
+
+        Returns
+        -------
+        DataType
+            The equivalent sqlglot.DataType.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> dt = ibis.dtype("!string")
+        >>> dt.to_sqlglot(dialect="duckdb")
+        DataType(this=Type.VARCHAR)
+        """
+        from ibis.backends.sql.datatypes import get_mapper
+
+        type_mapper = get_mapper(dialect)
+        return type_mapper.from_ibis(self)
 
     def to_numpy(self) -> np.dtype:
         """Return the equivalent numpy datatype."""

@@ -14,6 +14,7 @@ from sqlglot.dialects import BigQuery
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.compilers.bigquery.udf.core import PythonToJavaScriptTranslator
@@ -206,7 +207,7 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     def to_sqlglot(
         self,
-        expr: ir.Expr,
+        expr: ir.Expr | dt.DataType | sch.Schema,
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
@@ -234,9 +235,10 @@ class BigQueryCompiler(SQLGlotCompiler):
         Any
             The output of compilation. The type of this value depends on the
             backend.
-
         """
-        sql = super().to_sqlglot(expr, limit=limit, params=params)
+        if isinstance(expr, (dt.DataType, sch.Schema)):
+            return expr.to_sqlglot(self.dialect)
+        sgexpr = super().to_sqlglot(expr, limit=limit, params=params)
 
         table_expr = expr.as_table()
 
@@ -244,7 +246,7 @@ class BigQueryCompiler(SQLGlotCompiler):
             op.name for op in table_expr.op().find(ops.InMemoryTable)
         )
 
-        result = sql.transform(
+        result = sgexpr.transform(
             _qualify_memtable,
             dataset=session_dataset_id,
             project=session_project,
@@ -257,8 +259,8 @@ class BigQueryCompiler(SQLGlotCompiler):
             compile_func = getattr(
                 self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
             )
-            if sql := compile_func(udf_node):
-                sources.append(sql)
+            if sgexpr := compile_func(udf_node):
+                sources.append(sgexpr)
 
         if not sources:
             return result

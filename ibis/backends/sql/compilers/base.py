@@ -7,7 +7,7 @@ import math
 import operator
 import string
 from functools import partial, reduce
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, overload
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -17,6 +17,7 @@ import ibis.common.exceptions as com
 import ibis.common.patterns as pats
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
@@ -53,7 +54,6 @@ except ImportError:
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-    import ibis.expr.schema as sch
     import ibis.expr.types as ir
     from ibis.backends.sql.datatypes import SqlglotType
 
@@ -575,16 +575,52 @@ class SQLGlotCompiler(abc.ABC):
             result[node] = value
         return result
 
+    @overload
     def to_sqlglot(
         self,
-        expr: ir.Expr,
+        x: dt.DataType,
+        *,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ) -> sge.DataType: ...
+
+    @overload
+    def to_sqlglot(
+        self,
+        x: sch.Schema,
+        *,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ) -> list[sge.ColumnDef]: ...
+
+    @overload
+    def to_sqlglot(
+        self,
+        x: ir.Expr,
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-    ):
+    ) -> sge.Expression: ...
+
+    def to_sqlglot(
+        self,
+        x: ir.Expr | dt.DataType | sch.Schema,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ) -> sge.Expression:
+        if isinstance(x, (dt.DataType, sch.Schema)):
+            return x.to_sqlglot(self.dialect)
+        return self._to_sqlglot_expr(x, limit=limit, params=params)
+
+    def _to_sqlglot_expr(
+        self,
+        x: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ) -> sge.Expression:
         import ibis
 
-        table_expr = expr.as_table()
+        table_expr = x.as_table()
 
         if limit == "default":
             limit = ibis.options.sql.default_limit

@@ -107,20 +107,20 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.RandomScalar: "random",
     }
 
-    def to_sqlglot(
+    def _to_sqlglot_expr(
         self,
         expr: ir.Expr,
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
     ):
-        sql = super().to_sqlglot(expr, limit=limit, params=params)
+        sgexpr = super()._to_sqlglot_expr(expr, limit=limit, params=params)
 
         table_expr = expr.as_table()
         geocols = table_expr.schema().geospatial
 
         if not geocols:
-            return sql
+            return sgexpr
 
         quoted = self.quoted
         return sg.select(
@@ -132,7 +132,7 @@ class DuckDBCompiler(SQLGlotCompiler):
                     for col in geocols
                 ]
             )
-        ).from_(sql.subquery())
+        ).from_(sgexpr.subquery())
 
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(

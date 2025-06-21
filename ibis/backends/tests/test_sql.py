@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import re
 
 import pytest
@@ -195,6 +196,62 @@ def test_to_sql_default_backend(con, snapshot, monkeypatch):
     t = ibis.memtable({"b": [1, 2]}, name="mytable")
     expr = t.select("b").count()
     snapshot.assert_match(ibis.to_sql(expr), "to_sql.sql")
+
+
+@contextlib.contextmanager
+def with_default_backend(backend: str):
+    original_backend = ibis.get_backend()
+    try:
+        ibis.set_backend(backend)
+        yield
+    finally:
+        ibis.set_backend(original_backend)
+
+
+@pytest.mark.parametrize(
+    "dialect",
+    [
+        # Just check these two to make sure that everything is plumbed through
+        pytest.param("sqlite", marks=pytest.mark.xfail(reason="arrays not supported")),
+        "duckdb",
+    ],
+)
+def test_to_sql_dtype_default_backend(dialect):
+    dt = ibis.dtype("array<int64>")
+    with with_default_backend(dialect):
+        sql = ibis.to_sql(dt)
+    assert "BIGINT[]" == str(sql)
+
+
+STRING_DTYPES = {
+    "athena": "VARCHAR",
+    "bigquery": "STRING",
+    "clickhouse": "Nullable(String)",
+    "databricks": "STRING",
+    "datafusion": "VARCHAR",
+    "druid": "VARCHAR",
+    "duckdb": "TEXT",
+    "exasol": "VARCHAR(2000000)",
+    "flink": "STRING",
+    "impala": "STRING",
+    "mssql": "VARCHAR(max)",
+    "mysql": "TEXT",
+    "oracle": "VARCHAR2(4000)",
+    "postgres": "VARCHAR",
+    "pyspark": "STRING",
+    "risingwave": "VARCHAR",
+    "snowflake": "VARCHAR",
+    "sqlite": "TEXT",
+    "trino": "VARCHAR",
+}
+
+
+@pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
+def test_to_sql_dtype(backend_name):
+    dt = ibis.dtype("string")
+    sql = ibis.to_sql(dt, dialect=backend_name)
+    expected = STRING_DTYPES[backend_name]
+    assert expected == str(sql)
 
 
 @pytest.mark.notimpl(["polars"], raises=ValueError, reason="not a SQL backend")
