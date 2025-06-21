@@ -613,6 +613,10 @@ quartodoc:
               package: ibis
               dynamic: true
               signature_name: full
+            - name: highest_precedence_dtype
+              package: ibis
+              dynamic: true
+              signature_name: full
             - DataType
             - Array
             - Binary
