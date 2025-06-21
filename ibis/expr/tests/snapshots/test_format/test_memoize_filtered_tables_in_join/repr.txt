@@ -5,11 +5,14 @@ r0 := UnboundTable: purchases
   amount float64
 
 r1 := Aggregate[r0]
+  metrics:
+    total: Sum(r0.amount)
+  keys:
+    region: r0.region
+    kind:   r0.kind
   groups:
     region: r0.region
     kind:   r0.kind
-  metrics:
-    total: Sum(r0.amount)
 
 r2 := Filter[r1]
   r1.kind == 'foo'

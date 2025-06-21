@@ -1,5 +1,5 @@
 [codespell]
 skip = *.lock,.direnv,.git,**/lms-for-data/index.qmd,**/docs/_output,**/docs/_inv,*.svg,*.css,*.html,*.js,**/html.json,**/tpc/queries/duckdb/ds/*.sql
-ignore-regex = \b(i[if]f|I[IF]F|AFE|alls)\b
+ignore-regex = \b(i[if]f|I[IF]F|AFE|alls|ND)\b
 builtin = clear,rare,names
 ignore-words-list = tim,notin,ang
