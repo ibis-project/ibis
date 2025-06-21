@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.types as ir
     from ibis.backends import BaseBackend
+    from ibis.expr.sql import SQLString
     from ibis.expr.visualize import EdgeAttributeGetter, NodeAttributeGetter
 
 
@@ -424,14 +425,65 @@ class Expr(Immutable, Coercible):
             self, limit=limit, params=params, **kwargs
         )
 
+    def to_sql(
+        self, dialect: str | None = None, pretty: bool = True, **kwargs
+    ) -> SQLString:
+        """Compile to a formatted SQL string.
+
+        Parameters
+        ----------
+        dialect
+            SQL dialect to use for compilation.
+            Uses the dialect bound to self if not specified,
+            or the default dialect if no dialect is bound.
+        pretty
+            Whether to use pretty formatting.
+        kwargs
+            Scalar parameters
+
+        Returns
+        -------
+        str
+            Formatted SQL string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> t = ibis.table({"a": "int", "b": "int"}, name="t")
+        >>> expr = t.mutate(c=t.a + t.b)
+        >>> expr.to_sql()  # doctest: +SKIP
+        SELECT
+        "t0"."a",
+        "t0"."b",
+        "t0"."a" + "t0"."b" AS "c"
+        FROM "t" AS "t0"
+
+        You can also specify the SQL dialect to use for compilation:
+        >>> expr.to_sql(dialect="mysql")  # doctest: +SKIP
+        SELECT
+        `t0`.`a`,
+        `t0`.`b`,
+        `t0`.`a` + `t0`.`b` AS `c`
+        FROM `t` AS `t0`
+
+        See Also
+        --------
+        [`Value.to_sql()`](./expression-generic.qmd#ibis.expr.types.generic.Value.to_sql)
+        [`Table.to_sql()`](./expression-tables.qmd#ibis.expr.types.relations.Table.to_sql)
+        [`ibis.to_sql()`](./expression-generic#ibis.to_sql)
+        [`Value.compile()`](./expression-generic.qmd#ibis.expr.types.generic.Value.compile)
+        [`Table.compile()`](./expression-tables.qmd#ibis.expr.types.relations.Table.compile)
+        """
+        return ibis.to_sql(self, dialect=dialect, pretty=pretty, **kwargs)
+
     def compile(
         self,
         *,
         limit: int | None = None,
         params: Mapping[ir.Value, Any] | None = None,
         pretty: bool = False,
-    ) -> str:
-        r"""Compile to an execution target.
+    ) -> str | pl.LazyFrame:
+        r"""Compile `expr` to a SQL string (for SQL backends) or a LazyFrame (for the polars backend).
 
         Parameters
         ----------
@@ -445,8 +497,8 @@ class Expr(Immutable, Coercible):
 
         Returns
         -------
-        str
-            SQL query representation of the expression
+        str | pl.LazyFrame
+            A SQL string or a LazyFrame object, depending on the backend of self.
 
         Examples
         --------
@@ -472,9 +524,12 @@ class Expr(Immutable, Coercible):
 
         See Also
         --------
-        [`ibis.to_sql()`](./expression-generic.qmd#ibis.to_sql)
+        [`Value.compile()`](./expression-generic.qmd#ibis.expr.types.generic.Value.compile)
+        [`Table.compile()`](./expression-tables.qmd#ibis.expr.types.relations.Table.compile)
+        [`Value.to_sql()`](./expression-generic.qmd#ibis.expr.types.generic.Value.to_sql)
+        [`Table.to_sql()`](./expression-tables.qmd#ibis.expr.types.relations.Table.to_sql)
         """
-        return self._find_backend().compile(
+        return self._find_backend(use_default=True).compile(
             self, limit=limit, params=params, pretty=pretty
         )
 
