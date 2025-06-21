@@ -222,8 +222,12 @@ IMMUTABLE
 AS
 $$ {defn["source"]} $$"""
 
-    def do_connect(self, create_object_udfs: bool = True, **kwargs: Any):
+    def do_connect(self, *, create_object_udfs: bool = True, **kwargs: Any):
         """Connect to Snowflake.
+
+        This method is useful if you have individual connection parameters.
+        If you have a connection URL then you can connect directly using
+        `ibis.connect(f"snowflake://{user}@{account}/{database}/{schema}?warehouse={warehouse}")`.
 
         Parameters
         ----------

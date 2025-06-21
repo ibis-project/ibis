@@ -246,6 +246,7 @@ class Backend(
 
     def do_connect(
         self,
+        *,
         user: str = "user",
         password: str | None = None,
         host: str = "localhost",
@@ -258,6 +259,10 @@ class Backend(
         **kwargs,
     ) -> None:
         """Connect to Trino.
+
+        This method is useful if you have individual connection parameters.
+        If you have a connection URL then you can connect directly using
+        `ibis.connect(f"trino://{user}:{password}@{host}:{port}/{database}/{schema}")`.
 
         Parameters
         ----------

@@ -1826,7 +1826,7 @@ class UrlFromPath:
             database = database.absolute()
 
         self._convert_kwargs(kwargs)
-        return self.connect(database=database, **kwargs)
+        return self.connect(database, **kwargs)
 
 
 class NoUrl:
