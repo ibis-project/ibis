@@ -137,6 +137,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.RegexSplit,
         ops.RowID,
         ops.TimestampDiff,
+        ops.Kurtosis,
     )
 
     NAN = sge.Cast(
