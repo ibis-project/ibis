@@ -2900,7 +2900,7 @@ docs = [
     { name = "jupyterlab-night", specifier = ">=0.4.6,<1" },
     { name = "jupyterlite-core", specifier = ">=0.6,<0.7" },
     { name = "jupyterlite-pyodide-kernel", specifier = ">=0.6,<0.7" },
-    { name = "lonboard", specifier = "==0.10.4" },
+    { name = "lonboard", specifier = "==0.11.1" },
     { name = "nbclient", specifier = ">=0.8.0,<1" },
     { name = "plotly", specifier = ">=5.16.1" },
     { name = "plotnine", specifier = ">=0.12.2,<1" },
@@ -3683,7 +3683,7 @@ wheels = [
 
 [[package]]
 name = "lonboard"
-version = "0.10.4"
+version = "0.11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anywidget" },
@@ -3699,9 +3699,9 @@ dependencies = [
     { name = "traitlets" },
     { name = "typing-extensions", marker = "python_full_version < '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/5b/4d9ca59bf5bb7b00f155caad1549e7cdf349b332a365192bac3657759cbf/lonboard-0.10.4.tar.gz", hash = "sha256:12164ce778fb1fd179b18da9841a2994e8477971b63a11b42bb147d9922b7074", size = 867160, upload-time = "2025-02-10T19:05:20.43Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/23/fa/24042cdb954de67fc37d8ebaaafa6e9ad9fab4aef1f927e828def557fd90/lonboard-0.11.1.tar.gz", hash = "sha256:e298b18797b870f0b000df5978f152dad21a6bf459e50fcb509da71c316d1e3c", size = 905120, upload-time = "2025-06-18T15:17:56.788Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c2/9d/92f437e1a611135218783e843356febe4fe5e9b57921b8b04b977526dcbf/lonboard-0.10.4-py3-none-any.whl", hash = "sha256:80783ad48666c37236c2704cdb5ccf6a397d6c6788d13a891a62e7b700df7381", size = 884107, upload-time = "2025-02-10T19:05:18.17Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/23/c2b78986f806e7489a09ab22f8dd47e944feda43b3efd466c8440053c856/lonboard-0.11.1-py3-none-any.whl", hash = "sha256:e708921a2b9e4dd87f8736aa7b2edf89b631c94a282381b37468fc86fd5d428e", size = 924457, upload-time = "2025-06-18T15:17:55.02Z" },
 ]
 
 [[package]]
