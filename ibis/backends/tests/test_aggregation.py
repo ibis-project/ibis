@@ -469,11 +469,16 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "postgres",
                         "pyspark",
                         "risingwave",
-                        "snowflake",
                         "sqlite",
                     ],
                     raises=com.OperationNotDefinedError,
-                )
+                ),
+                pytest.mark.notimpl(
+                    ["snowflake"],
+                    raises=AssertionError,
+                    strict=False,
+                    reason="not within tolerance for condition-test; snowflake passes when there's no condition",
+                ),
             ],
         ),
         param(
