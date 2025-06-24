@@ -137,7 +137,7 @@ jupyterlite-core==0.6.2
 jupyterlite-pyodide-kernel==0.6.1
 kiwisolver==1.4.7 ; python_full_version < '3.10'
 kiwisolver==1.4.8 ; python_full_version >= '3.10'
-lonboard==0.10.4
+lonboard==0.11.1
 lz4==4.4.4
 mako==1.3.10
 markdown-it-py==3.0.0
