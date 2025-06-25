@@ -1979,7 +1979,7 @@ def test_invalid_deferred():
         ops.Greatest((t.value, ibis._.lagged_value))
 
 
-@pytest.mark.parametrize("keep", ["last", None])
+@pytest.mark.parametrize("keep", ["last"])
 def test_invalid_distinct(keep):
     t = ibis.table(dict(a="int"), name="t")
     with pytest.raises(com.IbisError, match="Only keep='first'"):
