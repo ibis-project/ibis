@@ -1199,9 +1199,12 @@ class Table(Expr, FixedTextJupyterMixin):
 
         if on is None:
             # dedup everything
-            if keep != "first":
+            if keep is None:  # remove duplicates
+                return self.aggregate(by=self.columns, having=lambda t: t.count() == 1)
+            elif keep == "last":
                 raise com.IbisError(
-                    f"Only keep='first' (the default) makes sense when deduplicating all columns; got keep={keep!r}"
+                    "Only keep='first' and keep=`None` are well-defined when deduplicating "
+                    f"all columns; got keep={keep!r}"
                 )
             return ops.Distinct(self).to_expr()
 

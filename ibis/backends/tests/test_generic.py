@@ -2548,3 +2548,9 @@ def test_order_by_preservation(con):
     tbl = ibis.memtable([{"id": 1, "col": "a"}, {"id": 2, "col": "b"}])
     expr = tbl.order_by("id").select("col").distinct()
     assert len(con.to_pandas(expr)) == 2
+
+
+def test_distinct_delete_duplicates_entirely(con):
+    expr = ibis.memtable({"c1": [1, 2, 3, 6, 6]}).distinct(keep=None)
+    res = con.execute(expr)
+    assert set(res["c1"].tolist()) == {1, 2, 3}
