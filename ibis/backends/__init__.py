@@ -1329,8 +1329,8 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         limit: str | int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         **kwargs: Any,
-    ) -> Any:
-        """Compile an expression.
+    ) -> str | pl.LazyFrame:
+        """Compile `expr` to a SQL string (for SQL backends) or a LazyFrame (for the polars backend).
 
         Parameters
         ----------
