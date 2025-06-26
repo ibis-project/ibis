@@ -374,6 +374,27 @@ class scalar(_UDF):
         │         4 │
         └───────────┘
 
+        Similarly, you can operate on maps as well:
+
+        >>> FieldType = dt.Map(dt.string, dt.int64)
+        >>> @ibis.udf.scalar.python
+        ... def add_one_py_map(x: FieldType) -> int:
+        ...     return x["a"] + 1
+        >>> t = ibis.memtable(
+        ...     {"map_col": [{"a": 1}, {"a": 2}, {"a": 3}]},
+        ...     schema={"map_col": "map<string, int>"},
+        ... )
+        >>> add_one_py_map(t.map_col).name("added_one")
+        ┏━━━━━━━━━━━┓
+        ┃ added_one ┃
+        ┡━━━━━━━━━━━┩
+        │ int64     │
+        ├───────────┤
+        │         2 │
+        │         3 │
+        │         4 │
+        └───────────┘
+
         See Also
         --------
         - [`pandas`](/reference/scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
@@ -479,7 +500,25 @@ class scalar(_UDF):
         ...     return x["a"] + 1
         >>> t = ibis.memtable({"struct_col": [{"a": 1}, {"a": 2}, {"a": 3}]})
         >>> con = ibis.pyspark.connect()
-        >>> con.execute(add_one_py_struct(t.struct_col).name("added_one"))
+        >>> expr = add_one_py_struct(t.struct_col).name("added_one")
+        >>> con.execute(expr)
+        0    2
+        1    3
+        2    4
+        Name: added_one, dtype: int64
+
+        Similarly, you can operate on maps as well:
+
+        >>> FieldType = dt.Map(dt.string, dt.int64)
+        >>> @ibis.udf.scalar.pandas
+        ... def add_one_py_map(x: FieldType) -> int:
+        ...     return x.map(lambda d: d["a"] + 1)
+        >>> t = ibis.memtable(
+        ...     {"map_col": [{"a": 1}, {"a": 2}, {"a": 3}]},
+        ...     schema={"map_col": "map<string, int>"},
+        ... )
+        >>> expr = add_one_py_map(t.map_col).name("added_one")
+        >>> con.execute(expr)
         0    2
         1    3
         2    4
@@ -580,6 +619,27 @@ class scalar(_UDF):
         ...     return pac.add(x.combine_chunks().field("a"), 1)
         >>> t = ibis.memtable({"struct_col": [{"a": 1}, {"a": 2}, {"a": 3}]})
         >>> add_one_py_struct(t.struct_col).name("added_one")
+        ┏━━━━━━━━━━━┓
+        ┃ added_one ┃
+        ┡━━━━━━━━━━━┩
+        │ int64     │
+        ├───────────┤
+        │         2 │
+        │         3 │
+        │         4 │
+        └───────────┘
+
+        Similarly, you can operate on maps as well:
+
+        >>> FieldType = dt.Map(dt.string, dt.int64)
+        >>> @ibis.udf.scalar.pyarrow
+        ... def add_one_py_map(x: FieldType) -> int:
+        ...     return pac.add(pac.map_lookup(x, "a", occurrence="first"), 1)
+        >>> t = ibis.memtable(
+        ...     {"map_col": [{"a": 1}, {"a": 2}, {"a": 3}]},
+        ...     schema={"map_col": "map<string, int>"},
+        ... )
+        >>> add_one_py_map(t.map_col).name("added_one")
         ┏━━━━━━━━━━━┓
         ┃ added_one ┃
         ┡━━━━━━━━━━━┩
