@@ -2031,7 +2031,7 @@ def trailing_range_window(preceding, order_by, group_by=None):
 
 
 def union(table: ir.Table, /, *rest: ir.Table, distinct: bool = False) -> ir.Table:
-    """Compute the set union of multiple table expressions.
+    """Compute the multiset (or set) union of multiple table expressions.
 
     The input tables must have identical schemas.
 
@@ -2042,7 +2042,7 @@ def union(table: ir.Table, /, *rest: ir.Table, distinct: bool = False) -> ir.Tab
     *rest
         Additional table expressions
     distinct
-        Only return distinct rows
+        Use multiset union (False) or set union (True). See examples.
 
     Returns
     -------
@@ -2095,12 +2095,27 @@ def union(table: ir.Table, /, *rest: ir.Table, distinct: bool = False) -> ir.Tab
     │     3 │
     └───────┘
 
+    You can union more than two tables at once.
+
+    >>> ibis.union(t1, t1, t1).order_by("a")
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     1 │
+    │     1 │
+    │     1 │
+    │     2 │
+    │     2 │
+    │     2 │
+    └───────┘
     """
     return table.union(*rest, distinct=distinct) if rest else table
 
 
 def intersect(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.Table:
-    """Compute the set intersection of multiple table expressions.
+    """Compute the set (or multiset) intersection of multiple table expressions.
 
     The input tables must have identical schemas.
 
@@ -2111,7 +2126,7 @@ def intersect(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.
     *rest
         Additional table expressions
     distinct
-        Only return distinct rows
+        Use set intersect (True) or multiset intersect (False). See examples.
 
     Returns
     -------
@@ -2126,62 +2141,67 @@ def intersect(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> t1 = ibis.memtable({"a": [1, 2, 2]})
-    >>> t1
-    ┏━━━━━━━┓
-    ┃ a     ┃
-    ┡━━━━━━━┩
-    │ int64 │
-    ├───────┤
-    │     1 │
-    │     2 │
-    │     2 │
-    └───────┘
-    >>> t2 = ibis.memtable({"a": [2, 2, 3]})
-    >>> t2
-    ┏━━━━━━━┓
-    ┃ a     ┃
-    ┡━━━━━━━┩
-    │ int64 │
-    ├───────┤
-    │     2 │
-    │     2 │
-    │     3 │
-    └───────┘
-    >>> ibis.intersect(t1, t2)
-    ┏━━━━━━━┓
-    ┃ a     ┃
-    ┡━━━━━━━┩
-    │ int64 │
-    ├───────┤
-    │     2 │
-    └───────┘
-    >>> ibis.intersect(t1, t2, distinct=False)
-    ┏━━━━━━━┓
-    ┃ a     ┃
-    ┡━━━━━━━┩
-    │ int64 │
-    ├───────┤
-    │     2 │
-    │     2 │
-    └───────┘
+    >>> two_a = ibis.memtable({"x": ["a", "a", "b"]})
+    >>> three_a = ibis.memtable({"x": ["a", "a", "a", "b"]})
+    >>> four_a = ibis.memtable({"x": ["a", "a", "a", "a", "c"]})
+
+    With `distinct=True`, the intersection will return one row for each row that appears in all input tables.
+    This is equivalent to a set intersection.
+    So even though the source tables have multiple "a"s, the result will only have one:
+
+    >>> ibis.intersect(two_a, three_a).order_by("x")
+    ┏━━━━━━━━┓
+    ┃ x      ┃
+    ┡━━━━━━━━┩
+    │ string │
+    ├────────┤
+    │      a │
+    │      b │
+    └────────┘
+
+    With `distinct=False, ` the intersection will return all rows that appear in all input tables.
+    This is equivalent to a multiset intersection.
+    Since the smallest number of appearances of "a" is 2, the result will have two "a"s:
+
+    >>> ibis.intersect(two_a, three_a, distinct=False).order_by("x")
+    ┏━━━━━━━━┓
+    ┃ x      ┃
+    ┡━━━━━━━━┩
+    │ string │
+    ├────────┤
+    │      a │
+    │      a │
+    │      b │
+    └────────┘
 
     More than two table expressions can be intersected at once.
-    >>> t3 = ibis.memtable({"a": [2, 3, 3]})
-    >>> ibis.intersect(t1, t2, t3)
-    ┏━━━━━━━┓
-    ┃ a     ┃
-    ┡━━━━━━━┩
-    │ int64 │
-    ├───────┤
-    │     2 │
-    └───────┘
+    - Since `a` appears at minimum one time, it appears once in the result.
+    - Since `b` doesn't appear in `two_a` or `three_a`, it is not included.
+    - Since `c` does not appear in `one_a`, it is not included.
+
+    >>> ibis.intersect(two_a, three_a, four_a)
+    ┏━━━━━━━━┓
+    ┃ x      ┃
+    ┡━━━━━━━━┩
+    │ string │
+    ├────────┤
+    │      a │
+    └────────┘
+    >>> ibis.intersect(two_a, three_a, four_a, distinct=False)
+    ┏━━━━━━━━┓
+    ┃ x      ┃
+    ┡━━━━━━━━┩
+    │ string │
+    ├────────┤
+    │      a │
+    │      a │
+    └────────┘
     """
     return table.intersect(*rest, distinct=distinct) if rest else table
 
 
 def difference(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.Table:
-    """Compute the set difference of multiple table expressions.
+    """Compute the set (or multiset) difference of multiple table expressions.
 
     The input tables must have identical schemas.
 
