@@ -285,6 +285,9 @@ def test_attach_sqlite(sqlite_path):
         con.attach_sqlite(sqlite_path, name="foo")
     assert "already" in str(exc.value)
 
+    if duckdb.__version__ >= "1.3.0":
+        con.attach_sqlite(sqlite_path, name="foo", on_exists="replace")
+
     con.detach("foo")
     assert con.list_catalogs() == catalogs_before
 
