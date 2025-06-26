@@ -1152,7 +1152,7 @@ class Backend(
         /,
         *,
         name: str | None = None,
-        on_exists: Literal["error", "ignore"] = "error",
+        on_exists: Literal["error", "ignore", "replace"] = "error",
         read_only: bool = False,
         type: Literal["duckdb", "sqlite", "postgres", "mysql"] | None = None,
         more_options: Iterable[str] = [],
@@ -1172,6 +1172,7 @@ class Backend(
             What to do if the database already exists.
             If set to `"error"`, raise an error if the database already exists.
             If set to `"ignore"`, do nothing if the database already exists.
+            If set to `"replace"`, detach the existing database and attach the new one.
         read_only
             Whether to attach the database as read-only.
         type
@@ -1185,9 +1186,11 @@ class Backend(
             The name of the attached database, or `None` if the database already exists.
         """
         if on_exists == "ignore":
-            if_not_exists = "IF NOT EXISTS"
+            on_exists_string = "IF NOT EXISTS"
+        elif on_exists == "replace":
+            on_exists_string = "OR REPLACE"
         elif on_exists == "error":
-            if_not_exists = ""
+            on_exists_string = ""
         else:
             raise ValueError(
                 f"Invalid value for `on_exists`: {on_exists!r}. "
@@ -1209,7 +1212,7 @@ class Backend(
             options.append(f"TYPE {type.upper()}")
         option_string = ", ".join(options)
 
-        sql = f"ATTACH {if_not_exists} '{path_or_url}' {as_name} ({option_string})"
+        sql = f"ATTACH {on_exists_string} '{path_or_url}' {as_name} ({option_string})"
         databases_before = set(self.list_catalogs())
         self.con.execute(sql).fetchall()
         databases_after = set(self.list_catalogs())
@@ -1257,7 +1260,7 @@ class Backend(
         /,
         *,
         name: str | None = None,
-        on_exists: Literal["error", "ignore"] = "error",
+        on_exists: Literal["error", "ignore", "replace"] = "error",
         read_only: bool = False,
         all_varchar: bool = False,
         more_options: Iterable[str] = [],
