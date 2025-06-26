@@ -76,3 +76,9 @@ def test_engine(con, mocker, to_method):
     mocked_collect = mocker.patch("polars.LazyFrame.collect")
     getattr(con, to_method)(t, engine="gpu")
     mocked_collect.assert_called_once_with(engine="gpu")
+
+
+def test_compile_with_memtable(con):
+    t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
+    result = con.compile(t)
+    assert isinstance(result, pl.LazyFrame)
