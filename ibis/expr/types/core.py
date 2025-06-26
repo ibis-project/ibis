@@ -453,17 +453,17 @@ class Expr(Immutable, Coercible):
         >>> expr = t.mutate(c=t.a + t.b)
         >>> expr.to_sql()  # doctest: +SKIP
         SELECT
-        "t0"."a",
-        "t0"."b",
-        "t0"."a" + "t0"."b" AS "c"
+          "t0"."a",
+          "t0"."b",
+          "t0"."a" + "t0"."b" AS "c"
         FROM "t" AS "t0"
 
         You can also specify the SQL dialect to use for compilation:
         >>> expr.to_sql(dialect="mysql")  # doctest: +SKIP
         SELECT
-        `t0`.`a`,
-        `t0`.`b`,
-        `t0`.`a` + `t0`.`b` AS `c`
+          `t0`.`a`,
+          `t0`.`b`,
+          `t0`.`a` + `t0`.`b` AS `c`
         FROM `t` AS `t0`
 
         See Also
