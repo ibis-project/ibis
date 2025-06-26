@@ -411,6 +411,9 @@ class Backend(BaseBackend, NoUrl, DirectExampleLoader):
         params: Mapping[ir.Expr, Any] | None = None,
         **_: Any,
     ) -> pl.LazyFrame:
+        # TODO(cpcloud): perhaps this method should return a
+        # polars-SQL-compatible string?
+        self._run_pre_execute_hooks(expr)
         if params is None:
             params = dict()
         else:
