@@ -529,7 +529,7 @@ class Expr(Immutable, Coercible):
         [`Value.to_sql()`](./expression-generic.qmd#ibis.expr.types.generic.Value.to_sql)
         [`Table.to_sql()`](./expression-tables.qmd#ibis.expr.types.relations.Table.to_sql)
         """
-        return self._find_backend(use_default=True).compile(
+        return self._find_backend().compile(
             self, limit=limit, params=params, pretty=pretty
         )
 
