@@ -32,11 +32,9 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkArithmeticException,
     PySparkParseException,
-    PySparkValueError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
-from ibis.conftest import IS_SPARK_REMOTE
 from ibis.expr import datatypes as dt
 
 np = pytest.importorskip("numpy")
@@ -1549,27 +1547,7 @@ def test_scalar_round_is_integer(con):
 @pytest.mark.parametrize(
     "numbers",
     [
-        param(
-            [1, 2, 3],
-            marks=[
-                pytest.mark.notyet(
-                    [
-                        "duckdb",
-                        "clickhouse",
-                        "datafusion",
-                        "snowflake",
-                        "databricks",
-                        "bigquery",
-                        "athena",
-                    ],
-                    raises=pa.ArrowInvalid,
-                ),
-                pytest.mark.notyet(
-                    ["pyspark"], condition=IS_SPARK_REMOTE, raises=PySparkValueError
-                ),
-            ],
-            id="ints",
-        ),
+        param([1, 2, 3], id="ints"),
         param(
             [decimal.Decimal("1.1"), decimal.Decimal("2.2"), decimal.Decimal("3.3")],
             marks=[
@@ -1590,6 +1568,12 @@ def test_scalar_round_is_integer(con):
 @pytest.mark.notimpl(["flink"], raises=NotImplementedError)
 def test_memtable_decimal(con, numbers):
     schema = ibis.schema(dict(numbers=dt.Decimal(38, 9)))
+
     t = ibis.memtable({"numbers": numbers}, schema=schema)
     assert t.schema() == schema
-    assert len(con.to_pyarrow(t)) == len(numbers)
+
+    result = con.to_pyarrow(t)
+    assert len(result) == len(numbers)
+    assert result.schema == pa.schema({"numbers": pa.decimal128(38, 9)})
+    assert result.schema == t.schema().to_pyarrow()
+    assert result.schema == schema.to_pyarrow()

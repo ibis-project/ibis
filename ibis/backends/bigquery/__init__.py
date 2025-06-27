@@ -8,6 +8,7 @@ import copy
 import glob
 import os
 import re
+from decimal import Decimal
 from typing import IO, TYPE_CHECKING, Any, Callable, Optional
 
 import google.api_core.exceptions
@@ -241,10 +242,20 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         table_ref = bq.TableReference(self._session_dataset, op.name)
 
-        bq_schema = BigQuerySchema.from_ibis(op.schema)
+        schema = op.schema
+        bq_schema = BigQuerySchema.from_ibis(schema)
+
+        data = op.data.to_frame()
+
+        if decimal_columns := [
+            name for name, dtype in schema.items() if dtype.is_decimal()
+        ]:
+            data = data.assign(
+                **{col: data[col].map(Decimal) for col in decimal_columns}
+            )
 
         load_job = self._client_load_table_from_dataframe(
-            op.data.to_frame(),
+            data,
             table_ref,
             job_config=bq.LoadJobConfig(
                 # fail if the table already exists and contains data
