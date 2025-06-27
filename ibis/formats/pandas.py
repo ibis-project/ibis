@@ -420,11 +420,20 @@ class PandasDataFrameProxy(TableProxy[pd.DataFrame]):
         return self.obj
 
     def to_pyarrow(self, schema: sch.Schema) -> pa.Table:
+        from decimal import Decimal
+
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
         pyarrow_schema = PyArrowSchema.from_ibis(schema)
-        return pa.Table.from_pandas(self.obj, schema=pyarrow_schema)
+
+        obj = self.obj
+        if decimal_cols := [
+            name for name, dtype in schema.items() if dtype.is_decimal()
+        ]:
+            obj = obj.assign(**{col: obj[col].map(Decimal) for col in decimal_cols})
+
+        return pa.Table.from_pandas(obj, schema=pyarrow_schema)
 
     def to_polars(self, schema: sch.Schema) -> pl.DataFrame:
         import polars as pl

@@ -484,7 +484,7 @@ class SQLBackend(BaseBackend):
         schema: sch.Schema,
         catalog: str | None = None,
         columns: bool = False,
-        placeholder: str = "?",
+        placeholder: str | Iterable[str] = "?",
     ) -> str:
         """Builds an INSERT INTO table VALUES query string with placeholders.
 
@@ -499,7 +499,7 @@ class SQLBackend(BaseBackend):
         columns
             Whether to render the columns to insert into
         placeholder
-            Placeholder string. Can be a format string with a single `{i}` spec.
+            Placeholder string.
 
         Returns
         -------
@@ -512,8 +512,8 @@ class SQLBackend(BaseBackend):
                 expressions=[
                     sge.Tuple(
                         expressions=[
-                            sge.Var(this=placeholder.format(i=i))
-                            for i in range(len(schema))
+                            sge.Var(this=placeholder.format(i=i, name=name))
+                            for i, name in enumerate(schema.keys())
                         ]
                     )
                 ]

@@ -11,7 +11,6 @@ from urllib.parse import unquote_plus
 import psycopg
 import sqlglot as sg
 import sqlglot.expressions as sge
-from pandas.api.types import is_float_dtype
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -98,25 +97,14 @@ class Backend(
         )
         create_stmt_sql = create_stmt.sql(self.dialect)
 
-        df = op.data.to_frame()
-        # nan gets compiled into 'NaN'::float which throws errors in non-float columns
-        # In order to hold NaN values, pandas automatically converts integer columns
-        # to float columns if there are NaN values in them. Therefore, we need to convert
-        # them to their original dtypes (that support pd.NA) to figure out which columns
-        # are actually non-float, then fill the NaN values in those columns with None.
-        convert_df = df.convert_dtypes()
-        for col in convert_df.columns:
-            if not is_float_dtype(convert_df[col]):
-                df[col] = df[col].replace(float("nan"), None)
-
-        data = df.itertuples(index=False)
+        table = op.data.to_pyarrow(schema)
         sql = self._build_insert_template(
-            name, schema=schema, columns=True, placeholder="%s"
+            name, schema=schema, columns=True, placeholder="%({name})s"
         )
 
         con = self.con
         with con.cursor() as cursor, con.transaction():
-            cursor.execute(create_stmt_sql).executemany(sql, data)
+            cursor.execute(create_stmt_sql).executemany(sql, table.to_pylist())
 
     @contextlib.contextmanager
     def begin(self):
@@ -731,12 +719,10 @@ ORDER BY a.attnum ASC"""
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
-        import pandas as pd
         import pyarrow as pa
 
-        def _batches(self: Self, *, schema: pa.Schema, query: str):
+        def _batches(self: Self, *, struct_type: pa.StructType, query: str):
             con = self.con
-            columns = schema.names
             # server-side cursors need to be uniquely named
             with (
                 con.cursor(name=util.gen_name("postgres_cursor")) as cursor,
@@ -744,14 +730,17 @@ ORDER BY a.attnum ASC"""
             ):
                 cur = cursor.execute(query)
                 while batch := cur.fetchmany(chunk_size):
-                    yield pa.RecordBatch.from_pandas(
-                        pd.DataFrame(batch, columns=columns), schema=schema
+                    yield pa.RecordBatch.from_struct_array(
+                        pa.array(batch, type=struct_type)
                     )
 
         self._run_pre_execute_hooks(expr)
 
-        schema = expr.as_table().schema().to_pyarrow()
+        raw_schema = expr.as_table().schema()
         query = self.compile(expr, limit=limit, params=params)
         return pa.RecordBatchReader.from_batches(
-            schema, _batches(self, schema=schema, query=query)
+            raw_schema.to_pyarrow(),
+            _batches(
+                self, struct_type=raw_schema.as_struct().to_pyarrow(), query=query
+            ),
         )
