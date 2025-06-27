@@ -18,6 +18,7 @@ import ibis.selectors as s
 from ibis import _
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    ClickHouseInternalError,
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
@@ -1214,6 +1215,12 @@ def test_isin_uncorrelated_filter(
                 ),
                 pytest.mark.notyet(
                     ["athena"], raises=PyAthenaOperationalError, reason="no time type"
+                ),
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    raises=ClickHouseInternalError,
+                    reason="time type not supported in clickhouse_connect; "
+                    "see https://github.com/ClickHouse/clickhouse-connect/issues/509",
                 ),
             ],
         ),

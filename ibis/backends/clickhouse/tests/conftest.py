@@ -90,6 +90,7 @@ class TestConf(ServiceBackendTest):
 
         # without this setting TPC-DS 19 and 24 will fail
         settings.setdefault("allow_experimental_join_condition", 1)
+        settings.setdefault("enable_time_time64_type", 1)
 
         return ibis.clickhouse.connect(
             host=CLICKHOUSE_HOST,
