@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import urllib
+import urllib.parse
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -1213,11 +1214,15 @@ class Backend(
                 "Must be one of 'error' or 'ignore'."
             )
 
-        as_name = (
-            f"AS {sg.to_identifier(name, self.compiler.quoted).sql(self.name)}"
-            if name
-            else ""
-        )
+        if name is None:
+            url = urllib.parse.urlparse(str(path_or_url))
+            name = Path(url.path).name
+            if not name:
+                raise ValueError(
+                    "No name provided and no basename found in path_or_url."
+                )
+
+        as_name = f"AS {sg.to_identifier(name, self.compiler.quoted).sql(self.name)}"
 
         options = [*more_options]
         if read_only:
@@ -1231,14 +1236,15 @@ class Backend(
         sql = f"ATTACH {on_exists_string} '{path_or_url}' {as_name} ({option_string})"
         databases_before = set(self.list_catalogs())
         self.con.execute(sql).fetchall()
-        databases_after = set(self.list_catalogs())
-        added_databases = databases_after - databases_before
-        if not added_databases:
+        if name in databases_before:
             if on_exists == "ignore":
                 return None
-            raise AssertionError((databases_before, databases_after))
-        assert len(added_databases) == 1, (databases_before, databases_after)
-        return added_databases.pop()
+            if on_exists == "replace":
+                return name
+            raise AssertionError(
+                f"Database {name!r} already exists in the current catalog."
+            )
+        return name
 
     def detach(
         self, name: str, /, *, on_missing: Literal["error", "ignore"] = "error"
