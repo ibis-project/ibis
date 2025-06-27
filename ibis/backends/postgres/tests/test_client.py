@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+import math
 import os
 import string
 from urllib.parse import quote_plus
@@ -500,3 +501,17 @@ def test_insert_overwrite(con, tmp_db, overwrite, insert_overwrite, expected_cou
     con.insert(table, obj=t, overwrite=insert_overwrite, database=schema)
     assert table in con.list_tables(database=schema)
     assert con.table(table, database=schema).count().execute() == expected_count
+
+
+def test_nans_nulls(con):
+    pa = pytest.importorskip("pyarrow")
+    table_name = gen_name("test_table")
+    data = pa.table({"value": [1.0, float("nan"), None], "key": [1, 2, 3]})
+    table = con.create_table(table_name, obj=data, temp=True)
+    result = table.order_by("key").to_pyarrow()
+    assert result.num_rows == 3
+
+    value = result["value"]
+    assert value[0].as_py() == 1.0
+    assert math.isnan(value[1].as_py())
+    assert value[2].as_py() is None
