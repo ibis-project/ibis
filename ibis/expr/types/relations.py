@@ -1641,7 +1641,7 @@ class Table(Expr, FixedTextJupyterMixin):
         return result.to_expr()
 
     def union(self, table: Table, /, *rest: Table, distinct: bool = False) -> Table:
-        """Compute the set union of multiple table expressions.
+        """Compute the multiset (or set) union of multiple table expressions.
 
         The input tables must have identical schemas.
 
@@ -1652,7 +1652,7 @@ class Table(Expr, FixedTextJupyterMixin):
         *rest
             Additional table expressions
         distinct
-            Only return distinct rows
+            Use multiset union (False) or set union (True). See examples.
 
         Returns
         -------
@@ -1708,11 +1708,27 @@ class Table(Expr, FixedTextJupyterMixin):
         │     2 │
         │     3 │
         └───────┘
+
+        You can union more than two tables at once.
+
+        >>> t1.union(t1, t1).order_by("a")
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     1 │
+        │     1 │
+        │     2 │
+        │     2 │
+        │     2 │
+        └───────┘
         """
         return self._assemble_set_op(ops.Union, table, *rest, distinct=distinct)
 
     def intersect(self, table: Table, /, *rest: Table, distinct: bool = True) -> Table:
-        """Compute the set intersection of multiple table expressions.
+        """Compute the set (or multiset) intersection of multiple table expressions.
 
         The input tables must have identical schemas.
 
@@ -1723,7 +1739,7 @@ class Table(Expr, FixedTextJupyterMixin):
         *rest
             Additional table expressions
         distinct
-            Only return distinct rows
+            Use set intersect (True) or multiset intersect (False). See examples.
 
         Returns
         -------
@@ -1738,61 +1754,66 @@ class Table(Expr, FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t1 = ibis.memtable({"a": [1, 2, 2]})
-        >>> t1
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     2 │
-        │     2 │
-        └───────┘
-        >>> t2 = ibis.memtable({"a": [2, 2, 3]})
-        >>> t2
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     2 │
-        │     2 │
-        │     3 │
-        └───────┘
-        >>> t1.intersect(t2)
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     2 │
-        └───────┘
-        >>> t1.intersect(t2, distinct=False)
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     2 │
-        │     2 │
-        └───────┘
+        >>> two_a = ibis.memtable({"x": ["a", "a", "b"]})
+        >>> three_a = ibis.memtable({"x": ["a", "a", "a", "b"]})
+        >>> four_a = ibis.memtable({"x": ["a", "a", "a", "a", "c"]})
+
+        With `distinct=True`, the intersection will return one row for each row that appears in all input tables.
+        This is equivalent to a set intersection.
+        So even though the source tables have multiple `"a"` values, the result will only have one:
+
+        >>> two_a.intersect(three_a).order_by("x")
+        ┏━━━━━━━━┓
+        ┃ x      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │      a │
+        │      b │
+        └────────┘
+
+        With `distinct=False`, the intersection will return all rows that appear in all input tables.
+        This is equivalent to a multiset intersection.
+        Since the smallest number of appearances of `"a"` is 2, the result will have two `"a"` values:
+
+        >>> two_a.intersect(three_a, distinct=False).order_by("x")
+        ┏━━━━━━━━┓
+        ┃ x      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │      a │
+        │      a │
+        │      b │
+        └────────┘
 
         More than two table expressions can be intersected at once.
-        >>> t3 = ibis.memtable({"a": [2, 3, 3]})
-        >>> t1.intersect(t2, t3)
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     2 │
-        └───────┘
+        - Since `"a"` appears at minimum one time, it appears once in the result.
+        - Since `"b"` doesn't appear in `two_a` or `three_a`, it is not included.
+        - Since `"c"` does not appear in `one_a`, it is not included.
+
+        >>> two_a.intersect(three_a, four_a)
+        ┏━━━━━━━━┓
+        ┃ x      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │      a │
+        └────────┘
+        >>> two_a.intersect(three_a, four_a, distinct=False)
+        ┏━━━━━━━━┓
+        ┃ x      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │      a │
+        │      a │
+        └────────┘
         """
         return self._assemble_set_op(ops.Intersection, table, *rest, distinct=distinct)
 
     def difference(self, table: Table, /, *rest: Table, distinct: bool = True) -> Table:
-        """Compute the set difference of multiple table expressions.
+        """Compute the set (or multiset) difference of multiple table expressions.
 
         The input tables must have identical schemas.
 
