@@ -2147,7 +2147,7 @@ def intersect(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.
 
     With `distinct=True`, the intersection will return one row for each row that appears in all input tables.
     This is equivalent to a set intersection.
-    So even though the source tables have multiple "a"s, the result will only have one:
+    So even though the source tables have multiple `"a"` values, the result will only have one:
 
     >>> ibis.intersect(two_a, three_a).order_by("x")
     ┏━━━━━━━━┓
@@ -2159,9 +2159,9 @@ def intersect(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.
     │      b │
     └────────┘
 
-    With `distinct=False, ` the intersection will return all rows that appear in all input tables.
+    With `distinct=False`, the intersection will return all rows that appear in all input tables.
     This is equivalent to a multiset intersection.
-    Since the smallest number of appearances of "a" is 2, the result will have two "a"s:
+    Since the smallest number of appearances of `"a"` is 2, the result will have two `"a"` values:
 
     >>> ibis.intersect(two_a, three_a, distinct=False).order_by("x")
     ┏━━━━━━━━┓
@@ -2175,9 +2175,9 @@ def intersect(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.
     └────────┘
 
     More than two table expressions can be intersected at once.
-    - Since `a` appears at minimum one time, it appears once in the result.
-    - Since `b` doesn't appear in `two_a` or `three_a`, it is not included.
-    - Since `c` does not appear in `one_a`, it is not included.
+    - Since `"a"` appears at minimum one time, it appears once in the result.
+    - Since `"b"` doesn't appear in `two_a` or `three_a`, it is not included.
+    - Since `"c"` does not appear in `one_a`, it is not included.
 
     >>> ibis.intersect(two_a, three_a, four_a)
     ┏━━━━━━━━┓
