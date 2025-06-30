@@ -503,7 +503,7 @@ jobs:
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
         timeout-minutes: 60
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -v --numprocesses auto --dist=loadgroup
         env:
           IBIS_TEST_IMPALA_HOST: localhost
           IBIS_TEST_IMPALA_PORT: 21050
@@ -512,7 +512,7 @@ jobs:
       - name: "run serial tests: ${{ matrix.backend.name }}"
         if: matrix.backend.serial
         timeout-minutes: 60
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }}
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -v
         env:
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"
