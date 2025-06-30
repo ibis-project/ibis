@@ -63,7 +63,7 @@ deltalake==1.0.2
 deprecated==1.2.18
 distlib==0.3.9
 doit==0.36.0
-duckdb==1.3.1
+duckdb==1.2.2
 dunamai==1.24.1
 et-xmlfile==2.0.0
 exceptiongroup==1.3.0 ; python_full_version < '3.11'
