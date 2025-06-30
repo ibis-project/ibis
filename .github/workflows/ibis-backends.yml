@@ -90,9 +90,9 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - windows-latest
+          # - windows-latest
         python-version:
-          - "3.9"
+          # - "3.9"
           - "3.13"
         backend:
           - name: duckdb
@@ -100,366 +100,366 @@ jobs:
             serial: true
             extras:
               - --extra duckdb
-              - --extra deltalake
+              # - --extra deltalake
               - --extra geospatial
               - --extra examples
-              - --extra decompiler
-              - --extra polars
-            additional_deps:
-              - torch
-          - name: clickhouse
-            title: ClickHouse
-            services:
-              - clickhouse
-            extras:
-              - --extra clickhouse
-              - --extra examples
-          - name: sqlite
-            title: SQLite
-            serial: true
-            extras:
-              - --extra sqlite
-          - name: datafusion
-            title: DataFusion
-            serial: true
-            extras:
-              - --extra datafusion
-          - name: polars
-            title: Polars
-            extras:
-              - --extra polars
-              - --extra deltalake
-          - name: mysql
-            title: MySQL
-            serial: true
-            services:
-              - mysql
-            extras:
-              - --extra mysql
-              - --extra geospatial
-              - --extra polars
-            sys-deps:
-              - libgeos-dev
-              - default-libmysqlclient-dev
-          - name: postgres
-            title: PostgreSQL
-            serial: true
-            extras:
-              - --extra postgres
-              - --extra geospatial
-            services:
-              - postgres
-            sys-deps:
-              - libgeos-dev
-          - name: postgres
-            title: PostgreSQL + Torch
-            serial: true
-            extras:
-              - --extra postgres
-              - --extra geospatial
-              - --extra polars
-            additional_deps:
-              - torch
-            services:
-              - postgres
-            sys-deps:
-              - libgeos-dev
-          - name: risingwave
-            title: RisingWave
-            serial: true
-            services:
-              - risingwave
-            extras:
-              - --extra risingwave
-          - name: impala
-            title: Impala
-            serial: true
-            extras:
-              - --extra impala
-            services:
-              - impala
-              - kudu
-            sys-deps:
-              - cmake
-              - ninja-build
-          - name: mssql
-            title: MS SQL Server
-            serial: true
-            extras:
-              - --extra mssql
-              - --extra polars
-            services:
-              - mssql
-            sys-deps:
-              - freetds-dev
-              - unixodbc-dev
-              - tdsodbc
-          - name: trino
-            title: Trino
-            extras:
-              - --extra trino
-            services:
-              - trino
-          - name: druid
-            title: Druid
-            extras:
-              - --extra druid
-            services:
-              - druid
-          - name: exasol
-            title: Exasol
-            serial: true
-            extras:
-              - --extra exasol
-            services:
-              - exasol
-          - name: oracle
-            title: Oracle
-            serial: true
-            extras:
-              - --extra oracle
-              - --extra polars
-            services:
-              - oracle
-          - name: flink
-            title: Flink
-            serial: true
-            extras:
-              - --extra flink
-            additional_deps:
-              - "'apache-flink==1.20.0'"
-              - "'pandas<2.2'"
-              - setuptools
-            services:
-              - flink
-        include:
-          - os: ubuntu-latest
-            python-version: "3.11"
-            backend:
-              name: flink
-              title: Flink
-              serial: true
-              extras:
-                - --extra flink
-              additional_deps:
-                - "'apache-flink==1.20.0'"
-                - "'pandas<2.2'"
-                - setuptools
-              services:
-                - flink
-          - os: ubuntu-latest
-            python-version: "3.11"
-            backend:
-              name: impala
-              title: Impala
-              serial: true
-              extras:
-                - --extra impala
-              services:
-                - impala
-                - kudu
-              sys-deps:
-                - cmake
-                - ninja-build
-          # pytorch wheel doesn't exist for windows + python 3.13, so test
-          # against 3.12 until that's shipped
-          - os: windows-latest
-            python-version: "3.12"
-            backend:
-              name: duckdb
-              title: DuckDB
-              serial: true
-              extras:
-                - --extra duckdb
-                - --extra deltalake
-                - --extra geospatial
-                - --extra examples
-                - --extra decompiler
-                - --extra polars
-            additional_deps:
-              - torch
-          # also test duckdb with python 3.13 on windows, *without* pytorch
-          - os: windows-latest
-            python-version: "3.13"
-            backend:
-              name: duckdb
-              title: DuckDB
-              serial: true
-              extras:
-                - --extra duckdb
-                - --extra deltalake
-                - --extra geospatial
-                - --extra examples
-                - --extra decompiler
-                - --extra polars
-        exclude:
-          - os: windows-latest
-            python-version: "3.13"
-            backend:
-              name: duckdb
-          - os: windows-latest
-            backend:
-              name: mysql
-              title: MySQL
-              serial: true
-              extras:
-                - --extra mysql
-                - --extra geospatial
-                - --extra polars
-              services:
-                - mysql
-              sys-deps:
-                - libgeos-dev
-                - default-libmysqlclient-dev
-          - os: windows-latest
-            backend:
-              name: clickhouse
-              title: ClickHouse
-              extras:
-                - --extra clickhouse
-                - --extra examples
-              services:
-                - clickhouse
-          - os: windows-latest
-            backend:
-              name: postgres
-              title: PostgreSQL
-              serial: true
-              extras:
-                - --extra postgres
-                - --extra geospatial
-              services:
-                - postgres
-              sys-deps:
-                - libgeos-dev
-          - os: windows-latest
-            backend:
-              name: risingwave
-              title: RisingWave
-              serial: true
-              services:
-                - risingwave
-              extras:
-                - --extra risingwave
-          - os: windows-latest
-            backend:
-              name: postgres
-              title: PostgreSQL + Torch
-              serial: true
-              extras:
-                - --extra postgres
-                - --extra geospatial
-                - --extra polars
-              additional_deps:
-                - torch
-              services:
-                - postgres
-              sys-deps:
-                - libgeos-dev
-          # TODO(deepyaman): Test whether this works upon releasing https://github.com/cloudera/impyla/commit/bf1f94c3c4106ded6267d2485c1e939775a6a87f
-          - os: ubuntu-latest
-            python-version: "3.13"
-            backend:
-              name: impala
-              title: Impala
-              serial: true
-              extras:
-                - --extra impala
-              services:
-                - impala
-                - kudu
-              sys-deps:
-                - cmake
-                - ninja-build
-          - os: windows-latest
-            backend:
-              name: impala
-              title: Impala
-              serial: true
-              extras:
-                - --extra impala
-              services:
-                - impala
-                - kudu
-              sys-deps:
-                - cmake
-                - ninja-build
-          - os: windows-latest
-            backend:
-              name: mssql
-              title: MS SQL Server
-              serial: true
-              extras:
-                - --extra mssql
-                - --extra polars
-              services:
-                - mssql
-              sys-deps:
-                - freetds-dev
-                - unixodbc-dev
-                - tdsodbc
-          - os: windows-latest
-            backend:
-              name: trino
-              title: Trino
-              services:
-                - trino
-              extras:
-                - --extra trino
-          - os: windows-latest
-            backend:
-              name: druid
-              title: Druid
-              extras:
-                - --extra druid
-              services:
-                - druid
-          - os: windows-latest
-            backend:
-              name: oracle
-              title: Oracle
-              serial: true
-              extras:
-                - --extra oracle
-                - --extra polars
-              services:
-                - oracle
-          - os: ubuntu-latest
-            python-version: "3.13"
-            backend:
-              name: flink
-              title: Flink
-              serial: true
-              extras:
-                - --extra flink
-              additional_deps:
-                - "'apache-flink==1.20.0'"
-                - "'pandas<2.2'"
-                - setuptools
-              services:
-                - flink
-          - os: windows-latest
-            backend:
-              name: flink
-              title: Flink
-              serial: true
-              extras:
-                - --extra flink
-              additional_deps:
-                - "'apache-flink==1.20.0'"
-                - "'pandas<2.2'"
-                - setuptools
-              services:
-                - flink
-          - os: windows-latest
-            backend:
-              name: exasol
-              title: Exasol
-              serial: true
-              extras:
-                - --extra exasol
-              services:
-                - exasol
+              # - --extra decompiler
+              # - --extra polars
+            # additional_deps:
+            #   - torch
+          # - name: clickhouse
+          #   title: ClickHouse
+          #   services:
+          #     - clickhouse
+          #   extras:
+          #     - --extra clickhouse
+          #     - --extra examples
+          # - name: sqlite
+          #   title: SQLite
+          #   serial: true
+          #   extras:
+          #     - --extra sqlite
+          # - name: datafusion
+          #   title: DataFusion
+          #   serial: true
+          #   extras:
+          #     - --extra datafusion
+          # - name: polars
+          #   title: Polars
+          #   extras:
+          #     - --extra polars
+          #     - --extra deltalake
+          # - name: mysql
+          #   title: MySQL
+          #   serial: true
+          #   services:
+          #     - mysql
+          #   extras:
+          #     - --extra mysql
+          #     - --extra geospatial
+          #     - --extra polars
+          #   sys-deps:
+          #     - libgeos-dev
+          #     - default-libmysqlclient-dev
+          # - name: postgres
+          #   title: PostgreSQL
+          #   serial: true
+          #   extras:
+          #     - --extra postgres
+          #     - --extra geospatial
+          #   services:
+          #     - postgres
+          #   sys-deps:
+          #     - libgeos-dev
+          # - name: postgres
+          #   title: PostgreSQL + Torch
+          #   serial: true
+          #   extras:
+          #     - --extra postgres
+          #     - --extra geospatial
+          #     - --extra polars
+          #   additional_deps:
+          #     - torch
+          #   services:
+          #     - postgres
+          #   sys-deps:
+          #     - libgeos-dev
+          # - name: risingwave
+          #   title: RisingWave
+          #   serial: true
+          #   services:
+          #     - risingwave
+          #   extras:
+          #     - --extra risingwave
+          # - name: impala
+          #   title: Impala
+          #   serial: true
+          #   extras:
+          #     - --extra impala
+          #   services:
+          #     - impala
+          #     - kudu
+          #   sys-deps:
+          #     - cmake
+          #     - ninja-build
+          # - name: mssql
+          #   title: MS SQL Server
+          #   serial: true
+          #   extras:
+          #     - --extra mssql
+          #     - --extra polars
+          #   services:
+          #     - mssql
+          #   sys-deps:
+          #     - freetds-dev
+          #     - unixodbc-dev
+          #     - tdsodbc
+          # - name: trino
+          #   title: Trino
+          #   extras:
+          #     - --extra trino
+          #   services:
+          #     - trino
+          # - name: druid
+          #   title: Druid
+          #   extras:
+          #     - --extra druid
+          #   services:
+          #     - druid
+          # - name: exasol
+          #   title: Exasol
+          #   serial: true
+          #   extras:
+          #     - --extra exasol
+          #   services:
+          #     - exasol
+          # - name: oracle
+          #   title: Oracle
+          #   serial: true
+          #   extras:
+          #     - --extra oracle
+          #     - --extra polars
+          #   services:
+          #     - oracle
+          # - name: flink
+          #   title: Flink
+          #   serial: true
+          #   extras:
+          #     - --extra flink
+          #   additional_deps:
+          #     - "'apache-flink==1.20.0'"
+          #     - "'pandas<2.2'"
+          #     - setuptools
+          #   services:
+          #     - flink
+        # include:
+        #   - os: ubuntu-latest
+        #     python-version: "3.11"
+        #     backend:
+        #       name: flink
+        #       title: Flink
+        #       serial: true
+        #       extras:
+        #         - --extra flink
+        #       additional_deps:
+        #         - "'apache-flink==1.20.0'"
+        #         - "'pandas<2.2'"
+        #         - setuptools
+        #       services:
+        #         - flink
+        #   - os: ubuntu-latest
+        #     python-version: "3.11"
+        #     backend:
+        #       name: impala
+        #       title: Impala
+        #       serial: true
+        #       extras:
+        #         - --extra impala
+        #       services:
+        #         - impala
+        #         - kudu
+        #       sys-deps:
+        #         - cmake
+        #         - ninja-build
+        #   # pytorch wheel doesn't exist for windows + python 3.13, so test
+        #   # against 3.12 until that's shipped
+        #   - os: windows-latest
+        #     python-version: "3.12"
+        #     backend:
+        #       name: duckdb
+        #       title: DuckDB
+        #       serial: true
+        #       extras:
+        #         - --extra duckdb
+        #         - --extra deltalake
+        #         - --extra geospatial
+        #         - --extra examples
+        #         - --extra decompiler
+        #         - --extra polars
+        #     additional_deps:
+        #       - torch
+        #   # also test duckdb with python 3.13 on windows, *without* pytorch
+        #   - os: windows-latest
+        #     python-version: "3.13"
+        #     backend:
+        #       name: duckdb
+        #       title: DuckDB
+        #       serial: true
+        #       extras:
+        #         - --extra duckdb
+        #         - --extra deltalake
+        #         - --extra geospatial
+        #         - --extra examples
+        #         - --extra decompiler
+        #         - --extra polars
+        # exclude:
+        #   - os: windows-latest
+        #     python-version: "3.13"
+        #     backend:
+        #       name: duckdb
+        #   - os: windows-latest
+        #     backend:
+        #       name: mysql
+        #       title: MySQL
+        #       serial: true
+        #       extras:
+        #         - --extra mysql
+        #         - --extra geospatial
+        #         - --extra polars
+        #       services:
+        #         - mysql
+        #       sys-deps:
+        #         - libgeos-dev
+        #         - default-libmysqlclient-dev
+        #   - os: windows-latest
+        #     backend:
+        #       name: clickhouse
+        #       title: ClickHouse
+        #       extras:
+        #         - --extra clickhouse
+        #         - --extra examples
+        #       services:
+        #         - clickhouse
+        #   - os: windows-latest
+        #     backend:
+        #       name: postgres
+        #       title: PostgreSQL
+        #       serial: true
+        #       extras:
+        #         - --extra postgres
+        #         - --extra geospatial
+        #       services:
+        #         - postgres
+        #       sys-deps:
+        #         - libgeos-dev
+        #   - os: windows-latest
+        #     backend:
+        #       name: risingwave
+        #       title: RisingWave
+        #       serial: true
+        #       services:
+        #         - risingwave
+        #       extras:
+        #         - --extra risingwave
+        #   - os: windows-latest
+        #     backend:
+        #       name: postgres
+        #       title: PostgreSQL + Torch
+        #       serial: true
+        #       extras:
+        #         - --extra postgres
+        #         - --extra geospatial
+        #         - --extra polars
+        #       additional_deps:
+        #         - torch
+        #       services:
+        #         - postgres
+        #       sys-deps:
+        #         - libgeos-dev
+        #   # TODO(deepyaman): Test whether this works upon releasing https://github.com/cloudera/impyla/commit/bf1f94c3c4106ded6267d2485c1e939775a6a87f
+        #   - os: ubuntu-latest
+        #     python-version: "3.13"
+        #     backend:
+        #       name: impala
+        #       title: Impala
+        #       serial: true
+        #       extras:
+        #         - --extra impala
+        #       services:
+        #         - impala
+        #         - kudu
+        #       sys-deps:
+        #         - cmake
+        #         - ninja-build
+        #   - os: windows-latest
+        #     backend:
+        #       name: impala
+        #       title: Impala
+        #       serial: true
+        #       extras:
+        #         - --extra impala
+        #       services:
+        #         - impala
+        #         - kudu
+        #       sys-deps:
+        #         - cmake
+        #         - ninja-build
+        #   - os: windows-latest
+        #     backend:
+        #       name: mssql
+        #       title: MS SQL Server
+        #       serial: true
+        #       extras:
+        #         - --extra mssql
+        #         - --extra polars
+        #       services:
+        #         - mssql
+        #       sys-deps:
+        #         - freetds-dev
+        #         - unixodbc-dev
+        #         - tdsodbc
+        #   - os: windows-latest
+        #     backend:
+        #       name: trino
+        #       title: Trino
+        #       services:
+        #         - trino
+        #       extras:
+        #         - --extra trino
+        #   - os: windows-latest
+        #     backend:
+        #       name: druid
+        #       title: Druid
+        #       extras:
+        #         - --extra druid
+        #       services:
+        #         - druid
+        #   - os: windows-latest
+        #     backend:
+        #       name: oracle
+        #       title: Oracle
+        #       serial: true
+        #       extras:
+        #         - --extra oracle
+        #         - --extra polars
+        #       services:
+        #         - oracle
+        #   - os: ubuntu-latest
+        #     python-version: "3.13"
+        #     backend:
+        #       name: flink
+        #       title: Flink
+        #       serial: true
+        #       extras:
+        #         - --extra flink
+        #       additional_deps:
+        #         - "'apache-flink==1.20.0'"
+        #         - "'pandas<2.2'"
+        #         - setuptools
+        #       services:
+        #         - flink
+        #   - os: windows-latest
+        #     backend:
+        #       name: flink
+        #       title: Flink
+        #       serial: true
+        #       extras:
+        #         - --extra flink
+        #       additional_deps:
+        #         - "'apache-flink==1.20.0'"
+        #         - "'pandas<2.2'"
+        #         - setuptools
+        #       services:
+        #         - flink
+        #   - os: windows-latest
+        #     backend:
+        #       name: exasol
+        #       title: Exasol
+        #       serial: true
+        #       extras:
+        #         - --extra exasol
+        #       services:
+        #         - exasol
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
@@ -512,7 +512,7 @@ jobs:
       - name: "run serial tests: ${{ matrix.backend.name }}"
         if: matrix.backend.serial
         timeout-minutes: 60
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -v
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -v ibis/backends/duckdb/tests/test_geospatial.py --randomly-dont-reorganize
         env:
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"

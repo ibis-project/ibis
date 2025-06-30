@@ -109,7 +109,8 @@ class TestConf(BackendTest):
             extension_directory.mkdir(exist_ok=True)
             kw["extension_directory"] = extension_directory
 
-        kw["threads"] = 1 if worker_id != "master" else os.cpu_count() // 2
+        if worker_id != "master":
+            kw["threads"] = 1
         return ibis.duckdb.connect(**kw)
 
     def _load_tpc(self, *, suite, scale_factor):
