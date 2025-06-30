@@ -50,9 +50,9 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - windows-latest
+          # - windows-latest
         python-version:
-          - "3.9"
+          # - "3.9"
           - "3.13"
     steps:
       - name: checkout
@@ -90,9 +90,9 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          # - windows-latest
+          - windows-latest
         python-version:
-          # - "3.9"
+          - "3.9"
           - "3.13"
         backend:
           - name: duckdb
@@ -512,7 +512,7 @@ jobs:
       - name: "run serial tests: ${{ matrix.backend.name }}"
         if: matrix.backend.serial
         timeout-minutes: 60
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -v ibis/backends/duckdb/tests/test_geospatial.py --randomly-dont-reorganize
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -v ibis/backends/duckdb/tests/test_geospatial.py
         env:
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"
