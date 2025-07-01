@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -437,13 +438,27 @@ class Backend(
         self._session.udf.register("unwrap_json_float", unwrap_json_float)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        schema = PySparkSchema.from_ibis(op.schema)
+        schema = op.schema
+        pyspark_schema = PySparkSchema.from_ibis(schema)
+
+        # this is a workaround for PySpark's lack of support for arrow input
+        # prior to PySpark 4.0
         data = op.data.to_frame()
+
+        if decimal_columns := [
+            name for name, dtype in schema.items() if dtype.is_decimal()
+        ]:
+            data = data.assign(
+                **{col: data[col].map(Decimal) for col in decimal_columns}
+            )
+
         try:
-            df = self._session.createDataFrame(data, schema=schema, verifySchema=False)
+            df = self._session.createDataFrame(
+                data, schema=pyspark_schema, verifySchema=False
+            )
         except TypeError:
             # remote sessions don't have optional schema verification
-            df = self._session.createDataFrame(data, schema=schema)
+            df = self._session.createDataFrame(data, schema=pyspark_schema)
 
         df.createOrReplaceTempView(op.name)
 
