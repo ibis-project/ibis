@@ -51,7 +51,7 @@ dependencies = [
   "atpublic>=2.3",
   "parsy>=2",
   "python-dateutil>=2.8.2",
-  "sqlglot>=23.4",
+  "sqlglot>=23.4,!=26.32.0",
   "toolz>=0.11",
   "typing-extensions>=4.3.0",
   "tzdata>=2022.7",           # fallback time zone data on Windows
