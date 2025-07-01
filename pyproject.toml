@@ -121,7 +121,9 @@ druid = [
   "rich>=12.4.4",
 ]
 duckdb = [
-  "duckdb>=0.10.3,!=1.3.0", # 1.3.0 has a bug that breaks ORDER BY + LIMIT in any Python query
+  # - 1.3.0 has a bug that breaks ORDER BY + LIMIT in any Python query
+  # - 1.3.1 hangs forever when loading the spatial extension
+  "duckdb>=0.10.3,!=1.3.0,!=1.3.1",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",

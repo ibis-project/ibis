@@ -1658,8 +1658,7 @@ class GeoSpatialColumn(NumericColumn, GeoSpatialValue):
         >>> t = ibis.examples.zones.fetch()
         >>> t.geom.unary_union()
         ┌──────────────────────────────────────────────────────────────────────────────┐
-        │ <MULTIPOLYGON (((952297.812 138910.318, 952225.737 138802.845, 952215.37     │
-        │ 138...>                                                                      │
+        │ <MULTIPOLYGON ...>                                                           │
         └──────────────────────────────────────────────────────────────────────────────┘
         """
         return ops.GeoUnaryUnion(self, where=where).to_expr()
