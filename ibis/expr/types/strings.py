@@ -1224,6 +1224,9 @@ class StringValue(Value):
     def replace(self, pattern: StringValue, replacement: StringValue) -> StringValue:
         """Replace each exact match of `pattern` with `replacement`.
 
+        This method transforms strings to strings. For replacing arbitrary
+        types, see [`Value.substitute`](./expression-generic.qmd#ibis.expr.types.generic.Value.substitute).
+
         Parameters
         ----------
         pattern
@@ -1235,6 +1238,10 @@ class StringValue(Value):
         -------
         StringValue
             Replaced string
+
+        See Also
+        --------
+        [`Value.substitute`](./expression-generic.qmd#ibis.expr.types.generic.Value.substitute)
 
         Examples
         --------
