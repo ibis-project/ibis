@@ -803,6 +803,8 @@ class Value(Expr):
         Value
             Replaced values
 
+        See Also
+        --------
         [`Value.cases()`](./expression-generic.qmd#ibis.expr.types.generic.Value.case)
         [`ibis.cases()`](./expression-generic.qmd#ibis.cases)
 
