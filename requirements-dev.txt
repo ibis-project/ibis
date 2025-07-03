@@ -195,7 +195,6 @@ proto-plus==1.26.1
 protobuf==6.31.1
 psutil==7.0.0
 psycopg==3.2.9
-psycopg-binary==3.2.9 ; implementation_name != 'pypy'
 psycopg2==2.9.10
 psygnal==0.14.0
 ptyprocess==0.7.0 ; (python_full_version < '3.10' and sys_platform == 'emscripten') or os_name != 'nt' or (sys_platform != 'emscripten' and sys_platform != 'win32')
