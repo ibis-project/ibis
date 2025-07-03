@@ -81,8 +81,6 @@
           openjdk17_headless
           # postgres client
           libpq.pg_config
-          # psycopg
-          libpq
           postgresql
           # sqlite with readline
           sqlite-interactive
@@ -99,6 +97,13 @@
 
           # Get repository root using git. This is expanded at runtime by the editable `.pth` machinery.
           export REPO_ROOT=$(git rev-parse --show-toplevel)
+
+          # pure python implementation of psycopg needs to be able to find
+          # libpq
+          #
+          # AFAIK there isn't another way to force the lookup to occur where it
+          # needs to in the nix store without setting LD_LIBRARY_PATH
+          export LD_LIBRARY_PATH="$(pg_config --libdir)"
         '';
 
         preCommitDeps = with pkgs; [
