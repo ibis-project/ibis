@@ -497,8 +497,10 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_TemporalDelta(self, op, *, part, left, right):
         # trino truncates _after_ the delta, whereas many other backends
         # truncate each operand
-        return self.f.date_diff(
-            part, self.f.date_trunc(part, right), self.f.date_trunc(part, left)
+        return sge.DateDiff(
+            this=self.f.date_trunc(part, right),
+            expression=self.f.date_trunc(part, left),
+            unit=part,
         )
 
     visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_TemporalDelta
