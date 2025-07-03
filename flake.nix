@@ -81,6 +81,8 @@
           openjdk17_headless
           # postgres client
           libpq.pg_config
+          # psycopg
+          libpq
           postgresql
           # sqlite with readline
           sqlite-interactive
