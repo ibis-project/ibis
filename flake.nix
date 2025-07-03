@@ -87,6 +87,8 @@
           # mysqlclient build
           libmysqlclient
           pkg-config
+          # new hotness for build orchestration (?)
+          docker-buildx
         ];
         shellHook = ''
           rm -f "$PWD/ci/ibis-testing-data"

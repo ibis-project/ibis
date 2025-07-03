@@ -179,9 +179,9 @@ pull *backends:
 
     if [ "${#backends[@]}" -eq 0 ]; then
         docker compose pull --ignore-buildable
-        docker compose build "${buildable[@]}" --pull
+        docker buildx bake "${buildable[@]}" --pull
     elif [ "${#buildable[@]}" -gt 0 ]; then
-        docker compose build "${buildable[@]}" --pull
+        docker buildx bake "${buildable[@]}" --pull
     elif [ "${#pullable[@]}" -gt 0 ]; then
         docker compose pull "${pullable[@]}" --ignore-buildable
     fi
