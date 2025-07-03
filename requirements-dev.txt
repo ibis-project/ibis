@@ -71,7 +71,7 @@ execnet==2.1.1
 executing==2.2.0
 fastjsonschema==2.21.1
 filelock==3.18.0
-fonttools==4.58.4
+fonttools==4.58.5
 fqdn==1.5.1
 frozenlist==1.7.0
 fsspec==2025.5.1
