@@ -206,7 +206,7 @@ def uses_java_re(t):
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -219,7 +219,7 @@ def uses_java_re(t):
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -250,7 +250,7 @@ def uses_java_re(t):
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -263,7 +263,7 @@ def uses_java_re(t):
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -291,7 +291,7 @@ def uses_java_re(t):
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -306,7 +306,7 @@ def uses_java_re(t):
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -321,7 +321,7 @@ def uses_java_re(t):
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -336,7 +336,7 @@ def uses_java_re(t):
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -349,7 +349,7 @@ def uses_java_re(t):
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -362,7 +362,7 @@ def uses_java_re(t):
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -389,7 +389,7 @@ def uses_java_re(t):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
-                    athena=["sqlglot>=26.29"], raises=AssertionError
+                    athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
             ],
         ),
@@ -991,7 +991,7 @@ def test_re_split(con):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.xfail_version(athena=["sqlglot>=26.29"], raises=AssertionError)
+@pytest.mark.xfail_version(athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError)
 def test_re_split_column(alltypes):
     expr = alltypes.limit(5).string_col.re_split(r"\d+")
     result = expr.execute()
@@ -1027,7 +1027,7 @@ def test_re_split_column(alltypes):
     raises=Exception,
     reason="pyarrow doesn't support splitting on a pattern per row",
 )
-@pytest.mark.xfail_version(athena=["sqlglot>=26.29"], raises=AssertionError)
+@pytest.mark.xfail_version(athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError)
 def test_re_split_column_multiple_patterns(alltypes):
     expr = (
         alltypes.filter(lambda t: t.string_col.isin(("1", "2")))
