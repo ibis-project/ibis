@@ -322,6 +322,17 @@ def test_embedded_cte(alltypes, ftname_raw):
     assert len(result) == 1
 
 
+@pytest.mark.skip("Currently broken")
+def test_embedded_cte_with_alias(con):
+    expr = con.sql('SELECT * FROM (SELECT \'abc\' "ts") "x"', dialect="duckdb").limit(1)
+    alias = "alias"
+    expr = expr.alias(alias).sql(
+        f'WITH "x" AS (SELECT * FROM "{alias}") SELECT * FROM "x"', dialect="duckdb"
+    )
+    result = expr.head(1).execute()
+    assert len(result) == 1
+
+
 @pytest.mark.never(["exasol"], raises=ExaQueryError, reason="backend requires aliasing")
 @pytest.mark.never(
     ["oracle"], raises=OracleDatabaseError, reason="backend requires aliasing"
