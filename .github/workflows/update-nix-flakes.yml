@@ -24,7 +24,7 @@ jobs:
           private-key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
 
       - name: update flake.lock
-        uses: DeterminateSystems/update-flake-lock@v25
+        uses: DeterminateSystems/update-flake-lock@v26
         with:
           token: ${{ steps.generate-token.outputs.token }}
           commit-msg: "chore(deps): update `flake.lock`"
