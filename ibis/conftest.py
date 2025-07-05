@@ -21,6 +21,16 @@ CI = os.environ.get("CI") is not None
 SPARK_REMOTE = os.environ.get("SPARK_REMOTE")
 IS_SPARK_REMOTE = bool(SPARK_REMOTE)
 
+if CI:
+    try:
+        import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
+    except ModuleNotFoundError:
+        pass
+    else:
+        pa.set_cpu_count(1)
+        pa.set_io_thread_count(1)
+
 
 @pytest.fixture(autouse=True)
 def add_ibis(monkeypatch, doctest_namespace):

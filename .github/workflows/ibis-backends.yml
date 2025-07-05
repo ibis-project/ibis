@@ -512,6 +512,13 @@ jobs:
           IBIS_TEST_IMPALA_HOST: localhost
           IBIS_TEST_IMPALA_PORT: 21050
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          OPENBLAS_NUM_THREADS: 1
+          MKL_NUM_THREADS: 1
+          BLAS_NUM_THREADS: 1
+          OMP_NUM_THREADS: 1
+          VECLIB_MAXIMUM_THREADS: 1
+          POLARS_MAX_THREADS: 1
+          ARROW_IO_THREADS: 1
 
       - name: "run serial tests: ${{ matrix.backend.name }}"
         if: matrix.backend.serial

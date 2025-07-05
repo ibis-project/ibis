@@ -8,6 +8,6 @@ SELECT
   "query"
 FROM "pg_stat_activity"
 WHERE
-  "backend_type" = 'client backend' AND "state" = 'idle in transaction'
+  "wait_event_type" = 'Client'
 ORDER BY
   "backend_start"
