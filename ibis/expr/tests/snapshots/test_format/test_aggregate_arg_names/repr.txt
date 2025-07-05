@@ -12,9 +12,12 @@ r0 := UnboundTable: alltypes
   k time
 
 Aggregate[r0]
-  groups:
-    key1: r0.g
-    key2: Round(r0.f, digits=0)
   metrics:
     c: Sum(r0.c)
     d: Mean(r0.d)
+  keys:
+    key1: r0.g
+    key2: Round(r0.f, digits=0)
+  groups:
+    key1: r0.g
+    key2: Round(r0.f, digits=0)
