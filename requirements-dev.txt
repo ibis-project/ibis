@@ -3,7 +3,7 @@ aiobotocore==2.23.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.13
 aioitertools==0.12.0
-aiosignal==1.3.2
+aiosignal==1.4.0
 alembic==1.16.2
 altair==5.5.0
 annotated-types==0.7.0
@@ -64,7 +64,7 @@ deprecated==1.2.18
 distlib==0.3.9
 doit==0.36.0
 duckdb==1.2.2
-dunamai==1.24.1
+dunamai==1.25.0
 et-xmlfile==2.0.0
 exceptiongroup==1.3.0 ; python_full_version < '3.11'
 execnet==2.1.1
@@ -98,7 +98,7 @@ h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 humanize==4.12.3
-hypothesis==6.135.24
+hypothesis==6.135.26
 identify==2.6.12
 idna==3.10
 importlib-metadata==8.7.0
@@ -251,7 +251,7 @@ rfc3986-validator==0.1.1
 rich==14.0.0
 rpds-py==0.26.0
 rsa==4.9.1
-ruff==0.12.1
+ruff==0.12.2
 s3fs==2025.5.1
 s3transfer==0.13.0
 scikit-learn==1.6.1 ; python_full_version < '3.10'
@@ -288,7 +288,7 @@ tqdm==4.67.1
 traitlets==5.14.3
 trino==0.335.0
 types-python-dateutil==2.9.0.20250516
-typing-extensions==4.14.0
+typing-extensions==4.14.1
 typing-inspection==0.4.1
 tzdata==2025.2
 tzlocal==5.3.1

@@ -183,6 +183,7 @@
             ibis312
             ibis313
             check-release-notes-spelling
+            get-latest-quarto-hash
             ;
         };
 
