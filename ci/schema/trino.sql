@@ -1,3 +1,5 @@
+SET SESSION task_concurrency = 1;
+
 CREATE TABLE IF NOT EXISTS hive.default.diamonds (
     "carat" DOUBLE,
     "cut" VARCHAR,
