@@ -498,8 +498,8 @@ class TrinoCompiler(SQLGlotCompiler):
         # trino truncates _after_ the delta, whereas many other backends
         # truncate each operand
         return sge.DateDiff(
-            this=self.f.date_trunc(part, right),
-            expression=self.f.date_trunc(part, left),
+            this=self.f.date_trunc(part, left),
+            expression=self.f.date_trunc(part, right),
             unit=part,
         )
 
