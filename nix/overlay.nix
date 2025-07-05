@@ -177,4 +177,26 @@ in
       python "$PWD/ibis/examples/gen_registry.py" "''${@}"
     '';
   };
+
+  get-latest-quarto-hash = pkgs.writeShellApplication {
+    name = "get-latest-quarto-hash";
+    runtimeInputs = [
+      pkgs.nix
+      pkgs.gh
+    ];
+    text = ''
+      declare -A systems=(["linux-amd64"]="x86_64-linux" ["linux-arm64"]="aarch64-linux" ["macos"]="aarch64-darwin")
+      declare -a out=()
+      version="$(gh release --repo quarto-dev/quarto-cli list --json isPrerelease,tagName --jq '[.[] | select(.isPrerelease)][0].tagName[1:]')"
+      for system in linux-amd64 linux-arm64 macos; do
+        url="https://github.com/quarto-dev/quarto-cli/releases/download/v$version/quarto-$version-$system.tar.gz"
+        fetched_hash="$(nix-prefetch-url "$url")"
+        hash="$(nix hash convert --hash-algo sha256 --from nix32 "$fetched_hash")"
+        out+=("''${systems[$system]} = \"$hash\";")
+      done
+      for row in "''${out[@]}"; do
+        echo "$row"
+      done
+    '';
+  };
 }
