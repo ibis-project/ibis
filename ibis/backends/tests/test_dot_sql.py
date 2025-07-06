@@ -322,15 +322,31 @@ def test_embedded_cte(alltypes, ftname_raw):
     assert len(result) == 1
 
 
-@pytest.mark.skip("Currently broken")
-def test_embedded_cte_with_alias(con):
-    expr = con.sql('SELECT * FROM (SELECT \'abc\' "ts") "x"', dialect="duckdb").limit(1)
+def test_embedded_cte_with_alias_simple(con):
+    expr = con.sql('SELECT * FROM (SELECT \'abc\' "ts") "x"', dialect="duckdb")
     alias = "alias"
-    expr = expr.alias(alias).sql(
+    expr = expr.alias(alias)
+    expr = expr.sql(
         f'WITH "x" AS (SELECT * FROM "{alias}") SELECT * FROM "x"', dialect="duckdb"
     )
     result = expr.head(1).execute()
     assert len(result) == 1
+    assert result["ts"][0] == "abc"
+
+
+def test_embedded_cte_with_alias_nested(con):
+    expr = con.sql(
+        'WITH second_alias as (SELECT * FROM (SELECT \'abc\' "ts") "x") SELECT * FROM second_alias',
+        dialect="duckdb",
+    )
+    alias = "alias"
+    expr = expr.alias(alias)
+    expr = expr.sql(
+        f'WITH "x" AS (SELECT * FROM "{alias}") SELECT * FROM "x"', dialect="duckdb"
+    )
+    result = expr.head(1).execute()
+    assert len(result) == 1
+    assert result["ts"][0] == "abc"
 
 
 @pytest.mark.never(["exasol"], raises=ExaQueryError, reason="backend requires aliasing")
