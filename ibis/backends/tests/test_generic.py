@@ -1128,7 +1128,32 @@ def test_typeof(con):
     assert result is not None
 
 
-@pytest.mark.notimpl(["polars"], reason="incorrect answer")
+@pytest.mark.notyet(["impala"], reason="can't find table in subquery")
+@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.xfail_version(pyspark=["pyspark<3.5"])
+@pytest.mark.notyet(["exasol"], raises=ExaQueryError, reason="not supported by exasol")
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="https://github.com/risingwavelabs/risingwave/issues/1343",
+)
+@pytest.mark.notyet(
+    ["mssql"],
+    raises=PyODBCProgrammingError,
+    reason="naked IN queries are not supported",
+)
+def test_isin_uncorrelated_simple(con):
+    u1 = ibis.memtable({"id": [1, 2, 3]})
+    a = ibis.memtable({"id": [1, 2]})
+
+    u2 = u1.mutate(in_a=u1["id"].isin(a["id"]))
+    final = u2.order_by("id")
+
+    result = con.to_pyarrow(final)
+    expected = pa.table({"id": [1, 2, 3], "in_a": [True, True, False]})
+    assert result.equals(expected)
+
+
 @pytest.mark.notyet(["impala"], reason="can't find table in subquery")
 @pytest.mark.notimpl(["datafusion", "druid"])
 @pytest.mark.xfail_version(pyspark=["pyspark<3.5"])
@@ -1161,7 +1186,6 @@ def test_isin_uncorrelated(
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["polars"], reason="incorrect answer")
 def test_isin_uncorrelated_filter(
     backend, batting, awards_players, batting_df, awards_players_df
 ):
