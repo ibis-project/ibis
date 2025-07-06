@@ -12,7 +12,6 @@ from ibis import util
 from ibis.backends.tests.conftest import NO_STRUCT_SUPPORT_MARKS
 from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
-    PolarsColumnNotFoundError,
     PsycoPg2InternalError,
     PsycoPgSyntaxError,
     Py4JJavaError,
@@ -20,7 +19,7 @@ from ibis.backends.tests.errors import (
     PyAthenaOperationalError,
     PySparkAnalysisException,
 )
-from ibis.common.exceptions import IbisError
+from ibis.common.exceptions import IbisError, UnsupportedOperationError
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -245,8 +244,8 @@ def test_keyword_fields(con, nullable):
 )
 @pytest.mark.notyet(
     ["polars"],
-    raises=PolarsColumnNotFoundError,
-    reason="doesn't seem to support IN-style subqueries on structs",
+    raises=UnsupportedOperationError,
+    reason="doesn't support IN-style subqueries on structs",
 )
 @pytest.mark.xfail_version(
     pyspark=["pyspark<3.5"],
