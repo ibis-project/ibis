@@ -19,6 +19,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PolarsSQLInterfaceError,
     PyAthenaOperationalError,
+    PyODBCProgrammingError,
 )
 
 pd = pytest.importorskip("pandas")
@@ -334,6 +335,14 @@ def test_embedded_cte_with_alias_simple(con):
     assert result["ts"][0] == "abc"
 
 
+@pytest.mark.notyet(
+    ["oracle"], raises=OracleDatabaseError, reason="Oracle doesn't allow embedding CTEs"
+)
+@pytest.mark.notyet(
+    ["mssql"],
+    raises=PyODBCProgrammingError,
+    reason="MS SQL doesn't allow embedding CTEs",
+)
 def test_embedded_cte_with_alias_nested(con):
     expr = con.sql(
         'WITH "second_alias" as (SELECT * FROM (SELECT \'abc\' "ts") "x") SELECT * FROM "second_alias"',
