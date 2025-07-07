@@ -336,7 +336,7 @@ def test_embedded_cte_with_alias_simple(con):
 
 def test_embedded_cte_with_alias_nested(con):
     expr = con.sql(
-        'WITH second_alias as (SELECT * FROM (SELECT \'abc\' "ts") "x") SELECT * FROM second_alias',
+        'WITH "second_alias" as (SELECT * FROM (SELECT \'abc\' "ts") "x") SELECT * FROM "second_alias"',
         dialect="duckdb",
     )
     alias = "alias"
