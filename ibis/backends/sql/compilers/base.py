@@ -676,7 +676,7 @@ class SQLGlotCompiler(abc.ABC):
             this = results[cte]
             if "alias" in this.args:
                 this = this.this
-            modified_cte = sg.exp.CTE(
+            modified_cte = sge.CTE(
                 alias=sg.to_identifier(aliases[cte], quoted=self.quoted), this=this
             )
             merged_ctes.append(modified_cte)
@@ -1607,7 +1607,7 @@ class SQLGlotCompiler(abc.ABC):
 
         ctes = [
             *compiled_ibis_expr.ctes,
-            sg.exp.CTE(
+            sge.CTE(
                 alias=sg.to_identifier(name, quoted=self.quoted),
                 this=compiled_ibis_expr,
             ),
