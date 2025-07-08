@@ -1215,12 +1215,7 @@ class Backend(
             )
 
         if name is None:
-            url = urllib.parse.urlparse(str(path_or_url))
-            name = Path(url.path).name
-            if not name:
-                raise ValueError(
-                    "No name provided and no basename found in path_or_url."
-                )
+            name = _attach_name(path_or_url)
 
         as_name = f"AS {sg.to_identifier(name, self.compiler.quoted).sql(self.name)}"
 
@@ -1914,3 +1909,30 @@ def _pyarrow_rbr(source, table_name, _conn, **_: Any):
     # Ensure the reader isn't marked as started, in case the name is
     # being overwritten.
     _conn._record_batch_readers_consumed[table_name] = False
+
+
+def _attach_name(path_or_url: str | Path) -> str:
+    """Return the name to use when attaching a database."""
+    url = urllib.parse.urlparse(str(path_or_url))
+    final = Path(url.path).stem
+    if not final:
+        raise ValueError(
+            f"Could not determine a name for the database from {path_or_url!r}. "
+            "Please provide a name explicitly using the `name` parameter."
+        )
+    return final
+
+
+for inp, expected in [
+    ("myddb", "myddb"),
+    ("myddb.duckdb", "myddb"),
+    ("myddb.temp.duckdb", "myddb.temp"),
+    ("myddb.temp.sqlite", "myddb.temp"),
+    (Path("myddb.duckdb"), "myddb"),
+    (Path("myddb"), "myddb"),
+    ("/root/myddb.duckdb", "myddb"),
+    ("myddb", "myddb"),
+    ("duckdb:///myddb.duckdb", "myddb"),
+    ("https://example.com/myddb.duckdb", "myddb"),
+]:
+    assert _attach_name(inp) == expected
