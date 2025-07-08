@@ -71,7 +71,7 @@ check *args:
 
 # run pytest for ci; additional arguments are forwarded to pytest
 ci-check extras *args:
-    uv run --group tests {{ extras }} pytest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml {{ args }}
+    uv run --group tests {{ extras }} pytest --cov=ibis --cov-report=xml:coverage.xml {{ args }}
 
 # run backend doctests
 backend-doctests backend *args:
