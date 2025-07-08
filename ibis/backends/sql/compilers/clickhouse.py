@@ -880,5 +880,10 @@ class ClickHouseCompiler(SQLGlotCompiler):
             sg.or_(arg.is_(NULL), key.is_(NULL)), NULL, self.f.mapContains(arg, key)
         )
 
+    def visit_InSubquery(self, op, *, needle, rel):
+        # clickhouse returns `a IN b` as integers so we have to cast to get
+        # booleans
+        return self.cast(super().visit_InSubquery(op, needle=needle, rel=rel), op.dtype)
+
 
 compiler = ClickHouseCompiler()
