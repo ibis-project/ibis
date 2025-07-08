@@ -674,13 +674,13 @@ class SQLGlotCompiler(abc.ABC):
         merged_ctes = []
         for cte in ctes:
             this = results[cte]
-            if "alias" in results[cte].args:
+            if "alias" in this.args:
                 this = this.this
             modified_cte = sg.exp.CTE(
                 alias=sg.to_identifier(aliases[cte], quoted=self.quoted), this=this
             )
             merged_ctes.append(modified_cte)
-        merged_ctes = [*merged_ctes, *out.ctes]
+        merged_ctes.extend(out.ctes)
         out.args.pop("with", None)
 
         out = reduce(
