@@ -57,7 +57,7 @@ def test_builtin_scalar_noargs(con):
     def version() -> str: ...
 
     expr = version()
-    assert con.execute(expr) == f"v{con.version}"
+    assert con.execute(expr).startswith(f"v{con.version}")
 
 
 @udf.agg.builtin

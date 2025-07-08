@@ -745,16 +745,8 @@ def test_isnan_isinf(
     [
         param(L(-5).abs(), 5, id="abs-neg"),
         param(L(5).abs(), 5, id="abs"),
-        param(
-            ibis.least(L(10), L(1)),
-            1,
-            id="least",
-        ),
-        param(
-            ibis.greatest(L(10), L(1)),
-            10,
-            id="greatest",
-        ),
+        param(ibis.least(L(10), L(1)), 1, id="least"),
+        param(ibis.greatest(L(10), L(1)), 10, id="greatest"),
         param(L(5.5).round(), 6.0, id="round"),
         param(L(5.556).round(2), 5.56, id="round-digits"),
         param(L(5.556).ceil(), 6.0, id="ceil"),

@@ -1711,7 +1711,7 @@ def read_delta(
     >>> import deltalake as dl
     >>> dl.write_deltalake("/tmp/data.delta", df, mode="overwrite")
     >>> t = ibis.read_delta("/tmp/data.delta")
-    >>> t  # doctest: +SKIP
+    >>> t.order_by("a")
     ┏━━━━━━━┳━━━━━━━━┓
     ┃ a     ┃ b      ┃
     ┡━━━━━━━╇━━━━━━━━┩
