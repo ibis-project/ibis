@@ -20,9 +20,9 @@ let
     x86_64-darwin = aarch64-darwin;
   };
   shas = rec {
-    x86_64-linux = "sha256-2EGmgIRs0DsAvBsEppZclWpMthYiP8GPhC57wukYr5o=";
-    aarch64-linux = "sha256-mzhkum7qRY9CtS2Vi7O1Y++OYIPPuOQqJgNy27TO15s=";
-    aarch64-darwin = "sha256-vb+C/YF9g4PEnFcsiKXO+wqFcLFCrva9p9W4eCCTrcQ=";
+    x86_64-linux = "sha256-vnrjbv5N/J+jtyhJrOAnMeUfnFeLMj+ivDEsM9AmiB8=";
+    aarch64-linux = "sha256-LpU3ZdOBnCZevR6bZn8UttCRjmwbfS/ryrneA8mdUDg=";
+    aarch64-darwin = "sha256-SYc0fq9x9HJeT84osQb0lXE9AClw7YfnwAgh53KWooI=";
     # hashes are the same for both macos architectures, because the packages
     # are identical
     x86_64-darwin = aarch64-darwin;
@@ -31,7 +31,7 @@ let
 in
 stdenv.mkDerivation rec {
   pname = "quarto";
-  version = "1.8.14";
+  version = "1.8.16";
   src = fetchurl {
     url = "https://github.com/quarto-dev/quarto-cli/releases/download/v${version}/quarto-${version}-${platforms.${system}}.tar.gz";
     sha256 = shas.${system};
