@@ -19,6 +19,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PolarsSQLInterfaceError,
     PyAthenaOperationalError,
+    PyODBCProgrammingError,
 )
 
 pd = pytest.importorskip("pandas")
@@ -320,6 +321,41 @@ def test_embedded_cte(alltypes, ftname_raw):
     expr = alltypes.sql(sql, dialect="duckdb")
     result = expr.head(1).execute()
     assert len(result) == 1
+
+
+def test_embedded_cte_with_alias_simple(con):
+    expr = con.sql('SELECT * FROM (SELECT \'abc\' "ts") "x"', dialect="duckdb")
+    alias = "alias"
+    expr = expr.alias(alias)
+    expr = expr.sql(
+        f'WITH "x" AS (SELECT * FROM "{alias}") SELECT * FROM "x"', dialect="duckdb"
+    )
+    result = expr.head(1).execute()
+    assert len(result) == 1
+    assert result["ts"][0] == "abc"
+
+
+@pytest.mark.notyet(
+    ["oracle"], raises=OracleDatabaseError, reason="Oracle doesn't allow embedding CTEs"
+)
+@pytest.mark.notyet(
+    ["mssql"],
+    raises=PyODBCProgrammingError,
+    reason="MS SQL doesn't allow embedding CTEs",
+)
+def test_embedded_cte_with_alias_nested(con):
+    expr = con.sql(
+        'WITH "second_alias" as (SELECT * FROM (SELECT \'abc\' "ts") "x") SELECT * FROM "second_alias"',
+        dialect="duckdb",
+    )
+    alias = "alias"
+    expr = expr.alias(alias)
+    expr = expr.sql(
+        f'WITH "x" AS (SELECT * FROM "{alias}") SELECT * FROM "x"', dialect="duckdb"
+    )
+    result = expr.head(1).execute()
+    assert len(result) == 1
+    assert result["ts"][0] == "abc"
 
 
 @pytest.mark.never(["exasol"], raises=ExaQueryError, reason="backend requires aliasing")
