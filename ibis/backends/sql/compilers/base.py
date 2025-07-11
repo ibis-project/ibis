@@ -965,6 +965,9 @@ class SQLGlotCompiler(abc.ABC):
     def visit_DayOfWeekIndex(self, op, *, arg):
         return (self.f.dayofweek(arg) + 6) % 7
 
+    def visit_IsoDayOfWeekIndex(self, op, *, arg):
+        return ((self.f.dayofweek(arg) + 6) % 7) + 1
+
     def visit_DayOfWeekName(self, op, *, arg):
         # day of week number is 0-indexed
         # Sunday == 0
