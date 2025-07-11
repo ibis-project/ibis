@@ -175,15 +175,24 @@ def sort(op, parent, keys):
 
 
 @translate.register(ops.Aggregate)
-def aggregation(op, parent, groups, metrics):
+def aggregation(op, parent, metrics, keys, groups, grouping_sets, rollups, cubes):
     groups = _wrap_alias(op.groups, groups)
     metrics = _wrap_alias(op.metrics, metrics)
-    if groups and metrics:
-        return f"{parent}.aggregate([{_inline(metrics)}], by=[{_inline(groups)}])"
-    elif metrics:
-        return f"{parent}.aggregate([{_inline(metrics)}])"
-    else:
+
+    if not metrics:
         raise ValueError("No metrics to aggregate")
+
+    args = [f"[{_inline(metrics)}]"]
+
+    if groups:
+        args.append(f"by=[{_inline(groups)}]")
+
+    if grouping_sets or rollups or cubes:
+        raise NotImplementedError(
+            "grouping_sets, rollups, and cubes not yet implemented in the decompiler"
+        )
+
+    return f"{parent}.aggregate({', '.join(args)})"
 
 
 @translate.register(ops.Distinct)
