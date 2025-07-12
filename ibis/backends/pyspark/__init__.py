@@ -462,10 +462,20 @@ class Backend(
 
         df.createOrReplaceTempView(op.name)
 
-    def _finalize_memtable(self, name: str) -> None:
-        """No-op, otherwise a deadlock can occur when using Spark Connect."""
+    def _make_memtable_finalizer(self, name: str) -> None:
+        """No-op with Spark Connect, otherwise a deadlock can occur."""
+
         if isinstance(session := self._session, pyspark.sql.SparkSession):
-            session.catalog.dropTempView(name)
+
+            def finalizer(name=name, session=session) -> None:
+                """Finalizer to drop the temporary view."""
+                session.catalog.dropTempView(name)
+        else:
+
+            def finalizer() -> None:
+                """No-op finalizer."""
+
+        return finalizer
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str) -> Any:

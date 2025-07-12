@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import polars as pl
 
@@ -105,8 +105,12 @@ class Backend(BaseBackend, NoUrl, DirectExampleLoader):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         self._add_table(op.name, op.data.to_polars(op.schema).lazy())
 
-    def _finalize_memtable(self, name: str) -> None:
-        self.drop_table(name, force=True)
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        def finalizer(name=name, tables=self._tables, context=self._context) -> None:
+            del tables[name]
+            context.unregister(name)
+
+        return finalizer
 
     def _add_table(self, name: str, obj: pl.LazyFrame | pl.DataFrame) -> None:
         if isinstance(obj, pl.DataFrame):
