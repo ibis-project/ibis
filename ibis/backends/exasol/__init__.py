@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import unquote_plus
 
 import pyexasol
@@ -309,11 +309,28 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
 
     def _clean_up_tmp_table(self, name: str) -> None:
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)
-        sql = sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True)
-        with self._safe_raw_sql(sql):
+        drop_sql = sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True)
+        with self._safe_raw_sql(drop_sql):
             pass
 
-    _finalize_memtable = _clean_up_tmp_table
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+        drop_sql = sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True).sql(
+            self.dialect
+        )
+
+        def finalizer(con=self.con, drop_sql=drop_sql) -> None:
+            # use try finally because sqlite3's cursor doesn't support the
+            # context manager protocol
+            try:
+                con.execute(drop_sql)
+            except Exception:
+                con.rollback()
+                raise
+            else:
+                con.commit()
+
+        return finalizer
 
     def create_table(
         self,

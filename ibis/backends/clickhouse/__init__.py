@@ -6,7 +6,7 @@ import glob
 import re
 from contextlib import closing
 from functools import partial
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 from urllib.parse import unquote_plus
 
 import clickhouse_connect as cc
@@ -66,8 +66,9 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         """No-op."""
 
-    def _finalize_memtable(self, name: str) -> None:
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         """No-op."""
+        return lambda: None
 
     def _from_url(self, url: ParseResult, **kwarg_overrides) -> BaseBackend:
         kwargs = {}
