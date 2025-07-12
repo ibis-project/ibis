@@ -5,7 +5,7 @@ import inspect
 import typing
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import datafusion as df
 import pyarrow as pa
@@ -418,6 +418,12 @@ class Backend(
         # of constructing a datafusion DataFrame, which has a side effect
         # of registering the table
         self.con.from_arrow(op.data.to_pyarrow(op.schema), op.name)
+
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        def finalizer(name=name, con=self.con) -> None:
+            con.deregister_table(name)
+
+        return finalizer
 
     def read_csv(
         self,

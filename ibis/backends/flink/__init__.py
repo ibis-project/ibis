@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import re
 import zoneinfo
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -66,13 +66,9 @@ class Backend(
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         """No-op."""
 
-    def _finalize_memtable(self, name: str) -> None:
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         """No-op."""
-
-    @property
-    def dialect(self):
-        # TODO: remove when ported to sqlglot
-        return self.compiler.dialect
+        return lambda: None
 
     def do_connect(self, table_env: TableEnvironment) -> None:
         """Create a Flink `Backend` for use with Ibis.
@@ -403,8 +399,14 @@ class Backend(
             )
         self.create_view(op.name, op.data.to_frame(), schema=op.schema, temp=True)
 
-    def _finalize_memtable(self, name: str) -> None:
-        self.drop_view(name, temp=True, force=True)
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        stmt = DropView(name=name, must_exist=False, temporary=True)
+        sql = stmt.compile()
+
+        def finalizer(sql=sql, table_env=self.table_env) -> None:
+            table_env.execute_sql(sql)
+
+        return finalizer
 
     def execute(
         self,

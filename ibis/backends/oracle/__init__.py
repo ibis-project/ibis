@@ -7,7 +7,7 @@ import re
 import warnings
 from functools import cached_property
 from operator import itemgetter
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import unquote_plus
 
 import oracledb
@@ -627,4 +627,35 @@ class Backend(
             with contextlib.suppress(oracledb.DatabaseError):
                 bind.execute(drop)
 
-    _finalize_memtable = _drop_cached_table = _clean_up_tmp_table
+    _drop_cached_table = _clean_up_tmp_table
+
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        dialect = self.dialect
+
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+
+        truncate = sge.TruncateTable(expressions=[ident]).sql(dialect)
+        drop = sge.Drop(kind="TABLE", this=ident).sql(dialect)
+
+        def finalizer(con=self.con, name: str = name) -> None:
+            cursor = con.cursor()
+            try:
+                # global temporary tables cannot be dropped without first truncating them
+                #
+                # https://stackoverflow.com/questions/32423397/force-oracle-drop-global-temp-table
+                #
+                # ignore DatabaseError exceptions because the table may not exist
+                # because it's already been deleted
+                with contextlib.suppress(oracledb.DatabaseError):
+                    cursor.execute(truncate)
+                with contextlib.suppress(oracledb.DatabaseError):
+                    cursor.execute(drop)
+            except Exception:
+                con.rollback()
+                raise
+            else:
+                con.commit()
+            finally:
+                cursor.close()
+
+        return finalizer
