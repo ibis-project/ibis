@@ -10,7 +10,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import databricks.sql
 import pyarrow as pa
@@ -449,16 +449,22 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
                 cur.execute(put_into)
                 cur.execute(sql)
 
-    def _finalize_memtable(self, name: str) -> None:
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         path = f"{self._memtable_volume_path}/{name}.parquet"
         sql = sge.Drop(
             kind="VIEW",
             this=sg.to_identifier(name, quoted=self.compiler.quoted),
             exists=True,
         ).sql(self.dialect)
-        with self.con.cursor() as cur:
-            cur.execute(sql)
-            cur.execute(f"REMOVE '{path}'")
+
+        def finalizer(path=path, sql=sql, con=self.con) -> None:
+            """Finalizer for in-memory tables."""
+
+            with con.cursor() as cur:
+                cur.execute(sql)
+                cur.execute(f"REMOVE '{path}'")
+
+        return finalizer
 
     def create_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False

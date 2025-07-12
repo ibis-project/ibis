@@ -7,7 +7,7 @@ import contextlib
 import urllib
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import duckdb
 import sqlglot as sg
@@ -1719,7 +1719,7 @@ class Backend(
 
         self.con.register(op.name, obj)
 
-    def _finalize_memtable(self, name: str) -> None:
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         # if we don't aggressively unregister tables duckdb will keep a
         # reference to every memtable ever registered, even if there's no
         # way for a user to access the operation anymore, resulting in a
@@ -1727,7 +1727,10 @@ class Backend(
         #
         # we can't use drop_table, because self.con.register creates a view, so
         # use the corresponding unregister method
-        self.con.unregister(name)
+        def finalizer(name=name, con=self.con) -> None:
+            con.unregister(name)
+
+        return finalizer
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         con = self.con

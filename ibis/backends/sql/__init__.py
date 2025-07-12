@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from functools import partial
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -667,5 +667,13 @@ class SQLBackend(BaseBackend):
             f"pandas UDFs are not supported in the {self.dialect} backend"
         )
 
-    def _finalize_memtable(self, name: str) -> None:
-        self.drop_table(name, force=True)
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        this = sg.table(name, quoted=self.compiler.quoted)
+        drop_stmt = sge.Drop(kind="TABLE", this=this, exists=True)
+        drop_sql = drop_stmt.sql(self.dialect)
+
+        def finalizer(con=self.con, drop_sql=drop_sql) -> None:
+            with con.cursor() as cursor:
+                cursor.execute(drop_sql)
+
+        return finalizer

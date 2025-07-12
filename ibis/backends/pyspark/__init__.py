@@ -4,7 +4,7 @@ import contextlib
 import os
 from decimal import Decimal
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import pandas as pd  # noqa: TC002, necessary for pyspark to evaluate type hints for UDFs
 import pyspark
@@ -475,10 +475,20 @@ class Backend(
 
         df.createOrReplaceTempView(op.name)
 
-    def _finalize_memtable(self, name: str) -> None:
-        """No-op, otherwise a deadlock can occur when using Spark Connect."""
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        """No-op with Spark Connect, otherwise a deadlock can occur."""
+
         if isinstance(session := self._session, pyspark.sql.SparkSession):
-            session.catalog.dropTempView(name)
+
+            def finalizer(name: str = name, session=session) -> None:
+                """Finalizer to drop the temporary view."""
+                session.catalog.dropTempView(name)
+        else:
+
+            def finalizer() -> None:
+                """No-op finalizer."""
+
+        return finalizer
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str) -> Any:
