@@ -220,13 +220,16 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         """
         import sqlglot.expressions as sge
 
-        from ibis.backends.sql.datatypes import TYPE_MAPPERS
+        from ibis.backends.sql.datatypes import SqlglotType
 
-        type_mapper = TYPE_MAPPERS["duckdb"]
+        expressions = sqlglot_schema.expressions
+        if not expressions:
+            return cls({})
 
+        type_mapper = SqlglotType()
         fields = {}
 
-        for column in sqlglot_schema.expressions or []:
+        for column in expressions:
             name = column.this.this
 
             nullable = not any(
