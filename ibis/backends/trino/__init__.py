@@ -464,7 +464,8 @@ class Backend(
 
         if schema is not None and obj is None:
             target = sge.Schema(
-                this=table_ref, expressions=schema.to_sqlglot(self.dialect)
+                this=table_ref,
+                expressions=schema.to_sqlglot_columns_definition(self.dialect),
             )
         else:
             target = table_ref
@@ -564,7 +565,7 @@ class Backend(
             kind="TABLE",
             this=sg.exp.Schema(
                 this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot(self.dialect),
+                expressions=schema.to_sqlglot_columns_definition(self.dialect),
             ),
         ).sql(self.name)
 

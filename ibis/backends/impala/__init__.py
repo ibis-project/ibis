@@ -1403,7 +1403,7 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
             kind="TABLE",
             this=sg.exp.Schema(
                 this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot(self.dialect),
+                expressions=schema.to_sqlglot_columns_definition(self.dialect),
             ),
         ).sql(self.name, pretty=True)
 

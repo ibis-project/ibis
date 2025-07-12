@@ -442,7 +442,9 @@ class Backend(
         initial_table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
         target = sge.Schema(
             this=initial_table,
-            expressions=(schema or table.schema()).to_sqlglot(self.dialect),
+            expressions=(schema or table.schema()).to_sqlglot_columns_definition(
+                self.dialect
+            ),
         )
 
         create_stmt = sge.Create(
@@ -513,7 +515,7 @@ class Backend(
             kind="TABLE",
             this=sg.exp.Schema(
                 this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot(self.dialect),
+                expressions=schema.to_sqlglot_columns_definition(self.dialect),
             ),
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         ).sql(self.name)

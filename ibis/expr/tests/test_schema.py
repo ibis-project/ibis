@@ -437,3 +437,44 @@ def test_null_fields():
     assert sch.schema({"a": "int64", "b": "string"}).null_fields == ()
     assert sch.schema({"a": "null", "b": "string"}).null_fields == ("a",)
     assert sch.schema({"a": "null", "b": "null"}).null_fields == ("a", "b")
+
+
+def test_to_sqlglot_columns_definition():
+    import sqlglot.expressions as sge
+
+    schema = sch.schema({"a": "int64", "b": "string", "c": "!string"})
+    columns = schema.to_sqlglot_columns_definition("duckdb")
+
+    assert len(columns) == 3
+    assert all(isinstance(col, sge.ColumnDef) for col in columns)
+    assert all(col.this.quoted is True for col in columns)
+    assert [col.this.this for col in columns] == ["a", "b", "c"]
+
+    assert not columns[0].constraints
+    assert not columns[1].constraints
+    assert len(columns[2].constraints) == 1
+    assert isinstance(columns[2].constraints[0].kind, sge.NotNullColumnConstraint)
+
+
+def test_to_sqlglot_columns_definition_empty_schema():
+    schema = sch.schema({})
+    columns = schema.to_sqlglot_columns_definition("duckdb")
+    assert columns == []
+
+
+def test_to_sqlglot_columns_definition_create_table_integration():
+    import sqlglot as sg
+    import sqlglot.expressions as sge
+
+    schema = sch.schema({"id": "!int64", "name": "string"})
+    columns = schema.to_sqlglot_columns_definition("duckdb")
+
+    table = sg.table("test_table", quoted=True)
+    create_stmt = sge.Create(
+        kind="TABLE",
+        this=sge.Schema(this=table, expressions=columns),
+    )
+
+    sql = create_stmt.sql(dialect="duckdb")
+    expected = 'CREATE TABLE "test_table" ("id" BIGINT NOT NULL, "name" TEXT)'
+    assert sql == expected

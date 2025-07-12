@@ -212,7 +212,10 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         dialect = self.dialect
 
         initial_table = sg.table(temp_name, catalog=catalog, db=database, quoted=quoted)
-        target = sge.Schema(this=initial_table, expressions=schema.to_sqlglot(dialect))
+        target = sge.Schema(
+            this=initial_table,
+            expressions=schema.to_sqlglot_columns_definition(dialect),
+        )
 
         properties = sge.Properties(expressions=properties)
         create_stmt = sge.Create(kind="TABLE", this=target, properties=properties)

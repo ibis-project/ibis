@@ -182,7 +182,7 @@ def generate_tpc_tables(suite_name, *, data_dir):
             exists=True,
             this=sge.Schema(
                 this=sg.table(name, db=suite_name, catalog="hive", quoted=True),
-                expressions=schema.to_sqlglot("trino"),
+                expressions=schema.to_sqlglot_columns_definition("trino"),
             ),
             properties=sge.Properties(
                 expressions=[
