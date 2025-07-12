@@ -7,7 +7,7 @@ import warnings
 from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Any, Callable, Literal, NoReturn, overload
+from typing import TYPE_CHECKING, Any, Callable, Literal, NoReturn, overload, Optional
 
 import toolz
 from public import public
@@ -279,7 +279,7 @@ class Table(Expr, FixedTextJupyterMixin):
             values.append(value.name(key))
         return values
 
-    def bind(self, *args: Any, **kwargs: Any) -> tuple[Value, ...]:
+    def bind(self, *args: Any, _exprs_that_do_not_need_dereferencing: Optional[tuple] = None, **kwargs: Any) -> tuple[Value, ...]:
         """Bind column values to a table expression.
 
         This method handles the binding of every kind of column-like value that
@@ -306,7 +306,7 @@ class Table(Expr, FixedTextJupyterMixin):
             value = dm.dereference(original.op()).to_expr()
             value = value.name(original.get_name())
             result.append(value)
-        return tuple(result)
+        return (_exprs_that_do_not_need_dereferencing or tuple()) + tuple(result)        
 
     def as_scalar(self) -> ir.Scalar:
         """Inform ibis that the table expression should be treated as a scalar.
@@ -1993,13 +1993,16 @@ class Table(Expr, FixedTextJupyterMixin):
         node = self.op()
         values = self.bind(*exprs, **mutations)
         values = unwrap_aliases(values)
-        # allow overriding of fields, hence the mutation behavior
-        values = {**node.fields, **values}
-        return self.select(**values)
+        # establish which fields of self are kept vs overridden.
+        # (overridden fields are those in values whose key matches a field in node.fields)
+        # kept fields can skip dereferencing in .select() to improve performance
+        node_kept_fields = {k: v for k, v in node.fields.items() if k not in values}
+        return self.select(_exprs_that_do_not_need_dereferencing=node_kept_fields, **values)
 
     def select(
         self,
         *exprs: ir.Value | str | Iterable[ir.Value | str] | Deferred,
+        _exprs_that_do_not_need_dereferencing: dict[str, ir.Value] | None = None,
         **named_exprs: ir.Value | str | Deferred,
     ) -> Table:
         """Compute a new table expression using `exprs` and `named_exprs`.
@@ -2186,7 +2189,8 @@ class Table(Expr, FixedTextJupyterMixin):
         # we need to detect reductions which are either turned into window functions
         # or scalar subqueries depending on whether they are originating from self
         values = {
-            k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()
+            **(_exprs_that_do_not_need_dereferencing or {}),
+            **{k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()}
         }
         return ops.Project(self, values).to_expr()
 
