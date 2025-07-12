@@ -744,3 +744,14 @@ ORDER BY a.attnum ASC"""
                 self, struct_type=raw_schema.as_struct().to_pyarrow(), query=query
             ),
         )
+
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        this = sg.table(name, quoted=self.compiler.quoted)
+        drop_stmt = sge.Drop(kind="TABLE", this=this, exists=True)
+        drop_sql = drop_stmt.sql(self.dialect)
+
+        def finalizer(con=self.con, drop_sql=drop_sql) -> None:
+            with con.cursor() as cursor, con.transaction():
+                cursor.execute(drop_sql)
+
+        return finalizer

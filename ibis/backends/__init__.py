@@ -12,7 +12,7 @@ import urllib.parse
 import weakref
 from collections import Counter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, overload
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, NamedTuple, overload
 
 import ibis
 import ibis.common.exceptions as exc
@@ -22,7 +22,7 @@ import ibis.expr.types as ir
 from ibis import util
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+    from collections.abc import Iterable, Iterator, Mapping, MutableMapping, MutableSet
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
     import sqlglot as sg
     import torch
+
 
 __all__ = ("BaseBackend", "connect")
 
@@ -975,9 +976,14 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         self._con_kwargs: dict[str, Any] = kwargs
         self._can_reconnect: bool = True
         # mapping of memtable names to their finalizers
-        self._finalizers = {}
-        self._memtables = weakref.WeakSet()
-        self._current_memtables = weakref.WeakValueDictionary()
+        self._finalizers: dict[str, weakref.finalize] = {}
+        # weak referenced collections to hold in-memory tables
+        self._memtables: MutableSet[ops.InMemoryTable] = weakref.WeakSet()
+        # mapping of a memtable's name to the current memtable with that name
+        # this is used to disambiguate between multiple memtables with the same name
+        self._current_memtables: MutableMapping[str, ops.InMemoryTable] = (
+            weakref.WeakValueDictionary()
+        )
         super().__init__()
 
     @property
@@ -1298,7 +1304,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
                 self._register_in_memory_table(memtable)
                 self._memtables.add(memtable)
                 self._finalizers[name] = weakref.finalize(
-                    memtable, self._finalize_in_memory_table, name
+                    memtable, self._make_memtable_finalize_function(name)
                 )
                 self._current_memtables[name] = memtable
 
@@ -1307,13 +1313,18 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         """Register an in-memory table associated with `op`."""
 
     @abc.abstractmethod
-    def _finalize_memtable(self, name: str) -> None:
-        """Clean up a memtable named `name`."""
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        """Make a finalizer for an in-memory table."""
 
-    def _finalize_in_memory_table(self, name: str) -> None:
-        """Wrap `_finalize_memtable` to suppress exceptions."""
-        with contextlib.suppress(Exception):
-            self._finalize_memtable(name)
+    def _make_memtable_finalize_function(self, name: str) -> Callable[..., None]:
+        """Make a finalizer for an in-memory table that ignores exceptions."""
+        func = self._make_memtable_finalizer(name)
+
+        def finalizer(func=func):
+            with contextlib.suppress(Exception):
+                func()
+
+        return finalizer
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         """Backend-specific hooks to run before an expression is executed."""

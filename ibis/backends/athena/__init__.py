@@ -8,7 +8,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import fsspec
 import pyarrow_hotfix  # noqa: F401
@@ -434,9 +434,20 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             with self._safe_raw_sql(sql, unload=False):
                 pass
 
-    def _finalize_memtable(self, name: str) -> None:
-        self.drop_table(name, force=True)
-        self._fs.rm(f"{self._memtable_volume_path}/{name}", recursive=True)
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        this = sg.table(name, quoted=self.compiler.quoted)
+        drop_stmt = sge.Drop(kind="TABLE", this=this, exists=True)
+        drop_sql = drop_stmt.sql(self.dialect)
+        path = f"{self._memtable_volume_path}/{name}"
+
+        def finalizer(drop_sql=drop_sql, path=path, fs=self._fs, con=self.con) -> None:
+            """Finalizer to clean up the memtable."""
+
+            with con.cursor() as cursor:
+                cursor.execute(drop_sql)
+            fs.rm(path, recursive=True)
+
+        return finalizer
 
     def create_database(
         self,

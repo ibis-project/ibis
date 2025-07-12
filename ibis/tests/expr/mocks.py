@@ -45,8 +45,8 @@ class MockBackend(BaseBackend):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         pass
 
-    def _finalize_memtable(self, name: str) -> None:
-        pass
+    def _make_memtable_finalizer(self, _: str) -> None:
+        return lambda: None  # pragma: no cover
 
     def table(self, name, **_):
         schema = self.get_schema(name)
