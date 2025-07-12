@@ -156,7 +156,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
 
         if schema is not None and obj is None:
             target = sge.Schema(
-                this=table_ref, expressions=schema.to_sqlglot(self.dialect)
+                this=table_ref,
+                expressions=schema.to_sqlglot_columns_definition(self.dialect),
             )
         else:
             target = table_ref
@@ -179,7 +180,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             property_list.append(
                 sge.PartitionedByProperty(
                     this=sge.Schema(
-                        expressions=ibis.schema(partitioned_by).to_sqlglot(self.dialect)
+                        expressions=ibis.schema(
+                            partitioned_by
+                        ).to_sqlglot_columns_definition(self.dialect)
                     )
                 )
             )
@@ -409,7 +412,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
                     catalog=self.current_catalog,
                     quoted=quoted,
                 ),
-                expressions=schema.to_sqlglot(self.dialect),
+                expressions=schema.to_sqlglot_columns_definition(self.dialect),
             ),
             properties=sge.Properties(
                 expressions=[

@@ -200,7 +200,10 @@ class Backend(
             temp_name = name
 
         initial_table = sg.table(temp_name, catalog=catalog, db=database, quoted=quoted)
-        target = sge.Schema(this=initial_table, expressions=schema.to_sqlglot(dialect))
+        target = sge.Schema(
+            this=initial_table,
+            expressions=schema.to_sqlglot_columns_definition(dialect),
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",
