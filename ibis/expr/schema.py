@@ -11,7 +11,7 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import InputTypeError, IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Coercible
-from ibis.util import indent
+from ibis.util import deprecated, indent
 
 if TYPE_CHECKING:
     import numpy as np
@@ -235,7 +235,9 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         """
         return self.names[i]
 
-    def to_sqlglot(self, dialect: str | sg.Dialect) -> list[sge.ColumnDef]:
+    def to_sqlglot_columns_definition(
+        self, dialect: str | sg.Dialect
+    ) -> list[sge.ColumnDef]:
         """Convert the schema to a list of SQL column definitions.
 
         Parameters
@@ -257,7 +259,7 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
           a  int64
           b  !string
         }
-        >>> columns = sch.to_sqlglot(dialect="duckdb")
+        >>> columns = sch.to_sqlglot_columns_definition(dialect="duckdb")
         >>> columns
         [ColumnDef(
           this=Identifier(this='a', quoted=True),
@@ -302,6 +304,13 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
             )
             for name, dtype in self.items()
         ]
+
+    @deprecated(
+        instead="use Schema.to_sqlglot_columns_definition() instead. In a future release, to_sqlglot() will return a sqlglot.schema.Schema object"
+    )
+    def to_sqlglot(self, dialect: str | sg.Dialect) -> list[sge.ColumnDef]:
+        """DEPRECATED: use `to_sqlglot_columns_definition()` instead."""
+        return self.to_sqlglot_columns_definition(dialect)
 
 
 SchemaLike: TypeAlias = Union[

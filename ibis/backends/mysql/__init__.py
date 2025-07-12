@@ -408,7 +408,9 @@ class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleL
         dialect = self.dialect
 
         table_expr = sg.table(temp_name, catalog=database, quoted=quoted)
-        target = sge.Schema(this=table_expr, expressions=schema.to_sqlglot(dialect))
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot_columns_definition(dialect)
+        )
 
         create_stmt = sge.Create(
             kind="TABLE", this=target, properties=sge.Properties(expressions=properties)
@@ -454,7 +456,7 @@ class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleL
             kind="TABLE",
             this=sg.exp.Schema(
                 this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot(dialect),
+                expressions=schema.to_sqlglot_columns_definition(dialect),
             ),
             properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
         )
