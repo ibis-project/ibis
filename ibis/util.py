@@ -23,12 +23,15 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 from uuid import uuid4
 
 import toolz
+from packaging.version import parse as vparse
 
 from ibis.common.typing import Coercible
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
     from pathlib import Path
+
+    from packaging.version import Version
 
     import ibis.expr.types as ir
 
@@ -724,3 +727,12 @@ else:
 
     def mktempd():
         return tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+
+
+def version(package: str) -> Version:
+    try:
+        version_info = importlib.metadata.version(package)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+    else:
+        return vparse(version_info)
