@@ -397,9 +397,15 @@ class Backend(
             catalog = self.con.catalog()
 
         if database is not None:
-            database = catalog.database(database)
+            try:
+                database = catalog.schema(database)
+            except AttributeError:
+                database = catalog.database(database)
         else:
-            database = catalog.database()
+            try:
+                database = catalog.schema()
+            except AttributeError:
+                database = catalog.database()
 
         if table_name not in database.names():
             raise com.TableNotFound(table_name)

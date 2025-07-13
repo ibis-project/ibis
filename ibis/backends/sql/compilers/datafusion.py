@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import calendar
-import importlib.metadata as md
 import math
 from functools import partial, reduce
 from itertools import starmap
@@ -13,6 +12,7 @@ from packaging.version import parse as vparse
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis import util
 from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DataFusionType
 from ibis.backends.sql.dialects import DataFusion
@@ -612,7 +612,9 @@ class DataFusionCompiler(SQLGlotCompiler):
         unit = unit.name.lower()
         return sg.cast(self.f.concat(self.cast(arg, dt.string), f" {unit}"), "interval")
 
-    if vparse(md.version("datafusion")) >= vparse("48.0.0"):
+    if (version := util.version("datafusion")) is not None and version >= vparse(
+        "48.0.0"
+    ):
 
         def visit_ApproxQuantile(self, op, *, arg, quantile, where):
             expr = sge.WithinGroup(
