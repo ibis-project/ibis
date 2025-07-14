@@ -279,7 +279,7 @@ class Table(Expr, FixedTextJupyterMixin):
             values.append(value.name(key))
         return values
 
-    def bind(self, *args: Any, _exprs_that_do_not_need_dereferencing: Optional[tuple] = None, **kwargs: Any) -> tuple[Value, ...]:
+    def bind(self, *args: Any, **kwargs: Any) -> tuple[Value, ...]:
         """Bind column values to a table expression.
 
         This method handles the binding of every kind of column-like value that
@@ -306,7 +306,7 @@ class Table(Expr, FixedTextJupyterMixin):
             value = dm.dereference(original.op()).to_expr()
             value = value.name(original.get_name())
             result.append(value)
-        return (_exprs_that_do_not_need_dereferencing or tuple()) + tuple(result)        
+        return tuple(result)        
 
     def as_scalar(self) -> ir.Scalar:
         """Inform ibis that the table expression should be treated as a scalar.
@@ -1993,11 +1993,8 @@ class Table(Expr, FixedTextJupyterMixin):
         node = self.op()
         values = self.bind(*exprs, **mutations)
         values = unwrap_aliases(values)
-        # establish which fields of self are kept vs overridden.
-        # (overridden fields are those in values whose key matches a field in node.fields)
-        # kept fields can skip dereferencing in .select() to improve performance
-        node_kept_fields = {k: v for k, v in node.fields.items() if k not in values}
-        return self.select(_exprs_that_do_not_need_dereferencing=node_kept_fields, **values)
+        # kept fields from node.fields can skip dereferencing in .select() to improve performance
+        return self.select(_exprs_that_do_not_need_dereferencing=node.fields, **values)
 
     def select(
         self,
