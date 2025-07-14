@@ -2187,7 +2187,7 @@ class Table(Expr, FixedTextJupyterMixin):
         # or scalar subqueries depending on whether they are originating from self
         values = {
             **(_exprs_that_do_not_need_dereferencing or {}),
-            **{k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()}
+            **{k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()}   
         }
         return ops.Project(self, values).to_expr()
 
