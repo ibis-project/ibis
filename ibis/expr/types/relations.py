@@ -1988,18 +1988,26 @@ class Table(Expr, FixedTextJupyterMixin):
         │ Adelie  │  2007 │       -7.22193 │
         └─────────┴───────┴────────────────┘
         """
+        from ibis.expr.rewrites import rewrite_project_input
+        
         # string and integer inputs are going to be coerced to literals instead
         # of interpreted as column references like in select
         node = self.op()
-        values = self.bind(*exprs, **mutations)
+        values = self.bind(*exprs, **mutations)  # bind new expressions/mutations
         values = unwrap_aliases(values)
-        # kept fields from node.fields can skip dereferencing in .select() to improve performance
-        return self.select(_exprs_that_do_not_need_dereferencing=node.fields, **values)
+        
+        # we need to detect reductions which are either turned into window functions
+        # or scalar subqueries depending on whether they are originating from self
+        values = {
+            k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()
+        }
+        
+        # existing fields in node.fields that are not overriden by mutations in values skip bind&dereferencing to improve performance
+        return ops.Project(self, {**node.fields, **values}).to_expr()
 
     def select(
         self,
         *exprs: ir.Value | str | Iterable[ir.Value | str] | Deferred,
-        _exprs_that_do_not_need_dereferencing: dict[str, ir.Value] | None = None,
         **named_exprs: ir.Value | str | Deferred,
     ) -> Table:
         """Compute a new table expression using `exprs` and `named_exprs`.
@@ -2186,8 +2194,7 @@ class Table(Expr, FixedTextJupyterMixin):
         # we need to detect reductions which are either turned into window functions
         # or scalar subqueries depending on whether they are originating from self
         values = {
-            **(_exprs_that_do_not_need_dereferencing or {}),
-            **{k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()}   
+            k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()
         }
         return ops.Project(self, values).to_expr()
 
