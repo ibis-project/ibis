@@ -1870,7 +1870,17 @@ def test_array_agg_numeric(con, data, agg, baseline_func):
             ],
             id="nulls",
         ),
-        param([[True, False], [True], [False], [], None], id="no-nulls"),
+        param(
+            [[True, False], [True], [False], [], None],
+            marks=[
+                pytest.mark.xfail_version(
+                    datafusion=["datafusion>=48.0.0"],
+                    raises=AssertionError,
+                    reason="bug; this worked before 48.0.0",
+                )
+            ],
+            id="no-nulls",
+        ),
     ],
 )
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
