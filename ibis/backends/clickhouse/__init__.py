@@ -47,9 +47,7 @@ def _to_memtable(v):
 class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
     name = "clickhouse"
     compiler = sc.clickhouse.compiler
-
-    # ClickHouse itself does, but the client driver does not
-    supports_temporary_tables = False
+    supports_temporary_tables = True
 
     class Options(ibis.config.Config):
         """Clickhouse options.
@@ -65,10 +63,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         """No-op."""
-
-    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
-        """No-op."""
-        return lambda: None
 
     def _from_url(self, url: ParseResult, **kwarg_overrides) -> BaseBackend:
         kwargs = {}
@@ -780,3 +774,6 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
         with self._safe_raw_sql(src, external_tables=external_tables):
             pass
         return self.table(name, database=database)
+
+    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+        """No-op because temporary tables are automatically cleaned up."""

@@ -55,6 +55,7 @@ class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader, HasCurrentDatabase)
     name = "sqlite"
     compiler = sc.sqlite.compiler
     supports_python_udfs = True
+    supports_temporary_tables = True
 
     @property
     def current_database(self) -> str:
@@ -627,18 +628,5 @@ class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader, HasCurrentDatabase)
                 cur.execute(sge.Delete(this=table).sql(dialect))
             cur.execute(insert_stmt)
 
-    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
-        this = sg.table(name, catalog="temp", quoted=self.compiler.quoted)
-        drop_stmt = sge.Drop(kind="TABLE", this=this)
-        drop_sql = drop_stmt.sql(self.dialect)
-
-        def finalizer(con=self.con, drop_sql=drop_sql) -> None:
-            cur = con.cursor()
-            # use try finally because sqlite3's cursor doesn't support the
-            # context manager protocol
-            try:
-                cur.execute(drop_sql)
-            finally:
-                cur.close()
-
-        return finalizer
+    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+        """No-op because temporary tables are automatically cleaned up."""

@@ -60,7 +60,7 @@ you will need to turn it into a column.
 
 
 ```{python}
-t = ibis.memtable(df, name="t")
+t = ibis.memtable(df)
 t
 ```
 
@@ -632,8 +632,8 @@ We can now convert `DataFrames` to Ibis tables to do `join`s.
 
 
 ```{python}
-t_left = ibis.memtable(df_left, name="t_left")
-t_right = ibis.memtable(df_right, name="t_right")
+t_left = ibis.memtable(df_left)
+t_right = ibis.memtable(df_right)
 ```
 
 
@@ -689,8 +689,8 @@ Now we can convert the `DataFrame`s to Ibis tables and combine the tables using 
 
 
 ```{python}
-t_1 = ibis.memtable(df_1, name="t_1")
-t_2 = ibis.memtable(df_2, name="t_2")
+t_1 = ibis.memtable(df_1)
+t_2 = ibis.memtable(df_2)
 ```
 
 

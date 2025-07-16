@@ -84,6 +84,7 @@ class Backend(
 ):
     name = "duckdb"
     compiler = sc.duckdb.compiler
+    supports_temporary_tables = True
 
     @property
     def settings(self) -> _Settings:
@@ -1719,19 +1720,6 @@ class Backend(
 
         self.con.register(op.name, obj)
 
-    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
-        # if we don't aggressively unregister tables duckdb will keep a
-        # reference to every memtable ever registered, even if there's no
-        # way for a user to access the operation anymore, resulting in a
-        # memory leak
-        #
-        # we can't use drop_table, because self.con.register creates a view, so
-        # use the corresponding unregister method
-        def finalizer(name=name, con=self.con) -> None:
-            con.unregister(name)
-
-        return finalizer
-
     def _register_udfs(self, expr: ir.Expr) -> None:
         con = self.con
 
@@ -1780,6 +1768,9 @@ class Backend(
     def _create_temp_view(self, table_name, source):
         with self._safe_raw_sql(self._get_temp_view_definition(table_name, source)):
             pass
+
+    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+        """No-op because temporary tables are automatically cleaned up."""
 
 
 @lazy_singledispatch

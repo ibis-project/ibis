@@ -6,7 +6,7 @@ import contextlib
 import warnings
 from functools import cached_property
 from operator import itemgetter
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import unquote_plus
 
 import MySQLdb
@@ -39,6 +39,7 @@ class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleL
     name = "mysql"
     compiler = sc.mysql.compiler
     supports_create_or_replace = False
+    supports_temporary_tables = True
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         kwargs = {}
@@ -510,3 +511,6 @@ class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleL
             cursor.fetchall(), columns=schema.names, coerce_float=True
         )
         return MySQLPandasData.convert_table(df, schema)
+
+    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+        """No-op because temporary tables are automatically cleaned up."""

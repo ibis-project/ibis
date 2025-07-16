@@ -1764,8 +1764,9 @@ def test_insert_into_table_missing_columns(con, temp_table):
     reason="likely deadlock when using spark connect",
 )
 def test_memtable_cleanup(con):
-    name = ibis.util.gen_name("temp_memtable")
-    t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name=name)
+    t = ibis.memtable({"a": [1, 2, 3], "b": list("def")})
+
+    name = t.op().name
 
     # the table isn't registered until we actually execute, and since we
     # haven't yet executed anything, the table shouldn't be there
@@ -1779,23 +1780,6 @@ def test_memtable_cleanup(con):
     con.execute(t.select("b"))
     assert name in con.list_tables()
 
-    # remove all references to `t`, which means the `op` shouldn't be reachable
-    # and the table should thus be dropped and no longer visible
-    del t
-    assert name not in con.list_tables()
-
-
-def test_same_name_memtable_is_overwritten(con):
-    name = ibis.util.gen_name("temp_memtable")
-
-    data = {"a": [1, 2, 3], "b": ["a", "b", "c"]}
-
-    t = ibis.memtable(data, name=name)
-    assert len(con.execute(t)) == 3
-
-    s = ibis.memtable({"a": [1], "b": ["a"]}, name=name)
-    assert len(con.execute(s)) == 1
-
 
 @pytest.mark.notimpl(
     ["clickhouse"],
@@ -1803,51 +1787,16 @@ def test_same_name_memtable_is_overwritten(con):
     reason="backend doesn't use _register_in_memory_table",
 )
 def test_memtable_registered_exactly_once(con, mocker):
-    name = ibis.util.gen_name("temp_memtable")
-
     spy = mocker.spy(con, "_register_in_memory_table")
 
     data = {"a": [1, 2, 3], "b": ["a", "b", "c"]}
 
-    t = ibis.memtable(data, name=name)
+    t = ibis.memtable(data)
 
     assert len(con.execute(t)) == 3
     assert len(con.execute(t)) == 3
 
     spy.assert_called_once_with(t.op())
-
-
-def test_unreachable_memtable_does_not_clobber_existing_data(con):
-    name = ibis.util.gen_name("temp_memtable")
-
-    t1 = ibis.memtable({"a": [1, 2, 3]}, name=name)
-    t2 = ibis.memtable({"a": [4, 5]}, name=name)
-
-    assert len(con.execute(t1)) == 3
-
-    assert len(con.execute(t2)) == 2
-
-    assert len(con.execute(t1)) == 3
-
-    # Drop t1, its finalizer runs, deleting table `test`
-    del t1
-
-    # ensure that the previous clean up doesn't erase t2
-    assert len(con.execute(t2)) == 2
-
-
-def test_identically_named_memtables_cannot_be_joined(con):
-    name = ibis.util.gen_name("temp_memtable")
-
-    t1 = ibis.memtable({"a": [1, 2, 3]}, name=name)
-    t2 = ibis.memtable({"a": [4, 5]}, name=name)
-
-    # mixing two memtables with the same name is an error
-    expr = t1.join(t2, "a")
-    with pytest.raises(
-        com.IbisError, match=rf"Duplicate in-memory table names: \['{name}'\]"
-    ):
-        con.execute(expr)
 
 
 @pytest.mark.parametrize("i", range(5))
