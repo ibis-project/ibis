@@ -181,12 +181,12 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         return PolarsSchema.to_ibis(polars_schema)
 
     @classmethod
-    def from_sqlglot(cls, sqlglot_schema: sge.Schema) -> Self:
+    def from_sqlglot(cls, schema: sge.Schema) -> Self:
         """Construct an Ibis Schema from a SQLGlot Schema.
 
         Parameters
         ----------
-        sqlglot_schema
+        schema
             A SQLGlot Schema containing column definitions.
 
         Returns
@@ -222,7 +222,7 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
 
         from ibis.backends.sql.datatypes import SqlglotType
 
-        expressions = sqlglot_schema.expressions
+        expressions = schema.expressions
         if not expressions:
             return cls({})
 
