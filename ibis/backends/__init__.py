@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import abc
+import atexit
 import collections.abc
-import contextlib
 import functools
 import importlib.metadata
 import keyword
@@ -22,7 +22,7 @@ import ibis.expr.types as ir
 from ibis import util
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, MutableMapping, MutableSet
+    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -975,15 +975,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs
         self._can_reconnect: bool = True
-        # mapping of memtable names to their finalizers
-        self._finalizers: dict[str, weakref.finalize] = {}
-        # weak referenced collections to hold in-memory tables
-        self._memtables: MutableSet[ops.InMemoryTable] = weakref.WeakSet()
-        # mapping of a memtable's name to the current memtable with that name
-        # this is used to disambiguate between multiple memtables with the same name
-        self._current_memtables: MutableMapping[str, ops.InMemoryTable] = (
-            weakref.WeakValueDictionary()
-        )
+        self._memtables = weakref.WeakSet()
         super().__init__()
 
     @property
@@ -1278,53 +1270,21 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         for memtable in self._verify_in_memory_tables_are_unique(expr):
-            name = memtable.name
-
-            # this particular memtable has never been registered
             if memtable not in self._memtables:
-                # but we have a memtable with the same name
-                if (
-                    current_memtable := self._current_memtables.pop(name, None)
-                ) is not None:
-                    # if we're here this means we overwrite, so do the following:
-                    # 1. remove the old memtable from the set of memtables
-                    # 2. grab the old finalizer and invoke it
-                    self._memtables.remove(current_memtable)
-                    finalizer = self._finalizers.pop(name)
-                    finalizer()
-            else:
-                # if memtable is in the set, then by construction it must be
-                # true that the name of this memtable is in the current
-                # memtables mapping
-                assert name in self._current_memtables
-
-            # if there's no memtable named `name` then register it, setup a
-            # finalizer, and set it as the current memtable with `name`
-            if self._current_memtables.get(name) is None:
                 self._register_in_memory_table(memtable)
                 self._memtables.add(memtable)
-                self._finalizers[name] = weakref.finalize(
-                    memtable, self._make_memtable_finalize_function(name)
-                )
-                self._current_memtables[name] = memtable
+                if (
+                    finalizer := self._make_memtable_finalizer(memtable.name)
+                ) is not None:
+                    atexit.register(finalizer)
 
     @abc.abstractmethod
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         """Register an in-memory table associated with `op`."""
 
     @abc.abstractmethod
-    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
         """Make a finalizer for an in-memory table."""
-
-    def _make_memtable_finalize_function(self, name: str) -> Callable[..., None]:
-        """Make a finalizer for an in-memory table that ignores exceptions."""
-        func = self._make_memtable_finalizer(name)
-
-        def finalizer(func=func):
-            with contextlib.suppress(Exception):
-                func()
-
-        return finalizer
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         """Backend-specific hooks to run before an expression is executed."""
