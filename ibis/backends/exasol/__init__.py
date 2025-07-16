@@ -286,7 +286,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
             kind="TABLE",
             this=sg.exp.Schema(
                 this=ident,
-                expressions=schema.to_sqlglot_columns_definition(self.dialect),
+                expressions=schema.to_sqlglot_column_defs(self.dialect),
             ),
         )
         create_stmt_sql = create_stmt.sql(self.name)
@@ -386,7 +386,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
         table_expr = sg.table(temp_name, catalog=database, quoted=quoted)
         target = sge.Schema(
             this=table_expr,
-            expressions=schema.to_sqlglot_columns_definition(self.dialect),
+            expressions=schema.to_sqlglot_column_defs(self.dialect),
         )
 
         create_stmt = sge.Create(kind="TABLE", this=target)

@@ -439,11 +439,11 @@ def test_null_fields():
     assert sch.schema({"a": "null", "b": "null"}).null_fields == ("a", "b")
 
 
-def test_to_sqlglot_columns_definition():
+def test_to_sqlglot_column_defs():
     import sqlglot.expressions as sge
 
     schema = sch.schema({"a": "int64", "b": "string", "c": "!string"})
-    columns = schema.to_sqlglot_columns_definition("duckdb")
+    columns = schema.to_sqlglot_column_defs("duckdb")
 
     assert len(columns) == 3
     assert all(isinstance(col, sge.ColumnDef) for col in columns)
@@ -456,18 +456,18 @@ def test_to_sqlglot_columns_definition():
     assert isinstance(columns[2].constraints[0].kind, sge.NotNullColumnConstraint)
 
 
-def test_to_sqlglot_columns_definition_empty_schema():
+def test_to_sqlglot_column_defs_empty_schema():
     schema = sch.schema({})
-    columns = schema.to_sqlglot_columns_definition("duckdb")
+    columns = schema.to_sqlglot_column_defs("duckdb")
     assert columns == []
 
 
-def test_to_sqlglot_columns_definition_create_table_integration():
+def test_to_sqlglot_column_defs_create_table_integration():
     import sqlglot as sg
     import sqlglot.expressions as sge
 
     schema = sch.schema({"id": "!int64", "name": "string"})
-    columns = schema.to_sqlglot_columns_definition("duckdb")
+    columns = schema.to_sqlglot_column_defs("duckdb")
 
     table = sg.table("test_table", quoted=True)
     create_stmt = sge.Create(

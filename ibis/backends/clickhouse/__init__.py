@@ -678,9 +678,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
 
         this = sge.Schema(
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
-            expressions=(schema or obj.schema()).to_sqlglot_columns_definition(
-                self.dialect
-            ),
+            expressions=(schema or obj.schema()).to_sqlglot_column_defs(self.dialect),
         )
         properties = [
             # the engine cannot be quoted, since clickhouse won't allow e.g.,

@@ -793,7 +793,7 @@ $$ {defn["source"]} $$"""
         if schema:
             target = sge.Schema(
                 this=target,
-                expressions=schema.to_sqlglot_columns_definition(self.dialect),
+                expressions=schema.to_sqlglot_column_defs(self.dialect),
             )
 
         properties = []
@@ -1092,7 +1092,7 @@ $$ {defn["source"]} $$"""
                 kind="TABLE",
                 this=sge.Schema(
                     this=qtable,
-                    expressions=schema.to_sqlglot_columns_definition(dialect),
+                    expressions=schema.to_sqlglot_column_defs(dialect),
                 ),
                 properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
             ).sql(dialect),

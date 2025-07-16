@@ -673,7 +673,7 @@ class Backend(
         if query is None:
             target = sge.Schema(
                 this=table_ident,
-                expressions=(schema or table.schema()).to_sqlglot_columns_definition(
+                expressions=(schema or table.schema()).to_sqlglot_column_defs(
                     self.dialect
                 ),
             )

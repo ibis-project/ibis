@@ -335,7 +335,7 @@ class Backend(
 
     def _generate_create_table(self, table: sge.Table, schema: sch.Schema):
         target = sge.Schema(
-            this=table, expressions=schema.to_sqlglot_columns_definition(self.dialect)
+            this=table, expressions=schema.to_sqlglot_column_defs(self.dialect)
         )
 
         return sge.Create(kind="TABLE", this=target)

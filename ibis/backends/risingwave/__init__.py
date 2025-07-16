@@ -562,7 +562,7 @@ class Backend(
         table_expr = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
         target = sge.Schema(
             this=table_expr,
-            expressions=schema.to_sqlglot_columns_definition(self.dialect),
+            expressions=schema.to_sqlglot_column_defs(self.dialect),
         )
 
         if connector_properties is None:
@@ -618,7 +618,7 @@ class Backend(
             kind="TABLE",
             this=sg.exp.Schema(
                 this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot_columns_definition(self.dialect),
+                expressions=schema.to_sqlglot_column_defs(self.dialect),
             ),
         )
         create_stmt_sql = create_stmt.sql(self.dialect)
@@ -767,7 +767,7 @@ class Backend(
         quoted = self.compiler.quoted
         table = sg.table(name, db=database, quoted=quoted)
         target = sge.Schema(
-            this=table, expressions=schema.to_sqlglot_columns_definition(self.dialect)
+            this=table, expressions=schema.to_sqlglot_column_defs(self.dialect)
         )
 
         properties = sge.Properties.from_dict(connector_properties)

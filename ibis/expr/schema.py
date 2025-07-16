@@ -235,9 +235,7 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         """
         return self.names[i]
 
-    def to_sqlglot_columns_definition(
-        self, dialect: str | sg.Dialect
-    ) -> list[sge.ColumnDef]:
+    def to_sqlglot_column_defs(self, dialect: str | sg.Dialect) -> list[sge.ColumnDef]:
         """Convert the schema to a list of SQL column definitions.
 
         Parameters
@@ -259,7 +257,7 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
           a  int64
           b  !string
         }
-        >>> columns = sch.to_sqlglot_columns_definition(dialect="duckdb")
+        >>> columns = sch.to_sqlglot_column_defs(dialect="duckdb")
         >>> columns
         [ColumnDef(
           this=Identifier(this='a', quoted=True),
@@ -306,11 +304,11 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         ]
 
     @deprecated(
-        instead="use Schema.to_sqlglot_columns_definition() instead. In a future release, to_sqlglot() will return a sqlglot.schema.Schema object"
+        instead="use Schema.to_sqlglot_column_defs() instead. In a future release, to_sqlglot() will return a sqlglot.schema.Schema object"
     )
     def to_sqlglot(self, dialect: str | sg.Dialect) -> list[sge.ColumnDef]:
-        """DEPRECATED: use `to_sqlglot_columns_definition()` instead."""
-        return self.to_sqlglot_columns_definition(dialect)
+        """DEPRECATED: use `to_sqlglot_column_defs()` instead."""
+        return self.to_sqlglot_column_defs(dialect)
 
 
 SchemaLike: TypeAlias = Union[
