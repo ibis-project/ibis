@@ -333,7 +333,6 @@ def memtable(
     *,
     columns: Iterable[str] | None = None,
     schema: SchemaLike | None = None,
-    name: str | None = None,
 ) -> Table:
     """Construct an ibis table expression from in-memory data.
 
@@ -355,8 +354,6 @@ def memtable(
     schema
         Optional [`Schema`](./schemas.qmd#ibis.expr.schema.Schema).
         The functions use `data` to infer a schema if not passed.
-    name
-        Optional name of the table.
 
     Returns
     -------
@@ -420,7 +417,7 @@ def memtable(
 
         schema = ibis.schema(schema)
 
-    return _memtable(data, name=name, schema=schema, columns=columns)
+    return _memtable(data, schema=schema, columns=columns)
 
 
 @lazy_singledispatch
@@ -429,7 +426,6 @@ def _memtable(
     *,
     columns: Iterable[str] | None = None,
     schema: SchemaLike | None = None,
-    name: str | None = None,
 ) -> Table:
     import ibis
 
@@ -449,7 +445,7 @@ def _memtable(
             columns=columns
             or (ibis.schema(schema).names if schema is not None else None),
         )
-    return _memtable(data, columns=columns, schema=schema, name=name)
+    return _memtable(data, columns=columns, schema=schema)
 
 
 @_memtable.register("pandas.DataFrame")
@@ -458,7 +454,6 @@ def _memtable_from_pandas_dataframe(
     *,
     columns: Iterable[str] | None = None,
     schema: SchemaLike | None = None,
-    name: str | None = None,
 ) -> Table:
     from ibis.formats.pandas import PandasDataFrameProxy
 
@@ -490,7 +485,7 @@ def _memtable_from_pandas_dataframe(
         )
 
     op = ops.InMemoryTable(
-        name=name if name is not None else util.gen_name("pandas_memtable"),
+        name=util.gen_name("pandas_memtable"),
         schema=sch.infer(data) if schema is None else schema,
         data=PandasDataFrameProxy(data),
     )
@@ -501,7 +496,6 @@ def _memtable_from_pandas_dataframe(
 def _memtable_from_pyarrow_table(
     data: pa.Table,
     *,
-    name: str | None = None,
     schema: SchemaLike | None = None,
     columns: Iterable[str] | None = None,
 ):
@@ -511,7 +505,7 @@ def _memtable_from_pyarrow_table(
         assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
         schema = sch.Schema(dict(zip(columns, sch.infer(data).values())))
     return ops.InMemoryTable(
-        name=name if name is not None else util.gen_name("pyarrow_memtable"),
+        name=util.gen_name("pyarrow_memtable"),
         schema=sch.infer(data) if schema is None else schema,
         data=PyArrowTableProxy(data),
     ).to_expr()
@@ -521,14 +515,13 @@ def _memtable_from_pyarrow_table(
 def _memtable_from_pyarrow_dataset(
     data: ds.Dataset,
     *,
-    name: str | None = None,
     schema: SchemaLike | None = None,
     columns: Iterable[str] | None = None,
 ):
     from ibis.formats.pyarrow import PyArrowDatasetProxy
 
     return ops.InMemoryTable(
-        name=name if name is not None else util.gen_name("pyarrow_memtable"),
+        name=util.gen_name("pyarrow_dataset_memtable"),
         schema=Schema.from_pyarrow(data.schema),
         data=PyArrowDatasetProxy(data),
     ).to_expr()
@@ -538,7 +531,6 @@ def _memtable_from_pyarrow_dataset(
 def _memtable_from_pyarrow_RecordBatchReader(
     data: pa.Table,
     *,
-    name: str | None = None,
     schema: SchemaLike | None = None,
     columns: Iterable[str] | None = None,
 ):
@@ -558,7 +550,6 @@ def _memtable_from_polars_lazyframe(data: pl.LazyFrame, **kwargs):
 def _memtable_from_polars_dataframe(
     data: pl.DataFrame,
     *,
-    name: str | None = None,
     schema: SchemaLike | None = None,
     columns: Iterable[str] | None = None,
 ):
@@ -568,7 +559,7 @@ def _memtable_from_polars_dataframe(
         assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
         schema = sch.Schema(dict(zip(columns, sch.infer(data).values())))
     return ops.InMemoryTable(
-        name=name if name is not None else util.gen_name("polars_memtable"),
+        name=util.gen_name("polars_memtable"),
         schema=sch.infer(data) if schema is None else schema,
         data=PolarsDataFrameProxy(data),
     ).to_expr()
@@ -578,7 +569,6 @@ def _memtable_from_polars_dataframe(
 def _memtable_from_geopandas_geodataframe(
     data: gpd.GeoDataFrame,
     *,
-    name: str | None = None,
     schema: SchemaLike | None = None,
     columns: Iterable[str] | None = None,
 ):
@@ -588,7 +578,7 @@ def _memtable_from_geopandas_geodataframe(
     # DuckDB can cast it to a proper geometry column after import.
     wkb_df = data.to_wkb()
 
-    return _memtable(wkb_df, name=name, schema=schema, columns=columns)
+    return _memtable(wkb_df, schema=schema, columns=columns)
 
 
 def _deferred_method_call(expr, method_name, **kwargs):

@@ -629,7 +629,7 @@ class Backend(
 
     _drop_cached_table = _clean_up_tmp_table
 
-    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
         dialect = self.dialect
 
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)

@@ -418,14 +418,6 @@ lat,lon,geom
     assert t.schema()["geom"].is_geospatial()
 
 
-def test_memtable_doesnt_leak(con):
-    name = gen_name("memtable_doesnt_leak")
-    assert name not in con.list_tables()
-    df = con.execute(ibis.memtable({"a": [1, 2, 3]}, name=name))
-    assert name not in con.list_tables()
-    assert len(df) == 3
-
-
 def test_pyarrow_batches_chunk_size(con):  # 10443
     t = ibis.memtable(
         {

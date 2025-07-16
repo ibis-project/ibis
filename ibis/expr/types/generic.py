@@ -58,7 +58,7 @@ class Value(Expr):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"a": [1, 2]}, name="t")
+        >>> t = ibis.memtable({"a": [1, 2]})
         >>> t.a
         ┏━━━━━━━┓
         ┃ a     ┃
