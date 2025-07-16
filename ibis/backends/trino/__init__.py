@@ -52,7 +52,6 @@ class Backend(
     name = "trino"
     compiler = sc.trino.compiler
     supports_create_or_replace = False
-    supports_temporary_tables = False
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         kwargs = {}

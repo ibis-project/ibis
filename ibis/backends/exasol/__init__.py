@@ -39,7 +39,6 @@ _VARCHAR_REGEX = re.compile(r"^((VAR)?CHAR(?:\(\d+\)))?(?:\s+.+)?$")
 class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
     name = "exasol"
     compiler = sc.exasol.compiler
-    supports_temporary_tables = False
     supports_create_or_replace = False
     supports_python_udfs = False
 

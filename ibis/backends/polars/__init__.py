@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 class Backend(BaseBackend, NoUrl, DirectExampleLoader):
     name = "polars"
     dialect = Polars
+    supports_temporary_tables = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -104,13 +105,6 @@ class Backend(BaseBackend, NoUrl, DirectExampleLoader):
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         self._add_table(op.name, op.data.to_polars(op.schema).lazy())
-
-    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
-        def finalizer(name=name, tables=self._tables, context=self._context) -> None:
-            del tables[name]
-            context.unregister(name)
-
-        return finalizer
 
     def _add_table(self, name: str, obj: pl.LazyFrame | pl.DataFrame) -> None:
         if isinstance(obj, pl.DataFrame):
@@ -554,6 +548,9 @@ class Backend(BaseBackend, NoUrl, DirectExampleLoader):
 
     def _drop_cached_table(self, name):
         self.drop_table(name, force=True)
+
+    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+        """No-op because temporary tables are automatically cleaned up."""
 
 
 @lazy_singledispatch
