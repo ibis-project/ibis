@@ -4,7 +4,7 @@ import contextlib
 import os
 from decimal import Decimal
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import pyspark
 import pyspark.sql.functions as F
@@ -462,12 +462,12 @@ class Backend(
 
         df.createOrReplaceTempView(op.name)
 
-    def _make_memtable_finalizer(self, name: str) -> None:
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         """No-op with Spark Connect, otherwise a deadlock can occur."""
 
         if isinstance(session := self._session, pyspark.sql.SparkSession):
 
-            def finalizer(name=name, session=session) -> None:
+            def finalizer(name: str = name, session=session) -> None:
                 """Finalizer to drop the temporary view."""
                 session.catalog.dropTempView(name)
         else:
