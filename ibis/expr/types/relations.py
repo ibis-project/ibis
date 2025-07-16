@@ -1988,14 +1988,26 @@ class Table(Expr, FixedTextJupyterMixin):
         │ Adelie  │  2007 │       -7.22193 │
         └─────────┴───────┴────────────────┘
         """
+
+        # the implementation of `mutate` should be kept in sync with that of `select`
+        # with the exception that mutate does not call bind on the fields already in this table (node.fields)
+        from ibis.expr.rewrites import rewrite_project_input
+
         # string and integer inputs are going to be coerced to literals instead
         # of interpreted as column references like in select
         node = self.op()
-        values = self.bind(*exprs, **mutations)
+        values = self.bind(*exprs, **mutations)  # bind new expressions/mutations
         values = unwrap_aliases(values)
-        # allow overriding of fields, hence the mutation behavior
-        values = {**node.fields, **values}
-        return self.select(**values)
+
+        # we need to detect reductions which are either turned into window functions
+        # or scalar subqueries depending on whether they are originating from self
+        values = {
+            k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()
+        }
+
+        # note that existing fields in node.fields will skip bind&dereferencing to improve performance
+        # (unless overridden by mutations in **values)
+        return ops.Project(self, {**node.fields, **values}).to_expr()
 
     def select(
         self,
@@ -2174,6 +2186,8 @@ class Table(Expr, FixedTextJupyterMixin):
         │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
         └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
+        # note that if changes are made to implementation of select,
+        # corresponding changes may be needed in `.mutate()`
         from ibis.expr.rewrites import rewrite_project_input
 
         values = self.bind(*exprs, **named_exprs)
