@@ -671,12 +671,28 @@ class SQLGlotCompiler(abc.ABC):
         elif isinstance(out, sge.Subquery):
             out = out.this
 
-        # add cte definitions to the select statement
+        merged_ctes = []
         for cte in ctes:
-            alias = sg.to_identifier(aliases[cte], quoted=self.quoted)
-            out = out.with_(
-                alias, as_=results[cte].this, dialect=self.dialect, copy=False
+            this = results[cte]
+            if "alias" in this.args:
+                this = this.this
+            modified_cte = sge.CTE(
+                alias=sg.to_identifier(aliases[cte], quoted=self.quoted), this=this
             )
+            merged_ctes.append(modified_cte)
+        merged_ctes.extend(out.ctes)
+        out.args.pop("with", None)
+
+        out = reduce(
+            lambda parsed, cte: parsed.with_(
+                cte.args["alias"],
+                as_=cte.args["this"],
+                dialect=self.dialect,
+                copy=False,
+            ),
+            merged_ctes,
+            out,
+        )
 
         return out
 
@@ -1587,22 +1603,25 @@ class SQLGlotCompiler(abc.ABC):
         dialect = self.dialect
 
         compiled_ibis_expr = self.to_sqlglot(table)
+        compiled_query = sg.parse_one(query, read=dialect)
+
+        ctes = [
+            *compiled_ibis_expr.ctes,
+            sge.CTE(
+                alias=sg.to_identifier(name, quoted=self.quoted),
+                this=compiled_ibis_expr,
+            ),
+            *compiled_query.ctes,
+        ]
+        compiled_ibis_expr.args.pop("with", None)
+        compiled_query.args.pop("with", None)
 
         # pull existing CTEs from the compiled Ibis expression and combine them
         # with the new query
         parsed = reduce(
             lambda parsed, cte: parsed.with_(cte.args["alias"], as_=cte.args["this"]),
-            compiled_ibis_expr.ctes,
-            sg.parse_one(query, read=dialect),
-        )
-
-        # remove all ctes from the compiled expression, since they're now in
-        # our larger expression
-        compiled_ibis_expr.args.pop("with", None)
-
-        # add the new str query as a CTE
-        parsed = parsed.with_(
-            sg.to_identifier(name, quoted=self.quoted), as_=compiled_ibis_expr
+            ctes,
+            compiled_query,
         )
 
         # generate the SQL string
