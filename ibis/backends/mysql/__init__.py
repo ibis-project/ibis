@@ -6,7 +6,7 @@ import contextlib
 import warnings
 from functools import cached_property
 from operator import itemgetter
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
 import MySQLdb
@@ -512,5 +512,5 @@ class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleL
         )
         return MySQLPandasData.convert_table(df, schema)
 
-    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None:
         """No-op because temporary tables are automatically cleaned up."""

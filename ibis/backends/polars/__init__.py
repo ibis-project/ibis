@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import polars as pl
 
@@ -549,7 +549,7 @@ class Backend(BaseBackend, NoUrl, DirectExampleLoader):
     def _drop_cached_table(self, name):
         self.drop_table(name, force=True)
 
-    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None:
         """No-op because temporary tables are automatically cleaned up."""
 
 

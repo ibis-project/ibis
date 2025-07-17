@@ -9,7 +9,7 @@ import os
 import warnings
 from operator import itemgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 from urllib.request import urlcleanup, urlretrieve
 
@@ -1180,5 +1180,5 @@ $$ {defn["source"]} $$"""
         with self._safe_raw_sql(statement):
             pass
 
-    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None:
         """No-op because temporary tables are automatically cleaned up."""

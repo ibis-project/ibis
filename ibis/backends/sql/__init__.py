@@ -667,7 +667,7 @@ class SQLBackend(BaseBackend):
             f"pandas UDFs are not supported in the {self.dialect} backend"
         )
 
-    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         this = sg.table(name, quoted=self.compiler.quoted)
         drop_stmt = sge.Drop(kind="TABLE", this=this, exists=True)
         drop_sql = drop_stmt.sql(self.dialect)

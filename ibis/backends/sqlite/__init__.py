@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import sqlite3
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -628,5 +628,5 @@ class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader, HasCurrentDatabase)
                 cur.execute(sge.Delete(this=table).sql(dialect))
             cur.execute(insert_stmt)
 
-    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None:
         """No-op because temporary tables are automatically cleaned up."""

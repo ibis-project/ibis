@@ -444,10 +444,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         path = f"{self._memtable_volume_path}/{name}"
 
         def finalizer(drop_sql=drop_sql, path=path, fs=self._fs, con=self.con) -> None:
-            """Finalizer to clean up the memtable."""
-
             with con.cursor() as cursor:
                 cursor.execute(drop_sql)
+
             fs.rm(path, recursive=True)
 
         return finalizer
