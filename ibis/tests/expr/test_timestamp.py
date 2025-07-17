@@ -164,11 +164,6 @@ def test_integer_timestamp_fails():
         ibis.timestamp(42)
 
 
-def test_to_timestamp_deprecation():
-    with pytest.warns(FutureWarning, match="v10.0"):
-        ibis.literal(42).to_timestamp()
-
-
 @pytest.mark.parametrize(
     "start",
     [

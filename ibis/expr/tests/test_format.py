@@ -347,9 +347,7 @@ def test_destruct_selection(snapshot):
             return v.sum(), v.mean()
 
     expr = multi_output_udf(table["col"])
-    with pytest.warns(FutureWarning, match="v10\\.0"):
-        agg = expr.destructure()
-    expr = table.aggregate(agg)
+    expr = table.aggregate(agged_struct=expr).unpack("agged_struct")
     result = repr(expr)
 
     snapshot.assert_match(result, "repr.txt")
