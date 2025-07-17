@@ -1290,10 +1290,6 @@ class StringValue(Value):
         """
         return ops.StringToTimestamp(self, format_str).to_expr()
 
-    @deprecated(as_of="10.0", removed_in="11.0", instead="use as_timestamp() instead")
-    def to_timestamp(self, format_str: str, /) -> ir.TimestampValue:
-        return self.as_timestamp(format_str)
-
     def as_date(self, format_str: str, /) -> ir.DateValue:
         """Parse a string and return a date.
 
