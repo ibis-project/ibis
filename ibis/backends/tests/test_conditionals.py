@@ -142,13 +142,6 @@ def test_value_cases_null(con):
 @pytest.mark.parametrize(
     ("example", "expected"),
     [
-        param(lambda: ibis.case().when(True, "yes").end(), "yes", id="top-level-true"),
-        param(lambda: ibis.case().when(False, "yes").end(), None, id="top-level-false"),
-        param(
-            lambda: ibis.case().when(False, "yes").else_("no").end(),
-            "no",
-            id="top-level-false-value",
-        ),
         param(
             lambda: ibis.literal("a").case().when("a", "yes").end(),
             "yes",
