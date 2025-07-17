@@ -1556,14 +1556,6 @@ class IntegerValue(NumericValue):
         """
         return ops.IntervalFromInteger(self, unit).to_expr()
 
-    @deprecated(
-        as_of="10.0", removed_in="11.0", instead="use as_timestamp(unit) instead"
-    )
-    def to_timestamp(
-        self, unit: Literal["s", "ms", "us"] = "s", /
-    ) -> ir.TimestampValue:
-        return self.as_timestamp(unit)
-
     @deprecated(as_of="10.0", removed_in="11.0", instead="use as_interval() instead")
     def to_interval(
         self,
