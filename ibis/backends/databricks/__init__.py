@@ -457,7 +457,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
             exists=True,
         ).sql(self.dialect)
 
-        def finalizer(path=path, sql=sql, con=self.con) -> None:
+        def finalizer(path: str = path, sql: str = sql, con=self.con) -> None:
             """Finalizer for in-memory tables."""
 
             with con.cursor() as cur:

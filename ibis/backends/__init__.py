@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 import atexit
 import collections.abc
+import contextlib
 import functools
 import importlib.metadata
 import keyword
@@ -1276,7 +1277,12 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
                 if (
                     finalizer := self._make_memtable_finalizer(memtable.name)
                 ) is not None:
-                    atexit.register(finalizer)
+
+                    def finalize(finalizer=finalizer):
+                        with contextlib.suppress(Exception):
+                            finalizer()
+
+                    atexit.register(finalize)
 
     @abc.abstractmethod
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:

@@ -6,7 +6,7 @@ import glob
 import re
 from contextlib import closing
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import unquote_plus
 
 import clickhouse_connect as cc
@@ -775,5 +775,5 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
             pass
         return self.table(name, database=database)
 
-    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None:
         """No-op because temporary tables are automatically cleaned up."""
