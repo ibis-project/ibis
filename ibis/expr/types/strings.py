@@ -10,7 +10,6 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
-from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -1318,10 +1317,6 @@ class StringValue(Value):
         └────────────────────────────┘
         """
         return ops.StringToDate(self, format_str).to_expr()
-
-    @deprecated(as_of="10.0", removed_in="11.0", instead="use as_date() instead")
-    def to_date(self, format_str: str, /) -> ir.DateValue:
-        return self.as_date(format_str)
 
     def as_time(self, format_str: str, /) -> ir.TimeValue:
         """Parse a string and return a time.
