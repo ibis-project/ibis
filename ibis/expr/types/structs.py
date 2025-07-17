@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any
 from public import public
 
 import ibis.expr.operations as ops
-from ibis import util
 from ibis.common.deferred import deferrable
 from ibis.common.exceptions import IbisError
 from ibis.expr.types.generic import Column, Scalar, Value, literal
@@ -354,59 +353,6 @@ class StructValue(Value):
             raise IbisError("StructValue must depend on exactly one table")
 
         return table.to_expr().select([self[name] for name in self.names])
-
-    @util.deprecated(
-        as_of="10.0", removed_in="11.0", instead="use lift or unpack instead"
-    )
-    def destructure(self) -> list[ir.Value]:
-        """Destructure a `StructValue` into the corresponding struct fields.
-
-        When assigned, a destruct value will be destructured and assigned to
-        multiple columns.
-
-        Returns
-        -------
-        list[AnyValue]
-            Value expressions corresponding to the struct fields.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"s": [{"a": 1, "b": "foo"}, {"a": 3, "b": None}, None]})
-        >>> t
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ s                           ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ struct<a: int64, b: string> │
-        ├─────────────────────────────┤
-        │ {'a': 1, 'b': 'foo'}        │
-        │ {'a': 3, 'b': None}         │
-        │ NULL                        │
-        └─────────────────────────────┘
-        >>> a, b = t.s.destructure()  # doctest: +SKIP
-        >>> a  # doctest: +SKIP
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     3 │
-        │  NULL │
-        └───────┘
-        >>> b  # doctest: +SKIP
-        ┏━━━━━━━━┓
-        ┃ b      ┃
-        ┡━━━━━━━━┩
-        │ string │
-        ├────────┤
-        │ foo    │
-        │ NULL   │
-        │ NULL   │
-        └────────┘
-        """
-        return [self[field_name] for field_name in self.type().names]
 
 
 @public
