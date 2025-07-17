@@ -92,4 +92,4 @@ dependencies:
   - py4j =0.10.9.7
   - pip
   - pip:
-      - apache-flink =1.20.0
+      - apache-flink =1.20.2
