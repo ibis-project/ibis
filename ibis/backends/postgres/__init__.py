@@ -746,5 +746,5 @@ ORDER BY a.attnum ASC"""
             ),
         )
 
-    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None:
         """No-op because temporary tables are automatically cleaned up."""

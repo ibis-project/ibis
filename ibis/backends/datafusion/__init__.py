@@ -4,6 +4,7 @@ import contextlib
 import inspect
 import typing
 from collections.abc import Mapping
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -420,10 +421,7 @@ class Backend(
         self.con.from_arrow(op.data.to_pyarrow(op.schema), op.name)
 
     def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
-        def finalizer(name=name, con=self.con) -> None:
-            con.deregister_table(name)
-
-        return finalizer
+        return partial(self.con.deregister_table, name)
 
     def read_csv(
         self,

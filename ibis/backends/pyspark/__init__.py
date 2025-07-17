@@ -4,7 +4,7 @@ import contextlib
 import os
 from decimal import Decimal
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import pyspark
 import pyspark.sql.functions as F
@@ -1426,5 +1426,5 @@ class Backend(
         self._run_pre_execute_hooks(expr)
         return self._to_filesystem_output(expr, "csv", path, params, limit, options)
 
-    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None:
         """No-op because temporary tables are automatically cleaned up."""

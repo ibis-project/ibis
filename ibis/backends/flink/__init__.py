@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import re
 import zoneinfo
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -66,7 +66,7 @@ class Backend(
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         """No-op."""
 
-    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None:
         """No-op."""
 
     def do_connect(self, table_env: TableEnvironment) -> None:
@@ -398,7 +398,7 @@ class Backend(
             )
         self.create_view(op.name, op.data.to_frame(), schema=op.schema, temp=True)
 
-    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None:
         """No-op for Flink."""
 
     def execute(
