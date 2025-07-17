@@ -10,7 +10,6 @@ import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
-from ibis.util import deprecated
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -1555,14 +1554,6 @@ class IntegerValue(NumericValue):
         └─────────────────────┴─────────┴─────────────────────┘
         """
         return ops.IntervalFromInteger(self, unit).to_expr()
-
-    @deprecated(as_of="10.0", removed_in="11.0", instead="use as_interval() instead")
-    def to_interval(
-        self,
-        unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
-        /,
-    ) -> ir.IntervalValue:
-        return self.as_interval(unit)
 
     def convert_base(
         self,
