@@ -42,7 +42,7 @@ from ibis.expr.types import (
     null,
     struct,
 )
-from ibis.util import deprecated, experimental
+from ibis.util import experimental
 
 if TYPE_CHECKING:
     import uuid as pyuuid
@@ -71,7 +71,6 @@ __all__ = (
     "and_",
     "array",
     "asc",
-    "case",
     "cases",
     "coalesce",
     "connect",
@@ -1201,12 +1200,6 @@ def interval(
 
     intervals = [literal(v, type=dt.Interval(u)) for v, u in components]
     return functools.reduce(operator.add, intervals)
-
-
-@deprecated(as_of="10.0.0", removed_in="11.0", instead="use ibis.cases()")
-def case() -> bl.SearchedCaseBuilder:
-    """DEPRECATED: Use `ibis.cases()` instead."""
-    return bl.SearchedCaseBuilder()
 
 
 @deferrable
