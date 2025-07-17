@@ -2866,19 +2866,55 @@ class Table(Expr, FixedTextJupyterMixin):
         │ c      │    10.3 │    30.1 │
         └────────┴─────────┴─────────┘
 
+        Existing columns are overwritten by unpacking, regardless of existing
+        column ordering.
+
+        Here, `x` follows `a`:
+
+        >>> t = ibis.memtable(
+        ...     {"a": [{"x": 1}, {"x": 2}], "x": ["abc", "def"]},
+        ...     schema={"a": "struct<x: int>", "x": "string"},
+        ... )
+        >>> t.unpack("a")
+        ┏━━━━━━━┓
+        ┃ x     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+
+        And here, `x` precedes `a`:
+
+        >>> t = ibis.memtable(
+        ...     {"x": ["abc", "def"], "a": [{"x": 1}, {"x": 2}]},
+        ...     schema={"x": "string", "a": "struct<x: int>"},
+        ... )
+        >>> t.unpack("a")
+        ┏━━━━━━━┓
+        ┃ x     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+
         See Also
         --------
         [`StructValue.lift`](./expression-collections.qmd#ibis.expr.types.structs.StructValue.lift)
         """
         columns_to_unpack = frozenset(columns)
-        result_columns = []
+        result_columns = {}
         for column in self.columns:
             if column in columns_to_unpack:
                 expr = self[column]
-                result_columns.extend(expr[field] for field in expr.names)
-            else:
-                result_columns.append(column)
-        return self.select(result_columns)
+                for field in expr.names:
+                    result_columns[field] = expr[field]
+            elif column not in result_columns:
+                result_columns[column] = self[column]
+        return self.select(**result_columns)
 
     def info(self) -> Table:
         """Return summary information about a table.

@@ -14,6 +14,7 @@ from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
     PolarsColumnNotFoundError,
     PsycoPg2InternalError,
+    PsycoPg2ProgrammingError,
     PsycoPgSyntaxError,
     Py4JJavaError,
     PyAthenaDatabaseError,
@@ -268,3 +269,38 @@ def test_isin_struct(con):
     result = con.execute(both)
     # TODO(cpcloud): ensure the type is consistent
     assert result is True or result is np.bool_(True)
+
+
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=PsycoPg2ProgrammingError,
+    reason="can't adapt type for insert query",
+)
+@pytest.mark.notyet(
+    ["postgres"],
+    raises=PsycoPgSyntaxError,
+    reason="sqlglot doesn't implement structs for postgres correctly",
+)
+def test_field_overwrite_always_prefers_unpacked(backend):
+    t = backend.struct.filter(lambda t: t.abc.a.notnull())
+    t1 = t.mutate(a=1)
+    t2 = t1.select("a", "abc")
+    t3 = t1.select("abc", "a")
+    t4 = t2.select("abc", "a")
+
+    expr1 = t1.unpack("abc")
+    expr2 = t2.unpack("abc")
+    expr3 = t3.unpack("abc")
+    expr4 = t4.unpack("abc")
+
+    expected = {1, 2, 3}
+
+    assert expr1.columns == ("a", "b", "c")
+    assert expr2.columns == ("a", "b", "c")
+    assert expr3.columns == ("a", "b", "c")
+    assert expr4.columns == ("a", "b", "c")
+
+    assert set(expr1.execute().a) == expected
+    assert set(expr2.execute().a) == expected
+    assert set(expr3.execute().a) == expected
+    assert set(expr4.execute().a) == expected
