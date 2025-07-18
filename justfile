@@ -241,7 +241,8 @@ checklinks *args:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    lychee --base docs/_output $(find docs/_output -name '*.html') {{ args }}
+    lychee --root-dir "$PWD/docs/_output" --exclude '.+\.qmd' --offline $(find "$PWD/docs/_output" -name '*.html') \
+      {{ args }}
 
 # view the changelog for upcoming release (use --pretty to format with glow)
 view-changelog flags="":
@@ -331,7 +332,7 @@ docs-build-all:
     just docs-apigen --verbose
     just docs-render
     just build-jupyterlite
-    just checklinks docs/_output --offline --no-progress
+    just checklinks docs/_output --no-progress
 
 # open chat
 chat *args:

@@ -295,13 +295,13 @@ class ExasolCompiler(SQLGlotCompiler):
         return self.cast(self.f.bit_rshift(left, right), op.dtype)
 
     def visit_BitwiseAnd(self, op, *, left, right):
-        return self.cast(self.f.bit_and(left, right), op.dtype)
+        return self.cast(self.f.anon.bit_and(left, right), op.dtype)
 
     def visit_BitwiseOr(self, op, *, left, right):
-        return self.cast(self.f.bit_or(left, right), op.dtype)
+        return self.cast(self.f.anon.bit_or(left, right), op.dtype)
 
     def visit_BitwiseXor(self, op, *, left, right):
-        return self.cast(self.f.bit_xor(left, right), op.dtype)
+        return self.cast(self.f.anon.bit_xor(left, right), op.dtype)
 
 
 compiler = ExasolCompiler()
