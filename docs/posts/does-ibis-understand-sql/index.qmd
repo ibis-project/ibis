@@ -144,7 +144,7 @@ the database is completely oblivious to whatever Ibis did prior to providing the
 ## So, does Ibis understand SQL?
 
 Ibis's expressive dataframe API lets users avoid writing handcrafted SQL queries in most situations,
-but there are still cases where you may need to [use SQL strings in your Ibis code](../../how-to/extending/sql).
+but there are still cases where you may need to [use SQL strings in your Ibis code](../../how-to/extending/sql.qmd).
 [`Table.sql()`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.sql) and
 [`Backend.sql()`](../../backends/duckdb.qmd#ibis.backends.duckdb.Backend.sql) work very similarly to
 each other. To explore both of these options, we'll need to initialize a backend connection (DuckDB
