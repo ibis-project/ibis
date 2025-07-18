@@ -87,7 +87,7 @@ jobs:
         run: git diff --exit-code --stat
 
       - name: verify internal links
-        run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
+        run: nix develop --ignore-environment '.#links' -c just checklinks --no-progress
 
       - name: deploy docs
         run: nix develop --ignore-environment --keep NETLIFY_AUTH_TOKEN -c just docs-deploy
