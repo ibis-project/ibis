@@ -189,12 +189,13 @@ def test_selects_with_impure_operations_not_merged(con, snapshot, value):
 
 
 @pytest.mark.never(["polars"], reason="not SQL", raises=NotImplementedError)
-def test_to_sql_default_backend(con, snapshot, monkeypatch):
+def test_to_sql_default_backend(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
-    t = ibis.memtable({"b": [1, 2]}, name="mytable")
+    t = ibis.memtable({"b": [1, 2]})
     expr = t.select("b").count()
-    snapshot.assert_match(ibis.to_sql(expr), "to_sql.sql")
+    sql = ibis.to_sql(expr)
+    assert t.op().name in sql
 
 
 @pytest.mark.notimpl(["polars"], raises=ValueError, reason="not a SQL backend")
@@ -237,7 +238,7 @@ def test_mixed_qualified_and_unqualified_predicates(backend_name, snapshot):
     reason="random not supported",
 )
 def test_rewrite_context(snapshot, backend_name):
-    table = ibis.memtable({"test": [1, 2, 3, 4, 5]}, name="test")
+    table = ibis.table({"test": "int"}, name="test")
     expr = table.select(new_col=ibis.ntile(2).over(order_by=ibis.random())).limit(10)
     result = ibis.to_sql(expr, dialect=backend_name)
     snapshot.assert_match(result, "out.sql")

@@ -39,6 +39,7 @@ class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleL
     name = "mysql"
     compiler = sc.mysql.compiler
     supports_create_or_replace = False
+    supports_temporary_tables = True
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         kwargs = {}
@@ -508,3 +509,6 @@ class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleL
             cursor.fetchall(), columns=schema.names, coerce_float=True
         )
         return MySQLPandasData.convert_table(df, schema)
+
+    def _make_memtable_finalizer(self, name: str) -> None:
+        """No-op because temporary tables are automatically cleaned up."""

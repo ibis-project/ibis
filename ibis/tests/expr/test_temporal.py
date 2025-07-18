@@ -625,14 +625,8 @@ def test_integer_to_interval(column, unit, table):
     c = table[column]
     i = c.as_interval(unit)
 
-    with pytest.warns(FutureWarning, match="v10.0"):
-        j = c.to_interval(unit)
-
     assert isinstance(i, ir.IntervalColumn)
     assert i.type().unit == IntervalUnit(unit)
-
-    assert isinstance(j, ir.IntervalColumn)
-    assert j.type().unit == IntervalUnit(unit)
 
 
 @pytest.mark.parametrize(
@@ -940,8 +934,3 @@ def test_today():
     result = ibis.today()
     assert isinstance(result, ir.DateScalar)
     assert isinstance(result.op(), ops.DateNow)
-
-
-def test_to_date_deprecation():
-    with pytest.warns(FutureWarning, match="v10.0"):
-        ibis.literal("20170206").to_date("%Y%m%d")

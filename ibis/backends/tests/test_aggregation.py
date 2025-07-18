@@ -239,14 +239,17 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             output_type=dt.Struct({"mean": dt.double, "std": dt.double}),
         )
         def mean_and_std(v):
-            return v.mean(), v.std()
+            return {"mean": v.mean(), "std": v.std()}
 
     grouping_key_cols = ["bigint_col", "int_col"]
 
-    with pytest.warns(FutureWarning, match="v10\\.0"):
-        agg = mean_and_std(alltypes["double_col"]).destructure()
+    agg = mean_and_std(alltypes["double_col"])
 
-    expr1 = alltypes.group_by(grouping_key_cols).aggregate(agg)
+    expr1 = (
+        alltypes.group_by(grouping_key_cols)
+        .aggregate(agged_struct=agg)
+        .unpack("agged_struct")
+    )
 
     result1 = expr1.execute()
 

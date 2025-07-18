@@ -66,13 +66,8 @@ class Backend(
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         """No-op."""
 
-    def _finalize_memtable(self, name: str) -> None:
+    def _make_memtable_finalizer(self, name: str) -> None:
         """No-op."""
-
-    @property
-    def dialect(self):
-        # TODO: remove when ported to sqlglot
-        return self.compiler.dialect
 
     def do_connect(self, table_env: TableEnvironment) -> None:
         """Create a Flink `Backend` for use with Ibis.
@@ -403,8 +398,8 @@ class Backend(
             )
         self.create_view(op.name, op.data.to_frame(), schema=op.schema, temp=True)
 
-    def _finalize_memtable(self, name: str) -> None:
-        self.drop_view(name, temp=True, force=True)
+    def _make_memtable_finalizer(self, name: str) -> None:
+        """No-op for Flink."""
 
     def execute(
         self,

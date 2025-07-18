@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import atexit
 import collections.abc
 import contextlib
 import functools
@@ -12,7 +13,7 @@ import urllib.parse
 import weakref
 from collections import Counter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, overload
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, NamedTuple, overload
 
 import ibis
 import ibis.common.exceptions as exc
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
     import sqlglot as sg
     import torch
+
 
 __all__ = ("BaseBackend", "connect")
 
@@ -974,10 +976,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs
         self._can_reconnect: bool = True
-        # mapping of memtable names to their finalizers
-        self._finalizers = {}
         self._memtables = weakref.WeakSet()
-        self._current_memtables = weakref.WeakValueDictionary()
         super().__init__()
 
     @property
@@ -1272,48 +1271,26 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         for memtable in self._verify_in_memory_tables_are_unique(expr):
-            name = memtable.name
-
-            # this particular memtable has never been registered
             if memtable not in self._memtables:
-                # but we have a memtable with the same name
-                if (
-                    current_memtable := self._current_memtables.pop(name, None)
-                ) is not None:
-                    # if we're here this means we overwrite, so do the following:
-                    # 1. remove the old memtable from the set of memtables
-                    # 2. grab the old finalizer and invoke it
-                    self._memtables.remove(current_memtable)
-                    finalizer = self._finalizers.pop(name)
-                    finalizer()
-            else:
-                # if memtable is in the set, then by construction it must be
-                # true that the name of this memtable is in the current
-                # memtables mapping
-                assert name in self._current_memtables
-
-            # if there's no memtable named `name` then register it, setup a
-            # finalizer, and set it as the current memtable with `name`
-            if self._current_memtables.get(name) is None:
                 self._register_in_memory_table(memtable)
                 self._memtables.add(memtable)
-                self._finalizers[name] = weakref.finalize(
-                    memtable, self._finalize_in_memory_table, name
-                )
-                self._current_memtables[name] = memtable
+                if (
+                    finalizer := self._make_memtable_finalizer(memtable.name)
+                ) is not None:
+
+                    def finalize(finalizer=finalizer):
+                        with contextlib.suppress(Exception):
+                            finalizer()
+
+                    atexit.register(finalize)
 
     @abc.abstractmethod
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         """Register an in-memory table associated with `op`."""
 
     @abc.abstractmethod
-    def _finalize_memtable(self, name: str) -> None:
-        """Clean up a memtable named `name`."""
-
-    def _finalize_in_memory_table(self, name: str) -> None:
-        """Wrap `_finalize_memtable` to suppress exceptions."""
-        with contextlib.suppress(Exception):
-            self._finalize_memtable(name)
+    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+        """Make a finalizer for an in-memory table."""
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         """Backend-specific hooks to run before an expression is executed."""

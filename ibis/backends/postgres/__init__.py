@@ -57,6 +57,7 @@ class Backend(
     name = "postgres"
     compiler = sc.postgres.compiler
     supports_python_udfs = True
+    supports_temporary_tables = True
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         kwargs = {}
@@ -744,3 +745,6 @@ ORDER BY a.attnum ASC"""
                 self, struct_type=raw_schema.as_struct().to_pyarrow(), query=query
             ),
         )
+
+    def _make_memtable_finalizer(self, name: str) -> None:
+        """No-op because temporary tables are automatically cleaned up."""

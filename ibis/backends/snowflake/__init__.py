@@ -163,6 +163,7 @@ class Backend(
     name = "snowflake"
     compiler = sc.snowflake.compiler
     supports_python_udfs = True
+    supports_temporary_tables = True
 
     _top_level_methods = ("from_connection", "from_snowpark")
 
@@ -1174,3 +1175,6 @@ $$ {defn["source"]} $$"""
         statement = ";".join(statements)
         with self._safe_raw_sql(statement):
             pass
+
+    def _make_memtable_finalizer(self, name: str) -> None:
+        """No-op because temporary tables are automatically cleaned up."""

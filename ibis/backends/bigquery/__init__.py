@@ -9,6 +9,7 @@ import glob
 import os
 import re
 from decimal import Decimal
+from functools import partial
 from typing import IO, TYPE_CHECKING, Any, Callable, Optional
 
 import google.api_core.exceptions
@@ -235,9 +236,12 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             **kwargs,
         )
 
-    def _finalize_memtable(self, name: str) -> None:
-        table_ref = bq.TableReference(self._session_dataset, name)
-        self.client.delete_table(table_ref, not_found_ok=True)
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        return partial(
+            self.client.delete_table,
+            table=bq.TableReference(self._session_dataset, name),
+            not_found_ok=True,
+        )
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         table_ref = bq.TableReference(self._session_dataset, op.name)
