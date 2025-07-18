@@ -792,7 +792,8 @@ $$ {defn["source"]} $$"""
 
         if schema:
             target = sge.Schema(
-                this=target, expressions=schema.to_sqlglot(self.dialect)
+                this=target,
+                expressions=schema.to_sqlglot_column_defs(self.dialect),
             )
 
         properties = []
@@ -1089,7 +1090,10 @@ $$ {defn["source"]} $$"""
             f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET {options})",
             sge.Create(
                 kind="TABLE",
-                this=sge.Schema(this=qtable, expressions=schema.to_sqlglot(dialect)),
+                this=sge.Schema(
+                    this=qtable,
+                    expressions=schema.to_sqlglot_column_defs(dialect),
+                ),
                 properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
             ).sql(dialect),
         ]
