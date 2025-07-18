@@ -180,6 +180,72 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
 
         return PolarsSchema.to_ibis(polars_schema)
 
+    @classmethod
+    def from_sqlglot(cls, schema: sge.Schema) -> Self:
+        """Construct an Ibis Schema from a SQLGlot Schema.
+
+        Parameters
+        ----------
+        schema
+            A SQLGlot Schema containing column definitions.
+
+        Returns
+        -------
+        Schema
+            An Ibis Schema.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import sqlglot as sg
+        >>> import sqlglot.expressions as sge
+        >>> columns = [
+        ...     sge.ColumnDef(
+        ...         this=sg.to_identifier("a", quoted=True),
+        ...         kind=sge.DataType(this=sge.DataType.Type.BIGINT),
+        ...     ),
+        ...     sge.ColumnDef(
+        ...         this=sg.to_identifier("b", quoted=True),
+        ...         kind=sge.DataType(this=sge.DataType.Type.VARCHAR),
+        ...         constraints=[sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())],
+        ...     ),
+        ... ]
+        >>> schema_expr = sge.Schema(expressions=columns)
+        >>> sch = ibis.Schema.from_sqlglot(schema_expr)
+        >>> sch
+        ibis.Schema {
+          a  int64
+          b  !string
+        }
+        """
+        import sqlglot.expressions as sge
+
+        from ibis.backends.sql.datatypes import SqlglotType
+
+        expressions = schema.expressions
+        if not expressions:
+            return cls({})
+
+        type_mapper = SqlglotType()
+        fields = {}
+
+        for column in expressions:
+            name = column.this.this
+
+            nullable = not any(
+                isinstance(constraint.kind, sge.NotNullColumnConstraint)
+                for constraint in (column.constraints or [])
+            )
+
+            if column.kind:
+                ibis_dtype = type_mapper.to_ibis(column.kind, nullable=nullable)
+            else:
+                ibis_dtype = dt.String(nullable=nullable)
+
+            fields[name] = ibis_dtype
+
+        return cls(fields)
+
     def to_numpy(self) -> list[tuple[str, np.dtype]]:
         """Return the equivalent numpy dtypes."""
         from ibis.formats.numpy import NumpySchema
