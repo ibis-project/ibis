@@ -1,5 +1,5 @@
 -e .
-aiobotocore==2.23.0
+aiobotocore==2.23.1
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.14
 aioitertools==0.12.0
@@ -32,8 +32,8 @@ beautifulsoup4==4.13.4
 bitarray==2.9.3
 black==25.1.0
 bleach==6.2.0
-boto3==1.38.27
-botocore==1.38.27
+boto3==1.38.46
+botocore==1.38.46
 cachetools==5.5.2
 certifi==2025.7.14
 cffi==1.17.1
@@ -61,7 +61,7 @@ decorator==5.2.1
 defusedxml==0.7.1
 deltalake==1.1.0
 deprecated==1.2.18
-distlib==0.3.9
+distlib==0.4.0
 doit==0.36.0
 duckdb==1.3.2
 dunamai==1.25.0
@@ -71,7 +71,7 @@ execnet==2.1.1
 executing==2.2.0
 fastjsonschema==2.21.1
 filelock==3.18.0
-fonttools==4.58.5
+fonttools==4.59.0
 fqdn==1.5.1
 frozenlist==1.7.0
 fsspec==2025.7.0
@@ -98,14 +98,14 @@ h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 humanize==4.12.3
-hypothesis==6.135.32
+hypothesis==6.136.1
 identify==2.6.12
 idna==3.10
 importlib-metadata==8.7.0
 importlib-resources==6.5.2
 impyla==0.21.0
 iniconfig==2.1.0
-ipykernel==6.29.5
+ipykernel==6.30.0
 ipython==8.18.1 ; python_full_version < '3.10'
 ipython==8.37.0 ; python_full_version == '3.10.*'
 ipython==9.4.0 ; python_full_version >= '3.11'
@@ -119,16 +119,16 @@ jmespath==1.0.1
 joblib==1.5.1
 json5==0.12.0
 jsonpointer==3.0.0
-jsonschema==4.24.0
+jsonschema==4.25.0
 jsonschema-specifications==2025.4.1
 jupyter-cache==1.0.1
 jupyter-client==8.6.3
 jupyter-core==5.8.1
 jupyter-events==0.12.0
-jupyter-lsp==2.2.5
+jupyter-lsp==2.2.6
 jupyter-server==2.16.0
 jupyter-server-terminals==0.5.3
-jupyterlab==4.4.4
+jupyterlab==4.4.5
 jupyterlab-night==0.5.1
 jupyterlab-pygments==0.3.0
 jupyterlab-server==2.27.3
@@ -137,6 +137,7 @@ jupyterlite-core==0.6.3
 jupyterlite-pyodide-kernel==0.6.1
 kiwisolver==1.4.7 ; python_full_version < '3.10'
 kiwisolver==1.4.8 ; python_full_version >= '3.10'
+lark==1.2.2
 lonboard==0.11.1
 lz4==4.4.4
 mako==1.3.10
@@ -152,7 +153,7 @@ mizani==0.14.2 ; python_full_version >= '3.10'
 multidict==6.6.3
 mypy-extensions==1.1.0
 mysqlclient==2.2.7
-narwhals==1.47.0
+narwhals==1.48.0
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -202,11 +203,11 @@ pure-eval==0.2.3
 pure-sasl==0.6.2
 py-cpuinfo==9.0.0
 py4j==0.10.9.7
-pyarrow==20.0.0
+pyarrow==21.0.0
 pyarrow-hotfix==0.7
 pyasn1==0.6.1
 pyasn1-modules==0.4.2
-pyathena==3.14.1
+pyathena==3.15.0
 pycparser==2.22
 pydantic==2.11.7
 pydantic-core==2.33.2
@@ -250,14 +251,15 @@ requests==2.32.4
 requests-oauthlib==2.0.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
+rfc3987-syntax==1.1.0
 rich==14.0.0
 rpds-py==0.26.0
 rsa==4.9.1
-ruff==0.12.3
+ruff==0.12.4
 s3fs==2025.7.0
-s3transfer==0.13.0
+s3transfer==0.13.1
 scikit-learn==1.6.1 ; python_full_version < '3.10'
-scikit-learn==1.7.0 ; python_full_version >= '3.10'
+scikit-learn==1.7.1 ; python_full_version >= '3.10'
 scipy==1.13.1 ; python_full_version < '3.10'
 scipy==1.15.3 ; python_full_version == '3.10.*'
 scipy==1.16.0 ; python_full_version >= '3.11'
@@ -273,7 +275,7 @@ sortedcontainers==2.4.0
 soupsieve==2.7
 sphobjinv==2.3.1.3
 sqlalchemy==2.0.41
-sqlglot==27.0.0
+sqlglot==27.1.0
 stack-data==0.6.3
 statsmodels==0.14.5
 tabulate==0.9.0
@@ -298,7 +300,7 @@ tzlocal==5.3.1
 uri-template==1.3.0
 urllib3==1.26.20 ; python_full_version < '3.10'
 urllib3==2.5.0 ; python_full_version >= '3.10'
-virtualenv==20.31.2
+virtualenv==20.32.0
 watchdog==6.0.0
 wcwidth==0.2.13
 webcolors==24.11.1

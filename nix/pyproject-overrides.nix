@@ -10,42 +10,41 @@ let
       nativeBuildInputs = old.nativeBuildInputs ++ resolveBuildSystem spec;
     });
 
-  buildSystemOverrides =
-    {
-      atpublic.hatchling = [ ];
-      packaging.flit-core = [ ];
-      pandas-gbq.setuptools = [ ];
-      parsy.setuptools = [ ];
-      pathspec.flit-core = [ ];
-      pluggy = {
-        setuptools = [ ];
-        setuptools-scm = [ ];
-      };
-      pure-sasl.setuptools = [ ];
-      pydruid.setuptools = [ ];
-      pytest-clarity.setuptools = [ ];
-      sqlglot = {
-        setuptools = [ ];
-        setuptools-scm = [ ];
-      };
-      tomli.flit-core = [ ];
-      toolz.setuptools = [ ];
-      typing-extensions.flit-core = [ ];
-      debugpy.setuptools = [ ];
-      google-crc32c.setuptools = [ ];
-      lz4.setuptools = [ ];
-      snowflake-connector-python.setuptools = [ ];
-    }
-    // lib.optionalAttrs (lib.versionAtLeast prev.python.pythonVersion "3.13") {
-      pyyaml-ft.setuptools = [ ];
-    }
-    // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
-      duckdb = {
-        setuptools = [ ];
-        setuptools-scm = [ ];
-        pybind11 = [ ];
-      };
+  buildSystemOverrides = {
+    atpublic.hatchling = [ ];
+    packaging.flit-core = [ ];
+    pandas-gbq.setuptools = [ ];
+    parsy.setuptools = [ ];
+    pathspec.flit-core = [ ];
+    pluggy = {
+      setuptools = [ ];
+      setuptools-scm = [ ];
     };
+    pure-sasl.setuptools = [ ];
+    pydruid.setuptools = [ ];
+    pytest-clarity.setuptools = [ ];
+    sqlglot = {
+      setuptools = [ ];
+      setuptools-scm = [ ];
+    };
+    tomli.flit-core = [ ];
+    toolz.setuptools = [ ];
+    typing-extensions.flit-core = [ ];
+    debugpy.setuptools = [ ];
+    google-crc32c.setuptools = [ ];
+    lz4.setuptools = [ ];
+    snowflake-connector-python.setuptools = [ ];
+  }
+  // lib.optionalAttrs (lib.versionAtLeast prev.python.pythonVersion "3.13") {
+    pyyaml-ft.setuptools = [ ];
+  }
+  // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
+    duckdb = {
+      setuptools = [ ];
+      setuptools-scm = [ ];
+      pybind11 = [ ];
+    };
+  };
 in
 (lib.optionalAttrs stdenv.hostPlatform.isDarwin {
   pyproj = prev.pyproj.overrideAttrs (attrs: {
@@ -74,14 +73,12 @@ in
       impl = py.implementation;
     in
     lib.optionalAttrs (stdenv.isAarch64 && stdenv.isLinux && shortVersion == "310") {
-      postInstall =
-        (attrs.postInstall or "")
-        + ''
-          find $out \
-            \( -name '*.${impl}-*.so' -o -name 'libgcc*' -o -name 'libstdc*' \) \
-            -a ! -name '*.${impl}-${shortVersion}-*.so' \
-            -delete
-        '';
+      postInstall = attrs.postInstall or "" + ''
+        find $out \
+          \( -name '*.${impl}-*.so' -o -name 'libgcc*' -o -name 'libstdc*' \) \
+          -a ! -name '*.${impl}-${shortVersion}-*.so' \
+          -delete
+      '';
     }
   );
 
@@ -146,11 +143,9 @@ in
     in
     {
       nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
-      postInstall =
-        attrs.postInstall or ""
-        + ''
-          cp ${icebergJar} $out/${final.python.sitePackages}/pyspark/jars/${icebergJar.name}
-        '';
+      postInstall = attrs.postInstall or "" + ''
+        cp ${icebergJar} $out/${final.python.sitePackages}/pyspark/jars/${icebergJar.name}
+      '';
     }
   );
 

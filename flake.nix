@@ -126,33 +126,32 @@
           env:
           pkgs.mkShell {
             inherit (env) name;
-            packages =
-              [
-                # python dev environment
-                env
-              ]
-              ++ (with pkgs; [
-                # uv executable
-                uv
-                # rendering release notes
-                changelog
-                glow
-                # used in the justfile
-                jq
-                yj
-                # commit linting
-                commitlint
-                # link checking
-                lychee
-                # release automation
-                nodejs
-                # used in notebooks to download data
-                curl
-                # docs
-                quarto
-              ])
-              ++ preCommitDeps
-              ++ backendDevDeps;
+            packages = [
+              # python dev environment
+              env
+            ]
+            ++ (with pkgs; [
+              # uv executable
+              uv
+              # rendering release notes
+              changelog
+              glow
+              # used in the justfile
+              jq
+              yj
+              # commit linting
+              commitlint
+              # link checking
+              lychee
+              # release automation
+              nodejs
+              # used in notebooks to download data
+              curl
+              # docs
+              quarto
+            ])
+            ++ preCommitDeps
+            ++ backendDevDeps;
 
             inherit shellHook;
 
