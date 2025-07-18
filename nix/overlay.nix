@@ -79,6 +79,8 @@ let
     (pythonSet.mkVirtualEnv "ibis-${python.pythonVersion}" deps).overrideAttrs (_old: {
       # Add passthru.tests from ibis-framework to venv passthru.
       # This is used to build tests by CI.
+      inherit python;
+      separateDebugInfo = true;
       passthru = {
         inherit (pythonSet.ibis-framework.passthru) tests;
       };
