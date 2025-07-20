@@ -26,7 +26,12 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import BaseBackend, CanCreateDatabase, DirectExampleLoader
+from ibis.backends import (
+    BaseBackend,
+    CanCreateDatabase,
+    DirectExampleLoader,
+    SupportsTempTables,
+)
 from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
@@ -44,10 +49,9 @@ def _to_memtable(v):
     return ibis.memtable(v).op() if not isinstance(v, ops.InMemoryTable) else v
 
 
-class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
+class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLoader):
     name = "clickhouse"
     compiler = sc.clickhouse.compiler
-    supports_temporary_tables = True
 
     class Options(ibis.config.Config):
         """Clickhouse options.
@@ -774,6 +778,3 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
         with self._safe_raw_sql(src, external_tables=external_tables):
             pass
         return self.table(name, database=database)
-
-    def _make_memtable_finalizer(self, name: str) -> None:
-        """No-op because temporary tables are automatically cleaned up."""

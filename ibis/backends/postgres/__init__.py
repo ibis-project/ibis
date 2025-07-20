@@ -27,6 +27,7 @@ from ibis.backends import (
     HasCurrentCatalog,
     HasCurrentDatabase,
     PyArrowExampleLoader,
+    SupportsTempTables,
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import TRUE, C, ColGen
@@ -47,6 +48,7 @@ class NatDumper(psycopg.adapt.Dumper):
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     CanListCatalog,
     CanCreateDatabase,
@@ -747,6 +749,3 @@ ORDER BY a.attnum ASC"""
                 self, struct_type=raw_schema.as_struct().to_pyarrow(), query=query
             ),
         )
-
-    def _make_memtable_finalizer(self, name: str) -> None:
-        """No-op because temporary tables are automatically cleaned up."""

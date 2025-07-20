@@ -16,7 +16,12 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import HasCurrentDatabase, PyArrowExampleLoader, UrlFromPath
+from ibis.backends import (
+    HasCurrentDatabase,
+    PyArrowExampleLoader,
+    SupportsTempTables,
+    UrlFromPath,
+)
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
 from ibis.backends.sqlite.converter import SQLitePandasData
@@ -51,11 +56,16 @@ def _quote(name: str) -> str:
     return sg.to_identifier(name, quoted=True).sql("sqlite")
 
 
-class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader, HasCurrentDatabase):
+class Backend(
+    SupportsTempTables,
+    SQLBackend,
+    UrlFromPath,
+    PyArrowExampleLoader,
+    HasCurrentDatabase,
+):
     name = "sqlite"
     compiler = sc.sqlite.compiler
     supports_python_udfs = True
-    supports_temporary_tables = True
 
     @property
     def current_database(self) -> str:
@@ -627,6 +637,3 @@ class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader, HasCurrentDatabase)
             if overwrite:
                 cur.execute(sge.Delete(this=table).sql(dialect))
             cur.execute(insert_stmt)
-
-    def _make_memtable_finalizer(self, name: str) -> None:
-        """No-op because temporary tables are automatically cleaned up."""
