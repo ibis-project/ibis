@@ -89,6 +89,7 @@ class Backend(
 ):
     name = "oracle"
     compiler = sc.oracle.compiler
+    supports_temporary_tables = True
 
     @cached_property
     def version(self):

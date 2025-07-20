@@ -27,6 +27,7 @@ from ibis.backends import (
     DirectExampleLoader,
     HasCurrentCatalog,
     HasCurrentDatabase,
+    SupportsTempTables,
     UrlFromPath,
 )
 from ibis.backends.sql import SQLBackend
@@ -73,6 +74,7 @@ class _Settings:
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     CanCreateDatabase,
     HasCurrentCatalog,
@@ -1763,9 +1765,6 @@ class Backend(
     def _create_temp_view(self, table_name, source):
         with self._safe_raw_sql(self._get_temp_view_definition(table_name, source)):
             pass
-
-    def _make_memtable_finalizer(self, name: str) -> None:
-        """No-op because temporary tables are automatically cleaned up."""
 
 
 @lazy_singledispatch

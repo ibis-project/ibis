@@ -28,6 +28,7 @@ from ibis.backends import (
     HasCurrentCatalog,
     HasCurrentDatabase,
     PyArrowExampleLoader,
+    SupportsTempTables,
 )
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
@@ -110,6 +111,7 @@ def _interval_to_string(interval):
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     CanListCatalog,
     CanCreateDatabase,
@@ -1425,6 +1427,3 @@ class Backend(
         """
         self._run_pre_execute_hooks(expr)
         return self._to_filesystem_output(expr, "csv", path, params, limit, options)
-
-    def _make_memtable_finalizer(self, name: str) -> None:
-        """No-op because temporary tables are automatically cleaned up."""

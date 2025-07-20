@@ -1829,3 +1829,12 @@ class NoUrl:
 
         """
         return self.connect(**kwargs)
+
+
+class SupportsTempTables:
+    __slots__ = ()
+
+    supports_temporary_tables = True
+
+    def _make_memtable_finalizer(self, name: str) -> None:
+        """No-op because temporary tables are automatically cleaned up."""

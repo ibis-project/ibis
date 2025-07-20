@@ -321,8 +321,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
 @mark.notimpl(
     ["oracle"],
     raises=AssertionError,
-    reason="oracle temp tables aren't cleaned up on reconnect -- they need to "
-    "be switched from using atexit to weakref.finalize",
+    reason="oracle temp tables aren't cleaned up on reconnect because we use global temporary tables",
 )
 @mark.notimpl(["trino", "druid", "athena"], reason="doesn't implement temporary tables")
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")

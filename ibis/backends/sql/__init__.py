@@ -672,7 +672,7 @@ class SQLBackend(BaseBackend):
         drop_stmt = sge.Drop(kind="TABLE", this=this, exists=True)
         drop_sql = drop_stmt.sql(self.dialect)
 
-        def finalizer(con=self.con, drop_sql=drop_sql) -> None:
+        def finalizer(drop_sql=drop_sql, con=self.con) -> None:
             with con.cursor() as cursor:
                 cursor.execute(drop_sql)
 
