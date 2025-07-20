@@ -4,9 +4,8 @@ import contextlib
 import inspect
 import typing
 from collections.abc import Mapping
-from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import datafusion as df
 import pyarrow as pa
@@ -29,6 +28,7 @@ from ibis.backends import (
     HasCurrentCatalog,
     HasCurrentDatabase,
     NoUrl,
+    SupportsTempTables,
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
@@ -77,6 +77,7 @@ def as_nullable(dtype: dt.DataType) -> dt.DataType:
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     CanCreateCatalog,
     CanCreateDatabase,
@@ -419,9 +420,6 @@ class Backend(
         # of constructing a datafusion DataFrame, which has a side effect
         # of registering the table
         self.con.from_arrow(op.data.to_pyarrow(op.schema), op.name)
-
-    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
-        return partial(self.con.deregister_table, name)
 
     def read_csv(
         self,

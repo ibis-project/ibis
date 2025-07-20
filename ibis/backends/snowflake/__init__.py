@@ -32,6 +32,7 @@ from ibis.backends import (
     DirectExampleLoader,
     HasCurrentCatalog,
     HasCurrentDatabase,
+    SupportsTempTables,
 )
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
@@ -153,6 +154,7 @@ return count !== 0 ? true : null;""",
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     CanCreateCatalog,
     CanCreateDatabase,
@@ -1179,6 +1181,3 @@ $$ {defn["source"]} $$"""
         statement = ";".join(statements)
         with self._safe_raw_sql(statement):
             pass
-
-    def _make_memtable_finalizer(self, name: str) -> None:
-        """No-op because temporary tables are automatically cleaned up."""

@@ -28,7 +28,11 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, DirectPyArrowExampleLoader
+from ibis.backends import (
+    CanCreateDatabase,
+    DirectPyArrowExampleLoader,
+    SupportsTempTables,
+)
 from ibis.backends.bigquery.client import (
     bigquery_param,
     parse_project_and_dataset,
@@ -160,7 +164,9 @@ def _postprocess_arrow(
     return table_or_batch.rename_columns(names)
 
 
-class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
+class Backend(
+    SupportsTempTables, SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader
+):
     name = "bigquery"
     compiler = sc.bigquery.compiler
     supports_python_udfs = False

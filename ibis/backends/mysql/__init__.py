@@ -22,7 +22,12 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, HasCurrentDatabase, PyArrowExampleLoader
+from ibis.backends import (
+    CanCreateDatabase,
+    HasCurrentDatabase,
+    PyArrowExampleLoader,
+    SupportsTempTables,
+)
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, TRUE, C, RenameTable
 
@@ -35,11 +40,16 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
-class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleLoader):
+class Backend(
+    SupportsTempTables,
+    SQLBackend,
+    CanCreateDatabase,
+    HasCurrentDatabase,
+    PyArrowExampleLoader,
+):
     name = "mysql"
     compiler = sc.mysql.compiler
     supports_create_or_replace = False
-    supports_temporary_tables = True
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         kwargs = {}
@@ -511,6 +521,3 @@ class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleL
             cursor.fetchall(), columns=schema.names, coerce_float=True
         )
         return MySQLPandasData.convert_table(df, schema)
-
-    def _make_memtable_finalizer(self, name: str) -> None:
-        """No-op because temporary tables are automatically cleaned up."""

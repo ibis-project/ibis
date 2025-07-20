@@ -127,6 +127,10 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             Iterable of column name and type pairs/mapping/schema by which to
             partition the table.
         """
+        if temp:
+            raise NotImplementedError(
+                "Temporary tables are not supported in the Amazon Athena backend"
+            )
         if overwrite is not None:
             raise com.UnsupportedOperationError(
                 "Amazon Athena does not support REPLACE syntax, nor does it "
@@ -136,11 +140,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             raise com.IbisError("One of the `schema` or `obj` parameter is required")
         if schema is not None:
             schema = ibis.schema(schema)
-
-        if temp:
-            raise NotImplementedError(
-                "Temporary tables are not supported in the Amazon Athena backend"
-            )
 
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
