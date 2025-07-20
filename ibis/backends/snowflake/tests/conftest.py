@@ -213,6 +213,10 @@ class TestConf(BackendTest):
         else:
             return ibis.connect(_get_url(), **kw)
 
+    @property
+    def struct(self):
+        return super().struct.cast({"abc": "struct<a: float64, b: string, c: int64>"})
+
 
 @pytest.fixture(scope="session")
 def con(tmp_path_factory, data_dir, worker_id):
