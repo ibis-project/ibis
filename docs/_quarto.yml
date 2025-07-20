@@ -354,6 +354,7 @@ quartodoc:
             # conversions
             # TODO: add decompile here once the API is not experimental
             - name: to_sql
+              package: ibis.expr.sql
               dynamic: true
               signature_name: full
 
