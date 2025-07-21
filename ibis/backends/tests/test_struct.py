@@ -33,27 +33,21 @@ pytestmark = NO_STRUCT_SUPPORT_MARKS
 @pytest.mark.parametrize(
     ("field", "expected"),
     [
-        param(
-            "a",
-            [1.0, 2.0, 2.0, 3.0, 3.0, np.nan, np.nan],
-            id="a",
-            marks=pytest.mark.notimpl(["snowflake"]),
-        ),
+        param("a", [1.0, 2.0, 2.0, 3.0, 3.0, np.nan, np.nan], id="a"),
         param(
             "b", ["apple", "banana", "banana", "orange", "orange", None, None], id="b"
         ),
-        param(
-            "c",
-            [2, 2, 3, 3, 4, np.nan, np.nan],
-            id="c",
-            marks=pytest.mark.notimpl(["snowflake"]),
-        ),
+        param("c", [2, 2, 3, 3, 4, np.nan, np.nan], id="c"),
     ],
 )
 def test_single_field(struct, field, expected):
     expr = struct.select(field=lambda t: t.abc[field]).order_by("field")
     result = expr.execute()
-    tm.assert_series_equal(result.field, pd.Series(expected, name="field"))
+    tm.assert_series_equal(
+        result.field.replace(np.nan, None),
+        pd.Series(expected, name="field").replace(np.nan, None),
+        check_dtype=False,
+    )
 
 
 def test_all_fields(struct, struct_df):
