@@ -3,6 +3,8 @@ from __future__ import annotations
 import abc
 import os
 from datetime import datetime, timedelta, timezone
+from functools import reduce
+from itertools import chain
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest import mock
@@ -276,37 +278,36 @@ else:
         def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
             from pyspark.sql import SparkSession
 
-            config = SparkSession.builder.appName("ibis_testing")
-
-            with Path(
-                os.environ.get(
-                    "SPARK_CONFIG",
-                    Path(ibis.__file__)
-                    .parents[1]
-                    .joinpath("docker", "spark-connect", "conf.properties"),
-                )
-            ).open(mode="r") as config_file:
-                for line in config_file:
-                    if "delta" in line:
-                        continue
-                    config = config.config(*map(str.strip, line.strip().split("=", 1)))
-
-            config = (
-                config.config("spark.cores.max", "1")
-                .config("spark.default.parallelism", "1")
-                .config("spark.dynamicAllocation.enabled", "false")
-                .config("spark.executor.heartbeatInterval", "3600s")
-                .config("spark.executor.instances", "1")
-                .config("spark.network.timeout", "4200s")
-                .config("spark.rdd.compress", "false")
-                .config(
-                    "spark.serializer", "org.apache.spark.serializer.KryoSerializer"
-                )
-                .config("spark.shuffle.compress", "false")
-                .config("spark.shuffle.spill.compress", "false")
-                .config("spark.sql.execution.arrow.pyspark.enabled", "false")
-                .config("spark.sql.shuffle.partitions", "1")
-                .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
+            config = reduce(
+                lambda config, line: config.config(
+                    *map(str.strip, line.strip().split("=", 1))
+                ),
+                chain(
+                    filter(
+                        lambda line: "delta" not in line,
+                        Path(ibis.__file__)
+                        .parents[1]
+                        .joinpath("docker", "spark-connect", "conf.properties")
+                        .read_text()
+                        .splitlines(),
+                    ),
+                    [
+                        "spark.cores.max=1",
+                        "spark.default.parallelism=1",
+                        "spark.dynamicAllocation.enabled=false",
+                        "spark.executor.heartbeatInterval=3600s",
+                        "spark.executor.instances=1",
+                        "spark.network.timeout=4200s",
+                        "spark.rdd.compress=false",
+                        "spark.serializer=org.apache.spark.serializer.KryoSerializer",
+                        "spark.shuffle.compress=false",
+                        "spark.shuffle.spill.compress=false",
+                        "spark.sql.execution.arrow.pyspark.enabled=false",
+                        "spark.sql.shuffle.partitions=1",
+                        "spark.storage.blockManagerSlaveTimeoutMs=4200s",
+                    ],
+                ),
+                SparkSession.builder.appName("ibis_testing"),
             )
 
             try:
