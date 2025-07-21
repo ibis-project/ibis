@@ -470,7 +470,7 @@ class Expr(Immutable, Coercible):
         --------
         [`Value.to_sql()`](./expression-generic.qmd#ibis.expr.types.generic.Value.to_sql)
         [`Table.to_sql()`](./expression-tables.qmd#ibis.expr.types.relations.Table.to_sql)
-        [`ibis.to_sql()`](./expression-generic#ibis.to_sql)
+        [`ibis.to_sql()`](./expression-generic.qmd#ibis.to_sql)
         [`Value.compile()`](./expression-generic.qmd#ibis.expr.types.generic.Value.compile)
         [`Table.compile()`](./expression-tables.qmd#ibis.expr.types.relations.Table.compile)
         """
