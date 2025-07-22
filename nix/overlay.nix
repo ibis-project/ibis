@@ -183,20 +183,33 @@ in
     runtimeInputs = [
       pkgs.nix
       pkgs.gh
+      pkgs.jq
     ];
     text = ''
-      declare -A systems=(["linux-amd64"]="x86_64-linux" ["linux-arm64"]="aarch64-linux" ["macos"]="aarch64-darwin")
+      declare -A systems=(["x86_64-linux"]="linux-amd64" ["aarch64-linux"]="linux-arm64" ["x86_64-darwin"]="macos" ["aarch64-darwin"]="macos")
       declare -a out=()
       version="$(gh release --repo quarto-dev/quarto-cli list --json isPrerelease,tagName --jq '[.[] | select(.isPrerelease)][0].tagName[1:]')"
-      for system in linux-amd64 linux-arm64 macos; do
-        url="https://github.com/quarto-dev/quarto-cli/releases/download/v$version/quarto-$version-$system.tar.gz"
+      i=1
+      nsystems="''${#systems[@]}"
+      for nix_system in "''${!systems[@]}"; do
+        quarto_system="''${systems[''${nix_system}]}"
+        url="https://github.com/quarto-dev/quarto-cli/releases/download/v''${version}/quarto-''${version}-''${quarto_system}.tar.gz"
         fetched_hash="$(nix-prefetch-url "$url")"
-        hash="$(nix hash convert --hash-algo sha256 --from nix32 "$fetched_hash")"
-        out+=("''${systems[$system]} = \"$hash\";")
+        hash="$(nix hash convert --hash-algo sha256 --from nix32 "''${fetched_hash}")"
+        row="\"''${nix_system}\":\"''${hash}\""
+        if [ "''${i}" -ne "''${nsystems}" ]; then
+          row+=","
+        fi
+        out+=("''${row}")
+        ((++i))
       done
-      for row in "''${out[@]}"; do
-        echo "$row"
-      done
+      {
+        echo -n "{\"version\":\"''${version}\",\"hashes\":{"
+        for row in "''${out[@]}"; do
+          echo -n "''${row}"
+        done
+        echo -n '}}'
+      } | jq --sort-keys | tee "''${PWD}/nix/quarto/version-info.json"
     '';
   };
 }
