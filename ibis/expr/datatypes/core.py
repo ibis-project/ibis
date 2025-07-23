@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ibis.expr.datatypes.mypy
 import datetime as pydatetime
 import decimal as pydecimal
 import numbers
@@ -15,7 +16,9 @@ from typing import (
     Literal,
     NamedTuple,
     Optional,
+    TypeAlias,
     TypeVar,
+    Union,
     get_type_hints,
     overload,
 )
@@ -155,6 +158,12 @@ def from_polars(value, nullable=True):
 # lock the dispatcher to prevent new types from being registered
 del dtype.register
 
+
+
+# DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
+# PySpark until version 3.3
+PYSPARK_33 = vparse(pyspark.__version__) >= vparse("3.3")
+PYSPARK_35 = vparse(pyspark.__version__) >= vparse("3.5")
 
 @public
 class DataType(Concrete, Coercible):
@@ -916,7 +925,7 @@ class Interval(Parametric):
 class Struct(Parametric, MapSet):
     """Structured values."""
 
-    fields: FrozenOrderedDict[str, DataType]
+    fields: Mapping[str, DataType]
 
     scalar = "StructScalar"
     column = "StructColumn"
@@ -974,10 +983,10 @@ T = TypeVar("T", bound=DataType, covariant=True)
 
 
 @public
-class Array(Variadic, Parametric, Generic[T]):
+class Array(Variadic, Parametric):
     """Array values."""
 
-    value_type: T
+    value_type: ibis.expr.datatypes.mypy._DataType
     """Element type of the array."""
     length: Optional[Annotated[int, Between(lower=0)]] = None
     """The length of the array if known."""
@@ -1001,9 +1010,9 @@ V = TypeVar("V", bound=DataType, covariant=True)
 class Map(Variadic, Parametric, Generic[K, V]):
     """Associative array values."""
 
-    key_type: K
+    key_type: ibis.expr.datatypes.mypy._DataType
     """Map key type."""
-    value_type: V
+    value_type: ibis.expr.datatypes.mypy._DataType
     """Map value type."""
 
     scalar = "MapScalar"

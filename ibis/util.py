@@ -470,7 +470,7 @@ def normalize_filename(source: str | Path) -> str:
     return source
 
 
-def normalize_filenames(source_list):
+def normalize_filenames(source_list: str | Path | Sequence[str | Path]) -> list[str]:
     # Promote to list
     source_list = promote_list(source_list)
 

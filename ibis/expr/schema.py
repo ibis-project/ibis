@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Union
 
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
-from ibis.common.collections import FrozenOrderedDict, MapSet
+from ibis.common.collections import MapSet
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import InputTypeError, IntegrityError
 from ibis.common.grounds import Concrete
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
     """An ordered mapping of str -> [datatype](./datatypes.qmd), used to hold a [Table](./expression-tables.qmd#ibis.expr.tables.Table)'s schema."""
 
-    fields: FrozenOrderedDict[str, dt.DataType]
+    fields: Mapping[str, dt.DataType]
     """A mapping of [](`str`) to
     [`DataType`](./datatypes.qmd#ibis.expr.datatypes.DataType)
     objects representing the type of each column."""

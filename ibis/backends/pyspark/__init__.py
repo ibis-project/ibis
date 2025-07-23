@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, assert_never, overload
 
 import pyspark
 import pyspark.sql.functions as F
@@ -36,7 +36,7 @@ except ImportError:
     from pyspark.sql.utils import ParseException
 
     # Use a dummy class for when spark connect is not available
-    class SparkConnectGrpcException(Exception):
+    class SparkConnectGrpcException(Exception):  # type: ignore[no-redef]
         pass
 
 
@@ -126,7 +126,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             kwargs["spark.sql.warehouse.dir"] = str(Path(database).absolute())
         kwargs.update(kwarg_overrides)
 
-        conf = SparkConf().setAll(kwargs.items())
+        # TODO remove type ignore once the upstream pr is merged
+        # https://github.com/apache/spark/pull/51100
+        conf = SparkConf().setAll(kwargs.items())  # type: ignore[arg-type]
         builder = SparkSession.builder.config(conf=conf)
         session = builder.getOrCreate()
         return self.connect(session, **kwargs)
@@ -175,7 +177,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             )
         self._mode = mode
 
-        self._session = session
+        self._session: SparkSession = session
 
         # Spark internally stores timestamps as UTC values, and timestamp data
         # that is brought in without a specified time zone is converted as
@@ -289,6 +291,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             try:
                 self.raw_sql(db_sql)
             except ParseException:
+                assert db is not None
                 catalog_api.setCurrentDatabase(db)
             yield
         finally:
@@ -362,7 +365,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         return self._filter_with_like(databases, like)
 
     def list_tables(
-        self, *, like: str | None = None, database: str | None = None
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -418,18 +421,18 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
                 # Builtin functions don't need to be registered
                 continue
             self._session.udf.register(udf_name, spark_udf)
-        for udf in node.find(ops.ElementWiseVectorizedUDF):
-            udf_name = self.compiler.__sql_name__(udf)
-            udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
-            udf_return = PySparkType.from_ibis(udf.return_type)
+        for vudf in node.find(ops.ElementWiseVectorizedUDF):
+            udf_name = self.compiler.__sql_name__(vudf)
+            udf_func = self._wrap_udf_to_return_pandas(vudf.func, vudf.return_type)
+            udf_return = PySparkType.from_ibis(vudf.return_type)
             spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.SCALAR)
             self._session.udf.register(udf_name, spark_udf)
 
-        for udf in node.find(ops.ReductionVectorizedUDF):
-            udf_name = self.compiler.__sql_name__(udf)
-            udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
-            udf_func = udf.func
-            udf_return = PySparkType.from_ibis(udf.return_type)
+        for rudf in node.find(ops.ReductionVectorizedUDF):
+            udf_name = self.compiler.__sql_name__(rudf)
+            udf_func = self._wrap_udf_to_return_pandas(rudf.func, rudf.return_type)
+            udf_func = rudf.func
+            udf_return = PySparkType.from_ibis(rudf.return_type)
             spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.GROUPED_AGG)
             self._session.udf.register(udf_name, spark_udf)
 
@@ -454,14 +457,47 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             session.catalog.dropTempView(name)
 
     @contextlib.contextmanager
-    def _safe_raw_sql(self, query: str) -> Any:
+    def _safe_raw_sql(self, query: str | sg.Expression) -> Any:
         yield self.raw_sql(query)
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
-        with contextlib.suppress(AttributeError):
+        if not isinstance(query, str):
             query = query.sql(dialect=self.dialect)
         return self._session.sql(query, **kwargs)
 
+    @overload
+    def execute(
+        self,
+        expr: ir.Scalar,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> Any: ...
+
+    @overload
+    def execute(
+        self,
+        expr: ir.Column,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.Series: ...
+
+    @overload
+    def execute(
+        self,
+        expr: ir.Table,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame: ...
+    
     def execute(
         self,
         expr: ir.Expr,
@@ -482,6 +518,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         with self._safe_raw_sql(sql) as query:
             df = query.toPandas()  # blocks until finished
             result = PySparkPandasData.convert_table(df, schema)
+        assert isinstance(expr, (ir.Table, ir.Column, ir.Scalar))
         return expr.__pandas_result__(result)
 
     def create_database(
@@ -591,7 +628,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
                     raise com.TableNotFound(table_name) from e
                 raise
 
-        return sch.Schema(struct)
+        return sch.Schema(fields=struct.fields)
 
     def create_table(
         self,
@@ -664,10 +701,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
                     name, format=format, mode=mode, partitionBy=partition_by
                 )
         elif schema is not None:
-            schema = ibis.schema(schema)
-            schema = PySparkSchema.from_ibis(schema)
+            ibis_schema = ibis.schema(schema)
+            spark_schema = PySparkSchema.from_ibis(ibis_schema)
             with self._active_catalog_database(catalog, db):
-                self._session.catalog.createTable(name, schema=schema, format=format)
+                self._session.catalog.createTable(name, schema=spark_schema, format=format)
         else:
             raise com.IbisError("The schema or obj parameter is required")
 
@@ -845,7 +882,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
 
     def read_csv(
         self,
-        paths: str | list[str] | tuple[str],
+        paths: str | Path | Sequence[str | Path],
         /,
         *,
         table_name: str | None = None,
@@ -888,7 +925,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
 
     def read_json(
         self,
-        paths: str | Sequence[str],
+        paths: str | Path | Sequence[str | Path],
         /,
         *,
         table_name: str | None = None,
@@ -1003,15 +1040,48 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         df = self._session.sql(self.compile(expr, params=params, limit=limit))
         df.write.format("parquet").save(os.fspath(path), **kwargs)
 
+    @overload
     def to_pyarrow(
         self,
-        expr: ir.Expr,
+        expr: ir.Scalar,
         /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
-    ) -> pa.Table:
+    ) -> pa.Scalar: ...
+
+    @overload
+    def to_pyarrow(
+        self,
+        expr: ir.Column,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Array | pa.ChunkedArray: ...
+
+    @overload
+    def to_pyarrow(
+        self,
+        expr: ir.Table,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Table: ...
+
+    def to_pyarrow(
+        self,
+        expr: ir.Table | ir.Column | ir.Scalar,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Table | pa.Array | pa.ChunkedArray | pa.Scalar:
         if self.mode == "streaming":
             raise NotImplementedError(
                 "PySpark in streaming mode does not support to_pyarrow"
@@ -1089,10 +1159,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             raise NotImplementedError(
                 "Reading from Kafka in batch mode is not supported"
             )
-        spark_df = self._session.readStream.format("kafka")
+        reader = self._session.readStream.format("kafka")
         for k, v in (options or {}).items():
-            spark_df = spark_df.option(k, v)
-        spark_df = spark_df.load()
+            reader = reader.option(k, v)
+        spark_df = reader.load()
 
         # parse the values of the Kafka messages using the provided schema
         if auto_parse:
@@ -1100,9 +1170,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
                 raise com.IbisError(
                     "When auto_parse is True, a schema must be provided to parse the messages"
                 )
-            schema = PySparkSchema.from_ibis(schema)
+            spark_schema = PySparkSchema.from_ibis(schema)
             spark_df = spark_df.select(
-                F.from_json(F.col("value").cast("string"), schema).alias("parsed_value")
+                F.from_json(F.col("value").cast("string"), spark_schema).alias("parsed_value")
             ).select("parsed_value.*")
 
         if watermark is not None:
@@ -1162,11 +1232,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
                     "value"
                 )
             )
-        sq = df.writeStream.format("kafka")
+        writer = df.writeStream.format("kafka")
         for k, v in (options or {}).items():
-            sq = sq.option(k, v)
-        sq.start()
-        return sq
+            writer = writer.option(k, v)
+        streaming_query = writer.start()
+        return streaming_query
 
     @util.experimental
     def read_csv_dir(
@@ -1256,17 +1326,17 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         """
         path = util.normalize_filename(path)
         if self.mode == "batch":
-            spark_df = self._session.read
+            df_reader = self._session.read
             if schema is not None:
-                spark_df = spark_df.schema(PySparkSchema.from_ibis(schema))
-            spark_df = spark_df.parquet(path, **kwargs)
+                df_reader = df_reader.schema(PySparkSchema.from_ibis(schema))
+            spark_df = df_reader.parquet(path, **kwargs)
             if watermark is not None:
                 raise com.IbisInputError("Watermark is not supported in batch mode")
         elif self.mode == "streaming":
-            spark_df = self._session.readStream
+            ds_reader = self._session.readStream
             if schema is not None:
-                spark_df = spark_df.schema(PySparkSchema.from_ibis(schema))
-            spark_df = spark_df.parquet(path, **kwargs)
+                ds_reader = ds_reader.schema(PySparkSchema.from_ibis(schema))
+            spark_df = ds_reader.parquet(path, **kwargs)
             if watermark is not None:
                 spark_df = spark_df.withWatermark(
                     watermark.time_col,
@@ -1335,17 +1405,20 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
     ) -> StreamingQuery | None:
         df = self._session.sql(self.compile(expr, params=params, limit=limit))
         if self.mode == "batch":
-            df = df.write.format(format)
+            df_writer = df.write.format(format)
             for k, v in (options or {}).items():
-                df = df.option(k, v)
-            df.save(os.fspath(path))
+                df_writer = df_writer.option(k, v)
+            df_writer.save(os.fspath(path))
             return None
-        sq = df.writeStream.format(format)
-        sq = sq.option("path", os.fspath(path))
-        for k, v in (options or {}).items():
-            sq = sq.option(k, v)
-        sq.start()
-        return sq
+        elif self.mode == "streaming":
+            ds_writer = df.writeStream.format(format)
+            ds_writer = ds_writer.option("path", os.fspath(path))
+            for k, v in (options or {}).items():
+                ds_writer = ds_writer.option(k, v)
+            streaming_query = ds_writer.start()
+            return streaming_query
+        else:
+            assert_never(self.mode)
 
     @util.experimental
     def to_parquet_dir(

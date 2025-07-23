@@ -6,7 +6,7 @@ import itertools
 from abc import abstractmethod
 from collections import deque
 from collections.abc import Iterable, Iterator, KeysView, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union, overload
 
 from ibis.common.bases import Hashable
 from ibis.common.patterns import NoMatch, Pattern
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     N = TypeVar("N")
-
+    T = TypeVar('T', bound=type)
 
 Finder = Callable[["Node"], bool]
 FinderLike = Union[Finder, Pattern, _ClassInfo]
@@ -371,6 +371,17 @@ class Node(Hashable):
             results[node] = fn(node, *args)
 
         return results
+
+    @overload
+    def find(self, finder: T) -> list[T]: ...
+    @overload
+    def find(
+        self,
+        finder: Union[Finder, Pattern],
+        filter: Optional[FinderLike] = None,
+        context: Optional[dict] = None,
+        ordered: bool = False,
+    ) -> list[Node]: ...
 
     # TODO(kszucs): perhaps rename it to find_all() for better clarity
     def find(
