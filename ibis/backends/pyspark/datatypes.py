@@ -1,5 +1,11 @@
 from __future__ import annotations
+from ibis.common.collections import FrozenOrderedDict
+from ibis.common.temporal import IntervalUnit
+import ibis.expr.datatypes.mypy
+from collections.abc import Mapping
+from typing import TypeAlias, TypeGuard, overload, Union, get_args, Literal
 
+from ibis.expr.datatypes.core import DataType
 import pyspark
 import pyspark.sql.types as pt
 from packaging.version import parse as vparse
@@ -9,10 +15,36 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats import SchemaMapper, TypeMapper
 
+
 # DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
 # PySpark until version 3.3
 PYSPARK_33 = vparse(pyspark.__version__) >= vparse("3.3")
 PYSPARK_35 = vparse(pyspark.__version__) >= vparse("3.5")
+
+SparkDataType: TypeAlias = Union[
+    pt.ArrayType,
+    pt.BinaryType,
+    pt.BooleanType,
+    pt.ByteType,
+    pt.DateType,
+    pt.DayTimeIntervalType,
+    pt.DecimalType,
+    pt.DoubleType,
+    pt.FloatType,
+    pt.IntegerType,
+    pt.LongType,
+    pt.MapType,
+    pt.NullType,
+    pt.ShortType,
+    pt.StringType,
+    pt.StructType,
+    pt.TimestampNTZType,
+    pt.TimestampType,
+    pt.UserDefinedType,
+]
+
+def is_supported_spark_type(ty: pt.DataType) -> TypeGuard[SparkDataType]:
+    return isinstance(ty, get_args(SparkDataType))
 
 
 _from_pyspark_dtypes = {
@@ -36,45 +68,117 @@ _to_pyspark_dtypes[dt.UUID] = pt.StringType
 
 
 if PYSPARK_33:
-    _pyspark_interval_units = {
-        pt.DayTimeIntervalType.SECOND: "s",
-        pt.DayTimeIntervalType.MINUTE: "m",
-        pt.DayTimeIntervalType.HOUR: "h",
-        pt.DayTimeIntervalType.DAY: "D",
+    _pyspark_interval_units : dict[int, IntervalUnit] = {
+        pt.DayTimeIntervalType.SECOND: IntervalUnit.SECOND,
+        pt.DayTimeIntervalType.MINUTE: IntervalUnit.MINUTE,
+        pt.DayTimeIntervalType.HOUR: IntervalUnit.HOUR,
+        pt.DayTimeIntervalType.DAY: IntervalUnit.DAY,
     }
 
 
 class PySparkType(TypeMapper):
     @classmethod
-    def to_ibis(cls, typ, nullable=True):
+    @overload
+    def to_ibis(cls, typ: pt.BinaryType, nullable: bool = True) -> dt.Binary: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.BooleanType, nullable: bool = True) -> dt.Boolean: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.ByteType, nullable: bool = True) -> dt.Int8: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.DateType, nullable: bool = True) -> dt.Date: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.DoubleType, nullable: bool = True) -> dt.Float64: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.FloatType, nullable: bool = True) -> dt.Float32: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.IntegerType, nullable: bool = True) -> dt.Int32: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.LongType, nullable: bool = True) -> dt.Int64: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.NullType, nullable: bool = True) -> dt.Null: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.ShortType, nullable: bool = True) -> dt.Int16: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.StringType, nullable: bool = True) -> dt.String: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.TimestampType, nullable: bool = True) -> dt.Timestamp: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.DecimalType, nullable: bool = True) -> dt.Decimal: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.ArrayType, nullable: bool = True) -> dt.Array: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.MapType, nullable: bool = True) -> dt.Map: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.StructType, nullable: bool = True) -> dt.Struct: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.DayTimeIntervalType, nullable: bool = True) -> dt.Interval: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.TimestampNTZType, nullable: bool = True) -> dt.Timestamp: ...
+    @classmethod
+    @overload
+    def to_ibis(cls, typ: pt.UserDefinedType, nullable: bool = True) -> dt.Timestamp: ...
+
+    @classmethod
+    def to_ibis(cls, typ: SparkDataType, nullable=True) -> ibis.expr.datatypes.mypy._DataType:
         """Convert a pyspark type to an ibis type."""
         if isinstance(typ, pt.DecimalType):
             return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
         elif isinstance(typ, pt.ArrayType):
-            return dt.Array(cls.to_ibis(typ.elementType), nullable=nullable)
+            if not is_supported_spark_type(typ.elementType):
+                raise NotImplementedError(typ.elementType)
+            return dt.Array(value_type=cls.to_ibis(typ.elementType), nullable=nullable)
         elif isinstance(typ, pt.MapType):
+            if not is_supported_spark_type(typ.keyType):
+                raise NotImplementedError(typ.keyType)
+            if not is_supported_spark_type(typ.valueType):
+                raise NotImplementedError(typ.valueType)
             return dt.Map(
-                cls.to_ibis(typ.keyType),
-                cls.to_ibis(typ.valueType),
+                key_type=cls.to_ibis(typ.keyType),
+                value_type=cls.to_ibis(typ.valueType),
                 nullable=nullable,
             )
         elif isinstance(typ, pt.StructType):
-            fields = {f.name: cls.to_ibis(f.dataType) for f in typ.fields}
+            fields: dict[str, ibis.expr.datatypes.mypy._DataType] = {}
+            for f in typ.fields:
+                if not is_supported_spark_type(f.dataType):
+                    raise NotImplementedError(f.dataType)
 
-            return dt.Struct(fields, nullable=nullable)
+                fields[f.name] = cls.to_ibis(f.dataType)
+
+            return dt.Struct(fields=fields, nullable=nullable)
         elif PYSPARK_33 and isinstance(typ, pt.DayTimeIntervalType):
             if (
                 typ.startField == typ.endField
                 and typ.startField in _pyspark_interval_units
             ):
                 unit = _pyspark_interval_units[typ.startField]
-                return dt.Interval(unit, nullable=nullable)
+                return dt.Interval(unit=unit, nullable=nullable)
             else:
                 raise com.IbisTypeError(f"{typ!r} couldn't be converted to Interval")
         elif PYSPARK_35 and isinstance(typ, pt.TimestampNTZType):
             return dt.Timestamp(nullable=nullable)
         elif isinstance(typ, pt.UserDefinedType):
-            return cls.to_ibis(typ.sqlType(), nullable=nullable)
+            sql_type = typ.sqlType()
+            if not is_supported_spark_type(sql_type):
+                raise NotImplementedError(sql_type)
+            return cls.to_ibis(sql_type, nullable=nullable)
         else:
             try:
                 return _from_pyspark_dtypes[type(typ)](nullable=nullable)
@@ -111,9 +215,9 @@ class PySparkType(TypeMapper):
                 )
 
 
-class PySparkSchema(SchemaMapper):
+class PySparkSchema(SchemaMapper[pt.StructType]):
     @classmethod
-    def from_ibis(cls, schema):
+    def from_ibis(cls, schema: sch.Schema) -> pt.StructType:
         fields = [
             pt.StructField(name, PySparkType.from_ibis(dtype), dtype.nullable)
             for name, dtype in schema.items()
@@ -121,5 +225,6 @@ class PySparkSchema(SchemaMapper):
         return pt.StructType(fields)
 
     @classmethod
-    def to_ibis(cls, schema):
-        return sch.Schema({name: PySparkType.to_ibis(typ) for name, typ in schema})
+    def to_ibis(cls, schema: pt.StructType) -> sch.Schema:
+        struct = PySparkType.to_ibis(schema)
+        return sch.Schema(FrozenOrderedDict(struct.fields))
