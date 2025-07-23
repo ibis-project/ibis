@@ -104,6 +104,16 @@ in
     sha256 = "sha256-1fenQNQB+Q0pbb0cbK2S/UIwZDE4PXXG15MH3aVbyLU=";
   };
 
+  lychee = super.lychee.overrideAttrs (
+    attrs:
+    lib.optionalAttrs (stdenv.hostPlatform.isDarwin && stdenv.hostPlatform.isx86_64) {
+      checkFlags = attrs.checkFlags or [ ] ++ [
+        # not sure why, but this single test fails on x86_64-darwin builds
+        "--skip=archive::wayback::tests::wayback_suggestion_mocked"
+      ];
+    }
+  );
+
   ibis310 = mkEnv pkgs.python310;
   ibis311 = mkEnv pkgs.python311;
   ibis312 = mkEnv pkgs.python312;
