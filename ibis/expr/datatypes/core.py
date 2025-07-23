@@ -159,12 +159,6 @@ def from_polars(value, nullable=True):
 del dtype.register
 
 
-
-# DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
-# PySpark until version 3.3
-PYSPARK_33 = vparse(pyspark.__version__) >= vparse("3.3")
-PYSPARK_35 = vparse(pyspark.__version__) >= vparse("3.5")
-
 @public
 class DataType(Concrete, Coercible):
     """Base class for all data types.
