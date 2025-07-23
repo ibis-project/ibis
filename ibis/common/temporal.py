@@ -224,6 +224,16 @@ def normalize_timezone(tz):
 
 @lazy_singledispatch
 def normalize_datetime(value):
+    # Try the import here to avoid importing pyarrow at ibis import time and
+    # accidentally creating hard dependencies.
+    try:
+        import pyarrow as pa
+
+        if isinstance(value, pa.Scalar):
+            return value.as_py()
+    except ImportError:
+        pass
+
     raise TypeError(f"Unable to normalize {type(value)} to timestamp")
 
 

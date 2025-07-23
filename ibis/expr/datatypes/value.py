@@ -32,6 +32,19 @@ from ibis.expr.datatypes.cast import highest_precedence
 @lazy_singledispatch
 def infer(value: Any) -> dt.DataType:
     """Infer the corresponding ibis dtype for a python object."""
+
+    # Try the import here to avoid importing pyarrow at ibis import time and
+    # accidentally creating hard dependencies.
+    try:
+        import pyarrow as pa
+
+        import ibis.formats.pyarrow
+
+        if isinstance(value, pa.Scalar):
+            return ibis.formats.pyarrow.PyArrowType.to_ibis(value.type)
+    except ImportError:
+        pass
+
     raise InputTypeError(
         f"Unable to infer datatype of value {value!r} with type {type(value)}"
     )
@@ -256,6 +269,16 @@ del infer.register
 # TODO(kszucs): should raise ValueError instead of TypeError
 def normalize(typ, value):
     """Ensure that the Python type underlying a literal resolves to a single type."""
+
+    # Try the import here to avoid importing pyarrow at ibis import time and
+    # accidentally creating hard dependencies.
+    try:
+        import pyarrow as pa
+
+        if isinstance(value, pa.Scalar):
+            value = value.as_py()
+    except ImportError:
+        pass
 
     dtype = dt.dtype(typ)
     if value is None:

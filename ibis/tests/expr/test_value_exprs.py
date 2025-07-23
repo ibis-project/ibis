@@ -65,6 +65,46 @@ def test_literal_with_implicit_type(value, expected_type):
     assert expr.op().value == dt.normalize(expr.type(), value)
 
 
+def test_literal_with_pyarrow_scalars():
+    pa = pytest.importorskip("pyarrow")
+
+    pyarrow_literals = [
+        (pa.scalar(True, pa.bool_()), "bool"),
+        (
+            pa.scalar(1_752_000_000_000_000, pa.timestamp("us", tz="UTC")),
+            dt.Timestamp(scale=6, timezone="UTC"),
+        ),
+        # Even though the size could be smaller, the user explicitly is using a larger type.
+        (pa.scalar(-5, pa.int64()), "int64"),
+        (pa.scalar(5, pa.uint64()), "uint64"),
+        # Typed NULL values from PyArrow should be able to infer the type.
+        (pa.scalar(None, pa.null()), "null"),
+        (pa.scalar(None, pa.bool_()), "bool"),
+        (pa.scalar(None, pa.int8()), "int8"),
+        (pa.scalar(None, pa.int64()), "int64"),
+        (pa.scalar(None, pa.uint8()), "uint8"),
+        (pa.scalar(None, pa.uint64()), "uint64"),
+        (pa.scalar(None, pa.binary()), "bytes"),
+        (pa.scalar(None, pa.string()), "string"),
+        (
+            pa.scalar(None, pa.timestamp("us", tz="UTC")),
+            dt.Timestamp(scale=6, timezone="UTC"),
+        ),
+    ]
+
+    for value, expected_type in pyarrow_literals:
+        expr = ibis.literal(value)
+
+        assert isinstance(expr, ir.Scalar)
+        assert expr.type() == dt.dtype(expected_type)
+
+        assert isinstance(expr.op(), ops.Literal)
+        assert expr.op().value == dt.normalize(expr.type(), value)
+
+        expr = ibis.literal(value, type=expected_type)
+        assert expr.type().equals(dt.validate_type(expected_type))
+
+
 @pytest.mark.parametrize(
     ["value", "expected_type", "expected_value"],
     [
