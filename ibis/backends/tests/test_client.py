@@ -38,7 +38,6 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     SnowflakeProgrammingError,
 )
-from ibis.conftest import IS_SPARK_REMOTE
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -1755,12 +1754,6 @@ def test_insert_into_table_missing_columns(con, temp_table):
 )
 @pytest.mark.notyet(
     ["bigquery"], raises=AssertionError, reason="test is flaky", strict=False
-)
-@pytest.mark.notyet(
-    ["pyspark"],
-    condition=IS_SPARK_REMOTE,
-    raises=AssertionError,
-    reason="likely deadlock when using spark connect",
 )
 def test_memtable_cleanup(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": list("def")})
