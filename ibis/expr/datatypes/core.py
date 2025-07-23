@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ibis.expr.datatypes.mypy
 import datetime as pydatetime
 import decimal as pydecimal
 import numbers
@@ -40,6 +39,26 @@ if TYPE_CHECKING:
     import pyarrow as pa
     from pandas.api.extensions import ExtensionDtype
 
+# Makes it possible to do exhaustive checks via mypy
+_DataType: TypeAlias = Union[
+    'Array',
+    'Binary',
+    'Boolean',
+    'Date',
+    'Decimal',
+    'Float32',
+    'Float64',
+    'Int16',
+    'Int32',
+    'Int64',
+    'Int8',
+    'Interval',
+    'Map',
+    'Null',
+    'String',
+    'Struct',
+    'Timestamp',
+]
 
 @overload
 def dtype(value: type[int] | Literal["int"], nullable: bool = True) -> Int64: ...
@@ -980,7 +999,7 @@ T = TypeVar("T", bound=DataType, covariant=True)
 class Array(Variadic, Parametric):
     """Array values."""
 
-    value_type: ibis.expr.datatypes.mypy._DataType
+    value_type: _DataType
     """Element type of the array."""
     length: Optional[Annotated[int, Between(lower=0)]] = None
     """The length of the array if known."""
@@ -1004,9 +1023,9 @@ V = TypeVar("V", bound=DataType, covariant=True)
 class Map(Variadic, Parametric, Generic[K, V]):
     """Associative array values."""
 
-    key_type: ibis.expr.datatypes.mypy._DataType
+    key_type: _DataType
     """Map key type."""
-    value_type: ibis.expr.datatypes.mypy._DataType
+    value_type: _DataType
     """Map value type."""
 
     scalar = "MapScalar"
@@ -1129,6 +1148,7 @@ class INET(DataType):
 
     scalar = "INETScalar"
     column = "INETColumn"
+
 
 
 # ---------------------------------------------------------------------

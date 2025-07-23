@@ -1,11 +1,10 @@
 from __future__ import annotations
 from ibis.common.collections import FrozenOrderedDict
 from ibis.common.temporal import IntervalUnit
-import ibis.expr.datatypes.mypy
 from collections.abc import Mapping
 from typing import TypeAlias, TypeGuard, overload, Union, get_args, Literal
 
-from ibis.expr.datatypes.core import DataType
+from ibis.expr.datatypes.core import _DataType
 import pyspark
 import pyspark.sql.types as pt
 from packaging.version import parse as vparse
@@ -136,7 +135,7 @@ class PySparkType(TypeMapper):
     def to_ibis(cls, typ: pt.UserDefinedType, nullable: bool = True) -> dt.Timestamp: ...
 
     @classmethod
-    def to_ibis(cls, typ: SparkDataType, nullable=True) -> ibis.expr.datatypes.mypy._DataType:
+    def to_ibis(cls, typ: SparkDataType, nullable=True) -> _DataType:
         """Convert a pyspark type to an ibis type."""
         if isinstance(typ, pt.DecimalType):
             return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
@@ -155,7 +154,7 @@ class PySparkType(TypeMapper):
                 nullable=nullable,
             )
         elif isinstance(typ, pt.StructType):
-            fields: dict[str, ibis.expr.datatypes.mypy._DataType] = {}
+            fields: dict[str, _DataType] = {}
             for f in typ.fields:
                 if not is_supported_spark_type(f.dataType):
                     raise NotImplementedError(f.dataType)
