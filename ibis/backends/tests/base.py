@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
+from _pytest.tmpdir import TempPathFactory
 from filelock import FileLock
 
 if TYPE_CHECKING:
@@ -157,7 +158,7 @@ class BackendTest(abc.ABC):
 
     @classmethod
     def load_data(
-        cls, data_dir: Path, tmpdir: Path, worker_id: str, **kw: Any
+        cls, data_dir: Path, tmpdir: TempPathFactory, worker_id: str, **kw: Any
     ) -> BackendTest:
         """Load testdata from `data_dir`."""
         # handling for multi-processes pytest
