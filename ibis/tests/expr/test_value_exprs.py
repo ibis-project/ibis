@@ -154,8 +154,8 @@ def test_literal_with_explicit_geotype(value, expected_type):
         (Decimal("234.234"), Decimal("234.234"), "decimal(6, 3)"),
         (234234, Decimal("234234.000"), "decimal(9, 3)"),
         # scale == 0
-        (Decimal("234"), Decimal("234"), "decimal(6, 0)"),
-        (234, Decimal("234"), "decimal(6, 0)"),
+        (Decimal(234), Decimal(234), "decimal(6, 0)"),
+        (234, Decimal(234), "decimal(6, 0)"),
         # precision == scale
         (Decimal(".234"), Decimal(".234"), "decimal(3, 3)"),
         (234, Decimal("234.000"), "decimal(6, 3)"),

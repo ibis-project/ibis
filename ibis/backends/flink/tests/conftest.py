@@ -194,8 +194,7 @@ def functional_alltypes_no_header(tmpdir_factory, data_dir):
         open(str(file), mode="w") as writer,
     ):
         reader.readline()  # read the first line and discard it
-        for line in reader:
-            writer.write(line)
+        writer.writelines(reader)
     return file
 
 

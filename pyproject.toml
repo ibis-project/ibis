@@ -539,6 +539,7 @@ select = [
   "TC",
   "NPY",
   "PERF",
+  "FURB",
 ]
 ignore = [
   "B028",    # required stacklevel argument to warn
