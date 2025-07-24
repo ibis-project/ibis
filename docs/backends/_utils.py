@@ -43,7 +43,7 @@ def find_member_with_docstring(member):
     for base in resolved_bases:
         try:
             parent_member = get_callable(base, member.name)
-        except KeyError:
+        except KeyError:  # noqa: PERF203
             continue
         else:
             if parent_member.docstring is not None:

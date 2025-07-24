@@ -566,7 +566,7 @@ if __name__ == "__main__":
         x = 3
         values = []
         for i in range(10):
-            values.append(i)
+            values.append(i)  # noqa: PERF402
 
         i = 0
         foo = 2

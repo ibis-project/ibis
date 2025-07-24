@@ -96,9 +96,7 @@ def make_large_expr(base):
         valid_seconds=ibis.literal(300),
     )
 
-    aggs = []
-    for meas in ["meas1", "meas2"]:
-        aggs.append(src_table[meas].sum().cast("float").name(meas))
+    aggs = [src_table[f"meas{i}"].sum().cast("float").name(f"meas{i}") for i in (1, 2)]
     src_table = src_table.aggregate(
         aggs, by=["_timestamp", "dim1", "dim2", "valid_seconds"]
     )
