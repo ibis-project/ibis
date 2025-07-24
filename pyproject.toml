@@ -260,7 +260,6 @@ dev = [
   "ipython>=8.7.0,<10",
   "pre-commit>=4,<5",
   "pyinstrument>=4.5.1,<6",
-  "ruff>=0.1.8",
   "tqdm>=4.66.1,<5",
   "dunamai>=1.22.0",
   "aws-sso-util>=4.33,<5",
@@ -537,6 +536,8 @@ select = [
   "YTT", # flake8-2020
   "S",   # flake8-bandit
   "ARG",
+  "TC",
+  "NPY",
 ]
 ignore = [
   "B028",    # required stacklevel argument to warn
