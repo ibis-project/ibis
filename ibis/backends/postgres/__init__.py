@@ -91,7 +91,7 @@ class Backend(
             kind="TABLE",
             this=sg.exp.Schema(
                 this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot(self.dialect),
+                expressions=schema.to_sqlglot_column_defs(self.dialect),
             ),
             properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
         )
@@ -631,7 +631,9 @@ ORDER BY a.attnum ASC"""
         dialect = self.dialect
 
         table_expr = sg.table(temp_name, db=database, quoted=quoted)
-        target = sge.Schema(this=table_expr, expressions=schema.to_sqlglot(dialect))
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot_column_defs(dialect)
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",

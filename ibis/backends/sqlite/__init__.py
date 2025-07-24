@@ -334,7 +334,9 @@ class Backend(
         return table.to_reader(max_chunksize=chunk_size)
 
     def _generate_create_table(self, table: sge.Table, schema: sch.Schema):
-        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
+        target = sge.Schema(
+            this=table, expressions=schema.to_sqlglot_column_defs(self.dialect)
+        )
 
         return sge.Create(kind="TABLE", this=target)
 

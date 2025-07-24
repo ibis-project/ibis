@@ -688,7 +688,7 @@ GO"""
             this=sg.table(
                 "#" * bool(temp) + temp_name, catalog=catalog, db=db, quoted=quoted
             ),
-            expressions=schema.to_sqlglot(self.dialect),
+            expressions=schema.to_sqlglot_column_defs(self.dialect),
         )
 
         create_stmt = sge.Create(
@@ -755,7 +755,7 @@ GO"""
             kind="TABLE",
             this=sg.exp.Schema(
                 this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot(self.dialect),
+                expressions=schema.to_sqlglot_column_defs(self.dialect),
             ),
         )
 

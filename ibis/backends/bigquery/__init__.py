@@ -1195,7 +1195,9 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
             kind="TABLE",
             this=sge.Schema(
                 this=table,
-                expressions=schema.to_sqlglot(self.dialect) if schema else None,
+                expressions=schema.to_sqlglot_column_defs(self.dialect)
+                if schema
+                else None,
             ),
             replace=overwrite,
             properties=sge.Properties(expressions=properties),
