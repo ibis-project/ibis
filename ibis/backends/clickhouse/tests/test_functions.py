@@ -327,8 +327,8 @@ def test_translate_math_functions(con, alltypes, call, assert_sql):
         pytest.param(L(-5.556).sign(), -1, id="sign_neg"),
         pytest.param(L(0).sign(), 0, id="sign_zero"),
         pytest.param(L(5.556).sqrt(), math.sqrt(5.556), id="sqrt"),
-        pytest.param(L(5.556).log(2), math.log(5.556, 2), id="log2_arg"),
-        pytest.param(L(5.556).log2(), math.log(5.556, 2), id="log2"),
+        pytest.param(L(5.556).log(2), math.log2(5.556), id="log2_arg"),
+        pytest.param(L(5.556).log2(), math.log2(5.556), id="log2"),
         pytest.param(L(5.556).log10(), math.log10(5.556), id="log10"),
         # clickhouse has different functions for exp/ln that are faster
         # than the defaults, but less precise

@@ -260,7 +260,6 @@ dev = [
   "ipython>=8.7.0,<10",
   "pre-commit>=4,<5",
   "pyinstrument>=4.5.1,<6",
-  "ruff>=0.1.8",
   "tqdm>=4.66.1,<5",
   "dunamai>=1.22.0",
   "aws-sso-util>=4.33,<5",
@@ -508,35 +507,39 @@ exclude = [".direnv", "result-*", "*_py310.py", "decompiled.py", "out_tpch.py"]
 
 [tool.ruff.lint]
 select = [
-  "B",   # flake8-bugbear
-  "BLE", # flake8-blind-except
-  "C4",  # comprehensions
-  "D",   # pydocstyle
-  "E",   # pycodestyle
-  "EXE", # flake8-executable
-  "F",   # pyflakes
-  "FA",  # flake8-future-annotations
-  "G",   # flake8-logging-format
-  "FLY", # flynt (format string conversion)
-  "I",   # isort
-  "ICN", # flake8-import-conventions
-  "INP", # flake8-no-pep420 (implicit namespace packages)
-  "ISC", # flake8-implicit-str-concat
-  "PGH", # pygrep-hooks
-  "PIE", # flake8-pie
-  "PL",  # pylint
-  "RET", # flake8-return
-  "RUF", # ruff-specific rules
-  "SIM", # flake8-simplify
-  "T10", # flake8-debugger
-  "T20", # flake8-print
-  "TCH", # flake8-type-checking
-  "TID", # flake8-tidy-imports
-  "UP",  # pyupgrade
-  "W",   # pycodestyle
-  "YTT", # flake8-2020
-  "S",   # flake8-bandit
+  "B",    # flake8-bugbear
+  "BLE",  # flake8-blind-except
+  "C4",   # comprehensions
+  "D",    # pydocstyle
+  "E",    # pycodestyle
+  "EXE",  # flake8-executable
+  "F",    # pyflakes
+  "FA",   # flake8-future-annotations
+  "G",    # flake8-logging-format
+  "FLY",  # flynt (format string conversion)
+  "I",    # isort
+  "ICN",  # flake8-import-conventions
+  "INP",  # flake8-no-pep420 (implicit namespace packages)
+  "ISC",  # flake8-implicit-str-concat
+  "PGH",  # pygrep-hooks
+  "PIE",  # flake8-pie
+  "PL",   # pylint
+  "RET",  # flake8-return
+  "RUF",  # ruff-specific rules
+  "SIM",  # flake8-simplify
+  "T10",  # flake8-debugger
+  "T20",  # flake8-print
+  "TCH",  # flake8-type-checking
+  "TID",  # flake8-tidy-imports
+  "UP",   # pyupgrade
+  "W",    # pycodestyle
+  "YTT",  # flake8-2020
+  "S",    # flake8-bandit
   "ARG",
+  "TC",
+  "NPY",
+  "PERF",
+  "FURB",
 ]
 ignore = [
   "B028",    # required stacklevel argument to warn

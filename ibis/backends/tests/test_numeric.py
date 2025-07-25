@@ -272,15 +272,15 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "snowflake": decimal.Decimal("1.1"),
                 "sqlite": decimal.Decimal("1.1"),
                 "trino": decimal.Decimal("1.1"),
-                "athena": decimal.Decimal("1"),
-                "exasol": decimal.Decimal("1"),
+                "athena": decimal.Decimal(1),
+                "exasol": decimal.Decimal(1),
                 "duckdb": decimal.Decimal("1.1"),
-                "impala": decimal.Decimal("1"),
+                "impala": decimal.Decimal(1),
                 "postgres": decimal.Decimal("1.1"),
                 "risingwave": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
-                "mysql": decimal.Decimal("1"),
-                "mssql": decimal.Decimal("1"),
+                "mysql": decimal.Decimal(1),
+                "mssql": decimal.Decimal(1),
                 "druid": decimal.Decimal("1.1"),
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": decimal.Decimal("1.1"),
@@ -758,7 +758,7 @@ def test_isnan_isinf(
         param(L(5.556).sqrt(), math.sqrt(5.556), id="sqrt"),
         param(
             L(5.556).log(2),
-            math.log(5.556, 2),
+            math.log2(5.556),
             id="log-base",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -777,7 +777,7 @@ def test_isnan_isinf(
         param(L(5.556).ln(), math.log(5.556), id="ln"),
         param(
             L(5.556).log2(),
-            math.log(5.556, 2),
+            math.log2(5.556),
             id="log2",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),

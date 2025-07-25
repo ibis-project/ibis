@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import random
 import subprocess
 import sys
 from datetime import datetime
@@ -429,8 +430,8 @@ def test_pyarrow_batches_chunk_size(con):  # 10443
     t = ibis.memtable(
         {
             "id": np.arange(10_000),
-            "name": np.random.choice(["Alice", "Bob", "Carol", "Dave"], size=10_000),
-            "age": np.random.randint(20, 70, size=10_000),
+            "name": random.choices(["Alice", "Bob", "Carol", "Dave"], k=10_000),  # noqa: S311
+            "age": random.choices(range(20, 71), k=10_000),  # noqa: S311
         }
     )
     batches = con.to_pyarrow_batches(t, chunk_size=4096)

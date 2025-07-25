@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from functools import reduce
 from itertools import chain
 from pathlib import Path
+from random import random
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -136,8 +137,8 @@ class BaseSparkTestConf(abc.ABC):
         s.createDataFrame(
             pd.DataFrame(
                 {
-                    "a": np.arange(4.0).tolist() + np.random.rand(3).tolist(),
-                    "b": np.arange(4.0).tolist() + np.random.rand(3).tolist(),
+                    "a": list(map(float, range(4))) + [random() for _ in range(3)],  # noqa: S311
+                    "b": list(map(float, range(4))) + [random() for _ in range(3)],  # noqa: S311
                     "key": list("ddeefff"),
                 }
             )

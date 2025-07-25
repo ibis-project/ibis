@@ -46,8 +46,7 @@ class Unit(Coercible, Enum, metaclass=AbstractEnumMeta):
             pass
 
         # then look for the enum name (unit name)
-        if value.endswith("s"):
-            value = value[:-1]
+        value = value.removesuffix("s")
         try:
             return cls[value.upper()]
         except KeyError:

@@ -381,12 +381,11 @@ def to_rich_table(
     # for now we manually compute all column widths rather than letting rich
     # figure it out for us.
     columns_truncated = orig_ncols > len(col_info)
-    col_widths = {}
     if console_width == float("inf"):
         # Always use the max_width if there's infinite console space
-        for name, _, _, max_width in col_info:
-            col_widths[name] = max_width
+        col_widths = {name: max_width for name, _, _, max_width in col_info}
     else:
+        col_widths = {}
         # Allocate the remaining space evenly between the flexible columns
         flex_cols = []
         remaining = console_width - 1
