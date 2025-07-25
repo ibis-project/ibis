@@ -134,6 +134,31 @@ jobs:
       - name: check shapely and duckdb imports
         run: uv run --extra duckdb --extra geospatial python -c 'import shapely.geometry, duckdb'
 
+  test_scrapy_import:
+    name: Test import with twisted
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install python
+        uses: actions/setup-python@v5
+        id: install_python
+        with:
+          python-version: "3.13"
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v6.4.3
+
+      - name: check scrapy import
+        run: uv run --with scrapy python -c 'import scrapy; import ibis'
+
+      - name: remove virtual env
+        run: rm -rf .venv
+
+      - name: check twisted import
+        run: uv run --with scrapy python -c 'import twisted.internet.ssl; import ibis'
+
   test_doctests:
     name: Doctests
     runs-on: ubuntu-latest
