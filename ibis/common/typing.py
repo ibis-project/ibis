@@ -67,7 +67,16 @@ def get_type_hints(
 
     if include_properties:
         for name in dir(obj):
-            attr = getattr(obj, name)
+            # https://docs.python.org/3/library/functions.html#dir
+            # it's entirely possible for attributes to come out of `dir(obj)`
+            # that don't exist on the `obj`
+            #
+            # dir is designed to inform interactive use, not to consistently or
+            # rigorously defined
+            #
+            # https://github.com/great-expectations/great_expectations/issues/9698#issuecomment-2051252373
+            # is another in-the-wild example of this
+            attr = getattr(obj, name, None)
             if isinstance(attr, property):
                 annots = _get_type_hints(attr.fget, include_extras=include_extras)
                 if return_annot := annots.get("return"):
