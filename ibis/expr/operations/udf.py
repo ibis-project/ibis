@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import types
 import abc
 import collections
 import enum
@@ -9,8 +10,18 @@ import functools
 import inspect
 import itertools
 import typing
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Generic,
+    Optional,
+    TypeVar,
+    overload,
+)
 
+from ibis.expr.datatypes.core import DataType
 from public import public
 
 import ibis.common.exceptions as exc
@@ -52,6 +63,12 @@ class InputType(enum.Enum):
 
 @public
 class ScalarUDF(ops.Impure):
+    __input_type__: ClassVar[InputType]
+    __func__: ClassVar[Callable]
+    __config__: ClassVar[FrozenDict]
+    __udf_namespace__: ClassVar[ops.Namespace]
+    __func_name__: ClassVar[str]
+
     @attribute
     def shape(self):
         if not (args := getattr(self, "args")):  # noqa: B009
@@ -89,13 +106,13 @@ S = TypeVar("S", bound=ops.Value)
 B = TypeVar("B", bound=ops.Value)
 
 
-class _UDF(abc.ABC):
+class _UDF(Generic[B, S], abc.ABC):
     __slots__ = ()
 
-    @property
+    @classmethod
     @abc.abstractmethod
-    def _base(self) -> type[B]:
-        """Base class of the UDF."""
+    def _base(cls) -> type[B]:
+        raise NotImplementedError
 
     @classmethod
     def _make_node(
@@ -152,7 +169,7 @@ class _UDF(abc.ABC):
             }
         )
 
-        return type(_make_udf_name(fn.__name__), (cls._base,), fields)
+        return type(_make_udf_name(fn.__name__), (cls._base(),), fields)
 
     @classmethod
     def _make_wrapper(
@@ -168,7 +185,7 @@ class _UDF(abc.ABC):
 
 
 @public
-class scalar(_UDF):
+class scalar(_UDF[ScalarUDF, S], Generic[S]):
     """Scalar user-defined functions.
 
     ::: {.callout-note}
@@ -176,7 +193,9 @@ class scalar(_UDF):
     :::
     """
 
-    _base = ScalarUDF
+    @classmethod
+    def _base(cls) -> type[ScalarUDF]:
+        return ScalarUDF
 
     @overload
     @classmethod
@@ -678,7 +697,9 @@ class agg(_UDF):
 
     __slots__ = ()
 
-    _base = AggUDF
+    @classmethod
+    def _base(cls) -> type[AggUDF]:
+        return AggUDF
 
     @overload
     @classmethod

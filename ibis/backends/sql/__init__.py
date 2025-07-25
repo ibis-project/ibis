@@ -96,7 +96,7 @@ class SQLBackend(BaseBackend):
         /,
         *,
         limit: str | int | None = None,
-        params: Mapping[ir.Expr, Any] | None = None,
+        params: Mapping[ir.Scalar, Any] | None = None,
         pretty: bool = False,
     ) -> str:
         """Compile an expression to a SQL string.

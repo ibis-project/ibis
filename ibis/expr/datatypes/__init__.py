@@ -15,3 +15,4 @@ str = string  # noqa: F405
 bytes = binary  # noqa: F405
 
 validate_type = dtype  # noqa: F405
+

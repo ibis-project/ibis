@@ -21,7 +21,7 @@ def df(con):
 
 
 @ibis.udf.scalar.builtin
-def repeat(x, n) -> str: ...
+def repeat(x, n) -> str: ...  # type: ignore[empty-body]
 
 
 @ibis.udf.scalar.python

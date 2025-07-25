@@ -15,7 +15,9 @@ from typing import (
     Literal,
     NamedTuple,
     Optional,
+    TypeAlias,
     TypeVar,
+    Union,
     get_type_hints,
     overload,
 )
@@ -37,6 +39,26 @@ if TYPE_CHECKING:
     import pyarrow as pa
     from pandas.api.extensions import ExtensionDtype
 
+# Makes it possible to do exhaustive checks via mypy
+_DataType: TypeAlias = Union[
+    'Array',
+    'Binary',
+    'Boolean',
+    'Date',
+    'Decimal',
+    'Float32',
+    'Float64',
+    'Int16',
+    'Int32',
+    'Int64',
+    'Int8',
+    'Interval',
+    'Map',
+    'Null',
+    'String',
+    'Struct',
+    'Timestamp',
+]
 
 @overload
 def dtype(value: type[int] | Literal["int"], nullable: bool = True) -> Int64: ...
@@ -932,7 +954,7 @@ class Interval(Parametric):
 class Struct(Parametric, MapSet):
     """Structured values."""
 
-    fields: FrozenOrderedDict[str, DataType]
+    fields: Mapping[str, DataType]
 
     scalar = "StructScalar"
     column = "StructColumn"
@@ -990,10 +1012,10 @@ T = TypeVar("T", bound=DataType, covariant=True)
 
 
 @public
-class Array(Variadic, Parametric, Generic[T]):
+class Array(Variadic, Parametric):
     """Array values."""
 
-    value_type: T
+    value_type: _DataType
     """Element type of the array."""
     length: Optional[Annotated[int, Between(lower=0)]] = None
     """The length of the array if known."""
@@ -1017,9 +1039,9 @@ V = TypeVar("V", bound=DataType, covariant=True)
 class Map(Variadic, Parametric, Generic[K, V]):
     """Associative array values."""
 
-    key_type: K
+    key_type: _DataType
     """Map key type."""
-    value_type: V
+    value_type: _DataType
     """Map value type."""
 
     scalar = "MapScalar"
@@ -1142,6 +1164,7 @@ class INET(DataType):
 
     scalar = "INETScalar"
     column = "INETColumn"
+
 
 
 # ---------------------------------------------------------------------

@@ -6,12 +6,13 @@ from datetime import datetime, timedelta, timezone
 from functools import reduce
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 from unittest import mock
 
 import numpy as np
 import pandas as pd
 import pytest
+from _pytest.tmpdir import TempPathFactory
 from filelock import FileLock
 
 import ibis
@@ -24,6 +25,7 @@ from ibis.backends.tests.data import json_types, topk, win
 from ibis.conftest import IS_SPARK_REMOTE, SPARK_REMOTE
 
 if TYPE_CHECKING:
+    from pyspark.sql import DataFrame
     from collections.abc import Iterable
 
 
@@ -31,12 +33,17 @@ def set_pyspark_database(con, database):
     con._session.catalog.setCurrentDatabase(database)
 
 
-class BaseSparkTestConf(abc.ABC):
+class SparkTestConf(Protocol):
     @property
-    @abc.abstractmethod
     def parquet_dir(self) -> str:
         """Directory containing Parquet files."""
+        ...
 
+    @property
+    def connection(self) -> Backend: ...
+
+
+class BaseSparkTestConf(SparkTestConf):
     def _load_data(self, **_: Any) -> None:
         import pyspark.sql.functions as F
         import pyspark.sql.types as pt
@@ -151,15 +158,13 @@ class BaseSparkTestConf(abc.ABC):
             "basic_table"
         )
 
-        df_nulls = s.createDataFrame(
-            [
-                ["k1", np.nan, "Alfred", None],
-                ["k1", 3.0, None, "joker"],
-                ["k2", 27.0, "Batman", "batmobile"],
-                ["k2", None, "Catwoman", "motorcycle"],
-            ],
-            ["key", "age", "user", "toy"],
-        )
+        rows: list[list[Any]] = [
+            ["k1", np.nan, "Alfred", None],
+            ["k1", 3.0, None, "joker"],
+            ["k2", 27.0, "Batman", "batmobile"],
+            ["k2", None, "Catwoman", "motorcycle"],
+        ]
+        df_nulls = s.createDataFrame(rows, ["key", "age", "user", "toy"])
         df_nulls.createTempView("null_table")
 
         df_dates = s.createDataFrame(
@@ -262,12 +267,12 @@ if IS_SPARK_REMOTE:
     def con_streaming(data_dir, tmp_path_factory, worker_id):  # noqa: ARG001
         pytest.skip("Streaming tests are not supported in remote mode")
 
-    def write_to_memory(self, *_):
+    def write_to_memory(self, expr, table_name):
         assert self.mode == "batch"
         raise NotImplementedError
 else:
 
-    class TestConf(BaseSparkTestConf, BackendTest):
+    class TestConf(BaseSparkTestConf, BackendTest):  # type: ignore[no-redef]
         deps = ("pyspark",)
 
         @property
@@ -348,7 +353,7 @@ else:
 
         @classmethod
         def load_data(
-            cls, data_dir: Path, tmpdir: Path, worker_id: str, **kw: Any
+            cls, data_dir: Path, tmpdir: TempPathFactory, worker_id: str, **kw: Any
         ) -> BackendTest:
             """Load testdata from `data_dir`."""
             # handling for multi-processes pytest

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Self
 import abc
 import collections.abc
 import contextlib
@@ -182,13 +183,13 @@ class _FileIOHandler:
     @overload
     def to_pyarrow(
         self,
-        expr: ir.Table,
+        expr: ir.Scalar,
         /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
-    ) -> pa.Table: ...
+    ) -> pa.Scalar: ...
 
     @overload
     def to_pyarrow(
@@ -199,18 +200,18 @@ class _FileIOHandler:
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
-    ) -> pa.Array: ...
+    ) -> pa.Array | pa.ChunckedArray: ...
 
     @overload
     def to_pyarrow(
         self,
-        expr: ir.Scalar,
+        expr: ir.Table,
         /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
-    ) -> pa.Scalar: ...
+    ) -> pa.Table: ...
 
     @util.experimental
     def to_pyarrow(
@@ -1023,7 +1024,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
     # TODO(kszucs): this should be a classmethod returning with a new backend
     # instance which does instantiate the connection
-    def connect(self, *args, **kwargs) -> BaseBackend:
+    def connect(self, *args, **kwargs) -> Self:
         """Connect to the database.
 
         Parameters
