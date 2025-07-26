@@ -477,9 +477,29 @@ def greatest(op, **kw):
 
 @translate.register(ops.InSubquery)
 def in_column(op, **kw):
-    value = translate(op.value, **kw)
+    if op.value.dtype.is_struct():
+        raise com.UnsupportedOperationError(
+            "polars doesn't support contains with struct elements"
+        )
+
     needle = translate(op.needle, **kw)
-    return needle.is_in(value)
+    value = translate(op.value, **kw)
+    (rel,) = op.value.relations
+    # The `collect` triggers computation, but there appears to be no way to
+    # spell this operation in a polars-native way that's
+    #
+    # 1. not deprecated
+    # 2. operates only using pl.Expr objects and methods
+    #
+    # In other words, we need to either rearchitect the polars compiler to
+    # operate only with DataFrames, or compute first. I chose computing first
+    # since it is less effort and we don't know how impactful it is.
+    value = translate(rel, **kw).select(value).collect().to_series()
+
+    return needle.map_batches(
+        lambda needle, value=value: needle.is_in(value),
+        return_dtype=pl.Boolean(),
+    )
 
 
 @translate.register(ops.InValues)
