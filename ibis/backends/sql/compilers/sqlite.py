@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import sqlite3
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -20,8 +19,6 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     dialect = SQLite
     type_mapper = SQLiteType
-    supports_time_shift_modifiers = sqlite3.sqlite_version_info >= (3, 46, 0)
-    supports_subsec = sqlite3.sqlite_version_info >= (3, 42, 0)
 
     # We could set `supports_order_by=True` for SQLite >= 3.44.0 (2023-11-01).
     agg = AggGen(supports_filter=True)
@@ -330,6 +327,11 @@ class SQLiteCompiler(SQLGlotCompiler):
         return self._temporal_truncate(self.f.anon.datetime, arg, unit)
 
     def visit_DateArithmetic(self, op, *, left, right):
+        # pyodide doesn't ship with sqlite3 in the stdlib, which causes import
+        # errors when trying to import it at the top level inside tools like
+        # marimo
+        import sqlite3
+
         right = right.this
 
         if (unit := op.right.dtype.unit) in (
@@ -354,10 +356,13 @@ class SQLiteCompiler(SQLGlotCompiler):
 
         modifiers = []
 
+        supports_time_shift_modifiers = sqlite3.sqlite_version_info >= (3, 46, 0)
+        supports_subsec = sqlite3.sqlite_version_info >= (3, 42, 0)
+
         # floor the result if the unit is a year, month, or day to match other
         # backend behavior
         if unit in (IntervalUnit.YEAR, IntervalUnit.MONTH, IntervalUnit.DAY):
-            if not self.supports_time_shift_modifiers:
+            if not supports_time_shift_modifiers:
                 raise com.UnsupportedOperationError(
                     "SQLite does not support time shift modifiers until version 3.46; "
                     f"found version {sqlite3.sqlite_version}"
@@ -367,7 +372,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         if isinstance(op, (ops.TimestampAdd, ops.TimestampSub)):
             # if the left operand is a timestamp, return as much precision as
             # possible
-            if not self.supports_subsec:
+            if not supports_subsec:
                 raise com.UnsupportedOperationError(
                     "SQLite does not support subsecond resolution until version 3.42; "
                     f"found version {sqlite3.sqlite_version}"

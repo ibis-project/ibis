@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import functools
-import sqlite3
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
@@ -23,6 +22,9 @@ from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all
 
 if TYPE_CHECKING:
+    # pyodide doesn't ship with sqlite3 in the stdlib, which causes import
+    # errors when trying to import it at the top level inside tools like marimo
+    import sqlite3
     from collections.abc import Iterator, Mapping
     from pathlib import Path
 
@@ -33,10 +35,15 @@ if TYPE_CHECKING:
 
 @functools.cache
 def _init_sqlite3():
+    # pyodide doesn't ship with sqlite3 in the stdlib, which causes import
+    # errors when trying to import it at the top level inside tools like marimo
+    import sqlite3
+
     import pandas as pd
 
     # required to support pandas Timestamp's from user input
     sqlite3.register_adapter(pd.Timestamp, pd.Timestamp.isoformat)
+    return sqlite3
 
 
 def _quote(name: str) -> str:
@@ -59,6 +66,11 @@ class Backend(
 
     @property
     def version(self) -> str:
+        # pyodide doesn't ship with sqlite3 in the stdlib, which causes import
+        # errors when trying to import it at the top level inside tools like
+        # marimo
+        import sqlite3
+
         return sqlite3.sqlite_version
 
     def do_connect(
@@ -94,7 +106,7 @@ class Backend(
            x
         0  1
         """
-        _init_sqlite3()
+        sqlite3 = _init_sqlite3()
 
         self.con = sqlite3.connect(":memory:" if database is None else database)
 
