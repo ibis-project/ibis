@@ -607,8 +607,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -632,7 +631,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
         Parameters
         ----------
         name
-            Name of the table to create
+            Name of the table to create. If not provided, a unique name will be generated.
         obj
             Optional data to create the table with
         schema
@@ -663,6 +662,8 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
         Table
             The new table
         """
+        name = self._create_table_name(name)
+
         if temp and overwrite:
             raise com.IbisInputError(
                 "Cannot specify both `temp=True` and `overwrite=True` for ClickHouse"

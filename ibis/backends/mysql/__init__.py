@@ -360,8 +360,7 @@ class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleL
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -374,6 +373,7 @@ class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleL
         temp: bool = False,
         overwrite: bool = False,
     ) -> ir.Table:
+        name = self._create_table_name(name)
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
         if schema is not None:

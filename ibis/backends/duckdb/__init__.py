@@ -109,8 +109,7 @@ class Backend(
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -147,7 +146,13 @@ class Backend(
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
+
+        Returns
+        -------
+        Table
+            The table that was just created
         """
+        name = self._create_table_name(name)
         table_loc = self._to_sqlglot_table(database)
 
         if getattr(table_loc, "catalog", False) and temp:

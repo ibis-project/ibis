@@ -429,8 +429,7 @@ class Backend(
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -448,7 +447,7 @@ class Backend(
         Parameters
         ----------
         name
-            Name of the table to create
+            Name of the table to create. If not provided, a unique name will be generated.
         obj
             The data with which to populate the table; optional, but at least
             one of `obj` or `schema` must be specified
@@ -463,7 +462,14 @@ class Backend(
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
+
+        Returns
+        -------
+        Table
+            The table that was just created
         """
+        name = self._create_table_name(name)
+
         if schema is None and obj is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
