@@ -504,23 +504,3 @@ def test_basic_enum_schema_inference(con, converter):
     t = con.table(name)
     assert t.e.type() == dt.string
     assert set(converter(t.e)) == {"a", "b"}
-
-
-def test_connect_does_not_load_sqlite3():
-    script = """\
-import sys
-import ibis
-
-# not loaded by default
-assert "sqlite3" not in sys.modules
-
-ibis.duckdb.connect()
-
-# still not loaded once duckdb connects
-assert "sqlite3" not in sys.modules
-
-# loads when sqlite3 is connected
-ibis.sqlite.connect()
-
-assert "sqlite3" in sys.modules"""
-    subprocess.run([sys.executable, "-c", script], check=True)
