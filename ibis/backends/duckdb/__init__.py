@@ -24,6 +24,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import (
     CanCreateDatabase,
+    CanListCatalog,
     DirectExampleLoader,
     HasCurrentCatalog,
     HasCurrentDatabase,
@@ -74,6 +75,7 @@ class _Settings:
 
 class Backend(
     SQLBackend,
+    CanListCatalog,
     CanCreateDatabase,
     HasCurrentCatalog,
     HasCurrentDatabase,
