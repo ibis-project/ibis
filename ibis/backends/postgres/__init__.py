@@ -27,6 +27,7 @@ from ibis.backends import (
     HasCurrentCatalog,
     HasCurrentDatabase,
     PyArrowExampleLoader,
+    SupportsTempTables,
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import TRUE, C, ColGen
@@ -47,6 +48,7 @@ class NatDumper(psycopg.adapt.Dumper):
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     CanListCatalog,
     CanCreateDatabase,
@@ -57,6 +59,7 @@ class Backend(
     name = "postgres"
     compiler = sc.postgres.compiler
     supports_python_udfs = True
+    supports_temporary_tables = True
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         kwargs = {}

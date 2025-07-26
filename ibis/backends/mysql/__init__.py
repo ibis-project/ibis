@@ -22,7 +22,12 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, HasCurrentDatabase, PyArrowExampleLoader
+from ibis.backends import (
+    CanCreateDatabase,
+    HasCurrentDatabase,
+    PyArrowExampleLoader,
+    SupportsTempTables,
+)
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, TRUE, C, RenameTable
 
@@ -35,7 +40,13 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
-class Backend(SQLBackend, CanCreateDatabase, HasCurrentDatabase, PyArrowExampleLoader):
+class Backend(
+    SupportsTempTables,
+    SQLBackend,
+    CanCreateDatabase,
+    HasCurrentDatabase,
+    PyArrowExampleLoader,
+):
     name = "mysql"
     compiler = sc.mysql.compiler
     supports_create_or_replace = False

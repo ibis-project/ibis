@@ -21,6 +21,7 @@ from ibis.backends import (
     HasCurrentDatabase,
     NoUrl,
     PyArrowExampleLoader,
+    SupportsTempTables,
 )
 from ibis.backends.flink.ddl import (
     CreateDatabase,
@@ -51,6 +52,7 @@ _INPUT_TYPE_TO_FUNC_TYPE = {InputType.PYTHON: "general", InputType.PANDAS: "pand
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     CanCreateDatabase,
     HasCurrentCatalog,
@@ -65,14 +67,6 @@ class Backend(
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         """No-op."""
-
-    def _finalize_memtable(self, name: str) -> None:
-        """No-op."""
-
-    @property
-    def dialect(self):
-        # TODO: remove when ported to sqlglot
-        return self.compiler.dialect
 
     def do_connect(self, table_env: TableEnvironment) -> None:
         """Create a Flink `Backend` for use with Ibis.
@@ -402,9 +396,6 @@ class Backend(
                 f"got null typed columns: {null_columns}"
             )
         self.create_view(op.name, op.data.to_frame(), schema=op.schema, temp=True)
-
-    def _finalize_memtable(self, name: str) -> None:
-        self.drop_view(name, temp=True, force=True)
 
     def execute(
         self,

@@ -28,6 +28,7 @@ from ibis.backends import (
     HasCurrentCatalog,
     HasCurrentDatabase,
     NoUrl,
+    SupportsTempTables,
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
@@ -76,6 +77,7 @@ def as_nullable(dtype: dt.DataType) -> dt.DataType:
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     CanCreateCatalog,
     CanCreateDatabase,

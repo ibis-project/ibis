@@ -12,7 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends import BaseBackend, DirectExampleLoader, NoUrl
+from ibis.backends import BaseBackend, DirectExampleLoader, NoUrl, SupportsTempTables
 from ibis.backends.polars.compiler import translate
 from ibis.backends.polars.rewrites import bind_unbound_table, rewrite_join
 from ibis.backends.sql.dialects import Polars
@@ -28,9 +28,10 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
-class Backend(BaseBackend, NoUrl, DirectExampleLoader):
+class Backend(SupportsTempTables, BaseBackend, NoUrl, DirectExampleLoader):
     name = "polars"
     dialect = Polars
+    supports_temporary_tables = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -104,9 +105,6 @@ class Backend(BaseBackend, NoUrl, DirectExampleLoader):
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         self._add_table(op.name, op.data.to_polars(op.schema).lazy())
-
-    def _finalize_memtable(self, name: str) -> None:
-        self.drop_table(name, force=True)
 
     def _add_table(self, name: str, obj: pl.LazyFrame | pl.DataFrame) -> None:
         if isinstance(obj, pl.DataFrame):

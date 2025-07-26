@@ -20,12 +20,12 @@ from sqlglot.dialects import DuckDB
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends import BaseBackend
+from ibis.backends import BaseBackend, SupportsTempTables
 from ibis.expr.schema import Schema
 from ibis.expr.tests.conftest import MOCK_TABLES
 
 
-class MockBackend(BaseBackend):
+class MockBackend(SupportsTempTables, BaseBackend):
     name = "mock"
     version = "1.0"
     current_database = "mockdb"
@@ -43,9 +43,6 @@ class MockBackend(BaseBackend):
         pass
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        pass
-
-    def _finalize_memtable(self, name: str) -> None:
         pass
 
     def table(self, name, **_):

@@ -28,6 +28,7 @@ from ibis.backends import (
     DirectExampleLoader,
     HasCurrentCatalog,
     HasCurrentDatabase,
+    SupportsTempTables,
     UrlFromPath,
 )
 from ibis.backends.sql import SQLBackend
@@ -74,6 +75,7 @@ class _Settings:
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     CanListCatalog,
     CanCreateDatabase,
@@ -84,6 +86,7 @@ class Backend(
 ):
     name = "duckdb"
     compiler = sc.duckdb.compiler
+    supports_temporary_tables = True
 
     @property
     def settings(self) -> _Settings:
@@ -1718,16 +1721,6 @@ class Backend(
             obj = data.to_pyarrow(schema)
 
         self.con.register(op.name, obj)
-
-    def _finalize_memtable(self, name: str) -> None:
-        # if we don't aggressively unregister tables duckdb will keep a
-        # reference to every memtable ever registered, even if there's no
-        # way for a user to access the operation anymore, resulting in a
-        # memory leak
-        #
-        # we can't use drop_table, because self.con.register creates a view, so
-        # use the corresponding unregister method
-        self.con.unregister(name)
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         con = self.con

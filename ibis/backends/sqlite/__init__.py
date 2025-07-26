@@ -15,7 +15,12 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import HasCurrentDatabase, PyArrowExampleLoader, UrlFromPath
+from ibis.backends import (
+    HasCurrentDatabase,
+    PyArrowExampleLoader,
+    SupportsTempTables,
+    UrlFromPath,
+)
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
 from ibis.backends.sqlite.converter import SQLitePandasData
@@ -51,6 +56,7 @@ def _quote(name: str) -> str:
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     UrlFromPath,
     PyArrowExampleLoader,
@@ -144,7 +150,7 @@ class Backend(
         self._type_map = {k.lower(): ibis.dtype(v) for k, v in (type_map or {}).items()}
 
         register_all(self.con)
-        self.con.execute("PRAGMA case_sensitive_like=ON")
+        self.con.execute("PRAGMA case_sensitive_like = ON")
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         if not isinstance(query, str):
@@ -158,14 +164,14 @@ class Backend(
 
     @contextlib.contextmanager
     def begin(self):
-        cur = self.con.cursor()
+        cur = (con := self.con).cursor()
         try:
             yield cur
         except Exception:
-            self.con.rollback()
+            con.rollback()
             raise
         else:
-            self.con.commit()
+            con.commit()
         finally:
             cur.close()
 
@@ -173,7 +179,7 @@ class Backend(
         with self._safe_raw_sql("SELECT name FROM pragma_database_list()") as cur:
             results = [r[0] for r in cur.fetchall()]
 
-        return sorted(self._filter_with_like(results, like))
+        return self._filter_with_like(results, like)
 
     def list_tables(
         self, *, like: str | None = None, database: str | None = None
@@ -202,7 +208,7 @@ class Backend(
         with self._safe_raw_sql(sql) as cur:
             results = [r[0] for r in cur.fetchall()]
 
-        return sorted(self._filter_with_like(results, like))
+        return self._filter_with_like(results, like)
 
     def _parse_type(self, typ: str, nullable: bool) -> dt.DataType:
         typ = typ.lower()
@@ -301,16 +307,21 @@ class Backend(
             return self._inspect_schema(cur, table_name, database)
 
     def _get_schema_using_query(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        # create a view that should only be visible in this transaction
+        view = util.gen_name("ibis_sqlite_metadata")
+        create_sql = f"CREATE TEMPORARY VIEW {view} AS {query}"
+        drop_sql = f"DROP VIEW IF EXISTS {view}"
+
         with self.begin() as cur:
-            # create a view that should only be visible in this transaction
-            view = util.gen_name("ibis_sqlite_metadata")
-            cur.execute(f"CREATE TEMPORARY VIEW {view} AS {query}")
+            cur.execute(create_sql)
 
             try:
-                return self._inspect_schema(cur, view, database="temp")
+                schema = self._inspect_schema(cur, view, database="temp")
             finally:
                 # drop the view when we're done with it
-                cur.execute(f"DROP VIEW IF EXISTS {view}")
+                cur.execute(drop_sql)
+
+        return schema
 
     def _fetch_from_cursor(
         self, cursor: sqlite3.Cursor, schema: sch.Schema
@@ -353,13 +364,16 @@ class Backend(
         return sge.Create(kind="TABLE", this=target)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
-        create_stmt = self._generate_create_table(table, op.schema).sql(self.name)
+        catalog = "temp"
+        table = sg.table(name := op.name, quoted=self.compiler.quoted, catalog=catalog)
+        create_stmt = self._generate_create_table(table, schema := op.schema).sql(
+            self.dialect
+        )
         df = op.data.to_frame()
 
         data = df.itertuples(index=False)
         insert_stmt = self._build_insert_template(
-            op.name, schema=op.schema, catalog="temp", columns=True
+            name, schema=schema, catalog=catalog, columns=True
         )
 
         with self.begin() as cur:

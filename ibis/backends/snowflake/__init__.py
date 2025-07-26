@@ -32,6 +32,7 @@ from ibis.backends import (
     DirectExampleLoader,
     HasCurrentCatalog,
     HasCurrentDatabase,
+    SupportsTempTables,
 )
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
@@ -153,6 +154,7 @@ return count !== 0 ? true : null;""",
 
 
 class Backend(
+    SupportsTempTables,
     SQLBackend,
     CanCreateCatalog,
     CanCreateDatabase,
@@ -163,6 +165,7 @@ class Backend(
     name = "snowflake"
     compiler = sc.snowflake.compiler
     supports_python_udfs = True
+    supports_temporary_tables = True
 
     _top_level_methods = ("from_connection", "from_snowpark")
 

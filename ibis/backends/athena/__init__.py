@@ -8,7 +8,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import fsspec
 import pyarrow_hotfix  # noqa: F401
@@ -127,6 +127,10 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             Iterable of column name and type pairs/mapping/schema by which to
             partition the table.
         """
+        if temp:
+            raise NotImplementedError(
+                "Temporary tables are not supported in the Amazon Athena backend"
+            )
         if overwrite is not None:
             raise com.UnsupportedOperationError(
                 "Amazon Athena does not support REPLACE syntax, nor does it "
@@ -136,11 +140,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             raise com.IbisError("One of the `schema` or `obj` parameter is required")
         if schema is not None:
             schema = ibis.schema(schema)
-
-        if temp:
-            raise NotImplementedError(
-                "Temporary tables are not supported in the Amazon Athena backend"
-            )
 
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -437,9 +436,19 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             with self._safe_raw_sql(sql, unload=False):
                 pass
 
-    def _finalize_memtable(self, name: str) -> None:
-        self.drop_table(name, force=True)
-        self._fs.rm(f"{self._memtable_volume_path}/{name}", recursive=True)
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        this = sg.table(name, quoted=self.compiler.quoted)
+        drop_stmt = sge.Drop(kind="TABLE", this=this, exists=True)
+        drop_sql = drop_stmt.sql(self.dialect)
+        path = f"{self._memtable_volume_path}/{name}"
+
+        def finalizer(drop_sql=drop_sql, path=path, fs=self._fs, con=self.con) -> None:
+            with con.cursor() as cursor:
+                cursor.execute(drop_sql)
+
+            fs.rm(path, recursive=True)
+
+        return finalizer
 
     def create_database(
         self,
