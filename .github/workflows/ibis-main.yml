@@ -117,7 +117,6 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v5
-        id: install_python
         with:
           python-version: "3.9"
 
@@ -134,6 +133,24 @@ jobs:
       - name: check shapely and duckdb imports
         run: uv run --extra duckdb --extra geospatial python -c 'import shapely.geometry, duckdb'
 
+  test_duckdb_sqlite3_import:
+    name: Test sqlite3 and duckdb import
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v6.4.3
+
+      - name: check duckdb doesn't import sqlite3
+        run: uv run --extra duckdb python -c 'import sys, ibis; assert "sqlite3" not in sys.modules; ibis.duckdb.connect(); assert "sqlite3" not in sys.modules'
+
   test_scrapy_import:
     name: Test import with twisted
     runs-on: ubuntu-latest
@@ -143,7 +160,6 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v5
-        id: install_python
         with:
           python-version: "3.13"
 
