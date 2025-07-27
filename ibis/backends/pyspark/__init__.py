@@ -6,6 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
+import pandas as pd  # noqa: TC002, necessary for pyspark to evaluate type hints for UDFs
 import pyspark
 import pyspark.sql.functions as F
 import sqlglot as sg
@@ -51,7 +52,6 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
     from urllib.parse import ParseResult
 
-    import pandas as pd
     import polars as pl
     import pyarrow as pa
     from pyspark.sql.streaming import StreamingQuery
@@ -63,8 +63,14 @@ PYSPARK_LT_34 = PYSPARK_VERSION < vparse("3.4")
 PYSPARK_LT_35 = PYSPARK_VERSION < vparse("3.5")
 ConnectionMode = Literal["streaming", "batch"]
 
+_JSON_UNWRAP_TYPES = {
+    str: ops.UnwrapJSONString,
+    int: ops.UnwrapJSONInt64,
+    bool: ops.UnwrapJSONBoolean,
+}
 
-@F.pandas_udf(returnType=DoubleType(), functionType=F.PandasUDFType.SCALAR)
+
+@F.pandas_udf(returnType=DoubleType())
 def unwrap_json_float(s: pd.Series) -> pd.Series:
     import json
 
@@ -89,7 +95,7 @@ def unwrap_json(typ):
 
     type_mapping = {str: StringType(), int: LongType(), bool: BooleanType()}
 
-    @F.pandas_udf(returnType=type_mapping[typ], functionType=F.PandasUDFType.SCALAR)
+    @F.pandas_udf(returnType=type_mapping[typ])
     def unwrap(s: pd.Series) -> pd.Series:
         def nullify_type_mismatched_value(raw):
             if pd.isna(raw):
@@ -402,7 +408,7 @@ class Backend(
             udf_return = PySparkType.from_ibis(udf.dtype)
             if udf.__input_type__ == InputType.PANDAS:
                 udf_func = self._wrap_udf_to_return_pandas(udf.__func__, udf.dtype)
-                spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.SCALAR)
+                spark_udf = F.pandas_udf(udf_func, udf_return)
             elif udf.__input_type__ == InputType.PYTHON:
                 udf_func = udf.__func__
                 spark_udf = F.udf(udf_func, udf_return)
@@ -418,11 +424,12 @@ class Backend(
                 # Builtin functions don't need to be registered
                 continue
             self._session.udf.register(udf_name, spark_udf)
+
         for udf in node.find(ops.ElementWiseVectorizedUDF):
             udf_name = self.compiler.__sql_name__(udf)
             udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
             udf_return = PySparkType.from_ibis(udf.return_type)
-            spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.SCALAR)
+            spark_udf = F.pandas_udf(udf_func)
             self._session.udf.register(udf_name, spark_udf)
 
         for udf in node.find(ops.ReductionVectorizedUDF):
@@ -430,12 +437,18 @@ class Backend(
             udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
             udf_func = udf.func
             udf_return = PySparkType.from_ibis(udf.return_type)
-            spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.GROUPED_AGG)
+            spark_udf = F.pandas_udf(udf_func, udf_return)
             self._session.udf.register(udf_name, spark_udf)
 
-        for typ in (str, int, bool):
-            self._session.udf.register(f"unwrap_json_{typ.__name__}", unwrap_json(typ))
-        self._session.udf.register("unwrap_json_float", unwrap_json_float)
+        # only register the JSON unwrap udfs if they exist in the expression
+        # and haven't been registered yet
+        for typ, opclass in _JSON_UNWRAP_TYPES.items():
+            if any(node.find(opclass)):
+                self._session.udf.register(
+                    f"unwrap_json_{typ.__name__}", unwrap_json(typ)
+                )
+        if any(node.find(ops.UnwrapJSONFloat64)):
+            self._session.udf.register("unwrap_json_float", unwrap_json_float)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
