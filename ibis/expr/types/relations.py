@@ -45,6 +45,385 @@ if TYPE_CHECKING:
     from ibis.selectors import IfAnyAll
 
 
+# Join method docstring templates following the ibis/examples pattern
+_JOIN_DOCSTRING_TEMPLATES = {
+    "inner": """\
+Perform an inner join between two tables.
+
+Returns only rows that have matching values in both tables.
+
+This is equivalent to: `table.join(other, predicates, how="inner")`
+
+Parameters
+----------
+right
+    Right table to join
+predicates
+    Boolean or column names to join on
+lname
+    A format string to use to rename overlapping columns in the left
+    table (e.g. `"left_{{name}}"`).
+rname
+    A format string to use to rename overlapping columns in the right
+    table (e.g. `"right_{{name}}"`).
+
+Returns
+-------
+Table
+    Joined table
+
+Examples
+--------
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> movies = ibis.examples.ml_latest_small_movies.fetch()
+>>> ratings = ibis.examples.ml_latest_small_ratings.fetch().drop("timestamp")
+>>> ratings.inner_join(movies, "movieId").head(3)  # doctest: +SKIP
+┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ userId ┃ movieId ┃ rating  ┃ title                            ┃ genres                          ┃
+┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ int64  │ int64   │ float64 │ string                           │ string                          │
+├────────┼─────────┼─────────┼──────────────────────────────────┼─────────────────────────────────┤
+│      1 │       1 │     4.0 │ Toy Story (1995)                 │ Adventure|Animation|Children|C… │
+│      1 │       3 │     4.0 │ Grumpier Old Men (1995)          │ Comedy|Romance                  │
+│      1 │       6 │     4.0 │ Heat (1995)                      │ Action|Crime|Thriller           │
+└────────┴─────────┴─────────┴──────────────────────────────────┴─────────────────────────────────┘
+
+See Also
+--------
+join : More complex join operations and additional examples
+""",
+    "left": """\
+Perform a left join between two tables.
+
+Returns all rows from the left table, and matched rows from the right table.
+
+This is equivalent to: `table.join(other, predicates, how="left")`
+
+Parameters
+----------
+right
+    Right table to join
+predicates
+    Boolean or column names to join on
+lname
+    A format string to use to rename overlapping columns in the left
+    table (e.g. `"left_{{name}}"`).
+rname
+    A format string to use to rename overlapping columns in the right
+    table (e.g. `"right_{{name}}"`).
+
+Returns
+-------
+Table
+    Joined table
+
+Examples
+--------
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> movies = ibis.examples.ml_latest_small_movies.fetch()
+>>> ratings = ibis.examples.ml_latest_small_ratings.fetch().drop("timestamp")
+>>> ratings.left_join(movies, "movieId").head(3)  # doctest: +SKIP
+┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━┓
+┃ userId ┃ movieId ┃ rating  ┃ movieId_right ┃ title                       ┃ … ┃
+┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━┩
+│ int64  │ int64   │ float64 │ int64         │ string                      │ … │
+├────────┼─────────┼─────────┼───────────────┼─────────────────────────────┼───┤
+│      1 │       1 │     4.0 │             1 │ Toy Story (1995)            │ … │
+│      1 │       3 │     4.0 │             3 │ Grumpier Old Men (1995)     │ … │
+│      1 │       6 │     4.0 │             6 │ Heat (1995)                 │ … │
+└────────┴─────────┴─────────┴───────────────┴─────────────────────────────┴───┘
+
+See Also
+--------
+join : More complex join operations and additional examples
+""",
+    "right": """\
+Perform a right join between two tables.
+
+Returns all rows from the right table, and matched rows from the left table.
+
+This is equivalent to: `table.join(other, predicates, how="right")`
+
+Parameters
+----------
+right
+    Right table to join
+predicates
+    Boolean or column names to join on
+lname
+    A format string to use to rename overlapping columns in the left
+    table (e.g. `"left_{{name}}"`).
+rname
+    A format string to use to rename overlapping columns in the right
+    table (e.g. `"right_{{name}}"`).
+
+Returns
+-------
+Table
+    Joined table
+
+Examples
+--------
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> movies = ibis.examples.ml_latest_small_movies.fetch()
+>>> ratings = ibis.examples.ml_latest_small_ratings.fetch().drop("timestamp")
+>>> ratings.right_join(movies, "movieId").head(3)  # doctest: +SKIP
+┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━┓
+┃ userId ┃ movieId ┃ rating  ┃ movieId_right ┃ title                       ┃ … ┃
+┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━┩
+│ int64  │ int64   │ float64 │ int64         │ string                      │ … │
+├────────┼─────────┼─────────┼───────────────┼─────────────────────────────┼───┤
+│      1 │       1 │     4.0 │             1 │ Toy Story (1995)            │ … │
+│      1 │       3 │     4.0 │             3 │ Grumpier Old Men (1995)     │ … │
+│      1 │       6 │     4.0 │             6 │ Heat (1995)                 │ … │
+└────────┴─────────┴─────────┴───────────────┴─────────────────────────────┴───┘
+
+See Also
+--------
+join : More complex join operations and additional examples
+""",
+    "outer": """\
+Perform an outer join between two tables.
+
+Returns all rows from both tables (full outer join).
+
+This is equivalent to: `table.join(other, predicates, how="outer")`
+
+Parameters
+----------
+right
+    Right table to join
+predicates
+    Boolean or column names to join on
+lname
+    A format string to use to rename overlapping columns in the left
+    table (e.g. `"left_{{name}}"`).
+rname
+    A format string to use to rename overlapping columns in the right
+    table (e.g. `"right_{{name}}"`).
+
+Returns
+-------
+Table
+    Joined table
+
+Examples
+--------
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> movies = ibis.examples.ml_latest_small_movies.fetch()
+>>> ratings = ibis.examples.ml_latest_small_ratings.fetch().drop("timestamp")
+>>> ratings.outer_join(movies, "movieId").head(3)  # doctest: +SKIP
+┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━┓
+┃ userId ┃ movieId ┃ rating  ┃ movieId_right ┃ title                       ┃ … ┃
+┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━┩
+│ int64  │ int64   │ float64 │ int64         │ string                      │ … │
+├────────┼─────────┼─────────┼───────────────┼─────────────────────────────┼───┤
+│      1 │       1 │     4.0 │             1 │ Toy Story (1995)            │ … │
+│      1 │       3 │     4.0 │             3 │ Grumpier Old Men (1995)     │ … │
+│      1 │       6 │     4.0 │             6 │ Heat (1995)                 │ … │
+└────────┴─────────┴─────────┴───────────────┴─────────────────────────────┴───┘
+
+See Also
+--------
+join : More complex join operations and additional examples
+""",
+    "semi": """\
+Perform a semi join between two tables.
+
+Returns rows from the left table that have matches in the right table (no right columns).
+
+This is equivalent to: `table.join(other, predicates, how="semi")`
+
+Parameters
+----------
+right
+    Right table to join
+predicates
+    Boolean or column names to join on
+lname
+    A format string to use to rename overlapping columns in the left
+    table (e.g. `"left_{{name}}"`).
+rname
+    A format string to use to rename overlapping columns in the right
+    table (e.g. `"right_{{name}}"`).
+
+Returns
+-------
+Table
+    Joined table
+
+Examples
+--------
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> movies = ibis.examples.ml_latest_small_movies.fetch()
+>>> ratings = ibis.examples.ml_latest_small_ratings.fetch().drop("timestamp")
+>>> movies.semi_join(ratings, "movieId").head(3)  # doctest: +SKIP
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ movieId ┃ title                            ┃ genres                          ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ int64   │ string                           │ string                          │
+├─────────┼──────────────────────────────────┼─────────────────────────────────┤
+│       1 │ Toy Story (1995)                 │ Adventure|Animation|Children|C… │
+│       3 │ Grumpier Old Men (1995)          │ Comedy|Romance                  │
+│       6 │ Heat (1995)                      │ Action|Crime|Thriller           │
+└─────────┴──────────────────────────────────┴─────────────────────────────────┘
+
+See Also
+--------
+join : More complex join operations and additional examples
+""",
+    "anti": """\
+Perform an anti join between two tables.
+
+Returns rows from the left table that have no matches in the right table.
+
+This is equivalent to: `table.join(other, predicates, how="anti")`
+
+Parameters
+----------
+right
+    Right table to join
+predicates
+    Boolean or column names to join on
+lname
+    A format string to use to rename overlapping columns in the left
+    table (e.g. `"left_{{name}}"`).
+rname
+    A format string to use to rename overlapping columns in the right
+    table (e.g. `"right_{{name}}"`).
+
+Returns
+-------
+Table
+    Joined table
+
+Examples
+--------
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> movies = ibis.examples.ml_latest_small_movies.fetch()
+>>> ratings = ibis.examples.ml_latest_small_ratings.fetch().drop("timestamp")
+>>> movies.anti_join(ratings, "movieId").head(3)  # doctest: +SKIP
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ movieId ┃ title                            ┃ genres                          ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ int64   │ string                           │ string                          │
+├─────────┼──────────────────────────────────┼─────────────────────────────────┤
+│   34048 │ Femalien (1996)                  │ Sci-Fi                          │
+│   34162 │ Lie Down with Dogs (1995)        │ Comedy                          │
+│   45517 │ Glass Tomb, The (Redeemer) (201… │ Horror                          │
+└─────────┴──────────────────────────────────┴─────────────────────────────────┘
+
+See Also
+--------
+join : More complex join operations and additional examples
+""",
+    "any_inner": """\
+Perform an any-inner join between two tables.
+
+Returns rows from the inner join where at least one join condition is true.
+
+This is equivalent to: `table.join(other, predicates, how="any_inner")`
+
+.. note::
+   Any-joins are not supported by all backends. Check your backend documentation for availability.
+
+Parameters
+----------
+right
+    Right table to join
+predicates
+    Boolean or column names to join on
+lname
+    A format string to use to rename overlapping columns in the left
+    table (e.g. `"left_{{name}}"`).
+rname
+    A format string to use to rename overlapping columns in the right
+    table (e.g. `"right_{{name}}"`).
+
+Returns
+-------
+Table
+    Joined table
+
+Examples
+--------
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> movies = ibis.examples.ml_latest_small_movies.fetch()
+>>> ratings = ibis.examples.ml_latest_small_ratings.fetch().drop("timestamp")
+>>> ratings.any_inner_join(movies, "movieId").head(3)  # doctest: +SKIP
+┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ userId ┃ movieId ┃ rating  ┃ title                            ┃ genres                          ┃
+┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ int64  │ int64   │ float64 │ string                           │ string                          │
+├────────┼─────────┼─────────┼──────────────────────────────────┼─────────────────────────────────┤
+│      1 │       1 │     4.0 │ Toy Story (1995)                 │ Adventure|Animation|Children|C… │
+│      1 │       3 │     4.0 │ Grumpier Old Men (1995)          │ Comedy|Romance                  │
+│      1 │       6 │     4.0 │ Heat (1995)                      │ Action|Crime|Thriller           │
+└────────┴─────────┴─────────┴──────────────────────────────────┴─────────────────────────────────┘
+
+See Also
+--------
+join : More complex join operations and additional examples
+""",
+    "any_left": """\
+Perform an any-left join between two tables.
+
+Returns all rows from the left table, using any-semantics for join conditions.
+
+This is equivalent to: `table.join(other, predicates, how="any_left")`
+
+.. note::
+   Any-joins are not supported by all backends. Check your backend documentation for availability.
+
+Parameters
+----------
+right
+    Right table to join
+predicates
+    Boolean or column names to join on
+lname
+    A format string to use to rename overlapping columns in the left
+    table (e.g. `"left_{{name}}"`).
+rname
+    A format string to use to rename overlapping columns in the right
+    table (e.g. `"right_{{name}}"`).
+
+Returns
+-------
+Table
+    Joined table
+
+Examples
+--------
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> movies = ibis.examples.ml_latest_small_movies.fetch()
+>>> ratings = ibis.examples.ml_latest_small_ratings.fetch().drop("timestamp")
+>>> ratings.any_left_join(movies, "movieId").head(3)  # doctest: +SKIP
+┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━┓
+┃ userId ┃ movieId ┃ rating  ┃ movieId_right ┃ title                       ┃ … ┃
+┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━┩
+│ int64  │ int64   │ float64 │ int64         │ string                      │ … │
+├────────┼─────────┼─────────┼───────────────┼─────────────────────────────┼───┤
+│      1 │       1 │     4.0 │             1 │ Toy Story (1995)            │ … │
+│      1 │       3 │     4.0 │             3 │ Grumpier Old Men (1995)     │ … │
+│      1 │       6 │     4.0 │             6 │ Heat (1995)                 │ … │
+└────────┴─────────┴─────────┴───────────────┴─────────────────────────────┴───┘
+
+See Also
+--------
+join : More complex join operations and additional examples
+""",
+}
+
+
 def _regular_join_method(
     name: str,
     how: Literal[
@@ -58,7 +437,7 @@ def _regular_join_method(
         "any_left",
     ],
 ):
-    def f(  # noqa: D417
+    def f(
         self: ir.Table,
         right: ir.Table,
         /,
@@ -70,29 +449,10 @@ def _regular_join_method(
         lname: str = "",
         rname: str = "{name}_right",
     ) -> ir.Table:
-        """Perform a join between two tables.
-
-        Parameters
-        ----------
-        right
-            Right table to join
-        predicates
-            Boolean or column names to join on
-        lname
-            A format string to use to rename overlapping columns in the left
-            table (e.g. `"left_{name}"`).
-        rname
-            A format string to use to rename overlapping columns in the right
-            table (e.g. `"right_{name}"`).
-
-        Returns
-        -------
-        Table
-            Joined table
-        """
         return self.join(right, predicates, how=how, lname=lname, rname=rname)
 
     f.__name__ = name
+    f.__doc__ = _JOIN_DOCSTRING_TEMPLATES[how]
     return f
 
 
