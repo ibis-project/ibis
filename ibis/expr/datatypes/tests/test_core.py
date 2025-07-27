@@ -4,7 +4,7 @@ import datetime  # noqa: TC003
 import decimal  # noqa: TC003
 import uuid  # noqa: TC003
 from dataclasses import dataclass
-from typing import Annotated, NamedTuple
+from typing import Annotated, NamedTuple, Union
 
 import pytest
 from pytest import param
@@ -58,12 +58,19 @@ def test_dtype(spec, expected):
     [
         ((int,), dt.Int64(nullable=True)),
         ((int, False), dt.Int64(nullable=False)),
+        ((Union[int, None],), dt.Int64(nullable=True)),
+        ((Union[int, None], False), dt.Int64(nullable=False)),
         (("!int",), dt.Int64(nullable=False)),
         (("!int", True), dt.Int64(nullable=False)),  # "!" overrides `nullable`
     ],
 )
 def test_nullable_dtype(args, expected):
     assert dt.dtype(*args) == expected
+
+
+def test_bogus_union():
+    with pytest.raises(TypeError):
+        dt.dtype(Union[int, str])
 
 
 @pytest.mark.parametrize(

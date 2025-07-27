@@ -245,6 +245,17 @@ class DataType(Concrete, Coercible):
 
     @classmethod
     def from_typehint(cls, typ, nullable=True) -> Self:
+        # All types are nullable by default
+        # (eg `ibis.dtype(int)` results in `Int64(nullable=True)`),
+        # so if we are handed Union[None, T], simplify it to T.
+        #
+        # Depending on if you use `Union[A, B]` vs `A | B`, the type differs,
+        # so the most robust way I found to test for union is with `type(typ).__name__`.
+        if "Union" in type(typ).__name__:
+            none_Nones = [t for t in get_args(typ) if t is not type(None)]
+            if len(none_Nones) == 1:
+                typ = none_Nones[0]
+
         origin_type = get_origin(typ)
 
         if origin_type is None:
