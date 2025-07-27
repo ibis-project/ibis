@@ -327,6 +327,8 @@ class _TimeComponentMixin:
 
 @public
 class TimeValue(_TimeComponentMixin, Value):
+    """A time of day from 0:00:00 to 23:59:59.999999999."""
+
     def strftime(self, format_str: str, /) -> ir.StringValue:
         """Format a time according to `format_str`.
 
@@ -501,6 +503,8 @@ class TimeColumn(Column, TimeValue):
 
 @public
 class DateValue(Value, _DateComponentMixin):
+    """A date (without time), eg 2024-12-31."""
+
     def strftime(self, format_str: str, /) -> ir.StringValue:
         """Format a date according to `format_str`.
 
@@ -779,6 +783,8 @@ class DateColumn(Column, DateValue):
 
 @public
 class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
+    """A date and time, eg 2024-12-31 23:59:59.999999."""
+
     def strftime(self, format_str: str, /) -> ir.StringValue:
         """Format a timestamp according to `format_str`.
 
@@ -1238,6 +1244,17 @@ class TimestampColumn(Column, TimestampValue):
 
 @public
 class IntervalValue(Value):
+    """A time duration, eg 6 day or 2 hours or 457 seconds.
+
+    This is the result from operations that compute the difference
+    between two date or timestamp expressions, such as Timestamp.delta().
+
+    This can be combined with date or timestamp expressions
+    using addition and subtraction, eg
+    `ibis.timestamp("2020-01-01") + ibis.interval(days=1)`,
+    which results in a new timestamp expression.
+    """
+
     def as_unit(self, target_unit: str, /) -> IntervalValue:
         """Convert this interval to units of `target_unit`."""
         # TODO(kszucs): should use a separate operation for unit conversion
@@ -1403,7 +1420,7 @@ class IntervalColumn(Column, IntervalValue):
 
 @public
 class DayOfWeek:
-    """A namespace of methods for extracting day of week information."""
+    """A namespace of methods for days of the week, eg 'Monday' or 'Tuesday'."""
 
     def __init__(self, expr):
         self._expr = expr
@@ -1456,7 +1473,7 @@ class DayOfWeek:
         return ops.DayOfWeekIndex(self._expr).to_expr()
 
     def full_name(self):
-        """Get the name of the day of the week.
+        """Get the name of the day of the week, eg 'Monday' or 'Tuesday'.
 
         Returns
         -------
