@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 import pytest
 
 import ibis
@@ -156,7 +158,7 @@ def test_builtin_scalar_noargs():
 
 def test_None_type_hint(table):
     @ibis.udf.scalar.python
-    def claims_to_return_nullable(x: int | None) -> int | None: ...
+    def claims_to_return_nullable(x: Optional[int]) -> Optional[int]: ...
 
     expr = claims_to_return_nullable(table.a)
     assert isinstance(expr, ir.IntegerColumn)
