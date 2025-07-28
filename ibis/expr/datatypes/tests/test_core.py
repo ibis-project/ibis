@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import datetime  # noqa: TC003
 import decimal  # noqa: TC003
+import sys
 import uuid  # noqa: TC003
 from dataclasses import dataclass
-from typing import Annotated, NamedTuple, Union
+from typing import Annotated, NamedTuple, Optional, Union
 
 import pytest
 from pytest import param
@@ -56,16 +57,28 @@ def test_dtype(spec, expected):
 @pytest.mark.parametrize(
     ("args", "expected"),
     [
-        ((int,), dt.Int64(nullable=True)),
-        ((int, False), dt.Int64(nullable=False)),
-        ((Union[int, None],), dt.Int64(nullable=True)),
-        ((Union[int, None], False), dt.Int64(nullable=False)),
-        (("!int",), dt.Int64(nullable=False)),
-        (("!int", True), dt.Int64(nullable=False)),  # "!" overrides `nullable`
+        (lambda: (int,), dt.Int64(nullable=True)),
+        (lambda: (int, False), dt.Int64(nullable=False)),
+        (lambda: (Union[int, None],), dt.Int64(nullable=True)),
+        (lambda: (Union[int, None], False), dt.Int64(nullable=False)),
+        (lambda: (Optional[int],), dt.Int64(nullable=True)),
+        (lambda: (Optional[int], False), dt.Int64(nullable=False)),
+        pytest.param(
+            lambda: (int | None,),
+            dt.Int64(nullable=True),
+            marks=pytest.mark.xfail(sys.version_info < (3, 10), reason="python 3.9"),
+        ),
+        pytest.param(
+            lambda: (int | None, False),
+            dt.Int64(nullable=False),
+            marks=pytest.mark.xfail(sys.version_info < (3, 10), reason="python 3.9"),
+        ),
+        (lambda: ("!int",), dt.Int64(nullable=False)),
+        (lambda: ("!int", True), dt.Int64(nullable=False)),  # "!" overrides `nullable`
     ],
 )
 def test_nullable_dtype(args, expected):
-    assert dt.dtype(*args) == expected
+    assert dt.dtype(*args()) == expected
 
 
 def test_bogus_union():
