@@ -226,7 +226,7 @@ demean_struct_udfs = [
 
 
 # reduction multi-column UDF
-def mean_struct(v: pd.Series, w: pd.Series) -> pd.DataFrame:
+def mean_struct(v: pd.Series, w: pd.Series) -> tuple[float, float]:
     assert isinstance(v, (np.ndarray, pd.Series))
     assert isinstance(w, (np.ndarray, pd.Series))
     return v.mean(), w.mean()
@@ -256,7 +256,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
         input_type=[dt.double, dt.int64],
         output_type=dt.Struct({"double_col": dt.double, "mean_weight": dt.double}),
     )
-    def overwrite_struct_reduction(v: pd.Series, w: pd.Series) -> pd.DataFrame:
+    def overwrite_struct_reduction(v: pd.Series, w: pd.Series) -> tuple[float, float]:
         assert isinstance(v, (np.ndarray, pd.Series))
         assert isinstance(w, (np.ndarray, pd.Series))
         return v.mean(), w.mean()
