@@ -16,6 +16,7 @@ from typing import (
     NamedTuple,
     Optional,
     TypeVar,
+    Union,
     get_type_hints,
     overload,
 )
@@ -30,6 +31,7 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.patterns import Between, Coercible, CoercionError
 from ibis.common.temporal import IntervalUnit, TimestampUnit
+from ibis.common.typing import UnionType
 
 if TYPE_CHECKING:
     import numpy as np
@@ -249,12 +251,13 @@ class DataType(Concrete, Coercible):
         # (eg `ibis.dtype(int)` results in `Int64(nullable=True)`),
         # so if we are handed Union[None, T], simplify it to T.
         #
-        # Depending on if you use `Union[A, B]` vs `A | B`, the type differs,
-        # so the most robust way I found to test for union is with `type(typ).__name__`.
-        if "Union" in type(typ).__name__:
-            none_Nones = [t for t in get_args(typ) if t is not type(None)]
-            if len(none_Nones) == 1:
-                typ = none_Nones[0]
+        # Depending on if you use `Union[A, B]` vs `A | B`, the type differs
+        #
+        # with Optional, you get __origin__ and with | syntax you get a UnionType
+        if getattr(typ, "__origin__", None) is Union or isinstance(typ, UnionType):
+            not_nones = [t for t in get_args(typ) if t is not type(None)]
+            if len(not_nones) == 1:
+                typ = not_nones[0]
 
         origin_type = get_origin(typ)
 
