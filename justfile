@@ -340,7 +340,19 @@ chat *args:
 
 # compute the next version number
 @compute-version:
-    uv run --only-group dev python ci/release/bump_version.py
+    #!/usr/bin/env -S uv run --script
+    # /// script
+    # requires-python = ">=3.11"
+    # dependencies=["dunamai==1.22.0"]
+    # ///
+    from dunamai import Version
+    version = Version.from_git(latest_tag=True, pattern="default-unprefixed")
+    if version.distance:
+        version = version.bump(index=-1)
+        format = "{base}.dev{distance}"
+    else:
+        format = None
+    print(version.serialize(format=format))
 
 # bump the version number in necessary files
 bump-version:

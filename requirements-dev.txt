@@ -65,7 +65,6 @@ deprecated==1.2.18
 distlib==0.4.0
 doit==0.36.0
 duckdb==1.3.2
-dunamai==1.25.0
 et-xmlfile==2.0.0
 exceptiongroup==1.3.0 ; python_full_version < '3.11'
 execnet==2.1.1

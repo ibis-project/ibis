@@ -1813,18 +1813,6 @@ wheels = [
 ]
 
 [[package]]
-name = "dunamai"
-version = "1.25.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "packaging" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f1/2f/194d9a34c4d831c6563d2d990720850f0baef9ab60cb4ad8ae0eff6acd34/dunamai-1.25.0.tar.gz", hash = "sha256:a7f8360ea286d3dbaf0b6a1473f9253280ac93d619836ad4514facb70c0719d1", size = 46155, upload-time = "2025-07-04T19:25:56.082Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/36/41/04e2a649058b0713b00d6c9bd22da35618bb157289e05d068e51fddf8d7e/dunamai-1.25.0-py3-none-any.whl", hash = "sha256:7f9dc687dd3256e613b6cc978d9daabfd2bb5deb8adc541fc135ee423ffa98ab", size = 27022, upload-time = "2025-07-04T19:25:54.863Z" },
-]
-
-[[package]]
 name = "et-xmlfile"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2776,7 +2764,6 @@ visualization = [
 dev = [
     { name = "aws-sso-util" },
     { name = "codespell", extra = ["hard-encoding-detection", "toml"] },
-    { name = "dunamai" },
     { name = "google-cloud-storage" },
     { name = "ipython", version = "8.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "ipython", version = "8.37.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
@@ -2985,7 +2972,6 @@ provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion
 dev = [
     { name = "aws-sso-util", specifier = ">=4.33,<5" },
     { name = "codespell", extras = ["hard-encoding-detection", "toml"], specifier = ">=2.2.6,<3" },
-    { name = "dunamai", specifier = ">=1.22.0" },
     { name = "google-cloud-storage", specifier = ">=2.7.0,<4" },
     { name = "ipython", specifier = ">=8.7.0,<10" },
     { name = "pre-commit", specifier = ">=4,<5" },
