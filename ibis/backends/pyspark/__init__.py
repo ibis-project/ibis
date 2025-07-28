@@ -408,10 +408,10 @@ class Backend(
             udf_return = PySparkType.from_ibis(udf.dtype)
             if udf.__input_type__ == InputType.PANDAS:
                 udf_func = self._wrap_udf_to_return_pandas(udf.__func__, udf.dtype)
-                spark_udf = F.pandas_udf(udf_func, udf_return)
+                spark_udf = F.pandas_udf(udf_func, returnType=udf_return)
             elif udf.__input_type__ == InputType.PYTHON:
                 udf_func = udf.__func__
-                spark_udf = F.udf(udf_func, udf_return)
+                spark_udf = F.udf(udf_func, returnType=udf_return)
             elif udf.__input_type__ == InputType.PYARROW:
                 # raise not implemented error if running on pyspark < 3.5
                 if PYSPARK_LT_35:
@@ -419,7 +419,7 @@ class Backend(
                         "pyarrow UDFs are only supported in pyspark >= 3.5"
                     )
                 udf_func = udf.__func__
-                spark_udf = F.udf(udf_func, udf_return, useArrow=True)
+                spark_udf = F.udf(udf_func, returnType=udf_return, useArrow=True)
             else:
                 # Builtin functions don't need to be registered
                 continue
@@ -429,7 +429,7 @@ class Backend(
             udf_name = self.compiler.__sql_name__(udf)
             udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
             udf_return = PySparkType.from_ibis(udf.return_type)
-            spark_udf = F.pandas_udf(udf_func)
+            spark_udf = F.pandas_udf(udf_func, returnType=udf_return)
             self._session.udf.register(udf_name, spark_udf)
 
         for udf in node.find(ops.ReductionVectorizedUDF):
@@ -437,7 +437,7 @@ class Backend(
             udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
             udf_func = udf.func
             udf_return = PySparkType.from_ibis(udf.return_type)
-            spark_udf = F.pandas_udf(udf_func, udf_return)
+            spark_udf = F.pandas_udf(udf_func, returnType=udf_return)
             self._session.udf.register(udf_name, spark_udf)
 
         # only register the JSON unwrap udfs if they exist in the expression
