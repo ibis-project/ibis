@@ -1,6 +1,23 @@
 ---
 ---
 
+## [10.8.0](https://github.com/ibis-project/ibis/compare/10.7.0...10.8.0) (2025-07-28)
+
+### Features
+
+* **datatypes:** add `Schema.from_sqlglot` method to produce an Ibis schema from SQLGlot ([#11351](https://github.com/ibis-project/ibis/issues/11351)) ([f6641e7](https://github.com/ibis-project/ibis/commit/f6641e71184ee20a767d3318bc955fc0ce0552d4))
+* **datatypes:** allow dtype(Union[T, None]) ([#11506](https://github.com/ibis-project/ibis/issues/11506)) ([c83f842](https://github.com/ibis-project/ibis/commit/c83f8425a116359708d9b928e2b2e9aa00aba349))
+* **polars:** support is_in queries from uncorrelated tables ([476353e](https://github.com/ibis-project/ibis/commit/476353e50183bb633754383d11df99a7be5acf69))
+
+### Bug Fixes
+
+* **clickhouse:** return the correct type from `InSubquery` operations ([69be180](https://github.com/ibis-project/ibis/commit/69be18083a1388924c48d3cc317ee5ce38c0ee31))
+
+### Documentation
+
+* add join method docstring templates for various join types ([#11507](https://github.com/ibis-project/ibis/issues/11507)) ([4798af4](https://github.com/ibis-project/ibis/commit/4798af459858e645a45643a48b82af42f623fc31))
+* improve docstrings for temporal Values ([#11505](https://github.com/ibis-project/ibis/issues/11505)) ([8641087](https://github.com/ibis-project/ibis/commit/8641087cbfdb847bf5f1e9e3fd920be55bf659c7))
+
 ## [10.7.0](https://github.com/ibis-project/ibis/compare/10.6.0...10.7.0) (2025-07-27)
 
 ### Features
