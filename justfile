@@ -144,7 +144,7 @@ download-data owner="ibis-project" repo="testing-data" rev="master":
     fi
 
 # download the iceberg jar used for testing pyspark and iceberg integration
-download-iceberg-jar pyspark scala="2.12" iceberg="1.6.1":
+download-iceberg-jar pyspark scala="2.12" iceberg="1.9.2":
     #!/usr/bin/env bash
     set -eo pipefail
 

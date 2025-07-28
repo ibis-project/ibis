@@ -128,10 +128,16 @@ in
     let
       pysparkVersion = lib.versions.majorMinor attrs.version;
       jarHashes = {
-        "3.5" = "sha256-h+cYTzHvDKrEFbvfzxvElDNGpYuY10fcg0NPcTnhKss=";
+        "3.5" = "sha256-xArgqOJnO7XAGVG30VquIiSlNPgzH0J0ziCCd2EWoEQ=";
+        "3.4" = "sha256-q/mchG/LvK+S0FVjQz75OzemDzoRefAdLaWoLzNeMco=";
         "3.3" = "sha256-3D++9VCiLoMP7jPvdCtBn7xnxqHnyQowcqdGUe0M3mk=";
       };
-      icebergVersion = "1.6.1";
+      icebergVersions = {
+        "3.5" = "1.9.2";
+        "3.4" = "1.9.2";
+        "3.3" = "1.6.1";
+      };
+      icebergVersion = icebergVersions."${pysparkVersion}";
       scalaVersion = "2.12";
       jarName = "iceberg-spark-runtime-${pysparkVersion}_${scalaVersion}-${icebergVersion}.jar";
       icebergJarUrl = "https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-${pysparkVersion}_${scalaVersion}/${icebergVersion}/${jarName}";

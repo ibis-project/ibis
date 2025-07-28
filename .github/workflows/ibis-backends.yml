@@ -561,7 +561,7 @@ jobs:
             pyspark-minor-version: "3.3"
             tag: local
             deps:
-              - pyspark==3.3.4
+              - pyspark==3.3.3
               - pandas==1.5.3
               - numpy==1.23.5
           - python-version: "3.11"
