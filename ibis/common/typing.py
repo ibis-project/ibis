@@ -24,7 +24,7 @@ if sys.version_info >= (3, 10):
 else:
     from typing_extensions import TypeAlias
 
-    UnionType = object()
+    UnionType = type(Union[int, str])
     _ClassInfo: TypeAlias = Union[type, tuple["_ClassInfo", ...]]
 
 
