@@ -180,6 +180,101 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
 
         return PolarsSchema.to_ibis(polars_schema)
 
+    @classmethod
+    def from_sqlglot(
+        cls, schema: sge.Schema, dialect: str | sg.Dialect | None = None
+    ) -> Self:
+        """Construct an Ibis Schema from a SQLGlot Schema.
+
+        Parameters
+        ----------
+        schema
+            A SQLGlot Schema containing column definitions.
+        dialect
+            Optional dialect to use for type conversion.
+
+        Returns
+        -------
+        Schema
+            An Ibis Schema.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import sqlglot as sg
+        >>> import sqlglot.expressions as sge
+        >>> columns = [
+        ...     sge.ColumnDef(
+        ...         this=sg.to_identifier("a", quoted=True),
+        ...         kind=sge.DataType(this=sge.DataType.Type.BIGINT),
+        ...     ),
+        ...     sge.ColumnDef(
+        ...         this=sg.to_identifier("b", quoted=True),
+        ...         kind=sge.DataType(this=sge.DataType.Type.VARCHAR),
+        ...         constraints=[sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())],
+        ...     ),
+        ... ]
+        >>> schema_expr = sge.Schema(expressions=columns)
+        >>> sch = ibis.Schema.from_sqlglot(schema_expr)
+        >>> sch
+        ibis.Schema {
+          a  int64
+          b  !string
+        }
+
+        Different source dialects are supported using the `dialect` keyword argument.
+
+        >>> columns = [
+        ...     sge.ColumnDef(
+        ...         this=sg.to_identifier("a", quoted=True),
+        ...         kind=sge.DataType(
+        ...             this=sge.DataType.Type.ARRAY,
+        ...             expressions=[sge.DataType(this=sge.DataType.Type.BIGINT, nested=False)],
+        ...             nested=True,
+        ...         ),
+        ...     )
+        ... ]
+        >>> schema_expr = sge.Schema(expressions=columns)
+        >>> snowflake_schema = ibis.Schema.from_sqlglot(schema_expr, dialect="snowflake")
+        >>> snowflake_schema
+        ibis.Schema {
+          a  array<json>
+        }
+        >>> bigquery_schema = ibis.Schema.from_sqlglot(schema_expr, dialect="bigquery")
+        >>> bigquery_schema
+        ibis.Schema {
+          a  array<int64>
+        }
+        """
+        import sqlglot.expressions as sge
+
+        from ibis.backends.sql.datatypes import TYPE_MAPPERS, SqlglotType
+
+        expressions = schema.expressions
+        if not expressions:
+            return cls({})
+
+        type_mapper_class = TYPE_MAPPERS.get(dialect, SqlglotType)
+        type_mapper = type_mapper_class()
+        fields = {}
+
+        for column in expressions:
+            name = column.this.this
+
+            nullable = not any(
+                isinstance(constraint.kind, sge.NotNullColumnConstraint)
+                for constraint in (column.constraints or [])
+            )
+
+            if column.kind:
+                ibis_dtype = type_mapper.to_ibis(column.kind, nullable=nullable)
+            else:
+                ibis_dtype = dt.String(nullable=nullable)
+
+            fields[name] = ibis_dtype
+
+        return cls(fields)
+
     def to_numpy(self) -> list[tuple[str, np.dtype]]:
         """Return the equivalent numpy dtypes."""
         from ibis.formats.numpy import NumpySchema

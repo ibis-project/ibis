@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import NamedTuple
 
 import pytest
+import sqlglot as sg
+import sqlglot.expressions as sge
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -440,8 +442,6 @@ def test_null_fields():
 
 
 def test_to_sqlglot_column_defs():
-    import sqlglot.expressions as sge
-
     schema = sch.schema({"a": "int64", "b": "string", "c": "!string"})
     columns = schema.to_sqlglot_column_defs("duckdb")
 
@@ -463,9 +463,6 @@ def test_to_sqlglot_column_defs_empty_schema():
 
 
 def test_to_sqlglot_column_defs_create_table_integration():
-    import sqlglot as sg
-    import sqlglot.expressions as sge
-
     schema = sch.schema({"id": "!int64", "name": "string"})
     columns = schema.to_sqlglot_column_defs("duckdb")
 
@@ -478,3 +475,130 @@ def test_to_sqlglot_column_defs_create_table_integration():
     sql = create_stmt.sql(dialect="duckdb")
     expected = 'CREATE TABLE "test_table" ("id" BIGINT NOT NULL, "name" TEXT)'
     assert sql == expected
+
+
+def test_schema_from_sqlglot():
+    columns = [
+        sge.ColumnDef(
+            this=sg.to_identifier("bigint_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.BIGINT),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("int_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.INT),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("smallint_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.SMALLINT),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("tinyint_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.TINYINT),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("double_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.DOUBLE),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("float_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.FLOAT),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("varchar_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.VARCHAR),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("text_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.TEXT),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("boolean_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.BOOLEAN),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("date_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.DATE),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("timestamp_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.DATETIME),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("time_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.TIME),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("binary_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.BINARY),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("uuid_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.UUID),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("json_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.JSON),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("decimal_col", quoted=True),
+            kind=sge.DataType(
+                this=sge.DataType.Type.DECIMAL,
+                expressions=[
+                    sge.DataTypeParam(this=sge.Literal.number(10)),
+                    sge.DataTypeParam(this=sge.Literal.number(2)),
+                ],
+            ),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("not_null_col", quoted=True),
+            kind=sge.DataType(this=sge.DataType.Type.VARCHAR),
+            constraints=[sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())],
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("array_col", quoted=True),
+            kind=sge.DataType(
+                this=sge.DataType.Type.ARRAY,
+                expressions=[sge.DataType(this=sge.DataType.Type.VARCHAR)],
+                nested=True,
+            ),
+        ),
+        sge.ColumnDef(
+            this=sg.to_identifier("map_col", quoted=True),
+            kind=sge.DataType(
+                this=sge.DataType.Type.MAP,
+                expressions=[
+                    sge.DataType(this=sge.DataType.Type.VARCHAR),
+                    sge.DataType(this=sge.DataType.Type.INT),
+                ],
+                nested=True,
+            ),
+        ),
+    ]
+
+    sqlglot_schema = sge.Schema(expressions=columns)
+    ibis_schema = sch.Schema.from_sqlglot(sqlglot_schema)
+    expected = sch.Schema(
+        {
+            "bigint_col": dt.int64,
+            "int_col": dt.int32,
+            "smallint_col": dt.int16,
+            "tinyint_col": dt.int8,
+            "double_col": dt.float64,
+            "float_col": dt.float32,
+            "varchar_col": dt.string,
+            "text_col": dt.string,
+            "boolean_col": dt.boolean,
+            "date_col": dt.date,
+            "timestamp_col": dt.timestamp,
+            "time_col": dt.time,
+            "binary_col": dt.binary,
+            "uuid_col": dt.uuid,
+            "json_col": dt.json,
+            "decimal_col": dt.Decimal(10, 2),
+            "not_null_col": dt.String(nullable=False),
+            "array_col": dt.Array(dt.string),
+            "map_col": dt.Map(dt.string, dt.int32),
+        }
+    )
+
+    assert ibis_schema == expected
