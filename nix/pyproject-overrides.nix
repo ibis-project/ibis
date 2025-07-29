@@ -144,7 +144,9 @@ in
     {
       nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
       postInstall = attrs.postInstall or "" + ''
-        cp ${icebergJar} $out/${final.python.sitePackages}/pyspark/jars/${icebergJar.name}
+        cp -v ${icebergJar} $out/${final.python.sitePackages}/pyspark/jars/${icebergJar.name}
+        mkdir -p $out/${final.python.sitePackages}/pyspark/conf
+        cp -v ${../docker/spark-connect/log4j2.properties} $out/${final.python.sitePackages}/pyspark/conf/log4j2.properties
       '';
     }
   );

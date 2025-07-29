@@ -69,11 +69,11 @@ def pandas_ntile(x, bucket: int):
 with pytest.warns(FutureWarning, match="v9.0"):
 
     @reduction(input_type=[dt.double], output_type=dt.double)
-    def mean_udf(s):
+    def mean_udf(s: pd.Series) -> float:
         return s.mean()
 
     @analytic(input_type=[dt.double], output_type=dt.double)
-    def calc_zscore(s):
+    def calc_zscore(s: pd.Series) -> pd.Series:
         return (s - s.mean()) / s.std()
 
 

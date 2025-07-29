@@ -41,7 +41,7 @@ pd = pytest.importorskip("pandas")
 with pytest.warns(FutureWarning, match="v9.0"):
 
     @reduction(input_type=[dt.double], output_type=dt.double)
-    def mean_udf(s):
+    def mean_udf(s: pd.Series) -> float:
         return s.mean()
 
 
@@ -238,7 +238,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             input_type=[dt.double],
             output_type=dt.Struct({"mean": dt.double, "std": dt.double}),
         )
-        def mean_and_std(v):
+        def mean_and_std(v: pd.Series) -> tuple[float, float]:
             return v.mean(), v.std()
 
     grouping_key_cols = ["bigint_col", "int_col"]
@@ -1510,8 +1510,16 @@ def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
     assert result.shape[0] == expected.shape[0]
 
 
+def agg_to_list(s: pd.Series) -> list[float]:
+    return s.tolist()
+
+
+def agg_to_ndarray(s: pd.Series) -> np.ndarray:
+    return s.values
+
+
 @pytest.mark.parametrize(
-    "agg_fn", [lambda s: list(s), lambda s: np.array(s)], ids=["list", "ndarray"]
+    "agg_fn", [agg_to_list, agg_to_ndarray], ids=["list", "ndarray"]
 )
 @pytest.mark.notimpl(
     [
@@ -1602,11 +1610,11 @@ def test_aggregate_mixed_udf(backend, alltypes, df):
     with pytest.warns(FutureWarning, match="v9.0"):
 
         @reduction(input_type=[dt.double], output_type=dt.double)
-        def sum_udf(v):
+        def sum_udf(v: pd.Series) -> float:
             return np.sum(v)
 
         @reduction(input_type=[dt.double], output_type=dt.Array(dt.double))
-        def collect_udf(v):
+        def collect_udf(v: pd.Series) -> np.ndarray:
             return np.array(v)
 
     expr = alltypes.aggregate(
