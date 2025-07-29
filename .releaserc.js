@@ -45,7 +45,7 @@ module.exports = {
         replacements: [
           {
             files: ["ibis/__init__.py"],
-            from: '__version__ = ".*"',
+            from: '__version__ = "${lastRelease.version}"',
             to: '__version__ = "${nextRelease.version}"',
             results: [
               {
