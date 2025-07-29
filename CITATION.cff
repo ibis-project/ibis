@@ -1,0 +1,37 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: The Ibis Project
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - name: The Ibis Project Authors
+repository-code: 'https://github.com/ibis-project/ibis'
+url: 'https://ibis-project.org'
+abstract: Ibis is the portable Python dataframe library.
+keywords:
+  - python
+  - analytics
+  - sql
+  - compilers
+  - mysql
+  - bigquery
+  - database
+  - clickhouse
+  - sqlite
+  - impala
+  - postgresql
+  - snowflake
+  - pandas
+  - pyspark
+  - mssql
+  - duckdb
+  - trino
+  - pyarrow
+  - datafusion
+  - polars
+license: Apache-2.0
+version: 10.8.0
