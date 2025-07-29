@@ -56,6 +56,20 @@ module.exports = {
               }
             ],
             countMatches: true
+          },
+          {
+            files: ["CITATION.cff"],
+            from: "version: ${lastRelease.version}",
+            to: "version: ${nextRelease.version}",
+            results: [
+              {
+                file: "CITATION.cff",
+                hasChanged: true,
+                numMatches: 1,
+                numReplacements: 1
+              }
+            ],
+            countMatches: true
           }
         ]
       }
@@ -82,7 +96,8 @@ module.exports = {
           "pyproject.toml",
           "uv.lock",
           "docs/release_notes_generated.qmd",
-          "ibis/__init__.py"
+          "ibis/__init__.py",
+          "CITATION.cff"
         ],
         message: "chore(release): ${nextRelease.version}"
       }
