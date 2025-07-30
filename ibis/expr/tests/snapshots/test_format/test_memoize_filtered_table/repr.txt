@@ -7,10 +7,12 @@ r1 := Filter[r0]
   InValues(value=r0.dest, options=['ORD', 'JFK', 'SFO'])
 
 r2 := Aggregate[r1]
-  groups:
-    dest: r1.dest
   metrics:
     Mean(arrdelay): Mean(r1.arrdelay)
+  keys:
+    dest: r1.dest
+  groups:
+    dest: r1.dest
 
 r3 := Sort[r2]
   desc r2['Mean(arrdelay)']

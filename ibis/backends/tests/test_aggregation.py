@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import sqlite3
 from datetime import date
 from operator import methodcaller
 
@@ -10,6 +11,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.selectors as s
 from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
@@ -19,7 +21,9 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLNotSupportedError,
+    MySQLOperationalError,
     OracleDatabaseError,
+    PolarsColumnNotFoundError,
     PolarsInvalidOperationError,
     PsycoPg2InternalError,
     Py4JError,
@@ -1781,3 +1785,93 @@ def test_empty_sum(con):
 
     result = con.to_pyarrow(t.x.sum(where=t.x > 1)).as_py()
     assert result is None
+
+
+@pytest.fixture(scope="session")
+def grouping_set_table():
+    return ibis.memtable(
+        {
+            "a": [1, 1, 2, 2, 3, 5],
+            "b": ["a", "a", "b", "a", "a", "c"],
+            "c": [12, 10, 5, 7, 5, 2],
+        }
+    )
+
+
+@pytest.mark.notyet(["sqlite"], raises=sqlite3.OperationalError)
+@pytest.mark.notyet(["mysql"], raises=MySQLOperationalError)
+@pytest.mark.notyet(["polars"], raises=PolarsColumnNotFoundError)
+@pytest.mark.notyet(["druid"])
+@pytest.mark.parametrize(
+    ("grouping_set_spec", "expected"),
+    [
+        (ibis.cube("b"), {"b": ["a", "b", "c", None], "sum_a": [7, 2, 5, 14]}),
+        (
+            ibis.rollup("b", "c"),
+            {
+                "b": ["a"] * 5 + ["b"] * 2 + ["c"] * 2 + [None],
+                "c": [5, 7, 10, 12, None, 5, None, 2, None, None],
+                "sum_a": [3, 2, 1, 1, 7, 2, 2, 5, 5, 14],
+            },
+        ),
+        (
+            ibis.grouping_sets(("b", "c"), ("b",), ()),
+            {
+                "b": ["a"] * 5 + ["b"] * 2 + ["c"] * 2 + [None],
+                "c": [5, 7, 10, 12, None, 5, None, 2, None, None],
+                "sum_a": [3, 2, 1, 1, 7, 2, 2, 5, 5, 14],
+            },
+        ),
+    ],
+    ids=["cube", "rollup", "grouping_sets"],
+)
+def test_simple_grouping_sets(
+    con, backend, grouping_set_table, grouping_set_spec, expected
+):
+    expr = (
+        grouping_set_table.group_by(grouping_set_spec)
+        .agg(sum_a=lambda t: t.a.sum())
+        .order_by(s.all())
+    )
+
+    result = con.to_pandas(expr)
+
+    backend.assert_frame_equal(
+        result.replace(np.nan, None), pd.DataFrame(expected).replace(np.nan, None)
+    )
+
+
+@pytest.mark.notyet(["sqlite"], raises=sqlite3.OperationalError)
+@pytest.mark.notyet(["mysql"], raises=MySQLOperationalError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["druid"], raises=Exception)
+@pytest.mark.notyet(
+    [
+        "exasol",
+        "oracle",
+        "clickhouse",
+        "datafusion",
+        "risingwave",
+        "mssql",
+        "pyspark",
+        "impala",
+        "snowflake",
+        "bigquery",
+    ],
+    raises=AssertionError,
+    reason="returns empty for a grouping set on an empty table, which disagrees with half the backends",
+)
+def test_grouping_empty_table(con):
+    # TODO(cpcloud): group_id doesn't allow string columns
+    t = ibis.memtable({"c1": []}, schema={"c1": "int"})
+    expr = (
+        t.group_by(ibis.cube("c1"))
+        .agg(gid=lambda t: ibis.group_id(t.c1))
+        .order_by(s.first())
+    )
+    result = con.to_pandas(expr)
+
+    assert len(result) == 1
+    assert len(result.columns) == 2
+    assert pd.isnull(result.at[0, "c1"])
+    assert result.at[0, "gid"] == 1

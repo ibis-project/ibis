@@ -73,3 +73,28 @@ def test_aggregation_where(table, func):
     assert r1.equals(r3)
     assert r1.equals(r4)
     assert r1.op().where.equals(table.bools.op())
+
+
+@pytest.fixture
+def t():
+    return ibis.table(schema={"a": "string", "b": "string", "c": "string"})
+
+
+def test_rollup(t):
+    expr = t.group_by(ibis.rollup("a", "b", "c")).agg(n=_.count())
+    result = ibis.to_sql(expr, dialect="duckdb")
+    assert len(result)
+
+
+def test_grouping_sets(t):
+    gs = ibis.grouping_sets(("a",), ("b",))
+    expr = t.group_by(gs).agg(n=_.count())
+    result = ibis.to_sql(expr, dialect="duckdb")
+    assert len(result)
+
+
+def test_cube(t):
+    gs = ibis.cube("a", "b")
+    expr = t.group_by(gs).agg(n=_.count())
+    result = ibis.to_sql(expr, dialect="duckdb")
+    assert len(result)

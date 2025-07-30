@@ -81,8 +81,8 @@ WITH ssr AS
      AND d_date BETWEEN cast('2000-08-23' AS date) AND cast('2000-09-06' AS date)
      AND wsr_web_site_sk = web_site_sk
    GROUP BY web_site_id)
-SELECT channel ,
-       id ,
+SELECT nullif(channel, '') AS channel ,
+       nullif(id, '') AS id ,
        sum(sales) AS sales ,
        sum(returns_) AS returns_ ,
        sum(profit) AS profit

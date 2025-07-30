@@ -936,12 +936,9 @@ def test_aggregate():
     agg = t.aggregate([t.int_col.sum()], by=[t.bool_col])
     expected = Aggregate(
         parent=t,
-        groups={
-            "bool_col": t.bool_col,
-        },
-        metrics={
-            "Sum(int_col)": t.int_col.sum(),
-        },
+        keys={"bool_col": t.bool_col},
+        groups={"bool_col": t.bool_col},
+        metrics={"Sum(int_col)": t.int_col.sum()},
     )
     assert agg.op() == expected
 
@@ -1071,10 +1068,8 @@ def test_aggregate_field_dereferencing():
     charge_ = discount_price_ * (1 + f.l_tax)
     assert a.op() == Aggregate(
         parent=f,
-        groups={
-            "l_returnflag": f.l_returnflag,
-            "l_linestatus": f.l_linestatus,
-        },
+        keys={"l_returnflag": f.l_returnflag, "l_linestatus": f.l_linestatus},
+        groups={"l_returnflag": f.l_returnflag, "l_linestatus": f.l_linestatus},
         metrics={
             "sum_qty": f.l_quantity.sum(),
             "sum_base_price": f.l_extendedprice.sum(),
@@ -1117,7 +1112,7 @@ def test_filter_condition_referencing_agg_without_groupby_turns_it_into_a_subque
 
     total = (r2.float_col * r2.int_col).sum()
     subquery = ops.ScalarSubquery(
-        ops.Aggregate(r2, groups={}, metrics={total.get_name(): total})
+        ops.Aggregate(r2, keys={}, groups={}, metrics={total.get_name(): total})
     ).to_expr()
     expected = Filter(parent=r3, predicates=[r3.value > subquery * 0.0001])
 
@@ -1433,12 +1428,9 @@ def test_self_view_join_followed_by_aggregate_correctly_dereference_fields():
         ).to_expr()
         expected_agg = ops.Aggregate(
             parent=join,
-            groups={
-                "g": join.g,
-            },
-            metrics={
-                "metric": (join.total - join.total_right).max(),
-            },
+            keys={"g": join.g},
+            groups={"g": join.g},
+            metrics={"metric": (join.total - join.total_right).max()},
         ).to_expr()
         assert join.equals(expected_join)
         assert agg.equals(expected_agg)
