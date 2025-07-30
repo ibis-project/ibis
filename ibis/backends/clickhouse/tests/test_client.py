@@ -51,6 +51,13 @@ def test_get_schema(con):
     assert t.schema() == schema
 
 
+def test_get_schema_failure(con, mocker):
+    obj = mocker.patch.object(con, "_safe_raw_sql")
+    obj.side_effect = ClickHouseDatabaseError("Fake error!")
+    with pytest.raises(ClickHouseDatabaseError, match="Fake"):
+        con.get_schema("functional_alltypes")
+
+
 def test_result_as_dataframe(con, alltypes):
     expr = alltypes.limit(10)
 

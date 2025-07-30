@@ -508,6 +508,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
         except DatabaseError as e:
             if re.search(r"\bUNKNOWN_TABLE\b", str(e)):
                 raise com.TableNotFound(table_name) from e
+            raise
 
         return sch.Schema(
             dict(zip(names, map(self.compiler.type_mapper.from_string, types)))
