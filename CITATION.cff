@@ -17,21 +17,27 @@ keywords:
   - analytics
   - sql
   - compilers
-  - mysql
-  - bigquery
   - database
+  - athena
+  - bigquery
   - clickhouse
-  - sqlite
-  - impala
-  - postgresql
-  - snowflake
-  - pandas
-  - pyspark
-  - mssql
-  - duckdb
-  - trino
-  - pyarrow
+  - databricks
   - datafusion
+  - druid
+  - duckdb
+  - exasol
+  - flink
+  - impala
+  - mssql
+  - mysql
+  - oracle
   - polars
+  - postgres
+  - postgresql
+  - pyspark
+  - risingwave
+  - snowflake
+  - sqlite
+  - trino
 license: Apache-2.0
 version: 10.8.0
