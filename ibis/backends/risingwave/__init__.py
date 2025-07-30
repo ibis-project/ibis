@@ -28,7 +28,7 @@ from ibis.backends import (
     NoExampleLoader,
 )
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import TRUE, C, ColGen
+from ibis.backends.sql.compilers.base import TRUE, C
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -249,18 +249,8 @@ class Backend(
         return schema
 
     def get_schema(
-        self,
-        name: str,
-        *,
-        catalog: str | None = None,
-        database: str | None = None,
+        self, name: str, *, catalog: str | None = None, database: str | None = None
     ):
-        a = ColGen(table="a")
-        c = ColGen(table="c")
-        n = ColGen(table="n")
-
-        format_type = self.compiler.f["pg_catalog.format_type"]
-
         # If no database is specified, assume the current database
         db = database or self.current_database
 
@@ -271,30 +261,18 @@ class Backend(
         if database is None and (temp_table_db := self._session_temp_db) is not None:
             dbs.append(sge.convert(temp_table_db))
 
+        conditions = [C.table_name.eq(sge.convert(name)), C.table_schema.isin(*dbs)]
+
+        if catalog is not None:
+            conditions.append(C.table_catalog.eq(sge.convert(catalog)))
+
         type_info = (
             sg.select(
-                a.attname.as_("column_name"),
-                format_type(a.atttypid, a.atttypmod).as_("data_type"),
-                sg.not_(a.attnotnull).as_("nullable"),
+                C.column_name, C.data_type, C.is_nullable.eq("YES").as_("nullable")
             )
-            .from_(sg.table("pg_attribute", db="pg_catalog").as_("a"))
-            .join(
-                sg.table("pg_class", db="pg_catalog").as_("c"),
-                on=c.oid.eq(a.attrelid),
-                join_type="INNER",
-            )
-            .join(
-                sg.table("pg_namespace", db="pg_catalog").as_("n"),
-                on=n.oid.eq(c.relnamespace),
-                join_type="INNER",
-            )
-            .where(
-                a.attnum > 0,
-                sg.not_(a.attisdropped),
-                n.nspname.isin(*dbs),
-                c.relname.eq(sge.convert(name)),
-            )
-            .order_by(a.attnum)
+            .from_(sg.table("columns", catalog="information_schema"))
+            .where(*conditions)
+            .order_by(C.ordinal_position)
         )
 
         type_mapper = self.compiler.type_mapper
@@ -328,10 +306,17 @@ class Backend(
         with self._safe_raw_sql(create_stmt):
             pass
         try:
-            return self.get_schema(name)
+            schema = self.get_schema(name)
         finally:
             with self._safe_raw_sql(drop_stmt):
                 pass
+
+        # top level view fields are reported as not nullable, which in general
+        # isn't true since a view can be an arbitrary query, including one that
+        # produces nulls
+        return sch.Schema(
+            {name: dtype.copy(nullable=True) for name, dtype in schema.items()}
+        )
 
     def create_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
