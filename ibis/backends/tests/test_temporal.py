@@ -2104,6 +2104,11 @@ def test_delta(con, start, end, unit, expected):
                     raises=com.OperationNotDefinedError,
                     reason="TimestampBucket not implemented",
                 ),
+                pytest.mark.notyet(
+                    ["risingwave"],
+                    raises=PsycoPg2InternalError,
+                    reason="millisecond unit not implemented",
+                ),
             ],
             id="milliseconds",
         ),
@@ -2159,11 +2164,6 @@ def test_delta(con, start, end, unit, expected):
     ],
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function date_bin(interval, timestamp without time zone, timestamp without time zone) does not exist",
-)
 def test_timestamp_bucket(backend, kws, pd_freq):
     ts = backend.functional_alltypes.timestamp_col.execute().rename("ts")
     res = backend.functional_alltypes.timestamp_col.bucket(**kws).execute().rename("ts")
@@ -2193,11 +2193,6 @@ def test_timestamp_bucket(backend, kws, pd_freq):
 )
 @pytest.mark.parametrize("offset_mins", [2, -2], ids=["pos", "neg"])
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function date_bin(interval, timestamp without time zone, timestamp without time zone) does not exist",
-)
 def test_timestamp_bucket_offset(backend, offset_mins):
     ts = backend.functional_alltypes.timestamp_col
     expr = ts.bucket(minutes=5, offset=ibis.interval(minutes=offset_mins))
