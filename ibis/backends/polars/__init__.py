@@ -317,8 +317,7 @@ class Backend(BaseBackend, NoUrl, DirectExampleLoader):
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -333,6 +332,8 @@ class Backend(BaseBackend, NoUrl, DirectExampleLoader):
         temp: bool | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
+        name = self._create_table_name(name)
+
         if database is not None:
             raise com.IbisError(
                 "Passing `database` to the Polars backend's `create_table()` method is "

@@ -70,8 +70,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -94,7 +93,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         Parameters
         ----------
         name
-            Name of the table to create
+            Name of the table to create. If not provided, a name will be generated automatically.
         obj
             The data with which to populate the table; optional, but one of `obj`
             or `schema` must be specified
@@ -127,6 +126,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             Iterable of column name and type pairs/mapping/schema by which to
             partition the table.
         """
+        name = self._create_table_name(name)
         if overwrite is not None:
             raise com.UnsupportedOperationError(
                 "Amazon Athena does not support REPLACE syntax, nor does it "

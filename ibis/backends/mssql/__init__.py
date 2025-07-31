@@ -596,8 +596,7 @@ GO"""
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -615,7 +614,7 @@ GO"""
         Parameters
         ----------
         name
-            Name of the new table.
+            Name of the new table. If not provided, a unique name will be generated.
         obj
             An Ibis table expression or pandas table that will be used to
             extract the schema and the data of the new table. If not provided,
@@ -643,6 +642,8 @@ GO"""
         Table
             The table that was created.
         """
+        name = self._create_table_name(name)
+
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
         if schema is not None:

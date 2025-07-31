@@ -317,8 +317,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
 
     def create_table(
         self,
-        name: str,
-        /,
+        name: str | None = None,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -336,7 +335,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
         Parameters
         ----------
         name
-            Name of the table to create
+            Name of the table to create. If not provided, a unique name will be generated.
         obj
             The data with which to populate the table; optional, but at least
             one of `obj` or `schema` must be specified
@@ -350,7 +349,14 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
             if the table exists
         temp
             Create a temporary table (not supported)
+
+        Returns
+        -------
+        Table
+            The table that was just created
         """
+        name = self._create_table_name(name)
+
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
         if schema is not None:
