@@ -516,7 +516,7 @@ jobs:
       - name: "run serial tests: ${{ matrix.backend.name }}"
         if: matrix.backend.serial
         timeout-minutes: 60
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }}
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -x
         env:
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"

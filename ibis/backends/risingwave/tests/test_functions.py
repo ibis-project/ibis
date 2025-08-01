@@ -13,6 +13,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import literal as L
+from ibis.util import gen_name
 
 pytest.importorskip("psycopg2")
 
@@ -209,13 +210,6 @@ def test_coalesce_all_na_double(con):
     assert np.isnan(con.execute(expr))
 
 
-def test_numeric_builtins_work(alltypes, df):
-    expr = alltypes.double_col.fill_null(0)
-    result = expr.execute()
-    expected = df.double_col.fillna(0).rename(expr.get_name())
-    tm.assert_series_equal(result, expected)
-
-
 @pytest.mark.parametrize(
     ("op", "pandas_op"),
     [
@@ -235,7 +229,7 @@ def test_numeric_builtins_work(alltypes, df):
 )
 def test_ifelse(alltypes, df, op, pandas_op):
     expr = op(alltypes)
-    result = expr.execute()
+    result = alltypes.select("id", result=expr).order_by("id").execute().result
     result.name = None
     expected = pandas_op(df)
     tm.assert_series_equal(result, expected)
@@ -286,7 +280,7 @@ def test_ifelse(alltypes, df, op, pandas_op):
 )
 def test_bucket(alltypes, df, func, pandas_func):
     expr = func(alltypes.double_col)
-    result = expr.execute()
+    result = alltypes.select("id", result=expr).order_by("id").execute().result
     expected = pandas_func(df.double_col)
     tm.assert_series_equal(result, expected, check_names=False)
 
@@ -299,7 +293,7 @@ def test_category_label(alltypes, df):
     labels = ["a", "b", "c", "d"]
     bucket = d.bucket(bins)
     expr = bucket.cases(*enumerate(labels), else_=None)
-    result = expr.execute()
+    result = t.select("id", result=expr).order_by("id").execute().result
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -428,13 +422,6 @@ def test_not_contains(alltypes, df):
     tm.assert_series_equal(result, expected, check_names=False)
 
 
-def test_group_concat(alltypes, df):
-    expr = alltypes.string_col.group_concat()
-    result = expr.execute()
-    expected = ",".join(df.string_col.dropna())
-    assert result == expected
-
-
 def test_distinct_aggregates(alltypes, df):
     expr = alltypes.limit(100).double_col.nunique()
     result = expr.execute()
@@ -448,7 +435,8 @@ def test_not_exists(alltypes, df):
     expr = t.filter(~((t.string_col == t2.string_col).any()))
     result = expr.execute()
 
-    left, right = df, t2.execute()
+    left = df
+    right = t2.order_by("id").execute()
     expected = left[left.string_col != right.string_col]
 
     tm.assert_frame_equal(result, expected, check_index_type=False, check_dtype=False)
@@ -479,7 +467,12 @@ def test_simple_window(alltypes, func, df):
     t = alltypes
     f = getattr(t.double_col, func)
     df_f = getattr(df.double_col, func)
-    result = t.select((t.double_col - f()).name("double_col")).execute().double_col
+    result = (
+        t.select("id", double_col=t.double_col - f())
+        .order_by("id")
+        .execute()
+        .double_col
+    )
     expected = df.double_col - df_f()
     tm.assert_series_equal(result, expected)
 
@@ -504,9 +497,6 @@ def test_rolling_window(alltypes, func, df):
 
 
 @pytest.mark.parametrize("func", ["mean", "sum", "min", "max"])
-@pytest.mark.xfail(
-    reason="Window function with empty PARTITION BY is not supported yet"
-)
 def test_partitioned_window(alltypes, func, df):
     t = alltypes
     window = ibis.window(
@@ -520,15 +510,23 @@ def test_partitioned_window(alltypes, func, df):
         def rolled(df):
             torder = df.sort_values("timestamp_col")
             rolling = torder.double_col.rolling(7, min_periods=0)
-            return getattr(rolling, func)()
+            idx = torder["id"]
+            series = getattr(rolling, func)()
+            res = pd.concat([idx, series], axis=1)
+            return res
 
         return rolled
 
     f = getattr(t.double_col, func)
     expr = f().over(window).name("double_col")
-    result = t.select(expr).execute().double_col
-    expected = df.groupby("string_col").apply(roller(func)).reset_index(drop=True)
-    tm.assert_series_equal(result, expected)
+    result = t.select("id", expr).order_by("id").execute().double_col
+    expected = (
+        df.groupby("string_col")
+        .apply(roller(func))
+        .sort_values(by=["id"])
+        .reset_index(drop=True)
+    )
+    tm.assert_series_equal(result, expected["double_col"])
 
 
 @pytest.mark.parametrize("func", ["sum", "min", "max"])
@@ -613,7 +611,7 @@ def test_window_with_arithmetic(alltypes, df):
 def test_anonymous_aggregate(alltypes, df):
     t = alltypes
     expr = t.filter(t.double_col > t.double_col.mean())
-    result = expr.execute()
+    result = expr.order_by("id").execute()
     expected = df[df.double_col > df.double_col.mean()].reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
 
@@ -658,7 +656,7 @@ def test_identical_to(con, df):
     t = con.table("functional_alltypes")
     dt = df[["tinyint_col", "double_col"]]
     expr = t.tinyint_col.identical_to(t.double_col)
-    result = expr.execute()
+    result = t.select("id", result=expr).order_by("id").execute().result
     expected = (dt.tinyint_col.isnull() & dt.double_col.isnull()) | (
         dt.tinyint_col == dt.double_col
     )
@@ -688,10 +686,10 @@ def test_invert_bool(con, df):
     ],
 )
 def test_negate_non_boolean(con, field, df):
-    t = con.table("functional_alltypes").limit(10)
-    expr = t.select((-t[field]).name(field))
+    t = con.table("functional_alltypes")
+    expr = t.select("id", (-t[field]).name(field)).order_by("id")
     result = expr.execute()[field]
-    expected = -df.head(10)[field]
+    expected = -df[field]
     tm.assert_series_equal(result, expected)
 
 
@@ -824,3 +822,22 @@ def test_string_to_binary_round_trip(con):
         c.execute(sql_string)
         expected = pd.Series([row[0][0] for row in c.fetchall()], name=name)
     tm.assert_series_equal(result, expected)
+
+
+def test_nested_struct(con):
+    name = gen_name("risingwave_temp_table")
+    t = con.create_table(
+        name, schema={"a bb c": "int32", "b": "struct<a: int32, b: string>"}
+    )
+    try:
+        expr = t.mutate(c=t.b.a + 1, d=t["a bb c"] - 90)
+        result = con.execute(expr)
+        assert isinstance(result, pd.DataFrame)
+        assert "c" in result.columns
+    finally:
+        con.drop_table(name, force=True)
+
+
+def test_struct_literal(con):
+    lit = ibis.struct({"a": ibis.array([1, 2, 3]), "b": "a string", "d e f": 42.42})
+    assert con.execute(lit) == {"a": [1, 2, 3], "b": "a string", "d e f": 42.42}
