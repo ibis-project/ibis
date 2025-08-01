@@ -259,8 +259,8 @@ class TimestampFromYMDHMS(Value):
     minutes: Value[dt.Integer]
     seconds: Value[dt.Integer]
 
-    dtype = dt.timestamp
-    shape = rlz.shape_like("args")
+    dtype: dt.Timestamp
+    shape = rlz.shape_like(["year", "month", "day", "hours", "minutes", "seconds"])
 
 
 @public
