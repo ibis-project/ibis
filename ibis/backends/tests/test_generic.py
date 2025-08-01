@@ -1072,7 +1072,7 @@ def test_interactive(alltypes, monkeypatch):
     repr(expr)
 
 
-@pytest.mark.notimpl(["polars", "pyspark"])
+@pytest.mark.notimpl(["polars"])
 def test_uncorrelated_subquery(backend, batting, batting_df):
     subset_batting = batting.filter(batting.yearID <= 2000)
     expr = batting.filter(_.yearID == subset_batting.yearID.max())["playerID", "yearID"]
