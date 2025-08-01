@@ -1349,15 +1349,22 @@ def test_random_different_per_row(alltypes):
     ],
 )
 def test_clip(backend, alltypes, df, ibis_func, pandas_func):
-    result = (
-        alltypes.select("id", clipped=ibis_func(alltypes.int_col))
-        .order_by("id")
-        .execute()
-        .clipped
+    if backend.name() == "risingwave":
+        result = (
+            alltypes.select("id", clipped=ibis_func(alltypes.int_col))
+            .order_by("id")
+            .execute()
+            .clipped
+        )
+    else:
+        result = ibis_func(alltypes.int_col).execute().rename("clipped")
+
+    expected = (
+        pandas_func(df[["id", "int_col"]].sort_values(by=["id"]).int_col)
+        .astype(result.dtype)
+        .rename("clipped")
+        .reset_index(drop=True)
     )
-    expected = pandas_func(
-        df.sort_values(by=["id"]).int_col.reset_index(drop=True)
-    ).astype(result.dtype)
     # Names won't match in the PySpark backend since PySpark
     # gives 'tmp' name when executing a Column
     backend.assert_series_equal(result, expected, check_names=False)
