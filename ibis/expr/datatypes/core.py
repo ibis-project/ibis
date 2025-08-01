@@ -191,12 +191,6 @@ class DataType(Concrete, Coercible):
     def _pretty_piece(self) -> str:
         return ""
 
-    # TODO(kszucs): should remove it, only used internally
-    @property
-    def name(self) -> str:
-        """Return the name of the data type."""
-        return self.__class__.__name__
-
     @classmethod
     def __coerce__(cls, value, **kwargs):
         if isinstance(value, cls):
@@ -211,7 +205,8 @@ class DataType(Concrete, Coercible):
 
     def __str__(self) -> str:
         prefix = "!" * (not self.nullable)
-        return f"{prefix}{self.name.lower()}{self._pretty_piece}"
+        name = self.__class__.__name__.lower()
+        return f"{prefix}{name}{self._pretty_piece}"
 
     def equals(self, other: DataType) -> bool:
         if not isinstance(other, DataType):
@@ -992,7 +987,8 @@ class Struct(Parametric, MapSet):
         return self.fields[key]
 
     def __repr__(self) -> str:
-        return f"'{self.name}({list(self.items())}, nullable={self.nullable})"
+        name = self.__class__.__name__
+        return f"'{name}({list(self.items())}, nullable={self.nullable})"
 
     @property
     def _pretty_piece(self) -> str:
