@@ -245,6 +245,7 @@ class Backend(
 
     def do_connect(
         self,
+        *,
         user: str = "user",
         password: str | None = None,
         host: str = "localhost",
