@@ -469,6 +469,15 @@ def test_create_temp_table_in_nondefault_schema():
     con.create_table("foo", {"id": [1, 2, 3]}, temp=True)
 
 
+def test_create_table_with_quoted_columns():
+    con = ibis.duckdb.connect()
+    name = gen_name("quoted_columns_table")
+    df = pd.DataFrame(
+        {"group": ["G1"], "value": ["E1"], "id": [1], "date": [datetime(2025, 5, 13)]}
+    )
+    con.create_table(name, df, temp=True)
+
+
 def test_create_table_with_out_of_order_columns(con):
     name = gen_name("out_of_order_columns_table")
     df = pd.DataFrame({"value": ["E1"], "id": [1], "date": [datetime(2025, 5, 13)]})
