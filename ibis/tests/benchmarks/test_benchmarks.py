@@ -934,6 +934,16 @@ def test_wide_drop_compile(benchmark, wide_table, cols_to_drop):
     )
 
 
+def test_bind_on_wide_table(benchmark, wide_table):
+    # use a chain of select expressions on a wide table to test performance of Table.bind (internally used by select)
+    def select_chain(wide_table):
+        expr = wide_table.select(wide_table.columns[:-1])
+        expr2 = expr.select(expr.columns[:-1])
+        expr2.select(expr2.columns[:-1])
+
+    benchmark(select_chain, wide_table)
+
+
 @pytest.mark.parametrize(
     "method",
     [
