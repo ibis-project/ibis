@@ -7,7 +7,7 @@ aiosignal==1.4.0
 alembic==1.16.4
 altair==5.5.0
 annotated-types==0.7.0
-anyio==4.9.0
+anyio==4.10.0
 anywidget==0.9.18
 appdirs==1.4.4
 appnope==0.1.4 ; sys_platform == 'darwin'
@@ -36,7 +36,7 @@ bleach==6.2.0
 boto3==1.39.8
 botocore==1.39.8
 cachetools==5.5.2
-certifi==2025.7.14
+certifi==2025.8.3
 cffi==1.17.1
 cfgv==3.4.0
 chardet==5.2.0
@@ -51,8 +51,8 @@ comm==0.2.3
 contourpy==1.3.0 ; python_full_version < '3.10'
 contourpy==1.3.2 ; python_full_version == '3.10.*'
 contourpy==1.3.3 ; python_full_version >= '3.11'
-coverage==7.10.1
-cryptography==45.0.5
+coverage==7.10.2
+cryptography==45.0.6
 cycler==0.12.1
 databackend==0.0.3
 databricks-sql-connector-core==4.0.1
@@ -92,21 +92,21 @@ google-resumable-media==2.7.2
 googleapis-common-protos==1.70.0
 graphviz==0.21
 greenlet==3.2.3 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
-griffe==1.9.0
+griffe==1.10.0
 grpcio==1.74.0
 grpcio-status==1.74.0
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 humanize==4.12.3
-hypothesis==6.136.6
+hypothesis==6.137.1
 identify==2.6.12
 idna==3.10
 importlib-metadata==8.7.0
 importlib-resources==6.5.2
 impyla==0.22.0
 iniconfig==2.1.0
-ipykernel==6.30.0
+ipykernel==6.30.1
 ipython==8.18.1 ; python_full_version < '3.10'
 ipython==8.37.0 ; python_full_version == '3.10.*'
 ipython==9.4.0 ; python_full_version >= '3.11'
@@ -145,7 +145,7 @@ mako==1.3.10
 markdown-it-py==3.0.0
 markupsafe==3.0.2
 matplotlib==3.9.4 ; python_full_version < '3.10'
-matplotlib==3.10.3 ; python_full_version >= '3.10'
+matplotlib==3.10.5 ; python_full_version >= '3.10'
 matplotlib-inline==0.1.7
 mdurl==0.1.2
 mistune==3.1.3
@@ -187,7 +187,7 @@ plotnine==0.15.0 ; python_full_version >= '3.10'
 pluggy==1.6.0
 plum-dispatch==1.7.4 ; python_full_version < '3.10'
 plum-dispatch==2.5.7 ; python_full_version >= '3.10'
-polars==1.31.0
+polars==1.32.0
 pprintpp==0.4.0
 pre-commit==4.2.0
 prometheus-client==0.22.1
@@ -208,7 +208,7 @@ pyarrow==21.0.0
 pyarrow-hotfix==0.7
 pyasn1==0.6.1
 pyasn1-modules==0.4.2
-pyathena==3.15.0
+pyathena==3.16.0
 pycparser==2.22
 pydantic==2.11.7
 pydantic-core==2.33.2
@@ -219,7 +219,7 @@ pygments==2.19.2
 pyinstrument==5.0.3
 pyjwt==2.10.1
 pyodbc==5.2.0
-pyogrio==0.11.0
+pyogrio==0.11.1
 pyopenssl==25.1.0
 pyparsing==3.2.3
 pyproj==3.6.1 ; python_full_version < '3.10'
@@ -244,7 +244,7 @@ pytz==2025.2
 pywin32==311 ; platform_python_implementation != 'PyPy' and sys_platform == 'win32'
 pywinpty==2.0.15 ; os_name == 'nt'
 pyyaml==6.0.2
-pyzmq==27.0.0
+pyzmq==27.0.1
 quartodoc==0.11.1
 referencing==0.36.2
 regex==2025.7.34
@@ -276,7 +276,7 @@ sortedcontainers==2.4.0
 soupsieve==2.7
 sphobjinv==2.3.1.3
 sqlalchemy==2.0.42
-sqlglot==27.5.1
+sqlglot==27.6.0
 stack-data==0.6.3
 statsmodels==0.14.5
 tabulate==0.9.0
@@ -301,7 +301,7 @@ tzlocal==5.3.1
 uri-template==1.3.0
 urllib3==1.26.20 ; python_full_version < '3.10'
 urllib3==2.5.0 ; python_full_version >= '3.10'
-virtualenv==20.32.0
+virtualenv==20.33.1
 watchdog==6.0.0
 wcwidth==0.2.13
 webcolors==24.11.1

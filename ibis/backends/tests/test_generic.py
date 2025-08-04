@@ -2354,6 +2354,11 @@ def test_subsequent_overlapping_order_by(con, backend, alltypes, df):
         "Query could not be planned. SQL query requires ordering a table by time column"
     ),
 )
+@pytest.mark.xfail_version(
+    polars=["polars>=1.32.0"],
+    raises=AssertionError,
+    reason="polars ignores inner sort keys since 1.32.0",
+)
 def test_select_sort_sort(backend, alltypes, df):
     t = alltypes
     expr = t.order_by(t.year, t.id.desc()).order_by(t.bool_col)
@@ -2380,6 +2385,11 @@ def test_select_sort_sort(backend, alltypes, df):
     reason=(
         "Query could not be planned. SQL query requires ordering a table by time column"
     ),
+)
+@pytest.mark.xfail_version(
+    polars=["polars>=1.32.0"],
+    raises=AssertionError,
+    reason="polars ignores inner sort keys since 1.32.0",
 )
 def test_select_sort_sort_deferred(backend, alltypes, df):
     t = alltypes
