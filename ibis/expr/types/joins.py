@@ -170,7 +170,7 @@ def prepare_predicates(
     for pred in util.promote_list(predicates):
         if isinstance(pred, (Value, Deferred, bool)):
             for bound in bind(left, pred):
-                yield deref_both.dereference(bound.op())
+                yield from deref_both.dereference(bound.op())
         else:
             if isinstance(pred, tuple):
                 if len(pred) != 2:
@@ -180,9 +180,11 @@ def prepare_predicates(
                 lk = rk = pred
 
             for lhs, rhs in zip(bind(left, lk), bind(right, rk)):
-                lhs = deref_left.dereference(lhs.op())
-                rhs = deref_right.dereference(rhs.op())
-                yield comparison(lhs, rhs)
+                yield from map(
+                    comparison,
+                    deref_left.dereference(lhs.op()),
+                    deref_right.dereference(rhs.op()),
+                )
 
 
 def finished(method):
@@ -390,9 +392,14 @@ class Join(Table):
         values = {
             k: v.replace(peel_join_field, filter=ops.Value) for k, v in values.items()
         }
-        values = {k: derefmap.dereference(v) for k, v in values.items()}
+        new_values = {}
 
-        node = chain.copy(values=values)
+        for k, v in values.items():
+            # ensure that there's only a single thing returned from dereferencing
+            (new_value,) = derefmap.dereference(v)
+            new_values[k] = new_value
+
+        node = chain.copy(values=new_values)
         return Table(node)
 
     @property

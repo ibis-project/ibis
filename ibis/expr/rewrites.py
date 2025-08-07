@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import TYPE_CHECKING, Optional
 
 import toolz
 
@@ -12,10 +13,13 @@ from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import ExpressionError, IbisInputError
 from ibis.common.graph import Node as Traversable
 from ibis.common.graph import traverse
-from ibis.common.grounds import Concrete
+from ibis.common.grounds import Annotable
 from ibis.common.patterns import Check, pattern, replace
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.util import Namespace, promote_list
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 p = Namespace(pattern, module=ops)
 d = Namespace(deferred, module=ops)
@@ -26,7 +30,7 @@ y = var("y")
 name = var("name")
 
 
-class DerefMap(Concrete, Traversable):
+class DerefMap(Annotable, Traversable):
     """Trace and replace fields from earlier relations in the hierarchy.
 
     In order to provide a nice user experience, we need to allow expressions
@@ -54,14 +58,18 @@ class DerefMap(Concrete, Traversable):
     """The relations we want the values to point to."""
     rels: VarTuple[ops.Relation]
 
+    """Extra substitutions to be added to the dereference map. Stored on the
+    instance to facilitate lazy dereferencing."""
+    extra: FrozenDict[ops.Node, ops.Node]
+
     """Substitution mapping from values of earlier relations to the fields of `rels`."""
-    subs: FrozenDict[ops.Value, ops.Field]
+    subs: Optional[FrozenDict[ops.Value, ops.Field]]
 
     """Ambiguous field references."""
-    ambigs: FrozenDict[ops.Value, VarTuple[ops.Value]]
+    ambigs: Optional[FrozenDict[ops.Value, VarTuple[ops.Value]]]
 
     @classmethod
-    def from_targets(cls, rels, extra=None):
+    def from_targets(cls, rels, extra: Mapping[ops.Node, ops.Node] | None = None):
         """Create a dereference map from a list of target relations.
 
         Usually a single relation is passed except for joins where multiple
@@ -69,37 +77,18 @@ class DerefMap(Concrete, Traversable):
 
         Parameters
         ----------
-        rels : list of ops.Relation
+        rels
             The target relations to dereference to.
-        extra : dict, optional
+        extra
             Extra substitutions to be added to the dereference map.
 
         Returns
         -------
         DerefMap
         """
-        rels = promote_list(rels)
-        mapping = defaultdict(dict)
-        for rel in rels:
-            for field in rel.fields.values():
-                for value, distance in cls.backtrack(field):
-                    mapping[value][field] = distance
-
-        subs, ambigs = {}, {}
-        for from_, to in mapping.items():
-            mindist = min(to.values())
-            minkeys = [k for k, v in to.items() if v == mindist]
-            # if all the closest fields are from the same relation, then we
-            # can safely substitute them and we pick the first one arbitrarily
-            if all(minkeys[0].relations == k.relations for k in minkeys):
-                subs[from_] = minkeys[0]
-            else:
-                ambigs[from_] = minkeys
-
-        if extra is not None:
-            subs.update(extra)
-
-        return cls(rels, subs, ambigs)
+        return cls(
+            rels=tuple(promote_list(rels)), extra=extra or {}, subs=None, ambigs=None
+        )
 
     @classmethod
     def backtrack(cls, value):
@@ -132,28 +121,65 @@ class DerefMap(Concrete, Traversable):
         ):
             yield value, distance
 
-    def dereference(self, value):
-        """Dereference a value to the target relations.
+    def _fill_substitution_mappings(self):
+        if self.subs is not None and self.ambigs is not None:
+            return
+
+        mapping = defaultdict(dict)
+
+        for rel in self.rels:
+            for field in rel.fields.values():
+                for val, distance in self.__class__.backtrack(field):
+                    mapping[val][field] = distance
+
+        subs, ambigs = {}, {}
+        for from_, to in mapping.items():
+            mindist = min(to.values())
+            minkeys = [k for k, v in to.items() if v == mindist]
+            # if all the closest fields are from the same relation, then we
+            # can safely substitute them and we pick the first one arbitrarily
+            if all(minkeys[0].relations == k.relations for k in minkeys):
+                subs[from_] = minkeys[0]
+            else:
+                ambigs[from_] = minkeys
+
+        subs.update(self.extra)
+
+        self.subs = subs
+        self.ambigs = ambigs
+
+    def dereference(self, *values):
+        """Dereference values to target relations.
 
         Also check for ambiguous field references. If a field reference is found
         which is marked as ambiguous, then raise an error.
 
         Parameters
         ----------
-        value : ops.Value
-            The value to dereference.
+        values
+            Values to dereference.
 
         Returns
         -------
-        ops.Value
-            The dereferenced value.
+        tuple[ops.Value]
+            The dereferenced values.
         """
-        ambigs = value.find(lambda x: x in self.ambigs, filter=ops.Value)
-        if ambigs:
-            raise IbisInputError(
-                f"Ambiguous field reference {ambigs!r} in expression {value!r}"
-            )
-        return value.replace(self.subs, filter=ops.Value)
+        result = []
+        for v in values:
+            if v.relations and v.relations != set(self.rels):
+                # called on every iteration but only does work once per
+                # instance
+                self._fill_substitution_mappings()
+
+                if ambigs := v.find(lambda x: x in self.ambigs, filter=ops.Value):
+                    raise IbisInputError(
+                        f"Ambiguous field reference {ambigs!r} in expression {v!r}"
+                    )
+                result.append(v.replace(self.subs, filter=ops.Value))
+            else:
+                result.append(v)
+
+        return tuple(result)
 
 
 def flatten_predicates(node):
