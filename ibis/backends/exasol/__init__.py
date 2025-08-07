@@ -56,6 +56,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
 
     def do_connect(
         self,
+        *,
         user: str,
         password: str,
         host: str = "localhost",
