@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
@@ -246,14 +245,13 @@ class Backend(
     def do_connect(
         self,
         user: str = "user",
-        password: str | None = None,
+        auth: str | None = None,
         host: str = "localhost",
         port: int = 8080,
         database: str | None = None,
         schema: str | None = None,
         source: str | None = None,
         timezone: str = "UTC",
-        auth: str | None = None,
         **kwargs,
     ) -> None:
         """Connect to Trino.
@@ -262,8 +260,8 @@ class Backend(
         ----------
         user
             Username to connect with
-        password
-            Password to connect with. Mutually exclusive with `auth`.
+        auth
+            Authentication method or password to use for the connection.
         host
             Hostname of the Trino server
         port
@@ -276,9 +274,6 @@ class Backend(
             Application name passed to Trino
         timezone
             Timezone to use for the connection
-        auth
-            Authentication method to use for the connection. Mutually exclusive
-            with `password`.
         kwargs
             Additional keyword arguments passed directly to the
             `trino.dbapi.connect` API.
@@ -301,18 +296,6 @@ class Backend(
         >>> con = ibis.trino.connect(database=catalog, schema=schema)
         >>> con = ibis.trino.connect(database=catalog, schema=schema, source="my-app")
         """
-        if password is not None:
-            if auth is not None:
-                raise ValueError(
-                    "Cannot specify both `auth` and `password` when connecting to Trino"
-                )
-            else:
-                auth = password
-            warnings.warn(
-                "The `password` parameter is deprecated and will be removed in 10.0; use `auth` instead",
-                FutureWarning,
-            )
-
         if (
             isinstance(auth, str)
             and (scheme := urlparse(host).scheme)
