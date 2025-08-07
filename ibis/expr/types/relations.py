@@ -659,12 +659,21 @@ class Table(Expr, FixedTextJupyterMixin):
             A tuple of bound values
         """
         values = self._fast_bind(*args, **kwargs)
-        # dereference the values to `self`
-        dm = DerefMap.from_targets(self.op())
+        dm = None  # delay creating a dereference map until one is definitely needed
+        this_table_relations_set = {self.op()}
         result = []
         for original in values:
-            value = dm.dereference(original.op()).to_expr()
-            value = value.name(original.get_name())
+            rels = original.op().relations
+            if len(rels) and rels != this_table_relations_set:
+                # the expression needs dereferencing as it has relations (i.e. is not a literal) and is not bound to self
+                if dm is None:
+                    # create a dereference map as one has not been created yet
+                    dm = DerefMap.from_targets(self.op())
+                # dereference the values to `self`
+                value = dm.dereference(original.op()).to_expr()
+                value = value.name(original.get_name())
+            else:
+                value = original
             result.append(value)
         return tuple(result)
 
