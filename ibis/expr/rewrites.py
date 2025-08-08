@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Optional
 
 import toolz
+from typing_extensions import Self
 
 import ibis.expr.operations as ops
 from ibis.common.collections import FrozenDict  # noqa: TC001
@@ -19,7 +20,9 @@ from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.util import Namespace, promote_list
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
+
+    import ibis.expr.types as ir
 
 p = Namespace(pattern, module=ops)
 d = Namespace(deferred, module=ops)
@@ -69,7 +72,9 @@ class DerefMap(Annotable, Traversable):
     ambigs: Optional[FrozenDict[ops.Value, VarTuple[ops.Value]]]
 
     @classmethod
-    def from_targets(cls, rels, extra: Mapping[ops.Node, ops.Node] | None = None):
+    def from_targets(
+        cls, rels, extra: Mapping[ops.Node, ops.Node] | None = None
+    ) -> Self:
         """Create a dereference map from a list of target relations.
 
         Usually a single relation is passed except for joins where multiple
@@ -91,7 +96,7 @@ class DerefMap(Annotable, Traversable):
         )
 
     @classmethod
-    def backtrack(cls, value):
+    def backtrack(cls, value) -> Iterator[tuple[ops.Field, int]]:
         """Backtrack the field in the relation hierarchy.
 
         The field is traced back until no modification is made, so only follow
@@ -121,7 +126,7 @@ class DerefMap(Annotable, Traversable):
         ):
             yield value, distance
 
-    def _fill_substitution_mappings(self):
+    def _fill_substitution_mappings(self) -> None:
         if self.subs is not None and self.ambigs is not None:
             return
 
@@ -148,7 +153,7 @@ class DerefMap(Annotable, Traversable):
         self.subs = subs
         self.ambigs = ambigs
 
-    def dereference(self, *values):
+    def dereference(self, *values: ir.Value) -> Iterator[ops.Value]:
         """Dereference values to target relations.
 
         Also check for ambiguous field references. If a field reference is found
@@ -157,29 +162,26 @@ class DerefMap(Annotable, Traversable):
         Parameters
         ----------
         values
-            Values to dereference.
+            Expression values to dereference.
 
         Returns
         -------
         tuple[ops.Value]
             The dereferenced values.
         """
-        result = []
         for v in values:
-            if v.relations and v.relations != set(self.rels):
+            if (rels := tuple(v.relations)) and rels != self.rels:
                 # called on every iteration but only does work once per
                 # instance
                 self._fill_substitution_mappings()
 
-                if ambigs := v.find(lambda x: x in self.ambigs, filter=ops.Value):
+                if ambigs := v.find(self.ambigs.__contains__, filter=ops.Value):
                     raise IbisInputError(
                         f"Ambiguous field reference {ambigs!r} in expression {v!r}"
                     )
-                result.append(v.replace(self.subs, filter=ops.Value))
+                yield v.replace(self.subs, filter=ops.Value)
             else:
-                result.append(v)
-
-        return tuple(result)
+                yield v
 
 
 def flatten_predicates(node):
