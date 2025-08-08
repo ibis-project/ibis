@@ -63,13 +63,13 @@ class DerefMap(Annotable, Traversable):
 
     """Extra substitutions to be added to the dereference map. Stored on the
     instance to facilitate lazy dereferencing."""
-    extra: FrozenDict[ops.Node, ops.Node]
+    extra: Optional[FrozenDict[ops.Node, ops.Node]]
 
     """Substitution mapping from values of earlier relations to the fields of `rels`."""
-    subs: Optional[FrozenDict[ops.Value, ops.Field]]
+    subs: Optional[FrozenDict[ops.Value, ops.Field]] = None
 
     """Ambiguous field references."""
-    ambigs: Optional[FrozenDict[ops.Value, VarTuple[ops.Value]]]
+    ambigs: Optional[FrozenDict[ops.Value, VarTuple[ops.Value]]] = None
 
     @classmethod
     def from_targets(
@@ -91,12 +91,7 @@ class DerefMap(Annotable, Traversable):
         -------
         DerefMap
         """
-        return cls(
-            rels=frozenset(promote_list(rels)),
-            extra=extra or {},
-            subs=None,
-            ambigs=None,
-        )
+        return cls(rels=frozenset(promote_list(rels)), extra=extra)
 
     @classmethod
     def backtrack(cls, value) -> Iterator[tuple[ops.Field, int]]:
@@ -151,7 +146,8 @@ class DerefMap(Annotable, Traversable):
             else:
                 ambigs[from_] = minkeys
 
-        subs.update(self.extra)
+        if extra := self.extra:
+            subs.update(extra)
 
         self.subs = subs
         self.ambigs = ambigs
