@@ -661,10 +661,11 @@ class Table(Expr, FixedTextJupyterMixin):
         dm = DerefMap.from_targets(self.op())
 
         bound = self._fast_bind(*args, **kwargs)
-        return tuple(
-            derefed.to_expr().name(name)
-            for name, derefed in zip(
+        return (
+            derefed.to_expr().name(name) if original is not derefed else original
+            for name, original, derefed in zip(
                 (expr.get_name() for expr in bound),
+                bound,
                 dm.dereference(*(expr.op() for expr in bound)),
             )
         )
@@ -1077,7 +1078,7 @@ class Table(Expr, FixedTextJupyterMixin):
             FutureWarning,
             stacklevel=2,
         )
-        values = self.bind(args)
+        values = tuple(self.bind(args))
 
         if util.all_of(values, BooleanValue):
             return self.filter(values)
@@ -1264,9 +1265,9 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         from ibis.expr.types.groupby import GroupedTable
 
-        by = tuple(v for v in by if v is not None)
+        by = (v for v in by if v is not None)
         groups = self.bind(*by, **key_exprs)
-        return GroupedTable(self, groups)
+        return GroupedTable(self, tuple(groups))
 
     # TODO(kszucs): shouldn't this be ibis.rowid() instead not bound to a specific table?
     def rowid(self) -> ir.IntegerValue:
@@ -1387,7 +1388,7 @@ class Table(Expr, FixedTextJupyterMixin):
 
         groups = self.bind(by)
         metrics = self.bind(metrics, **kwargs)
-        having = self.bind(having)
+        having = tuple(self.bind(having))
 
         groups = unwrap_aliases(groups)
         metrics = unwrap_aliases(metrics)
@@ -3062,7 +3063,7 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         if subset is not None:
             subset = self.bind(subset)
-        return ops.DropNull(self, how, subset).to_expr()
+        return ops.DropNull(self, how, tuple(subset)).to_expr()
 
     def fill_null(self, replacements: ir.Scalar | Mapping[str, ir.Scalar], /) -> Table:
         """Fill null values in a table expression.
@@ -5150,7 +5151,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def window_by(self, time_col: str | ir.Value, /) -> WindowedTable:
         from ibis.expr.types.temporal_windows import WindowedTable
 
-        time_col = next(iter(self.bind(time_col)))
+        time_col = next(self.bind(time_col))
 
         # validate time_col is a timestamp column
         if not isinstance(time_col, TimestampColumn):
