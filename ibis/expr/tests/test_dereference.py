@@ -24,8 +24,10 @@ def test_dereference_project():
 
     mapping = DerefMap.from_targets([p.op()])
 
-    assert mapping.dereference(
-        p.int_col.op(), p.double_col.op(), t.int_col.op(), t.double_col.op()
+    assert tuple(
+        mapping.dereference(
+            p.int_col.op(), p.double_col.op(), t.int_col.op(), t.double_col.op()
+        )
     ) == (
         p.int_col.op(),
         p.double_col.op(),
@@ -39,4 +41,4 @@ def test_dereference_mapping_self_reference(column):
     v = t.view()
 
     mapping = DerefMap.from_targets([v.op()])
-    assert mapping.dereference(v[column].op()) == (v[column].op(),)
+    assert tuple(mapping.dereference(v[column].op())) == (v[column].op(),)
