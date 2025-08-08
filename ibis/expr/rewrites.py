@@ -59,7 +59,7 @@ class DerefMap(Annotable, Traversable):
     """
 
     """The relations we want the values to point to."""
-    rels: VarTuple[ops.Relation]
+    rels: frozenset[ops.Relation]
 
     """Extra substitutions to be added to the dereference map. Stored on the
     instance to facilitate lazy dereferencing."""
@@ -92,7 +92,10 @@ class DerefMap(Annotable, Traversable):
         DerefMap
         """
         return cls(
-            rels=tuple(promote_list(rels)), extra=extra or {}, subs=None, ambigs=None
+            rels=frozenset(promote_list(rels)),
+            extra=extra or {},
+            subs=None,
+            ambigs=None,
         )
 
     @classmethod
@@ -170,7 +173,7 @@ class DerefMap(Annotable, Traversable):
             The dereferenced values.
         """
         for v in values:
-            if (rels := tuple(v.relations)) and rels != self.rels:
+            if (rels := v.relations) and rels != self.rels:
                 # called on every iteration but only does work once per
                 # instance
                 self._fill_substitution_mappings()
