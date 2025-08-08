@@ -3062,8 +3062,8 @@ class Table(Expr, FixedTextJupyterMixin):
         └─────┘
         """
         if subset is not None:
-            subset = self.bind(subset)
-        return ops.DropNull(self, how, tuple(subset)).to_expr()
+            subset = tuple(self.bind(subset))
+        return ops.DropNull(self, how, subset).to_expr()
 
     def fill_null(self, replacements: ir.Scalar | Mapping[str, ir.Scalar], /) -> Table:
         """Fill null values in a table expression.

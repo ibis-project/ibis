@@ -2101,13 +2101,13 @@ def test_table_bind():
     assert eq(exprs, expected)
 
     # no args
-    assert t.bind() == ()
+    assert tuple(t.bind()) == ()
 
     def utter_failure(_):
         raise ValueError("¡moo!")
 
     with pytest.raises(ValueError, match="¡moo!"):
-        t.bind(foo=utter_failure)
+        tuple(t.bind(foo=utter_failure))
 
 
 # TODO: remove when dropna is fully deprecated
