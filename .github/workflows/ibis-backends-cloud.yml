@@ -100,12 +100,12 @@ jobs:
 
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         if: github.event.label.name != 'ci-run-cloud'
 
       - name: checkout
         if: github.event.label.name == 'ci-run-cloud'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}

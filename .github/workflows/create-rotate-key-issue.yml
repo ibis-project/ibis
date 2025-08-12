@@ -22,7 +22,7 @@ jobs:
           private-key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
 
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: create issue to rotate key
         uses: peter-evans/create-issue-from-file@v5
