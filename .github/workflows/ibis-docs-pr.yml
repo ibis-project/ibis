@@ -34,7 +34,7 @@ jobs:
           extraPullNames: nix-community
 
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: run doctests
         # keep HOME because duckdb (which we use for doctests) wants to use
@@ -58,7 +58,7 @@ jobs:
           extraPullNames: nix-community
 
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: run quarto check
         run: nix develop '.#ibis312' --ignore-environment --keep HOME -c quarto check
@@ -80,7 +80,7 @@ jobs:
           extraPullNames: nix-community
 
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: restore cache of the previously rendered notebooks
         uses: actions/cache/restore@v4
