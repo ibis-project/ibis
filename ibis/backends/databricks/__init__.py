@@ -428,15 +428,11 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         upstream_path = f"{self._memtable_volume_path}/{stem}"
         sql = sge.Create(
             kind="VIEW",
-            this=sg.table(
-                name,
-                db=self.current_database,
-                catalog=self.current_catalog,
-                quoted=quoted,
-            ),
-            expression=sge.select(STAR).from_(
+            this=sg.table(name, quoted=quoted),
+            expression=sg.select(STAR).from_(
                 sg.table(upstream_path, db="parquet", quoted=quoted)
             ),
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         ).sql(self.dialect)
         data = op.data.to_pyarrow(schema=op.schema)
         with util.mktempd() as tmpdir:
@@ -451,17 +447,21 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
 
     def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         path = f"{self._memtable_volume_path}/{name}.parquet"
-        sql = sge.Drop(
-            kind="VIEW",
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            exists=True,
-        ).sql(self.dialect)
 
-        def finalizer(path: str = path, sql: str = sql, con=self.con) -> None:
-            """Finalizer for in-memory tables."""
+        def finalizer(path: str = path, con=self.con) -> None:
+            """Finalizer for in-memory tables.
+
+            The view that references the storage is temporary and will be
+            automatically removed, so remove only the backing file.
+
+            It's not ideal that you can remove the data out from under the
+            view but in our case we're assuming that if this is invoked, the
+            view is no longer needed because the process is shutting down and
+            therefore if the file is removed, it won't be long before the view
+            is also removed (automatically by databricks).
+            """
 
             with con.cursor() as cur:
-                cur.execute(sql)
                 cur.execute(f"REMOVE '{path}'")
 
         return finalizer
