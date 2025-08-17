@@ -1,19 +1,19 @@
 -- NB: The paths in this file are all relative to /var/lib/clickhouse/user_files
 CREATE OR REPLACE TABLE ibis_testing.diamonds ENGINE = Memory AS
-SELECT * FROM file('ibis/diamonds.parquet', 'Parquet');
+SELECT * FROM file('ibis/diamonds.parquet');
 
 CREATE OR REPLACE TABLE ibis_testing.batting ENGINE = Memory AS
-SELECT * FROM file('ibis/batting.parquet', 'Parquet');
+SELECT * FROM file('ibis/batting.parquet');
 
 CREATE OR REPLACE TABLE ibis_testing.awards_players ENGINE = Memory AS
-SELECT * FROM file('ibis/awards_players.parquet', 'Parquet');
+SELECT * FROM file('ibis/awards_players.parquet');
 
 CREATE OR REPLACE TABLE ibis_testing.functional_alltypes ENGINE = Memory AS
 SELECT * REPLACE(CAST(timestamp_col AS Nullable(DateTime)) AS timestamp_col)
-FROM file('ibis/functional_alltypes.parquet', 'Parquet');
+FROM file('ibis/functional_alltypes.parquet');
 
 CREATE OR REPLACE TABLE ibis_testing.astronauts ENGINE = Memory AS
-SELECT * FROM file('ibis/astronauts.parquet', 'Parquet');
+SELECT * FROM file('ibis/astronauts.parquet');
 
 CREATE OR REPLACE TABLE ibis_testing.tzone (
     ts Nullable(DateTime),
