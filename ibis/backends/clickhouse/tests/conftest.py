@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 import sqlglot as sg
+import sqlglot.expressions as sge
 
 import ibis
 import ibis.expr.types as ir
@@ -159,16 +160,30 @@ class TestConf(ServiceBackendTest):
 
     def _load_tpc(self, *, suite, scale_factor):
         con = self.connection
+        dialect = con.dialect
         schema = f"tpc{suite}"
-        con.con.command(f"CREATE DATABASE IF NOT EXISTS {schema}")
+        con.create_database(schema, force=True)
         parquet_dir = self.data_dir.joinpath(schema, f"sf={scale_factor}", "parquet")
         assert parquet_dir.exists(), parquet_dir
+        raw_con = con.con
+        properties = sge.Properties(
+            expressions=[
+                sge.EngineProperty(this=sg.to_identifier("MergeTree")),
+                sge.Order(expressions=[sge.Ordered(this=sge.Tuple(expressions=[]))]),
+            ]
+        )
+        server_base = f"/var/lib/clickhouse/user_files/ibis/tpc{suite}"
         for path in parquet_dir.glob("*.parquet"):
-            table_name = path.with_suffix("").name
-            con.con.command(
-                f"CREATE VIEW IF NOT EXISTS {schema}.{table_name} AS "
-                f"SELECT * FROM file('ibis/{schema}/{path.name}', 'Parquet')"
+            expr = sge.Create(
+                this=sg.table(path.stem, db=schema),
+                kind="TABLE",
+                expression=sg.select(sge.Star()).from_(
+                    sg.func("file", sge.convert(f"{server_base}/{path.name}"))
+                ),
+                properties=properties,
+                exists=True,
             )
+            raw_con.command(expr.sql(dialect))
 
     def _transform_tpc_sql(self, parsed, *, suite, leaves):
         def add_catalog_and_schema(node):
