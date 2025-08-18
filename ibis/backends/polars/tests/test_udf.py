@@ -41,13 +41,13 @@ def test_udf(alltypes):
 
 
 def test_multiple_argument_udf(alltypes):
-    expr = my_add(alltypes.smallint_col, alltypes.int_col).name("tmp")
+    expr = my_add(alltypes.smallint_col, alltypes.int_col.cast("int64"))
     result = expr.execute()
 
     df = alltypes[["smallint_col", "int_col"]].execute()
     expected = df.smallint_col + df.int_col
 
-    tm.assert_series_equal(result, expected.astype("int64").rename("tmp"))
+    tm.assert_series_equal(result, expected.astype("int64"), check_names=False)
 
 
 @pytest.mark.parametrize(
