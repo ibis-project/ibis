@@ -295,15 +295,46 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         """
         table = sg.table(
             table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
-        ).sql(self.dialect)
+        )
+        view_name = sg.to_identifier(
+            util.gen_name(f"databricks_view_of_{table_name}"),
+            quoted=self.compiler.quoted,
+        )
+        view = sge.Create(
+            kind="VIEW",
+            this=view_name,
+            expression=sg.select(STAR).from_(table),
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+        view_sql = view.sql(self.dialect)
         try:
             with self.con.cursor() as cur:
-                [(out,)] = cur.execute(f"DESCRIBE EXTENDED {table} AS JSON").fetchall()
+                # create a temporary view to get the schema
+                #
+                # this is necessary to support streaming tables, which don't
+                # directly support using
+                #
+                # DESCRIBE EXTENDED {streaming_table} AS JSON
+                #
+                # the create-a-view-then-drop-it strategy works for all table types
+                # it seems
+                cur.execute(view_sql)
         except databricks.sql.exc.ServerOperationError as e:
             raise exc.TableNotFound(
                 f"Table {table_name!r} not found in "
                 f"{catalog or self.current_catalog}.{database or self.current_database}"
             ) from e
+        try:
+            with self.con.cursor() as cur:
+                [(out,)] = cur.execute(
+                    f"DESCRIBE EXTENDED {view_name.sql(self.dialect)} AS JSON"
+                ).fetchall()
+        finally:
+            # clean up the temporary view
+            with self.con.cursor() as cur:
+                cur.execute(
+                    sge.Drop(this=view_name, kind="VIEW", exists=True).sql(self.dialect)
+                )
 
         js = json.loads(out)
         return _databricks_schema_to_ibis(js["columns"])
