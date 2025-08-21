@@ -280,6 +280,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "risingwave": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal(1),
+                "singlestoredb": decimal.Decimal(1),
                 "mssql": decimal.Decimal(1),
                 "druid": decimal.Decimal("1.1"),
                 "datafusion": decimal.Decimal("1.1"),
@@ -326,6 +327,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "risingwave": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1.1"),
+                "singlestoredb": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal("1.1"),
                 "mssql": decimal.Decimal("1.1"),
                 "druid": decimal.Decimal("1.1"),
@@ -378,7 +380,9 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-                pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError),
+                pytest.mark.notimpl(
+                    ["mysql", "singlestoredb"], raises=MySQLOperationalError
+                ),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error),
@@ -444,7 +448,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=NotImplementedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala"], raises=com.UnsupportedOperationError
+                    ["mysql", "singlestoredb", "impala"],
+                    raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(
@@ -514,7 +519,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=NotImplementedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala"], raises=com.UnsupportedOperationError
+                    ["mysql", "singlestoredb", "impala"],
+                    raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(
@@ -587,7 +593,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=NotImplementedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala"], raises=com.UnsupportedOperationError
+                    ["mysql", "singlestoredb", "impala"],
+                    raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(
@@ -714,7 +721,9 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
 @pytest.mark.notimpl(
     ["flink"], raises=(com.OperationNotDefinedError, NotImplementedError)
 )
-@pytest.mark.notimpl(["mysql"], raises=(MySQLOperationalError, NotImplementedError))
+@pytest.mark.notimpl(
+    ["mysql", "singlestoredb"], raises=(MySQLOperationalError, NotImplementedError)
+)
 def test_isnan_isinf(
     backend,
     con,
@@ -1270,7 +1279,7 @@ def test_floating_mod(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notyet(["mysql", "pyspark"], raises=AssertionError)
+@pytest.mark.notyet(["mysql", "singlestoredb", "pyspark"], raises=AssertionError)
 @pytest.mark.notyet(["databricks"], raises=AssertionError, reason="returns NaNs")
 @pytest.mark.notyet(
     ["sqlite"], raises=AssertionError, reason="returns NULL when dividing by zero"

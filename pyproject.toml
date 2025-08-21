@@ -487,6 +487,7 @@ markers = [
   "postgres: PostgreSQL tests",
   "risingwave: RisingWave tests",
   "pyspark: PySpark tests",
+  "singlestoredb: SingleStoreDB tests",
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",
   "trino: Trino tests",
