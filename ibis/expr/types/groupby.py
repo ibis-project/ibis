@@ -108,7 +108,7 @@ class GroupedTable(Concrete):
         """
         table = self.table.to_expr()
         havings = table.bind(*predicates)
-        return self.copy(havings=self.havings + havings)
+        return self.copy(havings=(*self.havings, *havings))
 
     def order_by(self, *by: ir.Value) -> GroupedTable:
         """Sort a grouped table expression by `expr`.
@@ -129,7 +129,7 @@ class GroupedTable(Concrete):
         """
         table = self.table.to_expr()
         orderings = table.bind(*by)
-        return self.copy(orderings=self.orderings + orderings)
+        return self.copy(orderings=(*self.orderings, *orderings))
 
     def mutate(
         self, *exprs: ir.Value | Sequence[ir.Value], **kwexprs: ir.Value

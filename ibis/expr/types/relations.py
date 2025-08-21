@@ -658,24 +658,17 @@ class Table(Expr, FixedTextJupyterMixin):
         tuple[Value, ...]
             A tuple of bound values
         """
-        values = self._fast_bind(*args, **kwargs)
-        dm = None  # delay creating a dereference map until one is definitely needed
-        this_table_relations_set = {self.op()}
-        result = []
-        for original in values:
-            rels = original.op().relations
-            if len(rels) and rels != this_table_relations_set:
-                # the expression needs dereferencing as it has relations (i.e. is not a literal) and is not bound to self
-                if dm is None:
-                    # create a dereference map as one has not been created yet
-                    dm = DerefMap.from_targets(self.op())
-                # dereference the values to `self`
-                value = dm.dereference(original.op()).to_expr()
-                value = value.name(original.get_name())
-            else:
-                value = original
-            result.append(value)
-        return tuple(result)
+        dm = DerefMap.from_targets(self.op())
+
+        bound = self._fast_bind(*args, **kwargs)
+        return (
+            derefed.to_expr().name(name) if original is not derefed else original
+            for name, original, derefed in zip(
+                (expr.get_name() for expr in bound),
+                bound,
+                dm.dereference(*(expr.op() for expr in bound)),
+            )
+        )
 
     def as_scalar(self) -> ir.Scalar:
         """Inform ibis that the table expression should be treated as a scalar.
@@ -1085,7 +1078,7 @@ class Table(Expr, FixedTextJupyterMixin):
             FutureWarning,
             stacklevel=2,
         )
-        values = self.bind(args)
+        values = tuple(self.bind(args))
 
         if util.all_of(values, BooleanValue):
             return self.filter(values)
@@ -1272,9 +1265,9 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         from ibis.expr.types.groupby import GroupedTable
 
-        by = tuple(v for v in by if v is not None)
+        by = (v for v in by if v is not None)
         groups = self.bind(*by, **key_exprs)
-        return GroupedTable(self, groups)
+        return GroupedTable(self, tuple(groups))
 
     # TODO(kszucs): shouldn't this be ibis.rowid() instead not bound to a specific table?
     def rowid(self) -> ir.IntegerValue:
@@ -1395,7 +1388,7 @@ class Table(Expr, FixedTextJupyterMixin):
 
         groups = self.bind(by)
         metrics = self.bind(metrics, **kwargs)
-        having = self.bind(having)
+        having = tuple(self.bind(having))
 
         groups = unwrap_aliases(groups)
         metrics = unwrap_aliases(metrics)
@@ -3069,7 +3062,7 @@ class Table(Expr, FixedTextJupyterMixin):
         └─────┘
         """
         if subset is not None:
-            subset = self.bind(subset)
+            subset = tuple(self.bind(subset))
         return ops.DropNull(self, how, subset).to_expr()
 
     def fill_null(self, replacements: ir.Scalar | Mapping[str, ir.Scalar], /) -> Table:
@@ -5158,7 +5151,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def window_by(self, time_col: str | ir.Value, /) -> WindowedTable:
         from ibis.expr.types.temporal_windows import WindowedTable
 
-        time_col = next(iter(self.bind(time_col)))
+        time_col = next(self.bind(time_col))
 
         # validate time_col is a timestamp column
         if not isinstance(time_col, TimestampColumn):

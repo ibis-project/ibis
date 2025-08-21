@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis
 from ibis.expr.types.relations import DerefMap
 
@@ -21,26 +23,22 @@ def test_dereference_project():
     p = t.select([t.int_col, t.double_col])
 
     mapping = DerefMap.from_targets([p.op()])
-    expected = dereference_expect(
-        {
-            p.int_col: p.int_col,
-            p.double_col: p.double_col,
-            t.int_col: p.int_col,
-            t.double_col: p.double_col,
-        }
+
+    assert tuple(
+        mapping.dereference(
+            p.int_col.op(), p.double_col.op(), t.int_col.op(), t.double_col.op()
+        )
+    ) == (
+        p.int_col.op(),
+        p.double_col.op(),
+        p.int_col.op(),
+        p.double_col.op(),
     )
-    assert mapping.subs == expected
 
 
-def test_dereference_mapping_self_reference():
+@pytest.mark.parametrize("column", ["int_col", "double_col", "string_col"])
+def test_dereference_mapping_self_reference(column):
     v = t.view()
 
     mapping = DerefMap.from_targets([v.op()])
-    expected = dereference_expect(
-        {
-            v.int_col: v.int_col,
-            v.double_col: v.double_col,
-            v.string_col: v.string_col,
-        }
-    )
-    assert mapping.subs == expected
+    assert tuple(mapping.dereference(v[column].op())) == (v[column].op(),)
