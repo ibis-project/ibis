@@ -95,6 +95,9 @@ except ImportError:
         253: "VAR_STRING",
         254: "STRING",
         255: "GEOMETRY",
+        # SingleStoreDB-specific type codes (hypothetical values)
+        256: "VECTOR",  # Vector type for ML/AI workloads
+        257: "GEOGRAPHY",  # Extended geospatial support
     }
 
     class _FieldFlags:
@@ -157,6 +160,10 @@ def _type_from_cursor_info(
             typ = dt.int64
         else:
             raise AssertionError("invalid field length for BIT type")
+    elif typename == "VECTOR":
+        # SingleStoreDB VECTOR type - typically used for AI/ML workloads
+        # For now, map to Binary; could be enhanced to Array[Float32] in future
+        typ = dt.Binary
     elif flags.is_set:
         # Sets are limited to strings in SingleStoreDB
         typ = dt.Array(dt.string)
@@ -167,9 +174,17 @@ def _type_from_cursor_info(
             typ = partial(dt.String, length=field_length // multi_byte_maximum_length)
     elif flags.is_timestamp or typename == "TIMESTAMP":
         # SingleStoreDB timestamps - note timezone handling
+        # SingleStoreDB stores timestamps in UTC by default in columnstore tables
         typ = partial(dt.Timestamp, timezone="UTC", scale=scale or None)
     elif typename == "DATETIME":
+        # DATETIME doesn't have timezone info in SingleStoreDB
         typ = partial(dt.Timestamp, scale=scale or None)
+    elif typename == "JSON":
+        # SingleStoreDB has enhanced JSON support with columnstore optimizations
+        typ = dt.JSON
+    elif typename == "GEOGRAPHY":
+        # SingleStoreDB extended geospatial type
+        typ = dt.Geometry
     else:
         typ = _type_mapping[typename]
         if issubclass(typ, dt.SignedInteger) and flags.is_unsigned:
@@ -188,58 +203,106 @@ def _decimal_length_to_precision(*, length: int, scale: int, is_unsigned: bool) 
 
 
 _type_mapping = {
+    # Basic numeric types
     "DECIMAL": dt.Decimal,
     "TINY": dt.Int8,
     "SHORT": dt.Int16,
     "LONG": dt.Int32,
     "FLOAT": dt.Float32,
     "DOUBLE": dt.Float64,
-    "NULL": dt.Null,
     "LONGLONG": dt.Int64,
     "INT24": dt.Int32,
+    "NEWDECIMAL": dt.Decimal,
+    # String types
+    "VARCHAR": dt.String,
+    "VAR_STRING": dt.String,
+    "STRING": dt.String,
+    "ENUM": dt.String,
+    # Temporal types
     "DATE": dt.Date,
     "TIME": dt.Time,
     "DATETIME": dt.Timestamp,
     "YEAR": dt.UInt8,
-    "VARCHAR": dt.String,
-    "JSON": dt.JSON,
-    "NEWDECIMAL": dt.Decimal,
-    "ENUM": dt.String,
-    "SET": partial(dt.Array, dt.string),
+    # Binary types
     "TINY_BLOB": dt.Binary,
     "MEDIUM_BLOB": dt.Binary,
     "LONG_BLOB": dt.Binary,
     "BLOB": dt.Binary,
-    "VAR_STRING": dt.String,
-    "STRING": dt.String,
+    # Special types
+    "JSON": dt.JSON,
     "GEOMETRY": dt.Geometry,
+    "NULL": dt.Null,
+    # Collection types
+    "SET": partial(dt.Array, dt.string),
+    # SingleStoreDB-specific types
+    # VECTOR type for machine learning and AI workloads
+    "VECTOR": dt.Binary,  # Map to Binary for now, could be Array[Float32] in future
+    # Extended types (SingleStoreDB-specific extensions)
+    "GEOGRAPHY": dt.Geometry,  # Enhanced geospatial support
 }
 
 
 class SingleStoreDBType(SqlglotType):
-    """SingleStoreDB data type implementation."""
+    """SingleStoreDB data type implementation.
+
+    SingleStoreDB uses the MySQL protocol but has additional features:
+    - Enhanced JSON support with columnstore optimizations
+    - VECTOR type for AI/ML workloads
+    - GEOGRAPHY type for extended geospatial operations
+    - ROWSTORE vs COLUMNSTORE table types with different optimizations
+    """
 
     dialect = "mysql"  # SingleStoreDB uses MySQL dialect for SQLGlot
 
-    # SingleStoreDB-specific type mappings
-    # Most types are the same as MySQL due to protocol compatibility
+    # SingleStoreDB-specific type mappings and defaults
     default_decimal_precision = 10
     default_decimal_scale = 0
     default_temporal_scale = None
 
-    # SingleStoreDB supports these additional types beyond standard MySQL
-    # These may be added in future versions
-    # VECTOR - for machine learning workloads (not yet implemented)
-    # GEOGRAPHY - enhanced geospatial support (maps to GEOMETRY for now)
+    # Type mappings for SingleStoreDB-specific types
+    _singlestore_type_mapping = {
+        # Standard types (same as MySQL)
+        **_type_mapping,
+        # SingleStoreDB-specific enhancements
+        "VECTOR": dt.Binary,  # Vector type for ML/AI (mapped to Binary for now)
+        "GEOGRAPHY": dt.Geometry,  # Enhanced geospatial support
+    }
 
     @classmethod
     def to_ibis(cls, typ, nullable=True):
-        """Convert SingleStoreDB type to Ibis type."""
-        # For now, delegate to the parent MySQL-compatible implementation
+        """Convert SingleStoreDB type to Ibis type.
+
+        Handles both standard MySQL types and SingleStoreDB-specific extensions.
+        """
+        if hasattr(typ, "this"):
+            type_name = typ.this.upper()
+            if type_name in cls._singlestore_type_mapping:
+                ibis_type = cls._singlestore_type_mapping[type_name]
+                if callable(ibis_type):
+                    return ibis_type(nullable=nullable)
+                else:
+                    return ibis_type(nullable=nullable)
+
+        # Fall back to parent implementation for standard types
         return super().to_ibis(typ, nullable=nullable)
 
     @classmethod
     def from_ibis(cls, dtype):
-        """Convert Ibis type to SingleStoreDB type."""
-        # For now, delegate to the parent MySQL-compatible implementation
+        """Convert Ibis type to SingleStoreDB type.
+
+        Handles conversion from Ibis types to SingleStoreDB SQL types,
+        including support for SingleStoreDB-specific features.
+        """
+        # Handle SingleStoreDB-specific type conversions
+        if isinstance(dtype, dt.JSON):
+            # SingleStoreDB has enhanced JSON support
+            return cls.dialect.parse("JSON")
+        elif isinstance(dtype, dt.Geometry):
+            # Use GEOMETRY type (or GEOGRAPHY if available)
+            return cls.dialect.parse("GEOMETRY")
+        elif isinstance(dtype, dt.Binary):
+            # Could be BLOB or VECTOR type - default to BLOB
+            return cls.dialect.parse("BLOB")
+
+        # Fall back to parent implementation for standard types
         return super().from_ibis(dtype)

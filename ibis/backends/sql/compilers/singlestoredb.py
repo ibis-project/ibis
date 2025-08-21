@@ -5,6 +5,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.singlestoredb.datatypes import SingleStoreDBType
 from ibis.backends.sql.compilers.mysql import MySQLCompiler
 from ibis.backends.sql.dialects import MySQL
 from ibis.backends.sql.rewrites import (
@@ -39,7 +40,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
     __slots__ = ()
 
     dialect = MySQL  # SingleStoreDB uses MySQL dialect
-    type_mapper = MySQLCompiler.type_mapper  # Use MySQL type mapper for now
+    type_mapper = SingleStoreDBType  # Use SingleStoreDB-specific type mapper
     rewrites = (
         rewrite_limit,
         exclude_unsupported_window_frame_from_ops,
@@ -78,17 +79,43 @@ class SingleStoreDBCompiler(MySQLCompiler):
     NEG_INF = POS_INF
 
     def visit_Cast(self, op, *, arg, to):
-        """Handle casting operations in SingleStoreDB."""
+        """Handle casting operations in SingleStoreDB.
+
+        Includes support for SingleStoreDB-specific types like VECTOR and enhanced JSON.
+        """
         from_ = op.arg.dtype
+
+        # JSON casting - SingleStoreDB has enhanced JSON support
         if (from_.is_json() or from_.is_string()) and to.is_json():
-            # SingleStoreDB handles JSON casting similarly to MySQL/MariaDB
+            # SingleStoreDB handles JSON casting with columnstore optimizations
             return arg
+        elif from_.is_string() and to.is_json():
+            # Cast string to JSON with validation
+            return self.f.cast(arg, sge.DataType(this=sge.DataType.Type.JSON))
+
+        # Timestamp casting
         elif from_.is_numeric() and to.is_timestamp():
             return self.if_(
                 arg.eq(0),
                 self.f.timestamp("1970-01-01 00:00:00"),
                 self.f.from_unixtime(arg),
             )
+
+        # Binary casting (includes VECTOR type support)
+        elif from_.is_string() and to.is_binary():
+            # Cast string to binary/VECTOR - useful for VECTOR type data
+            return self.f.unhex(arg)
+        elif from_.is_binary() and to.is_string():
+            # Cast binary/VECTOR to string representation
+            return self.f.hex(arg)
+
+        # Geometry casting
+        elif to.is_geometry():
+            # SingleStoreDB GEOMETRY type casting
+            return self.f.st_geomfromtext(self.cast(arg, dt.string))
+        elif from_.is_geometry() and to.is_string():
+            return self.f.st_astext(arg)
+
         return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
