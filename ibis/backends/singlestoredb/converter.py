@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 
 import ibis.expr.datatypes as dt
 from ibis.formats.pandas import PandasData
@@ -41,6 +42,85 @@ class SingleStoreDBPandasData(PandasData):
             # Handle SingleStoreDB zero dates
             s = s.replace("0000-00-00", None)
         return super().convert_Date(s, dtype, pandas_type)
+
+    @classmethod
+    def convert_JSON(cls, s, dtype, pandas_type):
+        """Convert SingleStoreDB JSON values.
+
+        SingleStoreDB has enhanced JSON support with columnstore optimizations.
+        JSON values can be stored efficiently and queried with optimized functions.
+        """
+
+        def convert_json(value):
+            if value is None:
+                return None
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except (json.JSONDecodeError, TypeError):
+                    # Return as string if invalid JSON
+                    return value
+            return value
+
+        return s.map(convert_json, na_action="ignore")
+
+    @classmethod
+    def convert_Binary(cls, s, dtype, pandas_type):
+        """Convert SingleStoreDB binary data including VECTOR type."""
+
+        def convert_binary(value):
+            if value is None:
+                return None
+            # Handle VECTOR type data if it comes as bytes
+            if isinstance(value, bytes):
+                return value
+            # Handle string representation
+            elif isinstance(value, str):
+                try:
+                    return bytes.fromhex(value)
+                except ValueError:
+                    return value.encode("utf-8")
+            return value
+
+        return s.map(convert_binary, na_action="ignore")
+
+    @classmethod
+    def convert_Decimal(cls, s, dtype, pandas_type):
+        """Convert SingleStoreDB DECIMAL/NUMERIC values with proper NULL handling."""
+        # Handle SingleStoreDB NULL decimals
+        if s.dtype == "object":
+            s = s.replace("", None)  # Empty strings as NULL
+        return super().convert_Decimal(s, dtype, pandas_type)
+
+    @classmethod
+    def convert_String(cls, s, dtype, pandas_type):
+        """Convert SingleStoreDB string types with proper NULL handling."""
+        # SingleStoreDB may return empty strings for some NULL cases
+        if hasattr(dtype, "nullable") and dtype.nullable:
+            s = s.replace("", None)
+        return super().convert_String(s, dtype, pandas_type)
+
+    @classmethod
+    def handle_null_value(cls, value, target_type):
+        """Handle NULL values consistently across all SingleStoreDB types.
+
+        SingleStoreDB may represent NULLs differently depending on the type
+        and storage format (ROWSTORE vs COLUMNSTORE).
+        """
+        if value is None:
+            return None
+
+        # Handle different NULL representations
+        if isinstance(value, str):
+            # Common NULL string representations
+            if value in ("", "NULL", "null", "0000-00-00", "0000-00-00 00:00:00"):
+                return None
+
+        # Handle numeric zero values that might represent NULL
+        if target_type in (dt.Date, dt.Timestamp) and value == 0:
+            return None
+
+        return value
 
     @classmethod
     def _get_type_name(cls, type_code: int) -> str:
@@ -84,9 +164,13 @@ class SingleStoreDBPandasData(PandasData):
 
     @classmethod
     def convert_SingleStoreDB_type(cls, typename: str) -> dt.DataType:
-        """Convert a SingleStoreDB type name to an Ibis data type."""
+        """Convert a SingleStoreDB type name to an Ibis data type.
+
+        Handles both standard MySQL-compatible types and SingleStoreDB-specific extensions.
+        """
         typename = typename.upper()
 
+        # Numeric types
         if typename in ("TINY", "TINYINT"):
             return dt.int8
         elif typename in ("SHORT", "SMALLINT"):
@@ -101,32 +185,55 @@ class SingleStoreDBPandasData(PandasData):
             return dt.float64
         elif typename in ("DECIMAL", "NEWDECIMAL"):
             return dt.decimal
-        elif typename in ("VARCHAR", "VAR_STRING"):
+        elif typename == "BIT":
+            return dt.int8  # For BIT(1), larger BIT fields map to larger ints
+        elif typename == "YEAR":
+            return dt.uint8
+
+        # String types
+        elif typename in ("VARCHAR", "VAR_STRING", "CHAR"):
             return dt.string
-        elif typename == "STRING":
+        elif typename in ("STRING", "TEXT"):
             return dt.string
+        elif typename == "ENUM":
+            return dt.string
+
+        # Temporal types
         elif typename == "DATE":
             return dt.date
         elif typename == "TIME":
             return dt.time
         elif typename in ("DATETIME", "TIMESTAMP"):
             return dt.timestamp
-        elif typename == "YEAR":
-            return dt.uint8
+
+        # Binary types
         elif typename in ("BLOB", "TINY_BLOB", "MEDIUM_BLOB", "LONG_BLOB"):
             return dt.binary
-        elif typename == "BIT":
-            return dt.int8  # For BIT(1), larger BIT fields map to larger ints
+        elif typename in ("BINARY", "VARBINARY"):
+            return dt.binary
+
+        # Special types
         elif typename == "JSON":
+            # SingleStoreDB has enhanced JSON support with columnstore optimizations
             return dt.json
-        elif typename == "ENUM":
-            return dt.string
-        elif typename == "SET":
-            return dt.Array(dt.string)  # SET is like an array of strings
         elif typename == "GEOMETRY":
-            return dt.binary  # Treat geometry as binary for now
+            return dt.geometry  # Use geometry type instead of binary
         elif typename == "NULL":
             return dt.null
+
+        # Collection types
+        elif typename == "SET":
+            return dt.Array(dt.string)  # SET is like an array of strings
+
+        # SingleStoreDB-specific types
+        elif typename == "VECTOR":
+            # Vector type for ML/AI workloads - map to binary for now
+            # In future could be Array[Float32] with proper vector support
+            return dt.binary
+        elif typename == "GEOGRAPHY":
+            # Enhanced geospatial support
+            return dt.geometry
+
         else:
             # Default to string for unknown types
             return dt.string
