@@ -374,7 +374,7 @@ def uses_java_re(t):
             id="re_replace_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "exasol"],
+                    ["mysql", "singlestoredb", "mssql", "druid", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -385,7 +385,7 @@ def uses_java_re(t):
             id="re_replace",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "exasol"],
+                    ["mysql", "singlestoredb", "mssql", "druid", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -429,7 +429,8 @@ def uses_java_re(t):
             id="translate",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "polars", "druid"], raises=com.OperationNotDefinedError
+                    ["mysql", "singlestoredb", "polars", "druid"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
                     ["flink"],
@@ -593,6 +594,7 @@ def uses_java_re(t):
                 [
                     "impala",
                     "mysql",
+                    "singlestoredb",
                     "sqlite",
                     "mssql",
                     "druid",
@@ -708,7 +710,8 @@ def test_substring(backend, alltypes, df, result_func, expected_func):
 
 
 @pytest.mark.notimpl(
-    ["mysql", "mssql", "druid", "exasol"], raises=com.OperationNotDefinedError
+    ["mysql", "singlestoredb", "mssql", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
 )
 def test_re_replace_global(con):
     expr = ibis.literal("aba").re_replace("a", "c")
