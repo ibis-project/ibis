@@ -885,5 +885,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
         # booleans
         return self.cast(super().visit_InSubquery(op, needle=needle, rel=rel), op.dtype)
 
+    def visit_Translate(self, op, *, arg, from_str, to_str):
+        return self.f.anon.translate(arg, from_str, to_str)
+
 
 compiler = ClickHouseCompiler()
