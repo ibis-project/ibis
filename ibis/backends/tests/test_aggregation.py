@@ -75,7 +75,7 @@ aggregate_test_params = [
                 raises=com.OperationNotDefinedError,
             ),
             pytest.mark.never(
-                ["sqlite", "mysql"],
+                ["sqlite", "mysql", "singlestoredb"],
                 reason="no udf support",
                 raises=com.OperationNotDefinedError,
             ),
@@ -102,6 +102,7 @@ aggregate_test_params = [
                     "datafusion",
                     "impala",
                     "mysql",
+                    "singlestoredb",
                     "mssql",
                     "pyspark",
                     "trino",
@@ -130,6 +131,7 @@ aggregate_test_params = [
 argidx_not_grouped_marks = [
     "impala",
     "mysql",
+    "singlestoredb",
     "mssql",
     "druid",
     "oracle",
@@ -541,7 +543,7 @@ def test_reduction_ops(
 
 
 @pytest.mark.notimpl(
-    ["druid", "impala", "mssql", "mysql", "oracle"],
+    ["druid", "impala", "mssql", "mysql", "singlestoredb", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -612,7 +614,7 @@ def test_first_last(alltypes, method, filtered, include_null):
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.notimpl(
-    ["druid", "impala", "mssql", "mysql", "oracle"],
+    ["druid", "impala", "mssql", "mysql", "singlestoredb", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize("method", ["first", "last"])
@@ -1136,7 +1138,7 @@ def test_corr_cov(
 
 
 @pytest.mark.notimpl(
-    ["mysql", "sqlite", "mssql", "druid"],
+    ["mysql", "singlestoredb", "sqlite", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError)
