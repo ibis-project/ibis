@@ -7,9 +7,10 @@ WHERE
   AND (
     (
       (
-        "t0"."int_col" - 1
+        "t0"."int_col" - CAST(1 AS TINYINT)
       ) = 0
-    ) OR (
+    )
+    OR (
       "t0"."float_col" <= 1.34
     )
   )
