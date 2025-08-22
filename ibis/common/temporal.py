@@ -202,7 +202,7 @@ def normalize_timedelta(
     return int(value)
 
 
-def normalize_timezone(tz):
+def normalize_timezone(tz) -> datetime.tzinfo | None:
     if tz is None:
         return None
     elif isinstance(tz, str):
@@ -222,7 +222,7 @@ def normalize_timezone(tz):
 
 
 @lazy_singledispatch
-def normalize_datetime(value):
+def normalize_datetime(value) -> datetime.datetime:
     raise TypeError(f"Unable to normalize {type(value)} to timestamp")
 
 
