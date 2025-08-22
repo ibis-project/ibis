@@ -172,7 +172,12 @@ def _type_from_cursor_info(
     elif type_code in TEXT_TYPES:
         if flags.is_binary:
             typ = dt.Binary
+        # For TEXT, MEDIUMTEXT, LONGTEXT (BLOB, MEDIUM_BLOB, LONG_BLOB)
+        # don't include length as they are variable-length text types
+        elif typename in ("BLOB", "MEDIUM_BLOB", "LONG_BLOB"):
+            typ = dt.String  # No length parameter for unlimited text types
         else:
+            # For VARCHAR, CHAR, etc. include the length
             typ = partial(dt.String, length=field_length // multi_byte_maximum_length)
     elif flags.is_timestamp or typename == "TIMESTAMP":
         # SingleStoreDB timestamps - note timezone handling
@@ -280,7 +285,7 @@ class SingleStoreDBType(SqlglotType):
             type_name = str(typ.this).upper()
 
             # Handle DATETIME with scale parameter specially
-            # Note: type_name will be "TYPE.DATETIME", so check for endswith
+            # Note: type_name will be \"TYPE.DATETIME\", so check for endswith
             if (
                 type_name.endswith("DATETIME")
                 and hasattr(typ, "expressions")
@@ -339,6 +344,32 @@ class SingleStoreDBType(SqlglotType):
                         return dt.Decimal(
                             precision=precision, scale=scale, nullable=nullable
                         )
+
+            # Handle string types with length parameters (VARCHAR, CHAR)
+            if (
+                type_name.endswith(("VARCHAR", "CHAR"))
+                and hasattr(typ, "expressions")
+                and typ.expressions
+            ):
+                # Extract length from the first parameter
+                length_param = typ.expressions[0]
+                if hasattr(length_param, "this") and hasattr(length_param.this, "this"):
+                    length = int(length_param.this.this)
+                    return dt.String(length=length, nullable=nullable)
+
+            # Handle binary types with length parameters (BINARY, VARBINARY)
+            if (
+                type_name.endswith(("BINARY", "VARBINARY"))
+                and hasattr(typ, "expressions")
+                and typ.expressions
+            ):
+                # Extract length from the first parameter
+                length_param = typ.expressions[0]
+                if hasattr(length_param, "this") and hasattr(length_param.this, "this"):
+                    length = int(length_param.this.this)
+                    return dt.Binary(
+                        nullable=nullable
+                    )  # Note: Ibis Binary doesn't store length
 
             # Extract just the type part (e.g., "DATETIME" from "TYPE.DATETIME")
             if "." in type_name:

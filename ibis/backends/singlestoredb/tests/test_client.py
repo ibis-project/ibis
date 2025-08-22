@@ -270,7 +270,7 @@ def test_json_type_support(con):
         c.execute(f"INSERT INTO {tmp} VALUES ('{json_value}')")
 
     t = con.table(tmp)
-    assert t.schema() == ibis.schema({"data": dt.string})
+    assert t.schema() == ibis.schema({"data": dt.JSON(nullable=True)})
 
     result = t.execute()
     assert len(result) == 1
