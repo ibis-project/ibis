@@ -32,6 +32,7 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkArithmeticException,
     PySparkParseException,
+    SingleStoreDBOperationalError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -380,8 +381,9 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
+                pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notimpl(
-                    ["mysql", "singlestoredb"], raises=MySQLOperationalError
+                    ["singlestoredb"], raises=SingleStoreDBOperationalError
                 ),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
@@ -721,8 +723,9 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
 @pytest.mark.notimpl(
     ["flink"], raises=(com.OperationNotDefinedError, NotImplementedError)
 )
+@pytest.mark.notimpl(["mysql"], raises=(MySQLOperationalError, NotImplementedError))
 @pytest.mark.notimpl(
-    ["mysql", "singlestoredb"], raises=(MySQLOperationalError, NotImplementedError)
+    ["singlestoredb"], raises=(SingleStoreDBOperationalError, NotImplementedError)
 )
 def test_isnan_isinf(
     backend,
