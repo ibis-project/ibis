@@ -1072,18 +1072,17 @@ def test_interactive(alltypes, monkeypatch):
     repr(expr)
 
 
-@pytest.mark.notimpl(["polars", "pyspark"])
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=AssertionError,
-    reason='DataFrame.iloc[:, 0] (column name="playerID") are different',
-)
+@pytest.mark.notimpl(["polars"])
 def test_uncorrelated_subquery(backend, batting, batting_df):
     subset_batting = batting.filter(batting.yearID <= 2000)
     expr = batting.filter(_.yearID == subset_batting.yearID.max())["playerID", "yearID"]
-    result = expr.execute()
+    result = expr.order_by("playerID", "yearID").execute()
 
-    expected = batting_df[batting_df.yearID == 2000][["playerID", "yearID"]]
+    expected = (
+        batting_df[batting_df.yearID == 2000][["playerID", "yearID"]]
+        .sort_values(by=["playerID", "yearID"])
+        .reset_index(drop=True)
+    )
     backend.assert_frame_equal(result, expected)
 
 
@@ -1780,7 +1779,6 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError),
-                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
                 pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(
                     ["datafusion", "exasol", "impala", "mssql", "mysql", "sqlite"],
