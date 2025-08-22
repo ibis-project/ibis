@@ -7,6 +7,9 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 from ibis.backends import (
@@ -101,7 +104,8 @@ class Backend(
         """Create a SingleStoreDB backend from a connection URL."""
         database = url.path[1:] if url.path and len(url.path) > 1 else ""
 
-        return cls.do_connect(
+        backend = cls()
+        backend.do_connect(
             host=url.hostname or "localhost",
             port=url.port or 3306,
             user=url.username or "root",
@@ -109,21 +113,69 @@ class Backend(
             database=database,
             **kwargs,
         )
+        return backend
 
     def create_database(self, name: str, force: bool = False) -> None:
-        """Create a database in SingleStoreDB."""
+        """Create a database in SingleStoreDB.
+
+        Parameters
+        ----------
+        name
+            Database name to create
+        force
+            If True, use CREATE DATABASE IF NOT EXISTS to avoid errors
+            if the database already exists
+
+        Examples
+        --------
+        >>> con.create_database("my_database")
+        >>> con.create_database("existing_db", force=True)  # Won't fail if exists
+        """
         if_not_exists = "IF NOT EXISTS " * force
         with self._safe_raw_sql(f"CREATE DATABASE {if_not_exists}{name}"):
             pass
 
     def drop_database(self, name: str, force: bool = False) -> None:
-        """Drop a database in SingleStoreDB."""
+        """Drop a database in SingleStoreDB.
+
+        Parameters
+        ----------
+        name
+            Database name to drop
+        force
+            If True, use DROP DATABASE IF EXISTS to avoid errors
+            if the database doesn't exist
+
+        Examples
+        --------
+        >>> con.drop_database("old_database")
+        >>> con.drop_database("maybe_exists", force=True)  # Won't fail if missing
+        """
         if_exists = "IF EXISTS " * force
         with self._safe_raw_sql(f"DROP DATABASE {if_exists}{name}"):
             pass
 
     def list_databases(self, like: str | None = None) -> list[str]:
-        """List databases in the SingleStoreDB cluster."""
+        """List databases in the SingleStoreDB cluster.
+
+        Parameters
+        ----------
+        like
+            SQL LIKE pattern to filter database names.
+            Use '%' as wildcard, e.g., 'test_%' for databases starting with 'test_'
+
+        Returns
+        -------
+        list[str]
+            List of database names
+
+        Examples
+        --------
+        >>> con.list_databases()
+        ['information_schema', 'mysql', 'my_app_db', 'test_db']
+        >>> con.list_databases(like="test_%")
+        ['test_db', 'test_staging']
+        """
         query = "SHOW DATABASES"
         if like is not None:
             query += f" LIKE '{like}'"
@@ -136,7 +188,31 @@ class Backend(
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> list[str]:
-        """List tables in SingleStoreDB database."""
+        """List tables in SingleStoreDB database.
+
+        Parameters
+        ----------
+        like
+            SQL LIKE pattern to filter table names.
+            Use '%' as wildcard, e.g., 'user_%' for tables starting with 'user_'
+        database
+            Database to list tables from. If None, uses current database.
+            Can be a string database name or tuple (catalog, database)
+
+        Returns
+        -------
+        list[str]
+            List of table names in the specified database
+
+        Examples
+        --------
+        >>> con.list_tables()
+        ['users', 'orders', 'products']
+        >>> con.list_tables(like="user_%")
+        ['users', 'user_profiles']
+        >>> con.list_tables(database="other_db")
+        ['table1', 'table2']
+        """
         from operator import itemgetter
 
         import sqlglot as sg
@@ -178,7 +254,32 @@ class Backend(
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
-        """Get schema for a table in SingleStoreDB."""
+        """Get schema for a table in SingleStoreDB.
+
+        Parameters
+        ----------
+        name
+            Table name to get schema for
+        catalog
+            Catalog name (usually not used in SingleStoreDB)
+        database
+            Database name. If None, uses current database
+
+        Returns
+        -------
+        Schema
+            Ibis schema object with column names and types
+
+        Examples
+        --------
+        >>> schema = con.get_schema("users")
+        >>> print(schema)
+        Schema:
+          id: int64
+          name: string
+          email: string
+          created_at: timestamp
+        """
         import sqlglot as sg
         import sqlglot.expressions as sge
 
@@ -206,8 +307,23 @@ class Backend(
         return sch.Schema(fields)
 
     @contextlib.contextmanager
-    def begin(self):
-        """Begin a transaction context."""
+    def begin(self) -> Generator[Any, None, None]:
+        """Begin a transaction context for executing SQL commands.
+
+        This method provides a cursor context manager that automatically
+        handles cleanup. Use this for executing raw SQL commands.
+
+        Yields
+        ------
+        Cursor
+            SingleStoreDB cursor for executing SQL commands
+
+        Examples
+        --------
+        >>> with con.begin() as cur:
+        ...     cur.execute("SELECT COUNT(*) FROM users")
+        ...     result = cur.fetchone()
+        """
         cursor = self._client.cursor()
         try:
             yield cursor
@@ -342,7 +458,7 @@ class Backend(
                 cur.executemany(sql, data)
 
     @contextlib.contextmanager
-    def _safe_raw_sql(self, query: str, *args, **kwargs):
+    def _safe_raw_sql(self, query: str, *args, **kwargs) -> Generator[Any, None, None]:
         """Execute raw SQL with proper error handling."""
         cursor = self._client.cursor()
         try:
@@ -398,7 +514,18 @@ class Backend(
 
     @cached_property
     def version(self) -> str:
-        """Return the SingleStoreDB server version."""
+        """Return the SingleStoreDB server version.
+
+        Returns
+        -------
+        str
+            SingleStoreDB server version string
+
+        Examples
+        --------
+        >>> con.version
+        'SingleStoreDB 8.7.10'
+        """
         with self._safe_raw_sql("SELECT @@version") as cur:
             (version_string,) = cur.fetchone()
         return version_string
@@ -417,17 +544,24 @@ def connect(
     Parameters
     ----------
     host
-        Hostname
+        SingleStoreDB hostname or IP address
     user
-        Username
+        Username for authentication
     password
-        Password
+        Password for authentication
     port
-        Port number
+        Port number (default 3306)
     database
-        Database to connect to
+        Database name to connect to
     kwargs
-        Additional connection parameters
+        Additional connection parameters:
+        - autocommit: Enable autocommit mode (default True)
+        - local_infile: Enable LOCAL INFILE capability (default 0)
+        - charset: Character set (default utf8mb4)
+        - ssl_disabled: Disable SSL connection
+        - connect_timeout: Connection timeout in seconds
+        - read_timeout: Read timeout in seconds
+        - write_timeout: Write timeout in seconds
 
     Returns
     -------
@@ -436,10 +570,28 @@ def connect(
 
     Examples
     --------
+    Basic connection:
+
     >>> import ibis
-    >>> con = ibis.singlestoredb.connect(host="localhost", database="test")
-    >>> con.list_tables()
-    []
+    >>> con = ibis.singlestoredb.connect(
+    ...     host="localhost", user="root", password="password", database="my_database"
+    ... )
+
+    Connection with additional options:
+
+    >>> con = ibis.singlestoredb.connect(
+    ...     host="singlestore.example.com",
+    ...     port=3306,
+    ...     user="app_user",
+    ...     password="secret",
+    ...     database="production",
+    ...     autocommit=True,
+    ...     connect_timeout=30,
+    ... )
+
+    Using connection string (alternative method):
+
+    >>> con = ibis.connect("singlestoredb://user:password@host:port/database")
     """
     backend = Backend()
     backend.do_connect(
