@@ -470,11 +470,29 @@ class Backend(
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Get the schema of a query result."""
+        import sqlglot as sg
+        from sqlglot import expressions as sge
+
+        from ibis import util
         from ibis.backends.singlestoredb.converter import SingleStoreDBPandasData
         from ibis.backends.singlestoredb.datatypes import _type_from_cursor_info
 
+        # Use SQLGlot to properly construct the query like MySQL backend does
+        sql = (
+            sg.select(sge.Star())
+            .from_(
+                sg.parse_one(query, dialect=self.dialect).subquery(
+                    sg.to_identifier(
+                        util.gen_name("query_schema"), quoted=self.compiler.quoted
+                    )
+                )
+            )
+            .limit(0)
+            .sql(self.dialect)
+        )
+
         with self.begin() as cur:
-            cur.execute(f"({query}) LIMIT 0")
+            cur.execute(sql)
             description = cur.description
 
         names = []

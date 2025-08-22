@@ -19,7 +19,10 @@ from ibis.backends.singlestoredb.tests.conftest import (
     SINGLESTOREDB_PASS,
     SINGLESTOREDB_USER,
 )
-from ibis.backends.tests.errors import MySQLOperationalError, MySQLProgrammingError
+from ibis.backends.tests.errors import (
+    SingleStoreDBOperationalError,
+    SingleStoreDBProgrammingError,
+)
 from ibis.util import gen_name
 
 SINGLESTOREDB_TYPES = [
@@ -228,14 +231,14 @@ def test_list_tables(con):
 def test_invalid_port():
     port = 4000
     url = f"singlestoredb://{SINGLESTOREDB_USER}:{SINGLESTOREDB_PASS}@{SINGLESTOREDB_HOST}:{port}/{IBIS_TEST_SINGLESTOREDB_DB}"
-    with pytest.raises(MySQLOperationalError):
+    with pytest.raises(SingleStoreDBOperationalError):
         ibis.connect(url)
 
 
 def test_create_database_exists(con):
     con.create_database(dbname := gen_name("dbname"))
 
-    with pytest.raises(MySQLProgrammingError):
+    with pytest.raises(SingleStoreDBProgrammingError):
         con.create_database(dbname)
 
     con.create_database(dbname, force=True)
@@ -248,7 +251,7 @@ def test_drop_database_exists(con):
 
     con.drop_database(dbname)
 
-    with pytest.raises(MySQLOperationalError):
+    with pytest.raises(SingleStoreDBOperationalError):
         con.drop_database(dbname)
 
     con.drop_database(dbname, force=True)
