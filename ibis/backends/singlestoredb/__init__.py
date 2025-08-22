@@ -504,12 +504,13 @@ class Backend(
             # Use the detailed cursor info for type conversion
             if len(col_info) >= 7:
                 # Full cursor description available
+                # SingleStoreDB uses 4-byte character encoding by default
                 ibis_type = _type_from_cursor_info(
                     flags=col_info[7] if len(col_info) > 7 else 0,
                     type_code=col_info[1],
                     field_length=col_info[3],
                     scale=col_info[5],
-                    multi_byte_maximum_length=1,  # Default for most cases
+                    multi_byte_maximum_length=4,  # Use 4 for SingleStoreDB's UTF8MB4 encoding
                 )
             else:
                 # Fallback for limited cursor info
