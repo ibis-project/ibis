@@ -575,9 +575,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         schema_name = self.current_database
         with self._safe_raw_sql(create_view, unload=False) as cur:
             table_meta = cur.get_table_metadata(
-                catalog_name=catalog_name,
-                schema_name=schema_name,
-                table_name=view_name
+                catalog_name=catalog_name, schema_name=schema_name, table_name=view_name
             )
             cur.execute(drop_view)
 
