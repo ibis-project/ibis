@@ -252,7 +252,7 @@ class SingleStoreDBType(SqlglotType):
     - ROWSTORE vs COLUMNSTORE table types with different optimizations
     """
 
-    dialect = "mysql"  # SingleStoreDB uses MySQL dialect for SQLGlot
+    dialect = "singlestore"  # SingleStoreDB uses SingleStore dialect in SQLGlot
 
     # SingleStoreDB-specific type mappings and defaults
     default_decimal_precision = 10

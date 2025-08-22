@@ -198,7 +198,7 @@ class Backend(
         if (sg_db := table_loc.args["db"]) is not None:
             sg_db.args["quoted"] = False
         if table_loc.catalog or table_loc.db:
-            conditions = [C.table_schema.eq(sge.convert(table_loc.sql("mysql")))]
+            conditions = [C.table_schema.eq(sge.convert(table_loc.sql("singlestore")))]
 
         col = "table_name"
         sql = (
@@ -206,7 +206,7 @@ class Backend(
             .from_(sg.table("tables", db="information_schema"))
             .distinct()
             .where(*conditions)
-            .sql("mysql")
+            .sql("singlestore")
         )
 
         with self._safe_raw_sql(sql) as cur:
@@ -248,11 +248,11 @@ class Backend(
 
         table = sg.table(
             name, db=database, catalog=catalog, quoted=self.compiler.quoted
-        ).sql("mysql")  # Use mysql dialect for compatibility
+        ).sql("singlestore")  # Use singlestore dialect
 
         with self.begin() as cur:
             try:
-                cur.execute(sge.Describe(this=table).sql("mysql"))
+                cur.execute(sge.Describe(this=table).sql("singlestore"))
             except Exception as e:
                 # Handle table not found
                 if "doesn't exist" in str(e) or "Table" in str(e):
@@ -380,6 +380,31 @@ class Backend(
         return ops.DatabaseTable(
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
+
+    def drop_table(
+        self,
+        name: str,
+        /,
+        *,
+        database: tuple[str, str] | str | None = None,
+        force: bool = False,
+    ) -> None:
+        """Drop a table from SingleStoreDB."""
+        import sqlglot as sg
+        import sqlglot.expressions as sge
+
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        drop_stmt = sge.Drop(
+            kind="TABLE",
+            this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
+            exists=force,
+        )
+
+        # Convert SQLGlot object to SQL string before execution
+        with self._safe_raw_sql(drop_stmt.sql(self.dialect)):
+            pass
 
     def _register_in_memory_table(self, op: Any) -> None:
         """Register an in-memory table in SingleStoreDB."""

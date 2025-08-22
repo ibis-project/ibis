@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import sqlglot.expressions as sge
+from sqlglot.dialects.singlestore import SingleStore
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.singlestoredb.datatypes import SingleStoreDBType
 from ibis.backends.sql.compilers.mysql import MySQLCompiler
-from ibis.backends.sql.dialects import MySQL
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
@@ -39,7 +39,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
 
     __slots__ = ()
 
-    dialect = MySQL  # SingleStoreDB uses MySQL dialect
+    dialect = SingleStore  # SingleStoreDB uses SingleStore dialect in SQLGlot
     type_mapper = SingleStoreDBType  # Use SingleStoreDB-specific type mapper
     rewrites = (
         rewrite_limit,
@@ -202,7 +202,10 @@ class SingleStoreDBCompiler(MySQLCompiler):
         # Insert hint after SELECT keyword
         if query_str.strip().upper().startswith("SELECT"):
             parts = query_str.split(" ", 1)
-            return f"{parts[0]} {hint} {parts[1]}"
+            if len(parts) >= 2:
+                return f"{parts[0]} {hint} {parts[1]}"
+            else:
+                return f"{parts[0]} {hint}"
 
         return query_str
 
@@ -217,7 +220,10 @@ class SingleStoreDBCompiler(MySQLCompiler):
         # Insert hint after SELECT keyword
         if query_str.strip().upper().startswith("SELECT"):
             parts = query_str.split(" ", 1)
-            return f"{parts[0]} {hint} {parts[1]}"
+            if len(parts) >= 2:
+                return f"{parts[0]} {hint} {parts[1]}"
+            else:
+                return f"{parts[0]} {hint}"
 
         return query_str
 

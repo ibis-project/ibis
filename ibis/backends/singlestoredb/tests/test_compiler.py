@@ -187,8 +187,10 @@ class TestSingleStoreDBCompiler:
         )
 
         # Should use UNHEX function with hex representation
-        assert isinstance(result, sge.Anonymous)
-        assert result.this.lower() == "unhex"
+        assert isinstance(result, sge.Unhex)
+        # Verify the hex data is correct
+        hex_expected = binary_value.hex()
+        assert result.this.this == hex_expected
 
     def test_visit_nonull_literal_date(self, compiler):
         """Test date literal handling."""
@@ -392,17 +394,18 @@ class TestSingleStoreDBCompilerIntegration:
             assert rewrite in singlestore_rewrites
 
     def test_placeholder_distributed_query_methods(self, compiler):
-        """Test placeholder methods for distributed query features."""
-        # These are placeholders for future SingleStoreDB-specific features
+        """Test distributed query optimization methods."""
         query = sge.Select()
 
         # Test shard key hint method (placeholder)
         result = compiler._add_shard_key_hint(query)
         assert result == query  # Should return unchanged for now
 
-        # Test columnstore optimization method (placeholder)
+        # Test columnstore optimization method
         result = compiler._optimize_for_columnstore(query)
-        assert result == query  # Should return unchanged for now
+        # Should add columnstore hint for SELECT queries
+        expected = "SELECT /*+ USE_COLUMNSTORE_STRATEGY */"
+        assert result == expected
 
 
 if __name__ == "__main__":
