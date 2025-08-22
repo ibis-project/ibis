@@ -340,15 +340,22 @@ class TestSingleStoreDBCompiler:
 
     def test_minimize_spec_for_rank_operations(self, compiler):
         """Test window spec minimization for rank operations."""
+
         # Test with rank operation
-        rank_op = ops.Rank()
+        class RankOp:
+            func = ops.MinRank()  # Use MinRank which inherits from RankBase
+
+        rank_op = RankOp()
         spec = sge.Window()
         result = compiler._minimize_spec(rank_op, spec)
         assert result is None
 
         # Test with non-rank operation
+        class MockSumFunc:
+            pass  # Simple mock that's not a RankBase
+
         class NonRankOp:
-            func = ops.Sum(None)  # Not a rank operation
+            func = MockSumFunc()  # Not a rank operation
 
         non_rank_op = NonRankOp()
         result = compiler._minimize_spec(non_rank_op, spec)
