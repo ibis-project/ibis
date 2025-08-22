@@ -275,7 +275,7 @@ class SingleStoreDBType(SqlglotType):
         Handles both standard MySQL types and SingleStoreDB-specific extensions.
         """
         if hasattr(typ, "this"):
-            type_name = typ.this.upper()
+            type_name = str(typ.this).upper()
             if type_name in cls._singlestore_type_mapping:
                 ibis_type = cls._singlestore_type_mapping[type_name]
                 if callable(ibis_type):
