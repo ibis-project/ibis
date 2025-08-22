@@ -263,26 +263,25 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         sch.Schema
             Ibis schema
         """
+        compiler = self.compiler
         table = sg.table(
-            table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
+            table_name, db=database, catalog=catalog, quoted=compiler.quoted
         )
         with self.con.cursor() as cur:
-            tables = cur.list_table_metadata(
-                catalog_name=catalog, schema_name=database, expression=table_name
-            )
+            try:
+                table_meta = cur.get_table_metadata(
+                    catalog_name=catalog, schema_name=database, table_name=table_name
+                )
+            except pyathena.OperationalError as e:
+                raise com.TableNotFound(table.sql(self.dialect)) from e
 
-        if not tables:
-            raise com.TableNotFound(table.sql(self.dialect))
-
-        (table,) = tables
-
-        type_mapper = self.compiler.type_mapper
+        type_mapper = compiler.type_mapper
         fields = {
             metacol.name: type_mapper.from_string(metacol.type)
-            for metacol in table.columns
+            for metacol in table_meta.columns
         }
 
-        for key in table.partition_keys:
+        for key in table_meta.partition_keys:
             fields[key.name] = type_mapper.from_string(key.type)
 
         return sch.Schema(fields)
