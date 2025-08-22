@@ -89,7 +89,7 @@ SINGLESTOREDB_TYPES = [
 @pytest.mark.parametrize(("singlestoredb_type", "expected_type"), SINGLESTOREDB_TYPES)
 def test_get_schema_from_query(con, singlestoredb_type, expected_type):
     raw_name = ibis.util.guid()
-    name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
+    name = sg.to_identifier(raw_name, quoted=True).sql("singlestore")
     expected_schema = ibis.schema(dict(x=expected_type))
 
     # temporary tables get cleaned up by the db when the session ends, so we
@@ -119,7 +119,7 @@ def test_get_schema_from_query_special_cases(
     con, singlestoredb_type, get_schema_expected_type, table_expected_type
 ):
     raw_name = ibis.util.guid()
-    name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
+    name = sg.to_identifier(raw_name, quoted=True).sql("singlestore")
     get_schema_expected_schema = ibis.schema(dict(x=get_schema_expected_type))
     table_expected_schema = ibis.schema(dict(x=table_expected_type))
 
