@@ -206,6 +206,14 @@ pyspark = [
   "pandas>=1.5.3,<3",
   "rich>=12.4.4",
 ]
+singlestoredb = [
+  "singlestoredb>=1.0",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4",
+]
 snowflake = [
   "snowflake-connector-python>=3.0.2,!=3.3.0b1",
   "pyarrow>=10.0.1",
@@ -326,6 +334,7 @@ polars = "ibis.backends.polars"
 postgres = "ibis.backends.postgres"
 risingwave = "ibis.backends.risingwave"
 pyspark = "ibis.backends.pyspark"
+singlestoredb = "ibis.backends.singlestoredb"
 snowflake = "ibis.backends.snowflake"
 sqlite = "ibis.backends.sqlite"
 trino = "ibis.backends.trino"
