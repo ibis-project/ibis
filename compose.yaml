@@ -44,7 +44,7 @@ services:
     image: ghcr.io/singlestore-labs/singlestoredb-dev:latest
     environment:
       ROOT_PASSWORD: "ibis_testing"
-      SINGLESTORE_LICENSE: ""  # Optional license key
+      SINGLESTORE_LICENSE: "" # Optional license key
     healthcheck:
       interval: 2s
       retries: 30
@@ -52,9 +52,9 @@ services:
         - CMD-SHELL
         - mysql -h localhost -u root -p'ibis_testing' -e 'SELECT 1'
     ports:
-      - 3307:3306  # Use 3307 to avoid conflict with MySQL
-      - 9088:8080  # SingleStore Studio UI (use 9088 to avoid conflicts)
-      - 9089:9000  # Data API (use 9089 to avoid conflicts)
+      - 3307:3306 # Use 3307 to avoid conflict with MySQL
+      - 9088:8080 # SingleStore Studio UI (use 9088 to avoid conflicts)
+      - 9089:9000 # Data API (use 9089 to avoid conflicts)
     networks:
       - singlestoredb
     volumes:
