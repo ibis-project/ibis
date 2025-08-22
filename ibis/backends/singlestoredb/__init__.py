@@ -42,9 +42,12 @@ class Backend(
         """Return the SQL compiler for SingleStoreDB."""
         from ibis.backends.sql.compilers.singlestoredb import compiler
 
-        return compiler.with_params(
-            default_schema=self.current_database, quoted=self.quoted
-        )
+        return compiler
+
+    @property
+    def con(self):
+        """Return the database connection for compatibility with base class."""
+        return self._client
 
     @property
     def current_database(self) -> str:
@@ -79,34 +82,19 @@ class Backend(
         kwargs
             Additional connection parameters
         """
-        try:
-            # Try SingleStoreDB client first
-            import singlestoredb as s2
+        # Use SingleStoreDB client exclusively
+        import singlestoredb as s2
 
-            self._client = s2.connect(
-                host=host,
-                user=user,
-                password=password,
-                port=port,
-                database=database,
-                autocommit=True,
-                local_infile=kwargs.pop("local_infile", 0),
-                **kwargs,
-            )
-        except ImportError:
-            # Fall back to MySQLdb for compatibility
-            import MySQLdb
-
-            self._client = MySQLdb.connect(
-                host=host,
-                user=user,
-                passwd=password,
-                port=port,
-                db=database,
-                autocommit=True,
-                local_infile=kwargs.pop("local_infile", 0),
-                **kwargs,
-            )
+        self._client = s2.connect(
+            host=host,
+            user=user,
+            password=password,
+            port=port,
+            database=database,
+            autocommit=kwargs.pop("autocommit", True),
+            local_infile=kwargs.pop("local_infile", 0),
+            **kwargs,
+        )
 
     @classmethod
     def _from_url(cls, url: ParseResult, **kwargs) -> Backend:
@@ -142,6 +130,216 @@ class Backend(
 
         with self._safe_raw_sql(query) as cur:
             return [row[0] for row in cur.fetchall()]
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List tables in SingleStoreDB database."""
+        from operator import itemgetter
+
+        import sqlglot as sg
+        import sqlglot.expressions as sge
+
+        from ibis.backends.sql.compilers.base import TRUE, C
+
+        if database is not None:
+            table_loc = self._to_sqlglot_table(database)
+        else:
+            table_loc = sge.Table(
+                db=sg.to_identifier(self.current_database, quoted=self.compiler.quoted),
+                catalog=None,
+            )
+
+        conditions = [TRUE]
+
+        if (sg_cat := table_loc.args["catalog"]) is not None:
+            sg_cat.args["quoted"] = False
+        if (sg_db := table_loc.args["db"]) is not None:
+            sg_db.args["quoted"] = False
+        if table_loc.catalog or table_loc.db:
+            conditions = [C.table_schema.eq(sge.convert(table_loc.sql("mysql")))]
+
+        col = "table_name"
+        sql = (
+            sg.select(col)
+            .from_(sg.table("tables", db="information_schema"))
+            .distinct()
+            .where(*conditions)
+            .sql("mysql")
+        )
+
+        with self._safe_raw_sql(sql) as cur:
+            out = cur.fetchall()
+
+        return self._filter_with_like(map(itemgetter(0), out), like)
+
+    def get_schema(
+        self, name: str, *, catalog: str | None = None, database: str | None = None
+    ) -> sch.Schema:
+        """Get schema for a table in SingleStoreDB."""
+        import sqlglot as sg
+        import sqlglot.expressions as sge
+
+        table = sg.table(
+            name, db=database, catalog=catalog, quoted=self.compiler.quoted
+        ).sql("mysql")  # Use mysql dialect for compatibility
+
+        with self.begin() as cur:
+            try:
+                cur.execute(sge.Describe(this=table).sql("mysql"))
+            except Exception as e:
+                # Handle table not found
+                if "doesn't exist" in str(e) or "Table" in str(e):
+                    raise com.TableNotFound(name) from e
+                raise
+            else:
+                result = cur.fetchall()
+
+        type_mapper = self.compiler.type_mapper
+        fields = {
+            name: type_mapper.from_string(type_string, nullable=is_nullable == "YES")
+            for name, type_string, is_nullable, *_ in result
+        }
+
+        return sch.Schema(fields)
+
+    @contextlib.contextmanager
+    def begin(self):
+        """Begin a transaction context."""
+        cursor = self._client.cursor()
+        try:
+            yield cursor
+        finally:
+            cursor.close()
+
+    def create_table(
+        self,
+        name: str,
+        /,
+        obj: Any | None = None,
+        *,
+        schema: sch.SchemaLike | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+    ):
+        """Create a table in SingleStoreDB."""
+        import sqlglot as sg
+        import sqlglot.expressions as sge
+
+        import ibis
+        import ibis.expr.operations as ops
+        import ibis.expr.types as ir
+        from ibis import util
+        from ibis.backends.sql.compilers.base import RenameTable
+
+        if obj is None and schema is None:
+            raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
+
+        properties = []
+
+        if temp:
+            properties.append(sge.TemporaryProperty())
+
+        if obj is not None:
+            if not isinstance(obj, ir.Expr):
+                table = ibis.memtable(obj)
+            else:
+                table = obj
+
+            self._run_pre_execute_hooks(table)
+
+            query = self.compiler.to_sqlglot(table)
+        else:
+            query = None
+
+        if overwrite:
+            temp_name = util.gen_name(f"{self.name}_table")
+        else:
+            temp_name = name
+
+        if not schema:
+            schema = table.schema()
+
+        quoted = self.compiler.quoted
+        dialect = self.dialect
+
+        table_expr = sg.table(temp_name, catalog=database, quoted=quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot_column_defs(dialect)
+        )
+
+        create_stmt = sge.Create(
+            kind="TABLE", this=target, properties=sge.Properties(expressions=properties)
+        )
+
+        this = sg.table(name, catalog=database, quoted=quoted)
+        with self._safe_raw_sql(create_stmt) as cur:
+            if query is not None:
+                cur.execute(sge.Insert(this=table_expr, expression=query).sql(dialect))
+
+            if overwrite:
+                cur.execute(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
+                cur.execute(
+                    sge.Alter(
+                        kind="TABLE",
+                        this=table_expr,
+                        exists=True,
+                        actions=[RenameTable(this=this)],
+                    ).sql(dialect)
+                )
+
+        if schema is None:
+            return self.table(name, database=database)
+
+        # preserve the input schema if it was provided
+        return ops.DatabaseTable(
+            name, schema=schema, source=self, namespace=ops.Namespace(database=database)
+        ).to_expr()
+
+    def _register_in_memory_table(self, op: Any) -> None:
+        """Register an in-memory table in SingleStoreDB."""
+        import sqlglot as sg
+        import sqlglot.expressions as sge
+
+        schema = op.schema
+        if null_columns := schema.null_fields:
+            raise com.IbisTypeError(
+                "SingleStoreDB cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
+
+        name = op.name
+        quoted = self.compiler.quoted
+        dialect = self.dialect
+
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot_column_defs(dialect),
+            ),
+            properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+        create_stmt_sql = create_stmt.sql(dialect)
+
+        df = op.data.to_frame()
+        # nan can not be used with SingleStoreDB like MySQL
+        df = df.replace(float("nan"), None)
+
+        data = df.itertuples(index=False)
+        sql = self._build_insert_template(
+            name, schema=schema, columns=True, placeholder="%s"
+        )
+        with self.begin() as cur:
+            cur.execute(create_stmt_sql)
+
+            if not df.empty:
+                cur.executemany(sql, data)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str, *args, **kwargs):

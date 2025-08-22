@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.9"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -862,6 +862,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/01/6a/eb7503536552bbd3388b2607bc7a64e59d4f988336406b51a69d29f17ed2/botocore-1.40.49.tar.gz", hash = "sha256:fe8d4cbcc22de84c20190ae728c46b931bafeb40fce247010fb071c31b6532b5", size = 14415240, upload-time = "2025-10-09T19:21:37.133Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fc/7b/dce396a3f7078e0432d40a9778602cbf0785ca91e7bcb64e05f19dfb5662/botocore-1.40.49-py3-none-any.whl", hash = "sha256:bf1089d0e77e4fc2e195d81c519b194ab62a4d4dd3e7113ee4e2bf903b0b75ab", size = 14085172, upload-time = "2025-10-09T19:21:32.721Z" },
+]
+
+[[package]]
+name = "build"
+version = "1.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "os_name == 'nt'" },
+    { name = "importlib-metadata", marker = "python_full_version < '3.10.2'" },
+    { name = "packaging" },
+    { name = "pyproject-hooks" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/25/1c/23e33405a7c9eac261dff640926b8b5adaed6a6eb3e1767d441ed611d0c0/build-1.3.0.tar.gz", hash = "sha256:698edd0ea270bde950f53aed21f3a0135672206f3911e0176261a31e0e07b397", size = 48544, upload-time = "2025-08-01T21:27:09.268Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/8c/2b30c12155ad8de0cf641d76a8b396a16d2c36bc6d50b621a62b7c4567c1/build-1.3.0-py3-none-any.whl", hash = "sha256:7145f0b5061ba90a1500d60bd1b13ca0a8a4cebdd0cc16ed8adf1c0e739f43b4", size = 23382, upload-time = "2025-08-01T21:27:07.844Z" },
 ]
 
 [[package]]
@@ -3137,6 +3153,17 @@ risingwave = [
     { name = "pyarrow-hotfix" },
     { name = "rich" },
 ]
+singlestoredb = [
+    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas" },
+    { name = "pyarrow" },
+    { name = "pyarrow-hotfix" },
+    { name = "rich" },
+    { name = "singlestoredb", version = "1.12.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "singlestoredb", version = "1.15.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
 snowflake = [
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
@@ -3274,6 +3301,7 @@ requires-dist = [
     { name = "numpy", marker = "extra == 'postgres'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'pyspark'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'risingwave'", specifier = ">=1.23.2,<3" },
+    { name = "numpy", marker = "extra == 'singlestoredb'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'snowflake'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'sqlite'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'trino'", specifier = ">=1.23.2,<3" },
@@ -3299,6 +3327,7 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'postgres'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'pyspark'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'risingwave'", specifier = ">=1.5.3,<3" },
+    { name = "pandas", marker = "extra == 'singlestoredb'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'snowflake'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'sqlite'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'trino'", specifier = ">=1.5.3,<3" },
@@ -3325,6 +3354,7 @@ requires-dist = [
     { name = "pyarrow", marker = "extra == 'postgres'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'pyspark'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'risingwave'", specifier = ">=10.0.1" },
+    { name = "pyarrow", marker = "extra == 'singlestoredb'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'snowflake'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'sqlite'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'trino'", specifier = ">=10.0.1" },
@@ -3345,6 +3375,7 @@ requires-dist = [
     { name = "pyarrow-hotfix", marker = "extra == 'postgres'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'pyspark'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'risingwave'", specifier = ">=0.4" },
+    { name = "pyarrow-hotfix", marker = "extra == 'singlestoredb'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'snowflake'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'sqlite'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'trino'", specifier = ">=0.4" },
@@ -3374,10 +3405,12 @@ requires-dist = [
     { name = "rich", marker = "extra == 'postgres'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'pyspark'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'risingwave'", specifier = ">=12.4.4" },
+    { name = "rich", marker = "extra == 'singlestoredb'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'snowflake'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'sqlite'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'trino'", specifier = ">=12.4.4" },
     { name = "shapely", marker = "extra == 'geospatial'", specifier = ">=2" },
+    { name = "singlestoredb", marker = "extra == 'singlestoredb'", specifier = ">=1.0" },
     { name = "snowflake-connector-python", marker = "extra == 'snowflake'", specifier = ">=3.0.2,!=3.3.0b1" },
     { name = "sqlglot", specifier = ">=23.4,!=26.32.0" },
     { name = "toolz", specifier = ">=0.11" },
@@ -3385,7 +3418,7 @@ requires-dist = [
     { name = "typing-extensions", specifier = ">=4.3.0" },
     { name = "tzdata", specifier = ">=2022.7" },
 ]
-provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
+provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "singlestoredb", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -5537,6 +5570,18 @@ wheels = [
 ]
 
 [[package]]
+name = "parsimonious"
+version = "0.10.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "regex" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7b/91/abdc50c4ef06fdf8d047f60ee777ca9b2a7885e1a9cea81343fbecda52d7/parsimonious-0.10.0.tar.gz", hash = "sha256:8281600da180ec8ae35427a4ab4f7b82bfec1e3d1e52f80cb60ea82b9512501c", size = 52172, upload-time = "2022-09-03T17:01:17.004Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/aa/0f/c8b64d9b54ea631fcad4e9e3c8dbe8c11bb32a623be94f22974c88e71eaf/parsimonious-0.10.0-py3-none-any.whl", hash = "sha256:982ab435fabe86519b57f6b35610aa4e4e977e9f02a14353edf4bbc75369fc0f", size = 48427, upload-time = "2022-09-03T17:01:13.814Z" },
+]
+
+[[package]]
 name = "parso"
 version = "0.8.5"
 source = { registry = "https://pypi.org/simple" }
@@ -7108,6 +7153,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pyproject-hooks"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/82/28175b2414effca1cdac8dc99f76d660e7a4fb0ceefa4b4ab8f5f6742925/pyproject_hooks-1.2.0.tar.gz", hash = "sha256:1e859bd5c40fae9448642dd871adf459e5e2084186e8d2c2a79a824c970da1f8", size = 19228, upload-time = "2024-09-29T09:24:13.293Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl", hash = "sha256:9e5c6bfa8dcc30091c74b0cf803c81fdd29d94f01992a7707bc97babb1141913", size = 10216, upload-time = "2024-09-29T09:24:11.978Z" },
+]
+
+[[package]]
 name = "pyspark"
 version = "3.5.7"
 source = { registry = "https://pypi.org/simple" }
@@ -8598,6 +8652,63 @@ wheels = [
 ]
 
 [[package]]
+name = "singlestoredb"
+version = "1.12.4"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version == '3.10.*'",
+    "python_full_version < '3.10'",
+]
+dependencies = [
+    { name = "build", marker = "python_full_version < '3.11'" },
+    { name = "parsimonious", marker = "python_full_version < '3.11'" },
+    { name = "pyjwt", marker = "python_full_version < '3.11'" },
+    { name = "requests", marker = "python_full_version < '3.11'" },
+    { name = "setuptools", marker = "python_full_version < '3.11'" },
+    { name = "sqlparams", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "wheel", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/29/6e/8278a773383ccd0adcceaefd767fd48021fedd271d22778add7c7f4b6dca/singlestoredb-1.12.4.tar.gz", hash = "sha256:b64e3a71b5c0a5375af79dc6523a14d6744798f5a2ec884cbbf5613d6672e56a", size = 306450, upload-time = "2025-04-02T18:14:10.115Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d5/fc/2af1e415d8d3aee43b8828712c1772d85b9695835342272e85510c5ba166/singlestoredb-1.12.4-cp38-abi3-macosx_10_9_universal2.whl", hash = "sha256:59bd60125a94779fc8d86ee462ebe503d2d5dce1f9c7e4dd825fefd8cd02f6bb", size = 389316, upload-time = "2025-04-02T18:14:01.458Z" },
+    { url = "https://files.pythonhosted.org/packages/60/29/a11f5989b2ad62037a2dbe858c7ef91fbeac342243c6d61f31e5adb5e009/singlestoredb-1.12.4-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0089d7dc88eb155adaf195adbe03997e96d3a77e807c3cc99fcfcc2eced4a8c6", size = 426241, upload-time = "2025-04-02T18:14:03.343Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/02/244f896b1c0126733c886c4965ada141a9faaffd0fac0238167725ae3d2a/singlestoredb-1.12.4-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cd6a8d7324fcac24fa9de2b8de5e8c4c0ec6986784597656f436ead52632c236", size = 428570, upload-time = "2025-04-02T18:14:04.473Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/40/971eacb90dc0299c311c4df0063d0a358f7099c9171a30c0ff2f899a391c/singlestoredb-1.12.4-cp38-abi3-win32.whl", hash = "sha256:ffab0550b6b64447b02d0404ade357a9b8775b3053e6b0ea7c778d663879a184", size = 367194, upload-time = "2025-04-02T18:14:05.812Z" },
+    { url = "https://files.pythonhosted.org/packages/02/93/984fca3bf8c05d6588d54c99f127e26f679008f986a3262183a3759aa6bf/singlestoredb-1.12.4-cp38-abi3-win_amd64.whl", hash = "sha256:340b34c481dcbd8ace404dfbcf4b251363b0f133c8bf4b4e5762d82b32a07191", size = 365909, upload-time = "2025-04-02T18:14:07.751Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/db/2c598597983637cac218a2b81c7c5f08d28669fa318a97c8c9c0249fa3a6/singlestoredb-1.12.4-py3-none-any.whl", hash = "sha256:0d98d626363d6b354c0f9fb3c706bfa0b7ba48365704b31b13ff9f7e1598f4db", size = 336023, upload-time = "2025-04-02T18:14:08.771Z" },
+]
+
+[[package]]
+name = "singlestoredb"
+version = "1.15.2"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version == '3.13.*'",
+    "python_full_version == '3.12.*'",
+    "python_full_version == '3.11.*'",
+]
+dependencies = [
+    { name = "build", marker = "python_full_version >= '3.11'" },
+    { name = "parsimonious", marker = "python_full_version >= '3.11'" },
+    { name = "pyjwt", marker = "python_full_version >= '3.11'" },
+    { name = "requests", marker = "python_full_version >= '3.11'" },
+    { name = "setuptools", marker = "python_full_version >= '3.11'" },
+    { name = "sqlparams", marker = "python_full_version >= '3.11'" },
+    { name = "wheel", marker = "python_full_version >= '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e4/03/453b88edb97102e482849ff0ecbb0271e20ba2a66508a7c03d434442238b/singlestoredb-1.15.2.tar.gz", hash = "sha256:7a0ad77c7b2059b5e0e716cf55cd812bec5eaa22c30e866c010b95a4c1e3f8e4", size = 359328, upload-time = "2025-08-18T18:42:05.584Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/ef/3d867184d2d4f10b720793d32dd6162f9a65a27196909623ee522a0e9863/singlestoredb-1.15.2-cp38-abi3-macosx_10_9_universal2.whl", hash = "sha256:849980da1ba1c92f0d357561ada9c73907e239b09ae52a479f4bb97295e03689", size = 459957, upload-time = "2025-08-18T18:41:57.721Z" },
+    { url = "https://files.pythonhosted.org/packages/61/6d/dcf1b0675642613aa732d51ea987bc7b413fd191e18ffb3905aadad377fe/singlestoredb-1.15.2-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:07503d4e70f48a3281deb24b9321d9ef94d3ba89a299112b1a8cfc8c8e660386", size = 498160, upload-time = "2025-08-18T18:41:59.796Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/60/52820062a5ca823e7cbb95386291552e4cb4ebccdfa03c7b45b2ae486092/singlestoredb-1.15.2-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:434b21ba09e1cb348eee3db639fab042ee1e9c7bebadc9ac1e9cb90abd0a8ce3", size = 499576, upload-time = "2025-08-18T18:42:01.069Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/44/63afbf48bebe2069012ddc669e01a8d0ed9621bfa7b505b802f64e7ffcdf/singlestoredb-1.15.2-cp38-abi3-win32.whl", hash = "sha256:91c19a244e9bafc0bfdde47e377b98425147cd1e7f3f96fea0d574433633e66f", size = 437612, upload-time = "2025-08-18T18:42:02.354Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/cf/51ffcb7c569722144cee1b93f103e419d3304b3a6f58f2d55609a8388965/singlestoredb-1.15.2-cp38-abi3-win_amd64.whl", hash = "sha256:90ca6cc7b7177a6740c5eb0e732b5e4f4240b523d15e514844079085adb25dbc", size = 436349, upload-time = "2025-08-18T18:42:03.638Z" },
+    { url = "https://files.pythonhosted.org/packages/86/52/519ad75198ea1246664aaa5cf789923ef31caf9eb2388ae32b498a02bce0/singlestoredb-1.15.2-py3-none-any.whl", hash = "sha256:2647de5b35920a2795145894168c2d5ae458eb19313d9a4922edd5d42f0e8beb", size = 404573, upload-time = "2025-08-18T18:42:04.628Z" },
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -8762,6 +8873,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/46/b6/f188b9616bef49943353f3622d726af30fdb08acbd081deef28ba43ceb48/sqlglot-28.6.0.tar.gz", hash = "sha256:8c0a432a6745c6c7965bbe99a17667c5a3ca1d524a54b31997cf5422b1727f6a", size = 5676522, upload-time = "2026-01-13T17:39:24.389Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8f/a6/21b1e19994296ba4a34bc7abaf4fcb40d7e7787477bdfde58cd843594459/sqlglot-28.6.0-py3-none-any.whl", hash = "sha256:8af76e825dc8456a49f8ce049d69bbfcd116655dda3e53051754789e2edf8eba", size = 575186, upload-time = "2026-01-13T17:39:22.327Z" },
+]
+
+[[package]]
+name = "sqlparams"
+version = "6.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/ec/5d6a5ca217ecd7b08d404b7dc2025c752bdb393c9b34fcc6d48e1f70bb7e/sqlparams-6.2.0.tar.gz", hash = "sha256:3744a2ad16f71293db6505b21fd5229b4757489a9b09f3553656a1ae97ba7ca5", size = 34932, upload-time = "2025-01-25T16:21:59.646Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/e2/f1355629bb1eeb274babc947e2ba4e2e49250e934c86adcce3e54943bc8a/sqlparams-6.2.0-py3-none-any.whl", hash = "sha256:63b32ed9051bdc52e7e8b38bc4f78aed51796cdd9135e730f4c6a7db1048dedf", size = 17629, upload-time = "2025-01-25T16:21:58.272Z" },
 ]
 
 [[package]]
@@ -9201,6 +9321,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/2c/41/aa4bf9664e4cda14c3b39865b12251e8e7d239f4cd0e3cc1b6c2ccde25c1/websocket_client-1.9.0.tar.gz", hash = "sha256:9e813624b6eb619999a97dc7958469217c3176312b3a16a4bd1bc7e08a46ec98", size = 70576, upload-time = "2025-10-07T21:16:36.495Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/34/db/b10e48aa8fff7407e67470363eac595018441cf32d5e1001567a7aeba5d2/websocket_client-1.9.0-py3-none-any.whl", hash = "sha256:af248a825037ef591efbf6ed20cc5faa03d3b47b9e5a2230a529eeee1c1fc3ef", size = 82616, upload-time = "2025-10-07T21:16:34.951Z" },
+]
+
+[[package]]
+name = "wheel"
+version = "0.45.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8a/98/2d9906746cdc6a6ef809ae6338005b3f21bb568bea3165cfc6a243fdc25c/wheel-0.45.1.tar.gz", hash = "sha256:661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729", size = 107545, upload-time = "2024-11-23T00:18:23.513Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/2c/87f3254fd8ffd29e4c02732eee68a83a1d3c346ae39bc6822dcbcb697f2b/wheel-0.45.1-py3-none-any.whl", hash = "sha256:708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248", size = 72494, upload-time = "2024-11-23T00:18:21.207Z" },
 ]
 
 [[package]]

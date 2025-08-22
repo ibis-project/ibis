@@ -40,6 +40,27 @@ services:
       - mysql:/data
       - $PWD/docker/mysql:/docker-entrypoint-initdb.d:ro
 
+  singlestoredb:
+    image: ghcr.io/singlestore-labs/singlestoredb-dev:latest
+    environment:
+      ROOT_PASSWORD: "ibis_testing"
+      SINGLESTORE_LICENSE: ""  # Optional license key
+    healthcheck:
+      interval: 2s
+      retries: 30
+      test:
+        - CMD-SHELL
+        - mysql -h localhost -u root -p'ibis_testing' -e 'SELECT 1'
+    ports:
+      - 3307:3306  # Use 3307 to avoid conflict with MySQL
+      - 9088:8080  # SingleStore Studio UI (use 9088 to avoid conflicts)
+      - 9089:9000  # Data API (use 9089 to avoid conflicts)
+    networks:
+      - singlestoredb
+    volumes:
+      - singlestoredb:/data
+      - $PWD/docker/singlestoredb:/docker-entrypoint-initdb.d:ro
+
   postgres:
     environment:
       POSTGRES_PASSWORD: postgres
@@ -618,6 +639,7 @@ networks:
   mssql:
   clickhouse:
   postgres:
+  singlestoredb:
   trino:
   druid:
   oracle:
@@ -633,6 +655,7 @@ volumes:
   mysql:
   oracle:
   postgres:
+  singlestoredb:
   exasol:
   impala:
   risingwave:
