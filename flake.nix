@@ -34,25 +34,16 @@
     };
   };
 
-  outputs =
-    {
-      self,
-      flake-utils,
-      gitignore,
-      nixpkgs,
-      pyproject-nix,
-      uv2nix,
-      pyproject-build-systems,
-      ...
-    }:
+  outputs = { self, flake-utils, gitignore, nixpkgs, pyproject-nix, uv2nix
+    , pyproject-build-systems, ... }:
     {
       overlays.default = nixpkgs.lib.composeManyExtensions [
         gitignore.overlay
-        (import ./nix/overlay.nix { inherit uv2nix pyproject-nix pyproject-build-systems; })
+        (import ./nix/overlay.nix {
+          inherit uv2nix pyproject-nix pyproject-build-systems;
+        })
       ];
-    }
-    // flake-utils.lib.eachDefaultSystem (
-      localSystem:
+    } // flake-utils.lib.eachDefaultSystem (localSystem:
       let
         pkgs = import nixpkgs {
           inherit localSystem;
@@ -122,15 +113,13 @@
           taplo-cli
         ];
 
-        mkDevShell =
-          env:
+        mkDevShell = env:
           pkgs.mkShell {
             inherit (env) name;
             packages = [
               # python dev environment
               env
-            ]
-            ++ (with pkgs; [
+            ] ++ (with pkgs; [
               # uv executable
               uv
               # rendering release notes
@@ -149,9 +138,7 @@
               curl
               # docs
               quarto
-            ])
-            ++ preCommitDeps
-            ++ backendDevDeps;
+            ]) ++ preCommitDeps ++ backendDevDeps;
 
             inherit shellHook;
 
@@ -162,7 +149,9 @@
             # needed for mssql+pyodbc
             ODBCSYSINI = pkgs.writeTextDir "odbcinst.ini" ''
               [FreeTDS]
-              Driver = ${pkgs.lib.makeLibraryPath [ pkgs.freetds ]}/libtdsodbc.so
+              Driver = ${
+                pkgs.lib.makeLibraryPath [ pkgs.freetds ]
+              }/libtdsodbc.so
             '';
 
             GDAL_DATA = "${pkgs.gdal}/share/gdal";
@@ -170,19 +159,13 @@
 
             __darwinAllowLocalNetworking = true;
           };
-      in
-      rec {
+      in rec {
         packages = {
           default = packages.ibis313;
 
           inherit (pkgs)
-            ibis310
-            ibis311
-            ibis312
-            ibis313
-            check-release-notes-spelling
-            get-latest-quarto-hash
-            ;
+            ibis310 ibis311 ibis312 ibis313 check-release-notes-spelling
+            get-latest-quarto-hash;
         };
 
         checks = {
@@ -207,10 +190,7 @@
 
           links = pkgs.mkShell {
             name = "links";
-            packages = with pkgs; [
-              just
-              lychee
-            ];
+            packages = with pkgs; [ just lychee ];
           };
 
           release = pkgs.mkShell {
@@ -225,6 +205,5 @@
             ];
           };
         };
-      }
-    );
+      });
 }
