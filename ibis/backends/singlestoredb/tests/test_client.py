@@ -72,7 +72,7 @@ SINGLESTOREDB_TYPES = [
     param("bit(17)", dt.int32, id="bit_17"),
     param("bit(33)", dt.int64, id="bit_33"),
     # Special SingleStoreDB types
-    param("json", dt.string, id="json"),
+    param("json", dt.json, id="json"),
     # Unsigned integer types
     param("mediumint(8) unsigned", dt.uint32, id="mediumint-unsigned"),
     param("bigint unsigned", dt.uint64, id="bigint-unsigned"),
@@ -84,6 +84,10 @@ SINGLESTOREDB_TYPES = [
         f"datetime({scale:d})",
         dt.Timestamp(scale=scale or None),
         id=f"datetime{scale:d}",
+        marks=pytest.mark.skipif(
+            scale not in (0, 6),
+            reason=f"SingleStoreDB only supports DATETIME(0) and DATETIME(6), not DATETIME({scale})",
+        ),
     )
     for scale in range(7)
 ]
