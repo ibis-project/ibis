@@ -278,6 +278,73 @@ class SingleStoreDBType(SqlglotType):
         """
         if hasattr(typ, "this"):
             type_name = str(typ.this).upper()
+
+            # Handle DATETIME with scale parameter specially
+            # Note: type_name will be "TYPE.DATETIME", so check for endswith
+            if (
+                type_name.endswith("DATETIME")
+                and hasattr(typ, "expressions")
+                and typ.expressions
+            ):
+                # Extract scale from the first parameter
+                scale_param = typ.expressions[0]
+                if hasattr(scale_param, "this") and hasattr(scale_param.this, "this"):
+                    scale = int(scale_param.this.this)
+                    return dt.Timestamp(scale=scale or None, nullable=nullable)
+
+            # Handle BIT types with length parameter
+            if (
+                type_name.endswith("BIT")
+                and hasattr(typ, "expressions")
+                and typ.expressions
+            ):
+                # Extract bit length from the first parameter
+                length_param = typ.expressions[0]
+                if hasattr(length_param, "this") and hasattr(length_param.this, "this"):
+                    bit_length = int(length_param.this.this)
+                    # Map bit length to appropriate integer type
+                    if bit_length <= 8:
+                        return dt.Int8(nullable=nullable)
+                    elif bit_length <= 16:
+                        return dt.Int16(nullable=nullable)
+                    elif bit_length <= 32:
+                        return dt.Int32(nullable=nullable)
+                    elif bit_length <= 64:
+                        return dt.Int64(nullable=nullable)
+                    else:
+                        raise ValueError(f"BIT({bit_length}) is not supported")
+
+            # Handle DECIMAL types with precision and scale parameters
+            if (
+                type_name.endswith(("DECIMAL", "NEWDECIMAL"))
+                and hasattr(typ, "expressions")
+                and typ.expressions
+            ):
+                # Extract precision and scale from parameters
+                if len(typ.expressions) >= 1:
+                    precision_param = typ.expressions[0]
+                    if hasattr(precision_param, "this") and hasattr(
+                        precision_param.this, "this"
+                    ):
+                        precision = int(precision_param.this.this)
+
+                        scale = 0  # Default scale
+                        if len(typ.expressions) >= 2:
+                            scale_param = typ.expressions[1]
+                            if hasattr(scale_param, "this") and hasattr(
+                                scale_param.this, "this"
+                            ):
+                                scale = int(scale_param.this.this)
+
+                        return dt.Decimal(
+                            precision=precision, scale=scale, nullable=nullable
+                        )
+
+            # Extract just the type part (e.g., "DATETIME" from "TYPE.DATETIME")
+            if "." in type_name:
+                type_name = type_name.split(".")[-1]
+
+            # Handle other SingleStoreDB-specific types
             if type_name in cls._singlestore_type_mapping:
                 ibis_type = cls._singlestore_type_mapping[type_name]
                 if callable(ibis_type):
