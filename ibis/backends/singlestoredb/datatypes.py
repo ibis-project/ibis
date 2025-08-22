@@ -4,6 +4,8 @@ import inspect
 from functools import partial
 from typing import TYPE_CHECKING
 
+import sqlglot.expressions as sge
+
 import ibis.expr.datatypes as dt
 from ibis.backends.sql.datatypes import SqlglotType
 
@@ -233,7 +235,7 @@ _type_mapping = {
     "GEOMETRY": dt.Geometry,
     "NULL": dt.Null,
     # Collection types
-    "SET": partial(dt.Array, dt.string),
+    "SET": partial(dt.Array, dt.String),
     # SingleStoreDB-specific types
     # VECTOR type for machine learning and AI workloads
     "VECTOR": dt.Binary,  # Map to Binary for now, could be Array[Float32] in future
@@ -296,13 +298,13 @@ class SingleStoreDBType(SqlglotType):
         # Handle SingleStoreDB-specific type conversions
         if isinstance(dtype, dt.JSON):
             # SingleStoreDB has enhanced JSON support
-            return cls.dialect.parse("JSON")
+            return sge.DataType(this=sge.DataType.Type.JSON)
         elif isinstance(dtype, dt.Geometry):
             # Use GEOMETRY type (or GEOGRAPHY if available)
-            return cls.dialect.parse("GEOMETRY")
+            return sge.DataType(this=sge.DataType.Type.GEOMETRY)
         elif isinstance(dtype, dt.Binary):
             # Could be BLOB or VECTOR type - default to BLOB
-            return cls.dialect.parse("BLOB")
+            return sge.DataType(this=sge.DataType.Type.BLOB)
 
         # Fall back to parent implementation for standard types
         return super().from_ibis(dtype)
