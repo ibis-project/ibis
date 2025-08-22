@@ -116,9 +116,10 @@ class SingleStoreDBPandasData(PandasData):
             if value in ("", "NULL", "null", "0000-00-00", "0000-00-00 00:00:00"):
                 return None
 
-        # Handle numeric zero values that might represent NULL
-        if target_type in (dt.Date, dt.Timestamp) and value == 0:
-            return None
+        # Handle numeric zero values that might represent NULL for date/timestamp types
+        if target_type.is_date() or target_type.is_timestamp():
+            if value == 0:
+                return None
 
         return value
 

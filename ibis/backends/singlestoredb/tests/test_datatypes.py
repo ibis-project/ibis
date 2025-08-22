@@ -52,14 +52,23 @@ class TestSingleStoreDBDataTypes:
             "GEOMETRY": dt.Geometry,
             "NULL": dt.Null,
             # Collection types
-            "SET": partial(dt.Array, dt.string),
+            "SET": partial(dt.Array, dt.String),
             # SingleStoreDB-specific types
             "VECTOR": dt.Binary,
             "GEOGRAPHY": dt.Geometry,
         }
 
         for singlestore_type, expected_ibis_type in expected_mappings.items():
-            assert _type_mapping[singlestore_type] == expected_ibis_type
+            actual_type = _type_mapping[singlestore_type]
+
+            # Handle partial comparison for SET type
+            if isinstance(expected_ibis_type, partial) and isinstance(
+                actual_type, partial
+            ):
+                assert actual_type.func == expected_ibis_type.func
+                assert actual_type.args == expected_ibis_type.args
+            else:
+                assert actual_type == expected_ibis_type
 
     def test_singlestoredb_specific_types(self):
         """Test SingleStoreDB-specific type extensions."""
