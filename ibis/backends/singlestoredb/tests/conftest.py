@@ -56,12 +56,13 @@ class TestConf(ServiceBackendTest):
                 lines = [
                     f"LOAD DATA LOCAL INFILE {str(csv_path)!r}",
                     f"INTO TABLE {table}",
-                    "COLUMNS TERMINATED BY ','",
+                    "FIELDS TERMINATED BY ','",
                     """OPTIONALLY ENCLOSED BY '"'""",
+                    "NULL DEFINED BY ''",
                     "LINES TERMINATED BY '\\n'",
                     "IGNORE 1 LINES",
                 ]
-                cur.execute("\\n".join(lines))
+                cur.execute("\n".join(lines))
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
