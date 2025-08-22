@@ -155,12 +155,13 @@ class SingleStoreDBCompiler(MySQLCompiler):
 
     # JSON operations - SingleStoreDB may have enhanced JSON support
     def visit_JSONGetItem(self, op, *, arg, index):
-        """Handle JSON path extraction in SingleStoreDB."""
+        """Handle JSON path extraction in SingleStoreDB using SingleStore-specific functions."""
         if op.index.dtype.is_integer():
             path = self.f.concat("$[", self.cast(index, dt.string), "]")
         else:
             path = self.f.concat("$.", index)
-        return self.f.json_extract(arg, path)
+        # Use SingleStore-specific JSON_EXTRACT_JSON instead of json_extract
+        return self.f.json_extract_json(arg, path)
 
     # Window functions - SingleStoreDB may have better support than MySQL
     @staticmethod
@@ -187,20 +188,38 @@ class SingleStoreDBCompiler(MySQLCompiler):
 
     # Distributed query features - SingleStoreDB specific
     def _add_shard_key_hint(self, query, shard_key=None):
-        """Add SingleStoreDB shard key hints for distributed queries.
+        """Add SingleStore shard key hints for distributed queries."""
+        if shard_key is None:
+            return query
 
-        This is a placeholder for future SingleStoreDB-specific optimization.
-        """
-        # Implementation would depend on SingleStoreDB's distributed query syntax
-        return query
+        # For SingleStore, we can add hints as SQL comments for optimization
+        # This adds a query hint for shard key optimization
+        hint = f"/*+ SHARD_KEY({shard_key}) */"
+
+        # Convert query to string if it's a SQLGlot object
+        query_str = query.sql(self.dialect) if hasattr(query, "sql") else str(query)
+
+        # Insert hint after SELECT keyword
+        if query_str.strip().upper().startswith("SELECT"):
+            parts = query_str.split(" ", 1)
+            return f"{parts[0]} {hint} {parts[1]}"
+
+        return query_str
 
     def _optimize_for_columnstore(self, query):
-        """Optimize queries for SingleStoreDB columnstore tables.
+        """Optimize queries for SingleStore columnstore tables."""
+        # Convert query to string if it's a SQLGlot object
+        query_str = query.sql(self.dialect) if hasattr(query, "sql") else str(query)
 
-        This is a placeholder for future SingleStoreDB-specific optimization.
-        """
-        # Implementation would depend on SingleStoreDB's columnstore optimizations
-        return query
+        # Add hints for columnstore optimization
+        hint = "/*+ USE_COLUMNSTORE_STRATEGY */"
+
+        # Insert hint after SELECT keyword
+        if query_str.strip().upper().startswith("SELECT"):
+            parts = query_str.split(" ", 1)
+            return f"{parts[0]} {hint} {parts[1]}"
+
+        return query_str
 
 
 # Create the compiler instance
