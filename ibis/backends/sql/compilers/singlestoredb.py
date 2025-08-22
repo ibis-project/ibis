@@ -86,35 +86,37 @@ class SingleStoreDBCompiler(MySQLCompiler):
         from_ = op.arg.dtype
 
         # JSON casting - SingleStoreDB has enhanced JSON support
-        if (from_.is_json() or from_.is_string()) and to.is_json():
-            # SingleStoreDB handles JSON casting with columnstore optimizations
+        if from_.is_json() and to.is_json():
+            # JSON to JSON cast is a no-op
             return arg
         elif from_.is_string() and to.is_json():
             # Cast string to JSON with validation
-            return self.f.cast(arg, sge.DataType(this=sge.DataType.Type.JSON))
+            return self.cast(arg, to)
 
         # Timestamp casting
         elif from_.is_numeric() and to.is_timestamp():
             return self.if_(
                 arg.eq(0),
-                self.f.timestamp("1970-01-01 00:00:00"),
+                sge.Anonymous(this="TIMESTAMP", expressions=["1970-01-01 00:00:00"]),
                 self.f.from_unixtime(arg),
             )
 
         # Binary casting (includes VECTOR type support)
         elif from_.is_string() and to.is_binary():
             # Cast string to binary/VECTOR - useful for VECTOR type data
-            return self.f.unhex(arg)
+            return sge.Anonymous(this="UNHEX", expressions=[arg])
         elif from_.is_binary() and to.is_string():
             # Cast binary/VECTOR to string representation
-            return self.f.hex(arg)
+            return sge.Anonymous(this="HEX", expressions=[arg])
 
         # Geometry casting
-        elif to.is_geometry():
+        elif to.is_geospatial():
             # SingleStoreDB GEOMETRY type casting
-            return self.f.st_geomfromtext(self.cast(arg, dt.string))
-        elif from_.is_geometry() and to.is_string():
-            return self.f.st_astext(arg)
+            return sge.Anonymous(
+                this="ST_GEOMFROMTEXT", expressions=[self.cast(arg, dt.string)]
+            )
+        elif from_.is_geospatial() and to.is_string():
+            return sge.Anonymous(this="ST_ASTEXT", expressions=[arg])
 
         return super().visit_Cast(op, arg=arg, to=to)
 
@@ -127,12 +129,17 @@ class SingleStoreDBCompiler(MySQLCompiler):
         elif dtype.is_binary():
             return self.f.unhex(value.hex())
         elif dtype.is_date():
-            return self.f.date(value.isoformat())
+            return sge.Anonymous(this="DATE", expressions=[value.isoformat()])
         elif dtype.is_timestamp():
-            return self.f.timestamp(value.isoformat())
+            return sge.Anonymous(this="TIMESTAMP", expressions=[value.isoformat()])
         elif dtype.is_time():
-            return self.f.maketime(
-                value.hour, value.minute, value.second + value.microsecond / 1e6
+            return sge.Anonymous(
+                this="MAKETIME",
+                expressions=[
+                    value.hour,
+                    value.minute,
+                    value.second + value.microsecond / 1e6,
+                ],
             )
         elif dtype.is_array() or dtype.is_struct() or dtype.is_map():
             # SingleStoreDB has some JSON support for these types
@@ -155,13 +162,13 @@ class SingleStoreDBCompiler(MySQLCompiler):
 
     # JSON operations - SingleStoreDB may have enhanced JSON support
     def visit_JSONGetItem(self, op, *, arg, index):
-        """Handle JSON path extraction in SingleStoreDB using SingleStore-specific functions."""
+        """Handle JSON path extraction in SingleStoreDB using JSON_EXTRACT."""
         if op.index.dtype.is_integer():
             path = self.f.concat("$[", self.cast(index, dt.string), "]")
         else:
             path = self.f.concat("$.", index)
-        # Use SingleStore-specific JSON_EXTRACT_JSON instead of json_extract
-        return self.f.json_extract_json(arg, path)
+        # Use JSON_EXTRACT function
+        return sge.Anonymous(this="JSON_EXTRACT", expressions=[arg, path])
 
     # Window functions - SingleStoreDB may have better support than MySQL
     @staticmethod
@@ -183,8 +190,8 @@ class SingleStoreDBCompiler(MySQLCompiler):
         substr = sge.Cast(this=substr, to=sge.DataType(this=sge.DataType.Type.BINARY))
 
         if start is not None:
-            return self.f.locate(substr, arg, start + 1)
-        return self.f.locate(substr, arg)
+            return sge.Anonymous(this="LOCATE", expressions=[substr, arg, start + 1])
+        return sge.Anonymous(this="LOCATE", expressions=[substr, arg])
 
     # Distributed query features - SingleStoreDB specific
     def _add_shard_key_hint(self, query, shard_key=None):
