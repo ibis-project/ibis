@@ -1398,7 +1398,11 @@ class AthenaType(SqlglotType):
     dialect = "athena"
 
 
-_TYPE_MAPPERS: dict[str, type[SqlglotType]] = {
+from ibis.backends.singlestoredb.datatypes import SingleStoreDBType  # noqa: F401, E402
+
+# Import backend-specific type mappers before building TYPE_MAPPERS
+
+TYPE_MAPPERS: dict[str, SqlglotType] = {
     mapper.dialect: mapper
     for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
 }
