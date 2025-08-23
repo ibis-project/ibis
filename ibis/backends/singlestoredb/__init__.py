@@ -62,6 +62,11 @@ class Backend(
             (database,) = cur.fetchone()
         return database
 
+    @property
+    def database(self) -> str:
+        """Return the current database name (alias for current_database)."""
+        return self.current_database
+
     @classmethod
     def _from_url(cls, url: ParseResult, **kwargs) -> Backend:
         """Create a SingleStoreDB backend from a connection URL."""
