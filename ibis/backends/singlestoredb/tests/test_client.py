@@ -217,12 +217,12 @@ def test_enum_as_string(enum_t, expr_fn, expected):
 
 def test_builtin_scalar_udf(con):
     @udf.scalar.builtin
-    def soundex(a: str) -> str:
-        """Soundex of a string."""
+    def reverse(a: str) -> str:
+        """Reverse a string."""
 
-    expr = soundex("foo")
+    expr = reverse("foo")
     result = con.execute(expr)
-    assert result == "F000"
+    assert result == "oof"
 
 
 def test_list_tables(con):
