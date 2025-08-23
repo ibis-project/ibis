@@ -181,7 +181,10 @@ def test_zero_timestamp_data(con):
             "date": [pd.NaT, pd.NaT, pd.NaT],
         }
     )
-    tm.assert_frame_equal(result, expected)
+    # Sort both DataFrames by tradedate to ensure consistent ordering
+    result_sorted = result.sort_values("tradedate").reset_index(drop=True)
+    expected_sorted = expected.sort_values("tradedate").reset_index(drop=True)
+    tm.assert_frame_equal(result_sorted, expected_sorted)
 
 
 @pytest.fixture(scope="module")
