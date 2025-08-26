@@ -897,6 +897,11 @@ def test_unsigned_integer_type(con, temp_table):
         param("datafusion://", marks=mark.datafusion, id="datafusion"),
         param("impala://localhost:21050/default", marks=mark.impala, id="impala"),
         param("mysql://ibis:ibis@localhost:3306", marks=mark.mysql, id="mysql"),
+        param(
+            "singlestoredb://root:ibis_testing@localhost:3307/ibis_testing",
+            marks=mark.singlestoredb,
+            id="singlestoredb",
+        ),
         param("polars://", marks=mark.polars, id="polars"),
         param(
             "postgres://postgres:postgres@localhost:5432",
@@ -1400,6 +1405,11 @@ def test_set_backend_name(name, monkeypatch):
             "mysql://ibis:ibis@localhost:3306",
             marks=mark.mysql,
             id="mysql",
+        ),
+        param(
+            "singlestoredb://root:ibis_testing@localhost:3307/ibis_testing",
+            marks=mark.singlestoredb,
+            id="singlestoredb",
         ),
         param(
             "postgres://postgres:postgres@localhost:5432",
