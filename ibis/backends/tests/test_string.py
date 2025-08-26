@@ -1229,7 +1229,7 @@ def string_temp_table(backend, con):
             id="find_in_set",
             marks=[
                 pytest.mark.notyet(
-                    ["mysql"],
+                    ["mysql", "singlestoredb"],
                     raises=MySQLOperationalError,
                     reason="operand should contain 1 column",
                 ),

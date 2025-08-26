@@ -24,7 +24,6 @@ IBIS_TEST_SINGLESTOREDB_DB = os.environ.get(
 
 
 class TestConf(ServiceBackendTest):
-    # SingleStoreDB has similar behavior to MySQL
     check_dtype = False
     returned_timestamp_unit = "s"
     supports_arrays = True  # SingleStoreDB supports JSON arrays
@@ -32,7 +31,7 @@ class TestConf(ServiceBackendTest):
     supports_structs = False  # May support in future via JSON
     rounding_method = "half_to_even"
     service_name = "singlestoredb"
-    deps = ("singlestoredb",)  # Primary dependency, falls back to MySQLdb
+    deps = ("singlestoredb",)  # Primary dependency
 
     @property
     def test_files(self) -> Iterable[Path]:

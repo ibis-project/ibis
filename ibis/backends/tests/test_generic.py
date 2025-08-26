@@ -156,7 +156,9 @@ def test_scalar_fill_null_nullif(con, expr, expected):
             ibis.literal(np.nan),
             methodcaller("isnan"),
             marks=[
-                pytest.mark.notimpl(["mysql", "mssql", "sqlite", "druid"]),
+                pytest.mark.notimpl(
+                    ["mysql", "singlestoredb", "mssql", "sqlite", "druid"]
+                ),
                 pytest.mark.notyet(
                     ["exasol"],
                     raises=ExaQueryError,
@@ -415,7 +417,7 @@ def test_case_where(backend, alltypes, df):
 
 
 # TODO: some of these are notimpl (datafusion) others are probably never
-@pytest.mark.notimpl(["mysql", "sqlite", "mssql", "druid", "exasol"])
+@pytest.mark.notimpl(["mysql", "singlestoredb", "sqlite", "mssql", "druid", "exasol"])
 @pytest.mark.notyet(
     ["flink"], "NaN is not supported in Flink SQL", raises=NotImplementedError
 )
@@ -642,7 +644,7 @@ def test_order_by_nulls(con, op, nulls_first, expected):
 
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.never(
-    ["mysql"],
+    ["mysql", "singlestoredb"],
     raises=AssertionError,
     reason="someone decided a long time ago that 'A' = 'a' is true in these systems",
 )
@@ -1816,7 +1818,9 @@ def test_cast(con, from_type, to_type, from_val, expected):
                 pytest.mark.notimpl(
                     ["datafusion"], reason="casts to 1672531200000000 (microseconds)"
                 ),
-                pytest.mark.notimpl(["mysql"], reason="returns 20230101000000"),
+                pytest.mark.notimpl(
+                    ["mysql", "singlestoredb"], reason="returns 20230101000000"
+                ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
             ],
         ),
@@ -2092,7 +2096,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     ids=str,
 )
 @pytest.mark.notyet(
-    ["mysql"],
+    ["mysql", "singlestoredb"],
     raises=MySQLProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
@@ -2155,7 +2159,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 
 
 @pytest.mark.notyet(
-    ["mysql"],
+    ["mysql", "singlestoredb"],
     raises=MySQLProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )

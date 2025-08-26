@@ -11,16 +11,13 @@ from ibis.backends.sql.datatypes import SqlglotType
 
 if TYPE_CHECKING:
     try:
-        from MySQLdb.constants import FIELD_TYPE, FLAG
+        from singlestoredb.mysql.constants import FIELD_TYPE, FLAG
     except ImportError:
-        # Fallback for when MySQLdb is not available
         FIELD_TYPE = None
         FLAG = None
 
-# SingleStoreDB uses the MySQL protocol, so we can reuse MySQL type constants
-# when available, otherwise define our own minimal set
 try:
-    from MySQLdb.constants import FIELD_TYPE, FLAG
+    from singlestoredb.mysql.constants import FIELD_TYPE, FLAG
 
     TEXT_TYPES = (
         FIELD_TYPE.BIT,
@@ -67,7 +64,6 @@ try:
             return (FLAG.BINARY & self.value) != 0
 
 except ImportError:
-    # Fallback when MySQLdb is not available
     TEXT_TYPES = (0, 249, 250, 251, 252, 253, 254, 255)  # Basic type codes
     _type_codes = {
         0: "DECIMAL",

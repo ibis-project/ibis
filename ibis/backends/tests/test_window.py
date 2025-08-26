@@ -947,7 +947,7 @@ def test_ungrouped_unbounded_window(
 )
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notyet(
-    ["mysql"],
+    ["mysql", "singlestoredb"],
     raises=MySQLOperationalError,
     reason="https://github.com/tobymao/sqlglot/issues/2779",
 )
@@ -1114,7 +1114,9 @@ def test_first_last(backend):
     ["impala"], raises=ImpalaHiveServer2Error, reason="not supported by Impala"
 )
 @pytest.mark.notyet(
-    ["mysql"], raises=MySQLOperationalError, reason="not supported by MySQL"
+    ["mysql", "singlestoredb"],
+    raises=MySQLOperationalError,
+    reason="not supported by MySQL",
 )
 @pytest.mark.notyet(
     ["sqlite"],

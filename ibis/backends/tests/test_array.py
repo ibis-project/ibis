@@ -225,7 +225,7 @@ def test_array_index(con, idx):
 builtin_array = toolz.compose(
     # these will almost certainly never be supported
     pytest.mark.never(
-        ["mysql"],
+        ["mysql", "singlestoredb"],
         reason="array types are unsupported",
         raises=(
             com.OperationNotDefinedError,

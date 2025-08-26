@@ -125,12 +125,10 @@ class SingleStoreDBPandasData(PandasData):
 
     @classmethod
     def _get_type_name(cls, type_code: int) -> str:
-        """Get type name from MySQL/SingleStoreDB type code.
+        """Get type name from SingleStoreDB type code.
 
         SingleStoreDB uses MySQL protocol, so type codes are the same.
         """
-        # MySQL field type constants
-        # These are the same for SingleStoreDB due to protocol compatibility
         type_map = {
             0: "DECIMAL",
             1: "TINY",

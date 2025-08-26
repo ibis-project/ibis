@@ -775,7 +775,7 @@ def test_arbitrary(alltypes, filtered):
             id="cond",
             marks=[
                 pytest.mark.notyet(
-                    ["mysql"],
+                    ["mysql", "singlestoredb"],
                     raises=com.UnsupportedOperationError,
                     reason="backend does not support filtered count distinct with more than one column",
                 ),
@@ -1268,7 +1268,9 @@ def test_date_quantile(alltypes):
             "::",
             id="expr",
             marks=[
-                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["mysql", "singlestoredb"], raises=com.UnsupportedOperationError
+                ),
                 pytest.mark.notyet(
                     ["bigquery"],
                     raises=GoogleBadRequest,
@@ -1678,7 +1680,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
-@pytest.mark.notyet(["mysql"], raises=MySQLNotSupportedError)
+@pytest.mark.notyet(["mysql", "singlestoredb"], raises=MySQLNotSupportedError)
 @pytest.mark.notyet(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
