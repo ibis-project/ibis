@@ -367,7 +367,6 @@ class TestSingleStoreDBConverter:
         """Test type code to name mapping."""
         converter = SingleStoreDBPandasData()
 
-        # Test standard MySQL-compatible types
         assert converter._get_type_name(0) == "DECIMAL"
         assert converter._get_type_name(1) == "TINY"
         assert converter._get_type_name(245) == "JSON"

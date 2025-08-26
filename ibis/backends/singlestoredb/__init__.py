@@ -38,7 +38,6 @@ class Backend(
     supports_create_or_replace = False
     supports_temporary_tables = True
 
-    # SingleStoreDB inherits MySQL protocol compatibility
     _connect_string_template = (
         "singlestoredb://{{user}}:{{password}}@{{host}}:{{port}}/{{database}}"
     )
@@ -140,7 +139,7 @@ class Backend(
         Examples
         --------
         >>> con.list_databases()
-        ['information_schema', 'mysql', 'my_app_db', 'test_db']
+        ['information_schema', ''my_app_db', 'test_db']
         >>> con.list_databases(like="test_%")
         ['test_db', 'test_staging']
         """
@@ -438,7 +437,6 @@ class Backend(
         create_stmt_sql = create_stmt.sql(dialect)
 
         df = op.data.to_frame()
-        # nan can not be used with SingleStoreDB like MySQL
         df = df.replace(float("nan"), None)
 
         # Fix: Convert itertuples result to list for SingleStoreDB compatibility
@@ -482,7 +480,7 @@ class Backend(
         from ibis.backends.singlestoredb.converter import SingleStoreDBPandasData
         from ibis.backends.singlestoredb.datatypes import _type_from_cursor_info
 
-        # Use SQLGlot to properly construct the query like MySQL backend does
+        # Use SQLGlot to properly construct the query
         sql = (
             sg.select(sge.Star())
             .from_(
