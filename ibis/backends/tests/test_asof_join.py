@@ -17,7 +17,6 @@ def time_df1():
         {
             "time": pd.to_datetime([1, 2, 3, 4], unit="s"),
             "value": [1.1, 2.2, 3.3, 4.4],
-            "group": ["a", "a", "a", "a"],
         }
     )
 
@@ -28,7 +27,6 @@ def time_df2():
         {
             "time": pd.to_datetime([2, 4], unit="s"),
             "other_value": [1.2, 2.0],
-            "group": ["a", "a"],
         }
     )
 
@@ -102,15 +100,60 @@ def time_keyed_right(time_keyed_df2):
 )
 def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op):
     on = op(time_left["time"], time_right["time"])
-    expr = time_left.asof_join(time_right, on, "group")
+    expr = time_left.asof_join(time_right, on)
+
+    result = con.execute(expr)
+    expected = pd.merge_asof(time_df1, time_df2, on="time", direction=direction)
+
+    result = result.sort_values(["time"]).reset_index(drop=True)
+    expected = expected.sort_values(["time"]).reset_index(drop=True)
+
+    # duckdb returns datetime64[us], pandas defaults to use datetime64[ns]
+    tm.assert_frame_equal(result[expected.columns], expected, check_dtype=False)
+    with pytest.raises(AssertionError):
+        tm.assert_series_equal(result["time"], result["time_right"])
+
+
+@pytest.mark.parametrize(
+    ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
+)
+@pytest.mark.notyet(
+    [
+        "datafusion",
+        "trino",
+        "mysql",
+        "pyspark",
+        "druid",
+        "impala",
+        "bigquery",
+        "exasol",
+        "oracle",
+        "mssql",
+        "sqlite",
+        "flink",
+        "databricks",
+        "athena",
+    ]
+)
+def test_keyed_asof_join(
+    con,
+    time_keyed_left,
+    time_keyed_right,
+    time_keyed_df1,
+    time_keyed_df2,
+    direction,
+    op,
+):
+    on = op(time_keyed_left["time"], time_keyed_right["time"])
+    expr = time_keyed_left.asof_join(time_keyed_right, on, "key")
 
     result = con.execute(expr)
     expected = pd.merge_asof(
-        time_df1, time_df2, on="time", by="group", direction=direction
+        time_keyed_df1, time_keyed_df2, on="time", by="key", direction=direction
     )
 
-    result = result.sort_values(["group", "time"]).reset_index(drop=True)
-    expected = expected.sort_values(["group", "time"]).reset_index(drop=True)
+    result = result.sort_values(["key", "time"]).reset_index(drop=True)
+    expected = expected.sort_values(["key", "time"]).reset_index(drop=True)
 
     # duckdb returns datetime64[us], pandas defaults to use datetime64[ns]
     tm.assert_frame_equal(result[expected.columns], expected, check_dtype=False)
