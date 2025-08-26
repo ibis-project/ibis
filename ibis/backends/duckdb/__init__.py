@@ -1803,22 +1803,6 @@ def _pyarrow_rbr(source, table_name, _conn, **_: Any):
 
 def _cast_any_uuids_to_blob(t: ir.Table) -> ir.Table:
     """When duckdb materializes UUIDs to arrow, by default it returns them as pa.string()s. This pre-converts them to BLOB."""
-
-    def _cast_uuid_to_blob(uuid: ir.UUIDColumn) -> ir.BinaryColumn:
-        # In duckdb <=1.3, must do cast(replace(cast(uuid_val AS VARCHAR), '-', '') AS BLOB)
-        # Once https://github.com/duckdb/duckdb/pull/18027 is released (duckdb 1.4??)
-        # this can be simplified to `CAST(uuid_val AS BLOB)`
-        hex_string = uuid.cast("string").replace("-", "")
-        return _unhex_udf(hex_string)
-
     return t.mutate(
-        **{
-            col: _cast_uuid_to_blob(t[col])
-            for col in t.columns
-            if t[col].type().is_uuid()
-        }
+        **{col: t[col].cast("binary") for col in t.columns if t[col].type().is_uuid()}
     )
-
-
-@ibis.udf.scalar.builtin(name="unhex", signature=((dt.String,), dt.Binary))
-def _unhex_udf(hex_string): ...
