@@ -20,6 +20,25 @@ if TYPE_CHECKING:
     import pyarrow.dataset as ds
 
 
+if pa.__version__ >= "18.0.0":
+    uuid_type = pa.uuid()
+else:
+
+    class UUIDType(pa.ExtensionType):
+        def __init__(self):
+            super().__init__(pa.binary(16), "arrow.uuid")
+
+        def __arrow_ext_serialize__(self) -> bytes:
+            # No parameters are necessary
+            return b""
+
+        @classmethod
+        def __arrow_ext_deserialize__(cls, storage_type, serialized):
+            return cls()
+
+    uuid_type = UUIDType()
+    pa.register_extension_type(uuid_type)
+
 _from_pyarrow_types = {
     pa.int8(): dt.Int8,
     pa.int16(): dt.Int16,
@@ -69,7 +88,7 @@ _to_pyarrow_types = {
     dt.Unknown: pa.string(),
     dt.MACADDR: pa.string(),
     dt.INET: pa.string(),
-    dt.UUID: pa.string(),
+    dt.UUID: uuid_type,
     dt.JSON: pa.string(),
 }
 
@@ -108,6 +127,11 @@ class PyArrowType(TypeMapper):
             return dt.Map(key_dtype, value_dtype, nullable=nullable)
         elif pa.types.is_dictionary(typ):
             return cls.to_ibis(typ.value_type)
+        elif getattr(typ, "extension_name", None) == "arrow.uuid":
+            return dt.UUID(nullable=nullable)
+        # TODO: should this be
+        # elif getattr(typ, "extension_name", "").startswith("geoarrow."):
+        # to be agnostic to the package that actually implements the extension type?
         elif (
             isinstance(typ, pa.ExtensionType)
             and type(typ).__module__ == "geoarrow.types.type_pyarrow"

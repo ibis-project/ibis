@@ -1321,6 +1321,7 @@ class Backend(
         """
         self._run_pre_execute_hooks(expr)
         table_expr = expr.as_table()
+        table_expr = _cast_any_uuids_to_blob(table_expr)
         sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
         if table_expr.schema().geospatial:
             self._load_extensions(["spatial"])
@@ -1798,3 +1799,26 @@ def _pyarrow_rbr(source, table_name, _conn, **_: Any):
     # Ensure the reader isn't marked as started, in case the name is
     # being overwritten.
     _conn._record_batch_readers_consumed[table_name] = False
+
+
+def _cast_any_uuids_to_blob(t: ir.Table) -> ir.Table:
+    """When duckdb materializes UUIDs to arrow, by default it returns them as pa.string()s. This pre-converts them to BLOB."""
+
+    def _cast_uuid_to_blob(uuid: ir.UUIDColumn) -> ir.BinaryColumn:
+        # In duckdb <=1.3, must do cast(replace(cast(uuid_val AS VARCHAR), '-', '') AS BLOB)
+        # Once https://github.com/duckdb/duckdb/pull/18027 is released (duckdb 1.4??)
+        # this can be simplified to `CAST(uuid_val AS BLOB)`
+        hex_string = uuid.cast("string").replace("-", "")
+        return _unhex_udf(hex_string)
+
+    return t.mutate(
+        **{
+            col: _cast_uuid_to_blob(t[col])
+            for col in t.columns
+            if t[col].type().is_uuid()
+        }
+    )
+
+
+@ibis.udf.scalar.builtin(name="unhex", signature=((dt.String,), dt.Binary))
+def _unhex_udf(hex_string): ...
