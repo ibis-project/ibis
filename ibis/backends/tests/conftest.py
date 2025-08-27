@@ -14,6 +14,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     Py4JJavaError,
     PySparkUnsupportedOperationException,
+    SingleStoreDBProgrammingError,
     SingleStoreDBOperationalError,
     TrinoUserError,
 )
@@ -49,6 +50,8 @@ NO_ARRAY_SUPPORT_MARKS = [
             com.OperationNotDefinedError,
             MySQLOperationalError,
             SingleStoreDBOperationalError,
+            SingleStoreDBProgrammingError,
+            com.TableNotFound,
         ),
     ),
     pytest.mark.notyet(
