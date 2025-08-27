@@ -194,6 +194,75 @@ class SingleStoreDBCompiler(MySQLCompiler):
         # Use JSON_EXTRACT_JSON function (SingleStoreDB-specific)
         return sge.Anonymous(this="JSON_EXTRACT_JSON", expressions=[arg, path])
 
+    def visit_UnwrapJSONString(self, op, *, arg):
+        """Handle JSON string unwrapping in SingleStoreDB."""
+        # SingleStoreDB doesn't have JSON_TYPE, so we need to implement type checking
+        json_value = sge.Anonymous(this="JSON_EXTRACT_JSON", expressions=[arg])
+        extracted_string = sge.Anonymous(this="JSON_EXTRACT_STRING", expressions=[arg])
+
+        # Return the extracted value only if the JSON contains a string (starts with quote)
+        return self.if_(
+            # Check if the JSON value starts with a quote (indicating a string)
+            json_value.rlike(sge.convert("^[\"']")),
+            extracted_string,
+            sge.Null(),
+        )
+
+    def visit_UnwrapJSONInt64(self, op, *, arg):
+        """Handle JSON integer unwrapping in SingleStoreDB."""
+        # SingleStoreDB doesn't have JSON_TYPE, so we need to implement type checking
+        json_value = sge.Anonymous(this="JSON_EXTRACT_JSON", expressions=[arg])
+        extracted_bigint = sge.Anonymous(this="JSON_EXTRACT_BIGINT", expressions=[arg])
+
+        # Return the extracted value only if the JSON contains a valid integer
+        return self.if_(
+            # Check if it's not a boolean
+            json_value.neq(sge.convert("true"))
+            .and_(json_value.neq(sge.convert("false")))
+            # Check if it's not a string (doesn't start with quote)
+            .and_(json_value.rlike(sge.convert("^[^\"']")))
+            # Check if it's not null
+            .and_(json_value.neq(sge.convert("null")))
+            # Check if it matches an integer pattern (no decimal point)
+            .and_(json_value.rlike(sge.convert("^-?[0-9]+$"))),
+            extracted_bigint,
+            sge.Null(),
+        )
+
+    def visit_UnwrapJSONFloat64(self, op, *, arg):
+        """Handle JSON float unwrapping in SingleStoreDB."""
+        # SingleStoreDB doesn't have JSON_TYPE, so we need to implement type checking
+        # Extract the raw JSON value and check if it's a numeric type
+        json_value = sge.Anonymous(this="JSON_EXTRACT_JSON", expressions=[arg])
+        extracted_double = sge.Anonymous(this="JSON_EXTRACT_DOUBLE", expressions=[arg])
+
+        # Return the extracted value only if the JSON contains a valid number
+        # JSON numbers won't have quotes, booleans are "true"/"false", strings have quotes
+        return self.if_(
+            # Check if it's not a boolean (true/false)
+            json_value.neq(sge.convert("true"))
+            .and_(json_value.neq(sge.convert("false")))
+            # Check if it's not a string (doesn't start with quote)
+            .and_(json_value.rlike(sge.convert("^[^\"']")))
+            # Check if it's not null
+            .and_(json_value.neq(sge.convert("null")))
+            # Check if it matches a number pattern (integer or decimal)
+            .and_(json_value.rlike(sge.convert("^-?[0-9]+(\\.[0-9]+)?$"))),
+            extracted_double,
+            sge.Null(),
+        )
+
+    def visit_UnwrapJSONBoolean(self, op, *, arg):
+        """Handle JSON boolean unwrapping in SingleStoreDB."""
+        # SingleStoreDB doesn't have a specific boolean extraction function
+        # We'll extract as JSON and compare with 'true'/'false'
+        json_value = sge.Anonymous(this="JSON_EXTRACT_JSON", expressions=[arg])
+        return self.if_(
+            json_value.eq(sge.convert("true")),
+            1,
+            self.if_(json_value.eq(sge.convert("false")), 0, sge.Null()),
+        )
+
     def visit_Sign(self, op, *, arg):
         """Handle SIGN function to ensure consistent return type."""
         # SingleStoreDB's SIGN function returns DECIMAL, but tests expect FLOAT
