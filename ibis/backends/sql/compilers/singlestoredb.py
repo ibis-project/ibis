@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlglot as sg
 import sqlglot.expressions as sge
 from sqlglot.dialects.singlestore import SingleStore
 
@@ -7,6 +8,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.singlestoredb.datatypes import SingleStoreDBType
+from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.compilers.mysql import MySQLCompiler
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
@@ -115,11 +117,14 @@ class SingleStoreDBCompiler(MySQLCompiler):
             # Cast string to JSON with validation
             return self.cast(arg, to)
 
-        # Timestamp casting
+        # Timestamp casting - fix for proper quoted string literal
         elif from_.is_numeric() and to.is_timestamp():
             return self.if_(
                 arg.eq(0),
-                sge.Anonymous(this="TIMESTAMP", expressions=["1970-01-01 00:00:00"]),
+                # Fix: Use proper quoted string for timestamp literal
+                sge.Anonymous(
+                    this="TIMESTAMP", expressions=[sge.convert("1970-01-01 00:00:00")]
+                ),
                 self.f.from_unixtime(arg),
             )
 
@@ -153,7 +158,11 @@ class SingleStoreDBCompiler(MySQLCompiler):
         elif dtype.is_date():
             return sge.Anonymous(this="DATE", expressions=[value.isoformat()])
         elif dtype.is_timestamp():
-            return sge.Anonymous(this="TIMESTAMP", expressions=[value.isoformat()])
+            # SingleStoreDB expects timestamp literals as strings: TIMESTAMP('YYYY-MM-DD HH:MM:SS')
+            timestamp_str = value.isoformat().replace("T", " ")
+            return sge.Anonymous(
+                this="TIMESTAMP", expressions=[sge.convert(timestamp_str)]
+            )
         elif dtype.is_time():
             return sge.Anonymous(
                 this="MAKETIME",
@@ -261,6 +270,40 @@ class SingleStoreDBCompiler(MySQLCompiler):
             json_value.eq(sge.convert("true")),
             1,
             self.if_(json_value.eq(sge.convert("false")), 0, sge.Null()),
+        )
+
+    def visit_Intersection(self, op, *, left, right, distinct):
+        """Handle intersection operations in SingleStoreDB."""
+        # SingleStoreDB supports INTERSECT but not INTERSECT ALL
+        # Force distinct=True since INTERSECT ALL is not supported
+        if isinstance(left, (sge.Table, sge.Subquery)):
+            left = sg.select(STAR, copy=False).from_(left, copy=False)
+
+        if isinstance(right, (sge.Table, sge.Subquery)):
+            right = sg.select(STAR, copy=False).from_(right, copy=False)
+
+        return sg.intersect(
+            left.args.get("this", left),
+            right.args.get("this", right),
+            distinct=True,  # Always use distinct since ALL is not supported
+            copy=False,
+        )
+
+    def visit_Difference(self, op, *, left, right, distinct):
+        """Handle difference operations in SingleStoreDB."""
+        # SingleStoreDB supports EXCEPT but not EXCEPT ALL
+        # Force distinct=True since EXCEPT ALL is not supported
+        if isinstance(left, (sge.Table, sge.Subquery)):
+            left = sg.select(STAR, copy=False).from_(left, copy=False)
+
+        if isinstance(right, (sge.Table, sge.Subquery)):
+            right = sg.select(STAR, copy=False).from_(right, copy=False)
+
+        return sg.except_(
+            left.args.get("this", left),
+            right.args.get("this", right),
+            distinct=True,  # Always use distinct since ALL is not supported
+            copy=False,
         )
 
     def visit_Sign(self, op, *, arg):
