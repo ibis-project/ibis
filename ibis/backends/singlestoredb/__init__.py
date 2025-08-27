@@ -317,7 +317,6 @@ class Backend(
         import ibis.expr.operations as ops
         import ibis.expr.types as ir
         from ibis import util
-        from ibis.backends.sql.compilers.base import RenameTable
 
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -369,14 +368,19 @@ class Backend(
 
             if overwrite:
                 cur.execute(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
-                cur.execute(
-                    sge.Alter(
-                        kind="TABLE",
-                        this=table_expr,
-                        exists=True,
-                        actions=[RenameTable(this=this)],
-                    ).sql(dialect)
+                # Fix: Use ALTER TABLE ... RENAME TO syntax supported by SingleStoreDB
+                # Extract just the table name (removing catalog/database prefixes and quotes)
+                temp_table_name = temp_name
+                if quoted:
+                    temp_table_name = f"`{temp_name}`"
+                final_table_name = name
+                if quoted:
+                    final_table_name = f"`{name}`"
+
+                rename_sql = (
+                    f"ALTER TABLE {temp_table_name} RENAME TO {final_table_name}"
                 )
+                cur.execute(rename_sql)
 
         if schema is None:
             return self.table(name, database=database)
