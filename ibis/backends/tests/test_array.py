@@ -31,6 +31,7 @@ from ibis.backends.tests.errors import (
     PyAthenaDatabaseError,
     PyAthenaOperationalError,
     PySparkAnalysisException,
+    SingleStoreDBProgrammingError,
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
@@ -235,6 +236,7 @@ builtin_array = toolz.compose(
         raises=(
             com.OperationNotDefinedError,
             MySQLOperationalError,
+            SingleStoreDBProgrammingError,
             com.UnsupportedBackendType,
         ),
     ),
@@ -1784,6 +1786,7 @@ def _agg_with_nulls(agg, x):
     return agg(x)
 
 
+@builtin_array
 @pytest.mark.parametrize(
     ("agg", "baseline_func"),
     [
@@ -1896,6 +1899,7 @@ def test_array_agg_bool(con, data, agg, baseline_func):
     assert result == expected
 
 
+@builtin_array
 @pytest.mark.notyet(
     ["postgres"],
     raises=PsycoPgInvalidTextRepresentation,
