@@ -156,12 +156,15 @@ class SingleStoreDBCompiler(MySQLCompiler):
         elif dtype.is_binary():
             return self.f.unhex(value.hex())
         elif dtype.is_date():
-            return sge.Anonymous(this="DATE", expressions=[value.isoformat()])
-        elif dtype.is_timestamp():
-            # SingleStoreDB expects timestamp literals as strings: TIMESTAMP('YYYY-MM-DD HH:MM:SS')
-            timestamp_str = value.isoformat().replace("T", " ")
+            # Use explicit DATE() function since SQLGlot translates to TO_DATE for SingleStore
+            # but SingleStoreDB actually uses DATE() like MySQL
             return sge.Anonymous(
-                this="TIMESTAMP", expressions=[sge.convert(timestamp_str)]
+                this="DATE", expressions=[sge.convert(value.isoformat())]
+            )
+        elif dtype.is_timestamp():
+            # Use explicit TIMESTAMP() function for consistency
+            return sge.Anonymous(
+                this="TIMESTAMP", expressions=[sge.convert(value.isoformat())]
             )
         elif dtype.is_time():
             return sge.Anonymous(
