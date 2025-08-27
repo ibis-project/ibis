@@ -137,6 +137,16 @@ def _type_from_cursor_info(
     """
     flags = _FieldFlags(flags)
     typename = _type_codes.get(type_code)
+
+    # Handle SingleStoreDB vector types that may not be in _type_codes
+    if type_code in (3001, 3002, 3003, 3004, 3005, 3006):  # Vector types
+        # SingleStoreDB VECTOR types - map to Binary for now
+        # Could be enhanced to Array[Float32] or other appropriate types in future
+        return dt.Binary(nullable=True)
+    elif type_code in (2001, 2002, 2003, 2004, 2005, 2006):  # Vector JSON types
+        # SingleStoreDB VECTOR_JSON types - map to JSON
+        return dt.JSON(nullable=True)
+
     if typename is None:
         raise NotImplementedError(
             f"SingleStoreDB type code {type_code:d} is not supported"
