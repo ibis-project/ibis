@@ -41,16 +41,25 @@ services:
       - $PWD/docker/mysql:/docker-entrypoint-initdb.d:ro
 
   singlestoredb:
-    image: ghcr.io/singlestore-labs/singlestoredb-dev:latest
     environment:
-      ROOT_PASSWORD: "ibis_testing"
+      ROOT_PASSWORD: ibis_testing
       SINGLESTORE_LICENSE: "" # Optional license key
+      MYSQL_DATABASE: ibis_testing
+      MYSQL_PASSWORD: ibis_testing
+      MYSQL_USER: root
+      MYSQL_PORT: 3307
+      SINGLESTOREDB_DATABASE: ibis_testing
+      SINGLESTOREDB_PASSWORD: ibis_testing
+      SINGLESTOREDB_USER: root
+      SINGLESTOREDB_PORT: 3307
     healthcheck:
-      interval: 2s
-      retries: 30
+      interval: 1s
+      retries: 20
       test:
         - CMD-SHELL
-        - mysql -h localhost -P3307 -u root -p'ibis_testing' -e 'SELECT 1'
+        - mysqladmin
+        - ping
+    image: ghcr.io/singlestore-labs/singlestoredb-dev:latest
     ports:
       - 3307:3306 # Use 3307 to avoid conflict with MySQL
       # - 9088:8080 # SingleStore Studio UI (use 9088 to avoid conflicts)
