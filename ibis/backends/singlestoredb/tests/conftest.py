@@ -30,6 +30,7 @@ class TestConf(ServiceBackendTest):
     native_bool = False
     supports_structs = False  # May support in future via JSON
     rounding_method = "half_to_even"
+    force_sort = True  # SingleStoreDB has non-deterministic row ordering
     service_name = "singlestoredb"
     deps = ("singlestoredb",)  # Primary dependency
 
