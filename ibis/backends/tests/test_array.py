@@ -233,6 +233,7 @@ builtin_array = toolz.compose(
             MySQLOperationalError,
             SingleStoreDBProgrammingError,
             com.UnsupportedBackendType,
+            com.TableNotFound,
         ),
     ),
     pytest.mark.never(
@@ -1583,6 +1584,11 @@ def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
 
 @pytest.mark.notimpl(
     ["impala"], raises=AssertionError, reason="backend doesn't support arrays"
+)
+@pytest.mark.never(
+    ["mysql", "singlestoredb"],
+    raises=AssertionError,
+    reason="backend doesn't support arrays",
 )
 def test_repr_timestamp_array(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)

@@ -6,6 +6,7 @@ import ibis.common.exceptions as com
 from ibis.backends.tests.errors import (
     MySQLOperationalError,
     SingleStoreDBOperationalError,
+    SingleStoreDBProgrammingError,
 )
 
 
@@ -39,6 +40,8 @@ NO_ARRAY_SUPPORT_MARKS = [
             com.OperationNotDefinedError,
             MySQLOperationalError,
             SingleStoreDBOperationalError,
+            SingleStoreDBProgrammingError,
+            com.TableNotFound,
         ),
     ),
     pytest.mark.notyet(
