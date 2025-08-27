@@ -61,6 +61,26 @@ class TestSingleStoreDBCompiler:
         assert isinstance(result, sge.Cast)
         assert result.to.this == sge.DataType.Type.JSON
 
+    def test_visit_date_operation(self, compiler):
+        """Test that Date operation generates correct DATE() function call."""
+        import sqlglot.expressions as sge
+
+        # Create a mock column expression
+        timestamp_col = sge.Column(this="timestamp_col")
+
+        # Test our visit_Date method directly
+        result = compiler.visit_Date(None, arg=timestamp_col)
+
+        # Should generate DATE() function, not TO_DATE or cast
+        expected_sql = "DATE(timestamp_col)"  # No backticks in raw SQLGlot expressions
+        actual_sql = result.sql("singlestore")
+
+        assert actual_sql == expected_sql, f"Expected {expected_sql}, got {actual_sql}"
+
+        # Verify it's an Anonymous function (not a cast)
+        assert result.this == "DATE"
+        assert len(result.expressions) == 1
+
     def test_cast_numeric_to_timestamp(self, compiler):
         """Test casting numeric to timestamp handles zero values."""
         arg = sge.Column(this="unix_time")
@@ -281,9 +301,12 @@ class TestSingleStoreDBCompiler:
 
         result = compiler.visit_JSONGetItem(op, arg=arg, index=index)
 
-        # Should use JSON_EXTRACT with array index path
+        # Should use JSON_EXTRACT_JSON with just the index number (SingleStoreDB-specific)
         assert isinstance(result, sge.Anonymous)
-        assert result.this.lower() == "json_extract"
+        assert result.this.lower() == "json_extract_json"
+        assert len(result.expressions) == 2
+        assert result.expressions[0] == arg
+        assert result.expressions[1] == index
 
     def test_json_get_item_string_index(self, compiler):
         """Test JSON path extraction with string key."""
@@ -298,9 +321,12 @@ class TestSingleStoreDBCompiler:
 
         result = compiler.visit_JSONGetItem(op, arg=arg, index=index)
 
-        # Should use JSON_EXTRACT with object key path
+        # Should use JSON_EXTRACT_JSON with just the key name (SingleStoreDB-specific)
         assert isinstance(result, sge.Anonymous)
-        assert result.this.lower() == "json_extract"
+        assert result.this.lower() == "json_extract_json"
+        assert len(result.expressions) == 2
+        assert result.expressions[0] == arg
+        assert result.expressions[1] == index
 
     def test_string_find_operation(self, compiler):
         """Test string find operation."""

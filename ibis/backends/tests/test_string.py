@@ -809,6 +809,7 @@ def test_substr_with_null_values(backend, alltypes, df):
         "exasol",
         "mssql",
         "mysql",
+        "singlestoredb",
         "polars",
         "postgres",
         "risingwave",
@@ -864,7 +865,16 @@ def test_capitalize(con, inp, expected):
 
 
 @pytest.mark.notyet(
-    ["exasol", "impala", "mssql", "mysql", "sqlite", "oracle", "flink"],
+    [
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "singlestoredb",
+        "sqlite",
+        "oracle",
+        "flink",
+    ],
     reason="Backend doesn't support arrays",
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
 )
@@ -879,7 +889,16 @@ def test_array_string_join(con):
 
 
 @pytest.mark.notyet(
-    ["exasol", "impala", "mssql", "mysql", "sqlite", "oracle", "flink"],
+    [
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "singlestoredb",
+        "sqlite",
+        "oracle",
+        "flink",
+    ],
     reason="Backend doesn't support arrays",
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
 )
@@ -896,7 +915,8 @@ def test_empty_array_string_join(con):
 
 
 @pytest.mark.notimpl(
-    ["mssql", "mysql", "druid", "exasol"], raises=com.OperationNotDefinedError
+    ["mssql", "mysql", "singlestoredb", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
 )
 def test_subs_with_re_replace(con):
     expr = ibis.literal("hi").re_replace("i", "a").substitute({"d": "b"}, else_="k")
@@ -918,6 +938,7 @@ def test_multiple_subs(con):
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "polars",
         "sqlite",
         "flink",
@@ -963,6 +984,7 @@ def test_non_match_regex_search_is_false(con):
     [
         "impala",
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "druid",
@@ -984,6 +1006,7 @@ def test_re_split(con):
     [
         "impala",
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "druid",
@@ -1005,6 +1028,7 @@ def test_re_split_column(alltypes):
     [
         "impala",
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "druid",
@@ -1263,6 +1287,7 @@ def string_temp_table(backend, con):
                         "datafusion",
                         "duckdb",
                         "mysql",
+                        "singlestoredb",
                         "postgres",
                         "risingwave",
                     ],

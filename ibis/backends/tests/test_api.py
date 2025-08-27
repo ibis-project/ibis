@@ -30,6 +30,7 @@ def test_version(backend):
         "oracle",
         "bigquery",
         "mysql",
+        "singlestoredb",
         "impala",
         "flink",
     ],

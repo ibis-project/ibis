@@ -18,6 +18,7 @@ no_python_udfs = mark.notimpl(
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "oracle",
         "trino",
         "risingwave",

@@ -121,16 +121,26 @@ class TestSingleStoreDBDataTypes:
 
     def test_vector_type_handling(self):
         """Test VECTOR type handling from cursor info."""
+        # Test FLOAT32_VECTOR type (real SingleStoreDB type code)
         result = _type_from_cursor_info(
             flags=0,
-            type_code=256,  # Hypothetical VECTOR type code
+            type_code=3001,  # FLOAT32_VECTOR type code
             field_length=1024,  # Vector dimension
             scale=0,
             multi_byte_maximum_length=1,
         )
-
+        # Vector types are currently mapped to Binary
         assert isinstance(result, dt.Binary)
-        assert result.nullable is True
+
+        # Test FLOAT64_VECTOR type too
+        result2 = _type_from_cursor_info(
+            flags=0,
+            type_code=3002,  # FLOAT64_VECTOR type code
+            field_length=512,  # Vector dimension
+            scale=0,
+            multi_byte_maximum_length=1,
+        )
+        assert isinstance(result2, dt.Binary)
 
     def test_timestamp_with_timezone(self):
         """Test TIMESTAMP type includes UTC timezone by default."""

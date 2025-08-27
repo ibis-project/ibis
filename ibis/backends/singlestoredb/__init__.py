@@ -22,6 +22,7 @@ from ibis.backends import (
     SupportsTempTables,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers.singlestoredb import compiler
 
 if TYPE_CHECKING:
     from urllib.parse import ParseResult
@@ -42,12 +43,7 @@ class Backend(
         "singlestoredb://{{user}}:{{password}}@{{host}}:{{port}}/{{database}}"
     )
 
-    @property
-    def compiler(self):
-        """Return the SQL compiler for SingleStoreDB."""
-        from ibis.backends.sql.compilers.singlestoredb import compiler
-
-        return compiler
+    compiler = compiler
 
     @property
     def con(self):
@@ -65,6 +61,11 @@ class Backend(
     def database(self) -> str:
         """Return the current database name (alias for current_database)."""
         return self.current_database
+
+    @property
+    def dialect(self) -> str:
+        """Return the SQLGlot dialect name."""
+        return "singlestore"
 
     @classmethod
     def _from_url(cls, url: ParseResult, **kwargs) -> Backend:

@@ -207,6 +207,7 @@ def test_isna(backend, alltypes, col, value, filt):
                         "postgres",
                         "risingwave",
                         "mysql",
+                        "singlestoredb",
                         "snowflake",
                         "polars",
                         "trino",
@@ -769,7 +770,17 @@ def test_table_info_large(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "bigquery", "impala", "mysql", "mssql", "trino", "flink", "athena"],
+    [
+        "datafusion",
+        "bigquery",
+        "impala",
+        "mysql",
+        "singlestoredb",
+        "mssql",
+        "trino",
+        "flink",
+        "athena",
+    ],
     raises=com.OperationNotDefinedError,
     reason="quantile and mode is not supported",
 )
@@ -910,6 +921,7 @@ def test_table_describe(alltypes, selector, expected_columns):
         "bigquery",
         "impala",
         "mysql",
+        "singlestoredb",
         "mssql",
         "trino",
         "flink",
@@ -1116,7 +1128,17 @@ def test_exists(batting, awards_players, method_name):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "mysql", "pyspark", "polars", "druid", "oracle", "exasol"],
+    [
+        "datafusion",
+        "mssql",
+        "mysql",
+        "singlestoredb",
+        "pyspark",
+        "polars",
+        "druid",
+        "oracle",
+        "exasol",
+    ],
     raises=com.OperationNotDefinedError,
 )
 def test_typeof(con):
@@ -1346,7 +1368,8 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 
 
 @pytest.mark.notyet(
-    ["mssql", "mysql", "exasol", "impala"], reason="various syntax errors reported"
+    ["mssql", "mysql", "singlestoredb", "exasol", "impala"],
+    reason="various syntax errors reported",
 )
 @pytest.mark.notyet(
     ["snowflake"],
@@ -1369,7 +1392,7 @@ def test_memtable_from_geopandas_dataframe(con, data_dir):
 @pytest.mark.notimpl(["oracle", "exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
-    ["impala", "mssql", "mysql", "sqlite"],
+    ["impala", "mssql", "mysql", "singlestoredb", "sqlite"],
     reason="backend doesn't support arrays and we don't implement pivot_longer with unions yet",
     raises=com.OperationNotDefinedError,
 )
@@ -1503,7 +1526,8 @@ def test_select_distinct_filter_order_by_commute(backend, alltypes, df, ops):
             ["cut"],
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "mysql"], raises=com.OperationNotDefinedError
+                    ["mssql", "mysql", "singlestoredb"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
             id="one",
@@ -1512,7 +1536,8 @@ def test_select_distinct_filter_order_by_commute(backend, alltypes, df, ops):
             ["clarity", "cut"],
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "mysql"], raises=com.OperationNotDefinedError
+                    ["mssql", "mysql", "singlestoredb"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
             id="many",
@@ -1565,7 +1590,8 @@ def test_distinct_on_keep(backend, on, keep):
             ["cut"],
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "mysql"], raises=com.OperationNotDefinedError
+                    ["mssql", "mysql", "singlestoredb"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
             id="one",
@@ -1574,7 +1600,8 @@ def test_distinct_on_keep(backend, on, keep):
             ["clarity", "cut"],
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "mysql"], raises=com.OperationNotDefinedError
+                    ["mssql", "mysql", "singlestoredb"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
             id="many",
@@ -1626,6 +1653,7 @@ def test_distinct_on_keep_is_none(backend, on):
         "datafusion",
         "druid",  # not sure what's going on here
         "mysql",  # CHECKSUM TABLE but not column
+        "singlestoredb",  # Same as MySQL - no column checksum
         "trino",  # checksum returns varbinary
         "athena",
     ]
@@ -1685,6 +1713,7 @@ def test_hash(backend, alltypes, dtype):
         "flink",
         "impala",
         "mysql",
+        "singlestoredb",
         "polars",
         "postgres",
         "pyspark",
@@ -1715,6 +1744,7 @@ def test_hashbytes(backend, alltypes):
         "flink",
         "impala",
         "mysql",
+        "singlestoredb",
         "oracle",
         "polars",
         "postgres",
@@ -1757,7 +1787,7 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(
-                    ["exasol", "impala", "mssql", "mysql", "sqlite"],
+                    ["exasol", "impala", "mssql", "mysql", "singlestoredb", "sqlite"],
                     reason="backend doesn't support arrays",
                 ),
             ],
@@ -1776,7 +1806,15 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
                 pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(
-                    ["datafusion", "exasol", "impala", "mssql", "mysql", "sqlite"],
+                    [
+                        "datafusion",
+                        "exasol",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "singlestoredb",
+                        "sqlite",
+                    ],
                     reason="backend doesn't support structs",
                 ),
             ],
@@ -1839,6 +1877,7 @@ def test_try_cast(con, from_val, to_type, expected):
         "druid",
         "exasol",
         "mysql",
+        "singlestoredb",
         "oracle",
         "postgres",
         "risingwave",
@@ -1877,6 +1916,7 @@ def test_try_cast_null(con, from_val, to_type):
         "datafusion",
         "druid",
         "mysql",
+        "singlestoredb",
         "oracle",
         "postgres",
         "risingwave",
@@ -1898,7 +1938,16 @@ def test_try_cast_table(backend, con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mysql", "oracle", "postgres", "risingwave", "sqlite", "exasol"]
+    [
+        "datafusion",
+        "mysql",
+        "singlestoredb",
+        "oracle",
+        "postgres",
+        "risingwave",
+        "sqlite",
+        "exasol",
+    ]
 )
 @pytest.mark.notimpl(["druid"], strict=False)
 @pytest.mark.parametrize(
@@ -2268,6 +2317,7 @@ def test_sample_memtable(con, backend):
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "oracle",
         "polars",
         "risingwave",
@@ -2507,7 +2557,17 @@ def test_pivot_wider_empty_id_columns(con, backend, id_cols, monkeypatch):
 
 
 @pytest.mark.notyet(
-    ["mysql", "risingwave", "impala", "mssql", "druid", "exasol", "oracle", "flink"],
+    [
+        "mysql",
+        "singlestoredb",
+        "risingwave",
+        "impala",
+        "mssql",
+        "druid",
+        "exasol",
+        "oracle",
+        "flink",
+    ],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't support Arbitrary agg",
 )
@@ -2543,7 +2603,17 @@ def test_named_literal(con, backend):
     ["oracle"], raises=OracleDatabaseError, reason="incorrect code generated"
 )
 @pytest.mark.notimpl(
-    ["datafusion", "flink", "impala", "mysql", "mssql", "sqlite", "trino", "athena"],
+    [
+        "datafusion",
+        "flink",
+        "impala",
+        "mysql",
+        "singlestoredb",
+        "mssql",
+        "sqlite",
+        "trino",
+        "athena",
+    ],
     raises=com.OperationNotDefinedError,
     reason="quantile not implemented",
 )

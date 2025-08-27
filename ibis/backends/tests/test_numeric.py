@@ -381,9 +381,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-                pytest.mark.notimpl(
-                    ["mysql", "singlestoredb"], raises=MySQLOperationalError
-                ),
+                pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notimpl(
                     ["singlestoredb"], raises=SingleStoreDBOperationalError
                 ),
@@ -725,9 +723,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
 @pytest.mark.notimpl(
     ["flink"], raises=(com.OperationNotDefinedError, NotImplementedError)
 )
-@pytest.mark.notimpl(
-    ["mysql", "singlestoredb"], raises=(MySQLOperationalError, NotImplementedError)
-)
+@pytest.mark.notimpl(["mysql"], raises=(MySQLOperationalError, NotImplementedError))
 @pytest.mark.notimpl(
     ["singlestoredb"], raises=(SingleStoreDBOperationalError, NotImplementedError)
 )
@@ -1377,6 +1373,10 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="SQL query requires 'MIN' operator that is not supported.",
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    reason="Complex nested SQL exceeds SingleStoreDB stack size causing stack overflow",
 )
 def test_histogram(con, alltypes):
     n = 10
