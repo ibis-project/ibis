@@ -1500,7 +1500,7 @@ TIMESTAMP_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["pyspark", "mysql", "exasol", "oracle", "databricks"],
+    ["pyspark", "mysql", "singlestoredb", "exasol", "oracle", "databricks"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
@@ -1517,7 +1517,8 @@ def test_timestamp_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    ["mysql", "pyspark", "exasol", "databricks"], raises=com.OperationNotDefinedError
+    ["mysql", "singlestoredb", "pyspark", "exasol", "databricks"],
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
@@ -1579,7 +1580,7 @@ TIME_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pyspark", "mysql", "oracle", "databricks"],
+    ["datafusion", "pyspark", "mysql", "singlestoredb", "oracle", "databricks"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1727,7 +1728,8 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["pyspark", "mysql", "exasol", "databricks"], raises=com.OperationNotDefinedError
+    ["pyspark", "mysql", "singlestoredb", "exasol", "databricks"],
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
@@ -2081,7 +2083,17 @@ def test_delta(con, start, end, unit, expected):
 
 
 @pytest.mark.notimpl(
-    ["impala", "mysql", "pyspark", "sqlite", "trino", "druid", "databricks", "athena"],
+    [
+        "impala",
+        "mysql",
+        "singlestoredb",
+        "pyspark",
+        "sqlite",
+        "trino",
+        "druid",
+        "databricks",
+        "athena",
+    ],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize(
@@ -2187,6 +2199,7 @@ def test_timestamp_bucket(backend, kws, pd_freq):
         "datafusion",
         "impala",
         "mysql",
+        "singlestoredb",
         "oracle",
         "pyspark",
         "sqlite",

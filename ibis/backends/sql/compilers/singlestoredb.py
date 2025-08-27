@@ -54,9 +54,11 @@ class SingleStoreDBCompiler(MySQLCompiler):
     UNSUPPORTED_OPS = (
         # Inherit MySQL unsupported ops
         *MySQLCompiler.UNSUPPORTED_OPS,
-        # Add any SingleStoreDB-specific unsupported operations here
-        # Note: SingleStoreDB may support some operations that MySQL doesn't
-        # and vice versa, but for now we use the MySQL set as baseline
+        # Add SingleStoreDB-specific unsupported operations
+        ops.HexDigest,  # HexDigest not supported in SingleStoreDB
+        ops.Hash,  # Hash function not available
+        ops.First,  # First aggregate not supported
+        ops.Last,  # Last aggregate not supported
     )
 
     # SingleStoreDB supports most MySQL simple operations
@@ -77,6 +79,12 @@ class SingleStoreDBCompiler(MySQLCompiler):
         raise NotImplementedError("SingleStoreDB does not support Infinity")
 
     NEG_INF = POS_INF
+
+    def visit_Date(self, op, *, arg):
+        """Extract the date part from a timestamp or date value."""
+        # Use DATE() function for SingleStoreDB, which is MySQL-compatible
+        # Create an anonymous function call since SQLGlot's f.date creates a cast
+        return sge.Anonymous(this="DATE", expressions=[arg])
 
     def visit_Cast(self, op, *, arg, to):
         """Handle casting operations in SingleStoreDB.
@@ -162,13 +170,22 @@ class SingleStoreDBCompiler(MySQLCompiler):
 
     # JSON operations - SingleStoreDB may have enhanced JSON support
     def visit_JSONGetItem(self, op, *, arg, index):
-        """Handle JSON path extraction in SingleStoreDB using JSON_EXTRACT."""
+        """Handle JSON path extraction in SingleStoreDB using JSON_EXTRACT_JSON."""
         if op.index.dtype.is_integer():
-            path = self.f.concat("$[", self.cast(index, dt.string), "]")
+            # For array indices, SingleStoreDB JSON_EXTRACT_JSON expects just the number
+            path = index
         else:
-            path = self.f.concat("$.", index)
-        # Use JSON_EXTRACT function
-        return sge.Anonymous(this="JSON_EXTRACT", expressions=[arg, path])
+            # For object keys, SingleStoreDB JSON_EXTRACT_JSON expects just the key name
+            path = index
+        # Use JSON_EXTRACT_JSON function (SingleStoreDB-specific)
+        return sge.Anonymous(this="JSON_EXTRACT_JSON", expressions=[arg, path])
+
+    def visit_Sign(self, op, *, arg):
+        """Handle SIGN function to ensure consistent return type."""
+        # SingleStoreDB's SIGN function returns DECIMAL, but tests expect FLOAT
+        # Cast to DOUBLE to match NumPy's float64 behavior
+        sign_func = sge.Anonymous(this="SIGN", expressions=[arg])
+        return self.cast(sign_func, dt.Float64())
 
     # Window functions - SingleStoreDB may have better support than MySQL
     @staticmethod
