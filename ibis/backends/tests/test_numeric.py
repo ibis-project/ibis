@@ -1376,6 +1376,7 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
 )
 @pytest.mark.notyet(
     ["singlestoredb"],
+    raises=SingleStoreDBOperationalError,
     reason="Complex nested SQL exceeds SingleStoreDB stack size causing stack overflow",
 )
 def test_histogram(con, alltypes):

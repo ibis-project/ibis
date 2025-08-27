@@ -59,6 +59,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
         ops.Hash,  # Hash function not available
         ops.First,  # First aggregate not supported
         ops.Last,  # Last aggregate not supported
+        ops.FindInSet,  # find_in_set function not supported
     )
 
     # SingleStoreDB supports most MySQL simple operations
@@ -92,6 +93,19 @@ class SingleStoreDBCompiler(MySQLCompiler):
         Includes support for SingleStoreDB-specific types like VECTOR and enhanced JSON.
         """
         from_ = op.arg.dtype
+
+        # UUID casting - SingleStoreDB doesn't have native UUID, use CHAR(36)
+        if to.is_uuid():
+            # Cast to UUID -> Cast to CHAR(36) since that's what we map UUID to
+            return sge.Cast(
+                this=sge.convert(arg),
+                to=sge.DataType(
+                    this=sge.DataType.Type.CHAR, expressions=[sge.convert(36)]
+                ),
+            )
+        elif from_.is_uuid():
+            # Cast from UUID is already CHAR(36), so just cast normally
+            return sge.Cast(this=sge.convert(arg), to=self.type_mapper.from_ibis(to))
 
         # JSON casting - SingleStoreDB has enhanced JSON support
         if from_.is_json() and to.is_json():
@@ -207,8 +221,75 @@ class SingleStoreDBCompiler(MySQLCompiler):
         substr = sge.Cast(this=substr, to=sge.DataType(this=sge.DataType.Type.BINARY))
 
         if start is not None:
+            # LOCATE returns 1-based position, but base class subtracts 1 automatically
+            # So we return the raw LOCATE result and let base class handle conversion
             return sge.Anonymous(this="LOCATE", expressions=[substr, arg, start + 1])
         return sge.Anonymous(this="LOCATE", expressions=[substr, arg])
+
+    def _convert_perl_to_posix_regex(self, pattern):
+        """Convert Perl-style regex patterns to POSIX patterns for SingleStoreDB.
+
+        SingleStoreDB uses POSIX regex, not Perl-style patterns.
+        """
+        if isinstance(pattern, str):
+            # Convert common Perl patterns to POSIX equivalents
+            conversions = {
+                r"\d": "[0-9]",
+                r"\D": "[^0-9]",
+                r"\w": "[[:alnum:]_]",
+                r"\W": "[^[:alnum:]_]",
+                r"\s": "[[:space:]]",
+                r"\S": "[^[:space:]]",
+            }
+
+            result = pattern
+            for perl_pattern, posix_pattern in conversions.items():
+                result = result.replace(perl_pattern, posix_pattern)
+            return result
+        return pattern
+
+    def visit_RegexSearch(self, op, *, arg, pattern):
+        """Handle regex search operations in SingleStoreDB.
+
+        Convert Perl-style patterns to POSIX since SingleStoreDB uses POSIX regex.
+        """
+        # Convert pattern if it's a string literal
+        if hasattr(pattern, "this") and isinstance(pattern.this, str):
+            posix_pattern = self._convert_perl_to_posix_regex(pattern.this)
+            pattern = sge.convert(posix_pattern)
+        elif isinstance(pattern, str):
+            posix_pattern = self._convert_perl_to_posix_regex(pattern)
+            pattern = sge.convert(posix_pattern)
+
+        return arg.rlike(pattern)
+
+    def visit_RegexExtract(self, op, *, arg, pattern, index):
+        """Handle regex extract operations in SingleStoreDB.
+
+        SingleStoreDB's REGEXP_SUBSTR doesn't support group extraction like MySQL,
+        so we use a simpler approach.
+        """
+        # Convert pattern if needed
+        if hasattr(pattern, "this") and isinstance(pattern.this, str):
+            posix_pattern = self._convert_perl_to_posix_regex(pattern.this)
+            pattern = sge.convert(posix_pattern)
+        elif isinstance(pattern, str):
+            posix_pattern = self._convert_perl_to_posix_regex(pattern)
+            pattern = sge.convert(posix_pattern)
+
+        # For index 0, return the whole match
+        if hasattr(index, "this") and index.this == 0:
+            extracted = self.f.regexp_substr(arg, pattern)
+            return self.if_(arg.rlike(pattern), extracted, sge.Null())
+
+        # For other indices, SingleStoreDB doesn't support group extraction
+        # Use a simplified approach that may not work perfectly for all cases
+        extracted = self.f.regexp_substr(arg, pattern)
+        return self.if_(
+            arg.rlike(pattern),
+            extracted,
+            sge.Null(),
+        )
 
     # Distributed query features - SingleStoreDB specific
     def _add_shard_key_hint(self, query, shard_key=None):

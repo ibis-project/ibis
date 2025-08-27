@@ -409,6 +409,11 @@ class SingleStoreDBType(SqlglotType):
         elif isinstance(dtype, dt.Binary):
             # Could be BLOB or VECTOR type - default to BLOB
             return sge.DataType(this=sge.DataType.Type.BLOB)
+        elif isinstance(dtype, dt.UUID):
+            # SingleStoreDB doesn't support UUID natively, map to CHAR(36)
+            return sge.DataType(
+                this=sge.DataType.Type.CHAR, expressions=[sge.convert(36)]
+            )
 
         # Fall back to parent implementation for standard types
         return super().from_ibis(dtype)
