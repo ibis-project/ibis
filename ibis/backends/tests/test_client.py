@@ -807,6 +807,7 @@ def test_list_catalogs(con):
         "oracle": set(),
         "postgres": {"postgres", "ibis_testing"},
         "risingwave": {"dev"},
+        "singlestoredb": set(),  # SingleStoreDB doesn't support catalogs
         "snowflake": {"IBIS_TESTING"},
         "trino": {"memory"},
         "pyspark": {"spark_catalog"},
@@ -838,6 +839,7 @@ def test_list_database_contents(con):
         "postgres": {"public", "information_schema"},
         "pyspark": set(),
         "risingwave": {"public", "rw_catalog", "information_schema"},
+        "singlestoredb": {"ibis_testing", "information_schema"},
         "snowflake": {"IBIS_TESTING"},
         "sqlite": {"main"},
         "trino": {"default", "information_schema"},

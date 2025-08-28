@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import contextlib
 import time
+import warnings
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import unquote_plus
@@ -26,6 +27,8 @@ from ibis.backends.sql.compilers.singlestoredb import compiler
 
 if TYPE_CHECKING:
     from urllib.parse import ParseResult
+
+    import sqlglot as sg
 
 
 class Backend(
@@ -66,6 +69,13 @@ class Backend(
     def con(self):
         """Return the database connection for compatibility with base class."""
         return self._client
+
+    def _post_connect(self) -> None:
+        with self.con.cursor() as cur:
+            try:
+                cur.execute("SET @@session.time_zone = 'UTC'")
+            except Exception as e:
+                warnings.warn(f"Unable to set session timezone to UTC: {e}")
 
     @property
     def current_database(self) -> str:
@@ -120,7 +130,9 @@ class Backend(
         with self._safe_raw_sql(f"CREATE DATABASE {if_not_exists}{name}"):
             pass
 
-    def drop_database(self, name: str, force: bool = False) -> None:
+    def drop_database(
+        self, name: str, force: bool = False, catalog: str | None = None
+    ) -> None:
         """Drop a database in SingleStoreDB.
 
         Parameters
@@ -130,12 +142,15 @@ class Backend(
         force
             If True, use DROP DATABASE IF EXISTS to avoid errors
             if the database doesn't exist
+        catalog
+            Catalog name (ignored for SingleStoreDB compatibility)
 
         Examples
         --------
         >>> con.drop_database("old_database")
         >>> con.drop_database("maybe_exists", force=True)  # Won't fail if missing
         """
+        # Note: catalog parameter is ignored as SingleStoreDB doesn't support catalogs
         if_exists = "IF EXISTS " * force
         with self._safe_raw_sql(f"DROP DATABASE {if_exists}{name}"):
             pass
@@ -472,26 +487,36 @@ class Backend(
             if not df.empty:
                 cur.executemany(sql, data)
 
+    # TODO(kszucs): should make it an abstract method or remove the use of it
+    # from .execute()
     @contextlib.contextmanager
-    def _safe_raw_sql(self, query: str, *args, **kwargs) -> Generator[Any, None, None]:
-        """Execute raw SQL with proper error handling."""
-        cursor = self._client.cursor()
+    def _safe_raw_sql(self, *args, **kwargs):
+        with self.raw_sql(*args, **kwargs) as result:
+            yield result
+
+    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
+        with contextlib.suppress(AttributeError):
+            query = query.sql(dialect=self.dialect)
+
+        con = self.con
+        autocommit = con.get_autocommit()
+
+        cursor = con.cursor()
+
+        if not autocommit:
+            con.begin()
+
         try:
-            cursor.execute(query, *args, **kwargs)
-            yield cursor
-        except Exception as e:
-            # Convert database-specific exceptions to Ibis exceptions
-            if hasattr(e, "args") and len(e.args) > 1:
-                errno, msg = e.args[:2]
-                if errno == 1050:  # Table already exists
-                    raise com.IntegrityError(msg)
-                elif errno == 1146:  # Table doesn't exist
-                    raise com.RelationError(msg)
-                elif errno in (1054, 1064):  # Bad field name or syntax error
-                    raise com.ExpressionError(msg)
-            raise
-        finally:
+            cursor.execute(query, **kwargs)
+        except Exception:
+            if not autocommit:
+                con.rollback()
             cursor.close()
+            raise
+        else:
+            if not autocommit:
+                con.commit()
+            return cursor
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Get the schema of a query result."""
@@ -2997,6 +3022,54 @@ class Backend(
             optimizations["errors"].append(f"Failed to optimize settings: {e}")
 
         return optimizations
+
+    def rename_table(self, old_name: str, new_name: str) -> None:
+        """Rename a table in SingleStoreDB.
+
+        Parameters
+        ----------
+        old_name
+            Current name of the table
+        new_name
+            New name for the table
+
+        Examples
+        --------
+        >>> con.rename_table("old_table", "new_table")
+        """
+        old_name = self._quote_table_name(old_name)
+        new_name = self._quote_table_name(new_name)
+        with self._safe_raw_sql(f"ALTER TABLE {old_name} RENAME TO {new_name}"):
+            pass
+
+    def list_catalogs(self, like: str | None = None) -> list[str]:
+        """List catalogs in SingleStoreDB.
+
+        SingleStoreDB doesn't have catalogs in the traditional sense, so this returns
+        an empty list for compatibility.
+
+        Parameters
+        ----------
+        like
+            SQL LIKE pattern to filter catalog names (ignored)
+
+        Returns
+        -------
+        list[str]
+            Empty list (SingleStoreDB doesn't support catalogs)
+
+        Examples
+        --------
+        >>> con.list_catalogs()
+        []
+        """
+        return []
+
+    def _quote_table_name(self, name: str) -> str:
+        """Quote a table name for safe SQL usage."""
+        import sqlglot as sg
+
+        return sg.to_identifier(name, quoted=True).sql("singlestore")
 
 
 def connect(
