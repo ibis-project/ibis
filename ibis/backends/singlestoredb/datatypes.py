@@ -170,6 +170,9 @@ def _type_from_cursor_info(
             raise AssertionError("invalid field length for BIT type")
     elif typename == "TINY" and field_length == 1:
         # TINYINT(1) is commonly used as BOOLEAN in MySQL/SingleStoreDB
+        # Note: SingleStoreDB BOOLEAN columns show field_length=4 at cursor level,
+        # making them indistinguishable from TINYINT. The DESCRIBE-based schema
+        # detection (via to_ibis method) can properly distinguish these types.
         typ = dt.Boolean
     elif typename == "VECTOR":
         # SingleStoreDB VECTOR type - typically used for AI/ML workloads
@@ -266,6 +269,13 @@ class SingleStoreDBType(SqlglotType):
     - VECTOR type for AI/ML workloads
     - GEOGRAPHY type for extended geospatial operations
     - ROWSTORE vs COLUMNSTORE table types with different optimizations
+
+    Note on schema detection:
+    SingleStoreDB has two schema detection paths with different capabilities:
+    1. Cursor-based (_type_from_cursor_info): Uses raw cursor metadata but cannot
+       distinguish BOOLEAN from TINYINT due to identical protocol-level representation
+    2. DESCRIBE-based (to_ibis): Uses SQL DESCRIBE command and can properly distinguish
+       types like BOOLEAN vs TINYINT based on type string parsing
     """
 
     dialect = "singlestore"  # SingleStoreDB uses SingleStore dialect in SQLGlot
@@ -293,19 +303,28 @@ class SingleStoreDBType(SqlglotType):
         if hasattr(typ, "this"):
             type_name = str(typ.this).upper()
 
-            # Handle TINYINT(1) as Boolean - MySQL/SingleStoreDB convention
-            if (
-                type_name.endswith("TINYINT")
-                and hasattr(typ, "expressions")
-                and typ.expressions
-            ):
-                # Extract length parameter from TINYINT(length)
-                length_param = typ.expressions[0]
-                if hasattr(length_param, "this") and hasattr(length_param.this, "this"):
-                    length = int(length_param.this.this)
-                    if length == 1:
-                        # TINYINT(1) is commonly used as BOOLEAN
-                        return dt.Boolean(nullable=nullable)
+            # Handle BOOLEAN type directly
+            if type_name == "BOOLEAN":
+                return dt.Boolean(nullable=nullable)
+
+            # Handle TINYINT as Boolean - MySQL/SingleStoreDB convention
+            if type_name.endswith("TINYINT"):
+                # Check if it has explicit length parameter
+                if hasattr(typ, "expressions") and typ.expressions:
+                    # Extract length parameter from TINYINT(length)
+                    length_param = typ.expressions[0]
+                    if hasattr(length_param, "this") and hasattr(
+                        length_param.this, "this"
+                    ):
+                        length = int(length_param.this.this)
+                        if length == 1:
+                            # TINYINT(1) is commonly used as BOOLEAN
+                            return dt.Boolean(nullable=nullable)
+                else:
+                    # TINYINT without explicit length - in SingleStoreDB this often means BOOLEAN
+                    # Check if it's likely a boolean context by falling back to the parent's handling
+                    # but first try the _type_mapping which should handle TINY -> dt.Int8
+                    pass  # Let it fall through to normal handling
 
             # Handle DATETIME with scale parameter specially
             # Note: type_name will be "TYPE.DATETIME", so check for endswith
