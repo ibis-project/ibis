@@ -65,12 +65,9 @@ class SingleStoreDBCompiler(MySQLCompiler):
     )
 
     # SingleStoreDB supports most MySQL simple operations
-    # Override here if there are SingleStoreDB-specific function names
+    # Exclude StringToTimestamp to use custom visitor method
     SIMPLE_OPS = {
-        **MySQLCompiler.SIMPLE_OPS,
-        # Add SingleStoreDB-specific function mappings here
-        # For example, if SingleStoreDB has different function names:
-        # ops.SomeOperation: "singlestoredb_function_name",
+        k: v for k, v in MySQLCompiler.SIMPLE_OPS.items() if k != ops.StringToTimestamp
     }
 
     @property
@@ -93,29 +90,50 @@ class SingleStoreDBCompiler(MySQLCompiler):
         """Handle casting operations in SingleStoreDB.
 
         Includes support for SingleStoreDB-specific types like VECTOR and enhanced JSON.
+        Uses MySQL-compatible CAST syntax by creating a custom CAST expression.
         """
         from_ = op.arg.dtype
+
+        # Helper function to create MySQL-style CAST
+        def mysql_cast(expr, target_type):
+            # Create a Cast expression but force it to render as MySQL syntax
+            cast_expr = sge.Cast(this=sge.convert(expr), to=target_type)
+            # Override the sql method to use MySQL dialect
+            original_sql = cast_expr.sql
+            cast_expr.sql = lambda dialect="mysql", **kwargs: original_sql(
+                dialect="mysql", **kwargs
+            )
+            return cast_expr
 
         # UUID casting - SingleStoreDB doesn't have native UUID, use CHAR(36)
         if to.is_uuid():
             # Cast to UUID -> Cast to CHAR(36) since that's what we map UUID to
-            return sge.Cast(
-                this=sge.convert(arg),
-                to=sge.DataType(
-                    this=sge.DataType.Type.CHAR, expressions=[sge.convert(36)]
-                ),
+            char_type = sge.DataType(
+                this=sge.DataType.Type.CHAR, expressions=[sge.convert(36)]
             )
+            return mysql_cast(arg, char_type)
         elif from_.is_uuid():
             # Cast from UUID is already CHAR(36), so just cast normally
-            return sge.Cast(this=sge.convert(arg), to=self.type_mapper.from_ibis(to))
+            target_type = self.type_mapper.from_ibis(to)
+            return mysql_cast(arg, target_type)
 
         # JSON casting - SingleStoreDB has enhanced JSON support
         if from_.is_json() and to.is_json():
             # JSON to JSON cast is a no-op
             return arg
         elif from_.is_string() and to.is_json():
-            # Cast string to JSON with validation
-            return self.cast(arg, to)
+            # Cast string to JSON
+            json_type = sge.DataType(this=sge.DataType.Type.JSON)
+            return mysql_cast(arg, json_type)
+
+        # Timestamp timezone casting - SingleStoreDB doesn't support TIMESTAMPTZ
+        elif to.is_timestamp() and to.timezone is not None:
+            # SingleStoreDB doesn't support timezone-aware TIMESTAMPTZ
+            # Convert to regular TIMESTAMP without timezone
+            # Note: This means we lose timezone information, which is a limitation
+            regular_timestamp = dt.Timestamp(scale=to.scale, nullable=to.nullable)
+            target_type = self.type_mapper.from_ibis(regular_timestamp)
+            return mysql_cast(arg, target_type)
 
         # Timestamp casting - fix for proper quoted string literal
         elif from_.is_numeric() and to.is_timestamp():
@@ -145,7 +163,9 @@ class SingleStoreDBCompiler(MySQLCompiler):
         elif from_.is_geospatial() and to.is_string():
             return sge.Anonymous(this="ST_ASTEXT", expressions=[arg])
 
-        return super().visit_Cast(op, arg=arg, to=to)
+        # For all other cases, use MySQL-style CAST
+        target_type = self.type_mapper.from_ibis(to)
+        return mysql_cast(arg, target_type)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         """Handle non-null literal values for SingleStoreDB."""
@@ -156,25 +176,32 @@ class SingleStoreDBCompiler(MySQLCompiler):
         elif dtype.is_binary():
             return self.f.unhex(value.hex())
         elif dtype.is_date():
-            # Use explicit DATE() function since SQLGlot translates to TO_DATE for SingleStore
-            # but SingleStoreDB actually uses DATE() like MySQL
+            # Use Anonymous to force DATE() function instead of TO_DATE()
             return sge.Anonymous(
                 this="DATE", expressions=[sge.convert(value.isoformat())]
             )
         elif dtype.is_timestamp():
-            # Use explicit TIMESTAMP() function for consistency
+            # SingleStoreDB doesn't support timezone info in timestamp literals
+            # Convert timezone-aware timestamps to naive UTC
+            if hasattr(value, "tzinfo") and value.tzinfo is not None:
+                # Convert to naive UTC timestamp by removing timezone info
+                naive_value = value.replace(tzinfo=None)
+                timestamp_str = naive_value.isoformat()
+            else:
+                timestamp_str = value.isoformat()
+            # Use Anonymous to force TIMESTAMP() function
             return sge.Anonymous(
-                this="TIMESTAMP", expressions=[sge.convert(value.isoformat())]
+                this="TIMESTAMP", expressions=[sge.convert(timestamp_str)]
             )
         elif dtype.is_time():
-            return sge.Anonymous(
-                this="MAKETIME",
-                expressions=[
-                    value.hour,
-                    value.minute,
-                    value.second + value.microsecond / 1e6,
-                ],
-            )
+            # SingleStoreDB doesn't have MAKETIME function, use TIME() with string literal
+            # Format: HH:MM:SS.ffffff
+            microseconds = value.microsecond
+            if microseconds:
+                time_str = f"{value.hour:02d}:{value.minute:02d}:{value.second:02d}.{microseconds:06d}"
+            else:
+                time_str = f"{value.hour:02d}:{value.minute:02d}:{value.second:02d}"
+            return sge.Anonymous(this="TIME", expressions=[sge.convert(time_str)])
         elif dtype.is_array() or dtype.is_struct() or dtype.is_map():
             # SingleStoreDB has some JSON support for these types
             # For now, treat them as unsupported like MySQL
@@ -182,6 +209,85 @@ class SingleStoreDBCompiler(MySQLCompiler):
                 "SingleStoreDB does not fully support arrays, structs or maps yet"
             )
         return None
+
+    def visit_TimestampTruncate(self, op, *, arg, unit):
+        """Handle timestamp truncation in SingleStoreDB using DATE_TRUNC."""
+        # SingleStoreDB supports DATE_TRUNC similar to PostgreSQL, but with limited time units
+        truncate_units = {
+            "Y": "year",
+            "Q": "quarter",
+            "M": "month",
+            "W": "week",  # Note: may not be supported, will handle separately
+            "D": "day",
+            "h": "hour",
+            "m": "minute",
+            "s": "second",
+            # Note: ms, us, ns are not supported by SingleStoreDB's DATE_TRUNC
+        }
+
+        # Handle unsupported sub-second units
+        if unit.short in ("ms", "us", "ns"):
+            raise com.UnsupportedOperationError(
+                f"SingleStoreDB does not support truncating to {unit.short} precision"
+            )
+
+        if (pg_unit := truncate_units.get(unit.short)) is None:
+            raise com.UnsupportedOperationError(f"Unsupported truncate unit {op.unit}")
+
+        # Use Anonymous function to avoid sqlglot transformations
+        return sge.Anonymous(this="DATE_TRUNC", expressions=[sge.convert(pg_unit), arg])
+
+    # Alias for date truncate - same implementation
+    visit_DateTruncate = visit_TimestampTruncate
+
+    # Also override the MySQL method that's actually being called
+    visit_DateTimestampTruncate = visit_TimestampTruncate
+
+    def visit_DateFromYMD(self, op, *, year, month, day):
+        """Create date from year, month, day using DATE() function for proper type."""
+        # Build ISO format string YYYY-MM-DD and use DATE() function
+        # This returns a proper date type instead of bytes like STR_TO_DATE
+        iso_date_string = self.f.concat(
+            self.f.lpad(year, 4, "0"),
+            "-",
+            self.f.lpad(month, 2, "0"),
+            "-",
+            self.f.lpad(day, 2, "0"),
+        )
+        # Use Anonymous to force DATE() function instead of TO_DATE()
+        return sge.Anonymous(this="DATE", expressions=[iso_date_string])
+
+    def visit_StringToTimestamp(self, op, *, arg, format_str):
+        """Convert string to timestamp in SingleStoreDB.
+
+        Use TIMESTAMP() function instead of STR_TO_DATE to get proper timestamp type.
+        """
+        # Use STR_TO_DATE to parse the string with the format, then wrap in TIMESTAMP()
+        parsed_date = sge.Anonymous(this="STR_TO_DATE", expressions=[arg, format_str])
+        return sge.Anonymous(this="TIMESTAMP", expressions=[parsed_date])
+
+    def visit_StringToTime(self, op, *, arg, format_str):
+        """Convert string to time in SingleStoreDB.
+
+        Use STR_TO_DATE with MySQL format specifiers then convert to proper time.
+        """
+        # Convert Python strftime format to MySQL format
+        # MySQL uses %i for minutes and %s for seconds (not %M and %S)
+        if hasattr(format_str, "this") and isinstance(format_str.this, str):
+            mysql_format = format_str.this.replace("%M", "%i").replace("%S", "%s")
+        else:
+            mysql_format = str(format_str).replace("%M", "%i").replace("%S", "%s")
+
+        mysql_format_str = sge.convert(mysql_format)
+
+        # Use STR_TO_DATE to parse the time string
+        # STR_TO_DATE with time-only format should work in MySQL/SingleStoreDB
+        parsed_time = sge.Anonymous(
+            this="STR_TO_DATE", expressions=[arg, mysql_format_str]
+        )
+
+        # Convert the result to proper TIME format using TIME()
+        return sge.Anonymous(this="TIME", expressions=[parsed_time])
 
     # SingleStoreDB-specific methods can be added here
     def visit_SingleStoreDBSpecificOp(self, op, **kwargs):
