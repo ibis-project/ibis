@@ -65,10 +65,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
     )
 
     # SingleStoreDB supports most MySQL simple operations
-    # Exclude StringToTimestamp to use custom visitor method
-    SIMPLE_OPS = {
-        k: v for k, v in MySQLCompiler.SIMPLE_OPS.items() if k != ops.StringToTimestamp
-    }
+    SIMPLE_OPS = MySQLCompiler.SIMPLE_OPS.copy()
 
     @property
     def NAN(self):
@@ -231,14 +228,21 @@ class SingleStoreDBCompiler(MySQLCompiler):
                 this="TIMESTAMP", expressions=[sge.convert(timestamp_str)]
             )
         elif dtype.is_time():
-            # SingleStoreDB doesn't have MAKETIME function, use TIME() with string literal
-            # Format: HH:MM:SS.ffffff
+            # Use MAKETIME function for time literals
             microseconds = value.microsecond
             if microseconds:
-                time_str = f"{value.hour:02d}:{value.minute:02d}:{value.second:02d}.{microseconds:06d}"
+                # MAKETIME(hour, minute, second.microsecond)
+                second_with_micro = f"{value.second}.{microseconds:06d}"
             else:
-                time_str = f"{value.hour:02d}:{value.minute:02d}:{value.second:02d}"
-            return sge.Anonymous(this="TIME", expressions=[sge.convert(time_str)])
+                second_with_micro = str(value.second)
+            return sge.Anonymous(
+                this="MAKETIME",
+                expressions=[
+                    sge.convert(value.hour),
+                    sge.convert(value.minute),
+                    sge.convert(second_with_micro),
+                ],
+            )
         elif dtype.is_array() or dtype.is_struct() or dtype.is_map():
             # SingleStoreDB has some JSON support for these types
             # For now, treat them as unsupported like MySQL
@@ -443,13 +447,18 @@ class SingleStoreDBCompiler(MySQLCompiler):
     def visit_UnwrapJSONString(self, op, *, arg):
         """Handle JSON string unwrapping in SingleStoreDB."""
         # SingleStoreDB doesn't have JSON_TYPE, so we need to implement type checking
+        # We need to cast JSON_EXTRACT_JSON to CHAR to get the JSON representation
+        # which will have quotes around strings
         json_value = sge.Anonymous(this="JSON_EXTRACT_JSON", expressions=[arg])
+        json_char = sge.Cast(
+            this=json_value, to=sge.DataType(this=sge.DataType.Type.CHAR)
+        )
         extracted_string = sge.Anonymous(this="JSON_EXTRACT_STRING", expressions=[arg])
 
-        # Return the extracted value only if the JSON contains a string (starts with quote)
+        # Return the extracted value only if the JSON contains a string (starts with quote in JSON representation)
         return self.if_(
-            # Check if the JSON value starts with a quote (indicating a string)
-            json_value.rlike(sge.convert("^[\"']")),
+            # Check if the JSON value when cast to CHAR starts with a quote (indicating a string)
+            json_char.like(sge.convert('"%')),
             extracted_string,
             sge.Null(),
         )
