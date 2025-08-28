@@ -78,6 +78,41 @@ class Backend(
                 warnings.warn(f"Unable to set session timezone to UTC: {e}")
 
     @property
+    def show(self) -> Any:
+        """Access to SHOW commands on the server."""
+        return self.con.show
+
+    @property
+    def globals(self) -> Any:
+        """Accessor for global variables in the server."""
+        return self.con.globals
+
+    @property
+    def locals(self) -> Any:
+        """Accessor for local variables in the server."""
+        return self.con.locals
+
+    @property
+    def cluster_globals(self) -> Any:
+        """Accessor for cluster global variables in the server."""
+        return self.con.cluster_globals
+
+    @property
+    def cluster_locals(self) -> Any:
+        """Accessor for cluster local variables in the server."""
+        return self.con.cluster_locals
+
+    @property
+    def vars(self) -> Any:
+        """Accessor for variables in the server."""
+        return self.con.vars
+
+    @property
+    def cluster_vars(self) -> Any:
+        """Accessor for cluster variables in the server."""
+        return self.con.cluster_vars
+
+    @property
     def current_database(self) -> str:
         """Return the current database name."""
         with self._safe_raw_sql("SELECT DATABASE()") as cur:
