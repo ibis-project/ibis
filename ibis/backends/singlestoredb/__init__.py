@@ -69,6 +69,7 @@ class Backend(
     def to_pyarrow_batches(
         self,
         expr,
+        /,
         *,
         params=None,
         limit: int | str | None = None,
@@ -503,6 +504,8 @@ class Backend(
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:
