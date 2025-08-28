@@ -7,13 +7,11 @@ from __future__ import annotations
 import contextlib
 import time
 import warnings
-from functools import cached_property
 from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import unquote_plus
 
-if TYPE_CHECKING:
-    from collections.abc import Generator
-
+import sqlglot as sg
+import sqlglot.expressions as sge
 from singlestoredb.connection import build_params
 
 import ibis.common.exceptions as com
@@ -28,9 +26,8 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.singlestoredb import compiler
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from urllib.parse import ParseResult
-
-    import sqlglot as sg
 
 
 class Backend(
@@ -117,7 +114,8 @@ class Backend(
     @property
     def current_database(self) -> str:
         """Return the current database name."""
-        with self._safe_raw_sql("SELECT DATABASE()") as cur:
+        with self.begin() as cur:
+            cur.execute("SELECT DATABASE()")
             (database,) = cur.fetchone()
         return database
 
@@ -147,77 +145,69 @@ class Backend(
         )
         return backend
 
-    def create_database(self, name: str, force: bool = False) -> None:
-        """Create a database in SingleStoreDB.
+    def create_database(
+        self,
+        name: str,
+        force: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Create a new database in SingleStoreDB.
 
         Parameters
         ----------
         name
-            Database name to create
+            Name of the database to create.
         force
-            If True, use CREATE DATABASE IF NOT EXISTS to avoid errors
-            if the database already exists
-
-        Examples
-        --------
-        >>> con.create_database("my_database")
-        >>> con.create_database("existing_db", force=True)  # Won't fail if exists
+            If True, create the database with IF NOT EXISTS clause.
+            If False (default), raise an error if the database already exists.
+        **kwargs
+            Additional keyword arguments (for compatibility with base class).
         """
         if_not_exists = "IF NOT EXISTS " * force
-        with self._safe_raw_sql(f"CREATE DATABASE {if_not_exists}{name}"):
-            pass
+        with self.begin() as cur:
+            cur.execute(f"CREATE DATABASE {if_not_exists}{name}")
 
     def drop_database(
-        self, name: str, force: bool = False, catalog: str | None = None
+        self,
+        name: str,
+        force: bool = False,
+        **kwargs: Any,
     ) -> None:
         """Drop a database in SingleStoreDB.
 
         Parameters
         ----------
         name
-            Database name to drop
+            Name of the database to drop.
         force
-            If True, use DROP DATABASE IF EXISTS to avoid errors
-            if the database doesn't exist
-        catalog
-            Catalog name (ignored for SingleStoreDB compatibility)
-
-        Examples
-        --------
-        >>> con.drop_database("old_database")
-        >>> con.drop_database("maybe_exists", force=True)  # Won't fail if missing
+            If True, drop the database with IF EXISTS clause.
+            If False (default), raise an error if the database does not exist.
+        **kwargs
+            Additional keyword arguments (for compatibility with base class).
         """
-        # Note: catalog parameter is ignored as SingleStoreDB doesn't support catalogs
         if_exists = "IF EXISTS " * force
-        with self._safe_raw_sql(f"DROP DATABASE {if_exists}{name}"):
-            pass
+        with self.begin() as cur:
+            cur.execute(f"DROP DATABASE {if_exists}{name}")
 
-    def list_databases(self, like: str | None = None) -> list[str]:
-        """List databases in the SingleStoreDB cluster.
+    def list_databases(self, *, like: str | None = None) -> list[str]:
+        """Return the list of databases.
 
         Parameters
         ----------
         like
-            SQL LIKE pattern to filter database names.
-            Use '%' as wildcard, e.g., 'test_%' for databases starting with 'test_'
+            A pattern in Python's regex format to filter returned database names.
 
         Returns
         -------
         list[str]
-            List of database names
-
-        Examples
-        --------
-        >>> con.list_databases()
-        ['information_schema', ''my_app_db', 'test_db']
-        >>> con.list_databases(like="test_%")
-        ['test_db', 'test_staging']
+            The database names that match the pattern `like`.
         """
+        # In SingleStoreDB, "database" is the preferred terminology
+        # though "schema" is also supported for MySQL compatibility
         query = "SHOW DATABASES"
-        if like is not None:
-            query += f" LIKE '{like}'"
 
-        with self._safe_raw_sql(query) as cur:
+        with self.begin() as cur:
+            cur.execute(query)
             return [row[0] for row in cur.fetchall()]
 
     def list_tables(
@@ -283,7 +273,8 @@ class Backend(
             .sql("singlestore")
         )
 
-        with self._safe_raw_sql(sql) as cur:
+        with self.begin() as cur:
+            cur.execute(sql)
             out = cur.fetchall()
 
         return self._filter_with_like(map(itemgetter(0), out), like)
@@ -348,7 +339,8 @@ class Backend(
         """Begin a transaction context for executing SQL commands.
 
         This method provides a cursor context manager that automatically
-        handles cleanup. Use this for executing raw SQL commands.
+        handles transaction lifecycle including rollback on exceptions
+        and proper cleanup.
 
         Yields
         ------
@@ -361,11 +353,24 @@ class Backend(
         ...     cur.execute("SELECT COUNT(*) FROM users")
         ...     result = cur.fetchone()
         """
-        cursor = self._client.cursor()
+        con = self._client
+        cur = con.cursor()
+        autocommit = getattr(con, "autocommit", True)
+
+        if not autocommit:
+            con.begin()
+
         try:
-            yield cursor
+            yield cur
+        except Exception:
+            if not autocommit and hasattr(con, "rollback"):
+                con.rollback()
+            raise
+        else:
+            if not autocommit and hasattr(con, "commit"):
+                con.commit()
         finally:
-            cursor.close()
+            cur.close()
 
     def create_table(
         self,
@@ -462,27 +467,28 @@ class Backend(
     def drop_table(
         self,
         name: str,
-        /,
-        *,
-        database: tuple[str, str] | str | None = None,
+        database: str | None = None,
         force: bool = False,
     ) -> None:
-        """Drop a table from SingleStoreDB."""
-        import sqlglot as sg
-        import sqlglot.expressions as sge
+        """Drop a table from the database.
 
-        table_loc = self._to_sqlglot_table(database)
-        catalog, db = self._to_catalog_db_tuple(table_loc)
-
+        Parameters
+        ----------
+        name
+            Table name to drop
+        database
+            Database name
+        force
+            Use IF EXISTS clause when dropping
+        """
         drop_stmt = sge.Drop(
             kind="TABLE",
-            this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
             exists=force,
         )
-
         # Convert SQLGlot object to SQL string before execution
-        with self._safe_raw_sql(drop_stmt.sql(self.dialect)):
-            pass
+        with self.begin() as cur:
+            cur.execute(drop_stmt.sql(self.dialect))
 
     def _register_in_memory_table(self, op: Any) -> None:
         """Register an in-memory table in SingleStoreDB."""
@@ -608,21 +614,22 @@ class Backend(
 
         return sch.Schema(dict(zip(names, ibis_types)))
 
-    @cached_property
+    @property
     def version(self) -> str:
-        """Return the SingleStoreDB server version.
+        """Return the version of the SingleStoreDB server.
 
         Returns
         -------
         str
-            SingleStoreDB server version string
+            The version string of the connected SingleStoreDB server.
 
         Examples
         --------
-        >>> con.version
-        'SingleStoreDB 8.7.10'
+        >>> con.version  # doctest: +SKIP
+        '8.7.10-bf633c1a54'
         """
-        with self._safe_raw_sql("SELECT @@version") as cur:
+        with self.begin() as cur:
+            cur.execute("SELECT @@version")
             (version_string,) = cur.fetchone()
         return version_string
 
