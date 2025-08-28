@@ -126,18 +126,22 @@ class SingleStoreDBPandasData(PandasData):
 
         SingleStoreDB has enhanced JSON support with columnstore optimizations.
         JSON values can be stored efficiently and queried with optimized functions.
+
+        For PyArrow compatibility, we return JSON as strings rather than parsed objects.
         """
 
         def convert_json(value):
             if value is None:
                 return None
             if isinstance(value, str):
-                try:
-                    return json.loads(value)
-                except (json.JSONDecodeError, TypeError):
-                    # Return as string if invalid JSON
-                    return value
-            return value
+                # Return as string - PyArrow can handle JSON strings
+                return value
+            elif isinstance(value, (list, dict)):
+                # Convert Python objects back to JSON strings for PyArrow compatibility
+                return json.dumps(value)
+            else:
+                # For other types, convert to string
+                return str(value)
 
         return s.map(convert_json, na_action="ignore")
 
