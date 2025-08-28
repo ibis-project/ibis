@@ -609,11 +609,23 @@ class Backend(
         from ibis.backends.singlestoredb.converter import SingleStoreDBPandasData
         from ibis.backends.singlestoredb.datatypes import _type_from_cursor_info
 
+        # Try to parse with different dialects to see if it's a dialect issue
+        try:
+            # First try with SingleStore dialect
+            parsed = sg.parse_one(query, dialect=self.dialect)
+        except Exception:
+            try:
+                # Fallback to MySQL dialect which SingleStore is based on
+                parsed = sg.parse_one(query, dialect="mysql")
+            except Exception:
+                # Last resort - use generic SQL dialect
+                parsed = sg.parse_one(query, dialect="")
+
         # Use SQLGlot to properly construct the query
         sql = (
             sg.select(sge.Star())
             .from_(
-                sg.parse_one(query, dialect=self.dialect).subquery(
+                parsed.subquery(
                     sg.to_identifier(
                         util.gen_name("query_schema"), quoted=self.compiler.quoted
                     )
