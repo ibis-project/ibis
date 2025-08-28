@@ -168,6 +168,9 @@ def _type_from_cursor_info(
             typ = dt.int64
         else:
             raise AssertionError("invalid field length for BIT type")
+    elif typename == "TINY" and field_length == 1:
+        # TINYINT(1) is commonly used as BOOLEAN in MySQL/SingleStoreDB
+        typ = dt.Boolean
     elif typename == "VECTOR":
         # SingleStoreDB VECTOR type - typically used for AI/ML workloads
         # For now, map to Binary; could be enhanced to Array[Float32] in future
@@ -290,8 +293,22 @@ class SingleStoreDBType(SqlglotType):
         if hasattr(typ, "this"):
             type_name = str(typ.this).upper()
 
+            # Handle TINYINT(1) as Boolean - MySQL/SingleStoreDB convention
+            if (
+                type_name.endswith("TINYINT")
+                and hasattr(typ, "expressions")
+                and typ.expressions
+            ):
+                # Extract length parameter from TINYINT(length)
+                length_param = typ.expressions[0]
+                if hasattr(length_param, "this") and hasattr(length_param.this, "this"):
+                    length = int(length_param.this.this)
+                    if length == 1:
+                        # TINYINT(1) is commonly used as BOOLEAN
+                        return dt.Boolean(nullable=nullable)
+
             # Handle DATETIME with scale parameter specially
-            # Note: type_name will be \"TYPE.DATETIME\", so check for endswith
+            # Note: type_name will be "TYPE.DATETIME", so check for endswith
             if (
                 type_name.endswith("DATETIME")
                 and hasattr(typ, "expressions")
