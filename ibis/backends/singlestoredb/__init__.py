@@ -14,6 +14,8 @@ from urllib.parse import unquote_plus
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+from singlestoredb.connection import build_params
+
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 from ibis.backends import (
@@ -2535,77 +2537,40 @@ class Backend(
     def _reconnect(self):
         """Attempt to reconnect to the database."""
         try:
-            if hasattr(self, "_original_connect_params"):
-                # Use stored connection parameters
-                self.do_connect(**self._original_connect_params)
-            else:
-                # Try to extract parameters from current client
-                host = getattr(self._client, "host", "localhost")
-                port = getattr(self._client, "port", 3306)
-                user = getattr(self._client, "user", "root")
-                password = getattr(self._client, "password", "")
-                database = getattr(self._client, "database", "")
-
-                self.do_connect(
-                    host=host,
-                    port=port,
-                    user=user,
-                    password=password,
-                    database=database,
-                )
+            self.do_connect(
+                *self._original_connect_params[0],
+                **self._original_connect_params[1],
+            )
         except Exception as e:
             raise ConnectionError(f"Failed to reconnect: {e}")
 
-    def do_connect(
-        self,
-        host: str = "localhost",
-        user: str = "root",
-        password: str = "",
-        port: int = 3306,
-        database: str = "",
-        **kwargs: Any,
-    ) -> None:
+    def do_connect(self, *args: str, **kwargs: Any) -> None:
         """Create an Ibis client connected to a SingleStoreDB database with retry support.
 
         Parameters
         ----------
-        host
-            Hostname
-        user
-            Username
-        password
-            Password
-        port
-            Port number
-        database
-            Database to connect to
+        args
+            If given, the first argument is treated as a host or URL
         kwargs
             Additional connection parameters
+            - host : Hostname or URL
+            - user : Username
+            - password : Password
+            - port : Port number
+            - database : Database to connect to
         """
-        # Store connection parameters for reconnection
-        self._original_connect_params = {
-            "host": host,
-            "user": user,
-            "password": password,
-            "port": port,
-            "database": database,
-            **kwargs,
-        }
+        self._original_connect_params = (args, kwargs)
+
+        if args:
+            params = build_params(host=args[0], **kwargs)
+        else:
+            params = build_params(**kwargs)
 
         # Use SingleStoreDB client exclusively with retry logic
         def _connect():
             import singlestoredb as s2
 
-            self._client = s2.connect(
-                host=host,
-                user=user,
-                password=password,
-                port=port,
-                database=database,
-                autocommit=kwargs.pop("autocommit", True),
-                local_infile=kwargs.pop("local_infile", 0),
-                **kwargs,
-            )
+            self._client = s2.connect(**params)
 
         return self._execute_with_retry(_connect)
 
