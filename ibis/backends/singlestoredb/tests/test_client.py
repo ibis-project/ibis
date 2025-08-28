@@ -29,7 +29,6 @@ SINGLESTOREDB_TYPES = [
     # Integer types
     param("tinyint", dt.int8, id="tinyint"),
     param("int1", dt.int8, id="int1"),
-    param("boolean", dt.int8, id="boolean"),
     param("smallint", dt.int16, id="smallint"),
     param("int2", dt.int16, id="int2"),
     param("mediumint", dt.int32, id="mediumint"),
@@ -119,6 +118,12 @@ def test_get_schema_from_query(con, singlestoredb_type, expected_type):
             dt.String(length=6),
             dt.string,
             id="enum",
+        ),
+        param(
+            "boolean",
+            dt.int8,  # Cursor-based detection cannot distinguish BOOLEAN from TINYINT
+            dt.boolean,  # DESCRIBE-based detection correctly identifies BOOLEAN
+            id="boolean",
         ),
     ],
 )
