@@ -54,8 +54,8 @@ class SingleStoreDBCompiler(MySQLCompiler):
 
     # SingleStoreDB has some differences from MySQL in supported operations
     UNSUPPORTED_OPS = (
-        # Inherit MySQL unsupported ops
-        *MySQLCompiler.UNSUPPORTED_OPS,
+        # Inherit MySQL unsupported ops except RowID (which SingleStoreDB supports via ROW_NUMBER())
+        *(op for op in MySQLCompiler.UNSUPPORTED_OPS if op != ops.RowID),
         # Add SingleStoreDB-specific unsupported operations
         ops.HexDigest,  # HexDigest not supported in SingleStoreDB
         ops.Hash,  # Hash function not available
@@ -700,6 +700,13 @@ class SingleStoreDBCompiler(MySQLCompiler):
                 return f"{parts[0]} {hint}"
 
         return query_str
+
+    def visit_RowID(self, op, *, table):
+        """Generate row IDs using ROW_NUMBER() window function."""
+        # Use ROW_NUMBER() window function to generate sequential row numbers
+        import sqlglot.expressions as sge
+
+        return sge.Window(this=sge.Anonymous(this="ROW_NUMBER"))
 
 
 # Create the compiler instance

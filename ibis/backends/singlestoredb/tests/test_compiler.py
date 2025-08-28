@@ -392,16 +392,21 @@ class TestSingleStoreDBCompilerIntegration:
     """Integration tests for the SingleStoreDB compiler."""
 
     def test_unsupported_operations_inherited_from_mysql(self, compiler):
-        """Test that unsupported operations include MySQL unsupported ops."""
+        """Test that unsupported operations include MySQL unsupported ops except RowID."""
+        import ibis.expr.operations as ops
         from ibis.backends.sql.compilers.mysql import MySQLCompiler
 
-        # SingleStoreDB should inherit MySQL unsupported operations
+        # SingleStoreDB should inherit MySQL unsupported operations except RowID
         mysql_unsupported = MySQLCompiler.UNSUPPORTED_OPS
         singlestore_unsupported = compiler.UNSUPPORTED_OPS
 
-        # All MySQL unsupported ops should be in SingleStoreDB unsupported ops
+        # All MySQL unsupported ops except RowID should be in SingleStoreDB unsupported ops
         for op in mysql_unsupported:
-            assert op in singlestore_unsupported
+            if op == ops.RowID:
+                # RowID is supported in SingleStoreDB via ROW_NUMBER() window function
+                assert op not in singlestore_unsupported
+            else:
+                assert op in singlestore_unsupported
 
     def test_simple_ops_inherit_from_mysql(self, compiler):
         """Test that simple operations inherit from MySQL compiler."""
