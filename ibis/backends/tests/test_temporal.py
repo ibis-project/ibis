@@ -300,9 +300,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "W",
             "W",
             marks=[
-                pytest.mark.notimpl(
-                    ["mysql", "singlestoredb"], raises=com.UnsupportedOperationError
-                ),
+                pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=AssertionError,
@@ -433,9 +431,7 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
         param(
             "W",
             marks=[
-                pytest.mark.notyet(
-                    ["mysql", "singlestoredb"], raises=com.UnsupportedOperationError
-                ),
+                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=AssertionError,
@@ -2319,6 +2315,11 @@ def test_time_literal_sql(dialect, snapshot, micros):
                     ["clickhouse"],
                     raises=AssertionError,
                     reason="clickhouse doesn't support dates before the UNIX epoch",
+                ),
+                pytest.mark.notyet(
+                    ["singlestoredb"],
+                    raises=Exception,
+                    reason="singlestoredb doesn't support dates before year 1000",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
                 pytest.mark.xfail_version(
