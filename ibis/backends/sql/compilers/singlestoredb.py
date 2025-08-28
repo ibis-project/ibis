@@ -550,6 +550,17 @@ class SingleStoreDBCompiler(MySQLCompiler):
         sign_func = sge.Anonymous(this="SIGN", expressions=[arg])
         return self.cast(sign_func, dt.Float64())
 
+    def visit_Equals(self, op, *, left, right):
+        """Override MySQL's binary comparison for string equality.
+
+        MySQL's visit_Equals casts strings to BINARY for case-sensitive comparison,
+        but this causes issues in SingleStoreDB where the :> BINARY syntax
+        doesn't work as expected for our use cases.
+
+        Use regular equality comparison instead.
+        """
+        return super(MySQLCompiler, self).visit_Equals(op, left=left, right=right)
+
     # Window functions - SingleStoreDB may have better support than MySQL
     @staticmethod
     def _minimize_spec(op, spec):
