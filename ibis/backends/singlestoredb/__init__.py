@@ -16,6 +16,7 @@ from singlestoredb.connection import build_params
 
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
+from ibis import util
 from ibis.backends import (
     CanCreateDatabase,
     HasCurrentDatabase,
@@ -63,6 +64,40 @@ class Backend(
             raise
 
         return SingleStoreDBPandasData.convert_table(df, schema)
+
+    @util.experimental
+    def to_pyarrow_batches(
+        self,
+        expr,
+        *,
+        params=None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **_: Any,
+    ):
+        """Convert expression to PyArrow record batches.
+
+        This method ensures proper data type conversion, particularly for
+        boolean values that come from TINYINT(1) columns.
+        """
+        import pyarrow as pa
+
+        self._run_pre_execute_hooks(expr)
+
+        # Get the expected schema and compile the query
+        schema = expr.as_table().schema()
+        sql = self.compile(expr, limit=limit, params=params)
+
+        # Fetch data using our converter
+        with self.begin() as cursor:
+            cursor.execute(sql)
+            df = self._fetch_from_cursor(cursor, schema)
+
+        # Convert to PyArrow table with proper type conversion
+        table = pa.Table.from_pandas(
+            df, schema=schema.to_pyarrow(), preserve_index=False
+        )
+        return table.to_reader(max_chunksize=chunk_size)
 
     @property
     def con(self):

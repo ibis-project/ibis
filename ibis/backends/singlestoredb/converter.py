@@ -182,6 +182,36 @@ class SingleStoreDBPandasData(PandasData):
         return super().convert_String(s, dtype, pandas_type)
 
     @classmethod
+    def convert_Boolean(cls, s, dtype, pandas_type):
+        """Convert SingleStoreDB TINYINT(1) boolean values to proper booleans.
+
+        SingleStoreDB uses TINYINT(1) for boolean columns, which return integer
+        values (0, 1) that need to be converted to proper boolean types for PyArrow.
+        """
+
+        def convert_bool(value):
+            if value is None:
+                return None
+            # Convert integer values (0, 1) to boolean
+            if isinstance(value, int):
+                return bool(value)
+            # Handle string representations
+            elif isinstance(value, str):
+                if value.lower() in ("true", "1", "yes", "on"):
+                    return True
+                elif value.lower() in ("false", "0", "no", "off"):
+                    return False
+                else:
+                    return None
+            # Already boolean
+            elif isinstance(value, bool):
+                return value
+            else:
+                return bool(value) if value is not None else None
+
+        return s.map(convert_bool, na_action="ignore")
+
+    @classmethod
     def handle_null_value(cls, value, target_type):
         """Handle NULL values consistently across all SingleStoreDB types.
 
