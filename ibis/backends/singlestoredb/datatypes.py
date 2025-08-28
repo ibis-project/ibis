@@ -439,6 +439,10 @@ class SingleStoreDBType(SqlglotType):
         if isinstance(dtype, dt.JSON):
             # SingleStoreDB has enhanced JSON support
             return sge.DataType(this=sge.DataType.Type.JSON)
+        elif isinstance(dtype, dt.Array):
+            # SingleStoreDB doesn't support native array types
+            # Map arrays to JSON as a workaround for compatibility
+            return sge.DataType(this=sge.DataType.Type.JSON)
         elif isinstance(dtype, dt.Geometry):
             # Use GEOMETRY type (or GEOGRAPHY if available)
             return sge.DataType(this=sge.DataType.Type.GEOMETRY)
