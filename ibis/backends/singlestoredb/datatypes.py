@@ -414,6 +414,27 @@ class SingleStoreDBType(SqlglotType):
             return sge.DataType(
                 this=sge.DataType.Type.CHAR, expressions=[sge.convert(36)]
             )
+        elif isinstance(dtype, dt.Timestamp):
+            # SingleStoreDB only supports DATETIME precision 0 or 6
+            # Normalize precision to nearest supported value
+            if dtype.scale is not None:
+                if dtype.scale <= 3:
+                    # Use precision 0 for scales 0-3
+                    precision = 0
+                else:
+                    # Use precision 6 for scales 4-9
+                    precision = 6
+
+                if precision == 0:
+                    return sge.DataType(this=sge.DataType.Type.DATETIME)
+                else:
+                    return sge.DataType(
+                        this=sge.DataType.Type.DATETIME,
+                        expressions=[sge.convert(precision)],
+                    )
+            else:
+                # Default DATETIME without precision
+                return sge.DataType(this=sge.DataType.Type.DATETIME)
 
         # Fall back to parent implementation for standard types
         return super().from_ibis(dtype)
