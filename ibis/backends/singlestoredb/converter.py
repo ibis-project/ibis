@@ -132,18 +132,23 @@ class SingleStoreDBPandasData(PandasData):
 
         def convert_json(value):
             if value is None:
-                return None
-            if isinstance(value, str):
-                # Return as string - PyArrow can handle JSON strings
-                return value
-            elif isinstance(value, (list, dict)):
-                # Convert Python objects back to JSON strings for PyArrow compatibility
-                return json.dumps(value)
-            else:
-                # For other types, convert to string
-                return str(value)
+                # Convert SQL NULL to JSON null string for proper handling
+                return "null"
 
-        return s.map(convert_json, na_action="ignore")
+            # Try to determine if value is already a valid JSON string
+            if isinstance(value, str):
+                try:
+                    # Test if it's already valid JSON
+                    json.loads(value)
+                    return value
+                except (json.JSONDecodeError, ValueError):
+                    # Not valid JSON, so JSON-encode it as a string
+                    return json.dumps(value)
+            else:
+                # For all other types (dict, list, bool, int, float), JSON-encode them
+                return json.dumps(value)
+
+        return s.map(convert_json)
 
     @classmethod
     def convert_Binary(cls, s, dtype, pandas_type):
