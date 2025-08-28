@@ -45,6 +45,23 @@ class Backend(
 
     compiler = compiler
 
+    def _fetch_from_cursor(self, cursor, schema):
+        """Fetch data from cursor using SingleStoreDB-specific data converter."""
+        import pandas as pd
+
+        from ibis.backends.singlestoredb.converter import SingleStoreDBPandasData
+
+        try:
+            df = pd.DataFrame.from_records(
+                cursor, columns=schema.names, coerce_float=True
+            )
+        except Exception:
+            # clean up the cursor if we fail to create the DataFrame
+            cursor.close()
+            raise
+
+        return SingleStoreDBPandasData.convert_table(df, schema)
+
     @property
     def con(self):
         """Return the database connection for compatibility with base class."""

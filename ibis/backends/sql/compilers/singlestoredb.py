@@ -105,6 +105,54 @@ class SingleStoreDBCompiler(MySQLCompiler):
             )
             return cast_expr
 
+        # Handle numeric to timestamp casting - use FROM_UNIXTIME instead of CAST
+        if from_.is_numeric() and to.is_timestamp():
+            return self.if_(
+                arg.eq(0),
+                # Fix: Use proper quoted string for timestamp literal
+                sge.Anonymous(
+                    this="TIMESTAMP", expressions=[sge.convert("1970-01-01 00:00:00")]
+                ),
+                self.f.from_unixtime(arg),
+            )
+
+        # Timestamp precision handling - SingleStore only supports precision 0 or 6
+        if to.is_timestamp() and not from_.is_numeric():
+            if to.scale == 3:
+                # Convert millisecond precision (3) to microsecond precision (6)
+                # SingleStoreDB only supports DATETIME(0) or DATETIME(6)
+                fixed_timestamp = dt.Timestamp(
+                    scale=6, timezone=to.timezone, nullable=to.nullable
+                )
+                target_type = self.type_mapper.from_ibis(fixed_timestamp)
+                return mysql_cast(arg, target_type)
+            elif to.scale is not None and to.scale not in (0, 6):
+                # Other unsupported precisions - convert to closest supported one
+                closest_scale = 6 if to.scale > 0 else 0
+                fixed_timestamp = dt.Timestamp(
+                    scale=closest_scale, timezone=to.timezone, nullable=to.nullable
+                )
+                target_type = self.type_mapper.from_ibis(fixed_timestamp)
+                return mysql_cast(arg, target_type)
+
+        # Interval casting - SingleStoreDB uses different syntax
+        if to.is_interval():
+            # SingleStoreDB uses INTERVAL value unit syntax instead of value :> INTERVAL unit
+            unit_name = {
+                "D": "DAY",
+                "h": "HOUR",
+                "m": "MINUTE",
+                "s": "SECOND",
+                "ms": "MICROSECOND",  # Convert ms to microseconds
+                "us": "MICROSECOND",
+            }.get(to.unit.short, to.unit.short.upper())
+
+            # For milliseconds, convert to microseconds
+            if to.unit.short == "ms":
+                arg = arg * 1000
+
+            return sge.Interval(this=arg, unit=sge.Var(this=unit_name))
+
         # UUID casting - SingleStoreDB doesn't have native UUID, use CHAR(36)
         if to.is_uuid():
             # Cast to UUID -> Cast to CHAR(36) since that's what we map UUID to
@@ -134,17 +182,6 @@ class SingleStoreDBCompiler(MySQLCompiler):
             regular_timestamp = dt.Timestamp(scale=to.scale, nullable=to.nullable)
             target_type = self.type_mapper.from_ibis(regular_timestamp)
             return mysql_cast(arg, target_type)
-
-        # Timestamp casting - fix for proper quoted string literal
-        elif from_.is_numeric() and to.is_timestamp():
-            return self.if_(
-                arg.eq(0),
-                # Fix: Use proper quoted string for timestamp literal
-                sge.Anonymous(
-                    this="TIMESTAMP", expressions=[sge.convert("1970-01-01 00:00:00")]
-                ),
-                self.f.from_unixtime(arg),
-            )
 
         # Binary casting (includes VECTOR type support)
         elif from_.is_string() and to.is_binary():
@@ -288,6 +325,97 @@ class SingleStoreDBCompiler(MySQLCompiler):
 
         # Convert the result to proper TIME format using TIME()
         return sge.Anonymous(this="TIME", expressions=[parsed_time])
+
+    def visit_StringToDate(self, op, *, arg, format_str):
+        """Convert string to date in SingleStoreDB.
+
+        Use STR_TO_DATE with MySQL format specifiers then wrap in DATE() to get proper date type.
+        """
+        # Convert Python strftime format to MySQL format if needed
+        if hasattr(format_str, "this") and isinstance(format_str.this, str):
+            mysql_format = format_str.this.replace("%M", "%i").replace("%S", "%s")
+        else:
+            mysql_format = str(format_str).replace("%M", "%i").replace("%S", "%s")
+
+        mysql_format_str = sge.convert(mysql_format)
+
+        # Use STR_TO_DATE to parse the date string with format
+        parsed_date = sge.Anonymous(
+            this="STR_TO_DATE", expressions=[arg, mysql_format_str]
+        )
+
+        # Wrap in DATE() to ensure we get a proper DATE type instead of bytes
+        return sge.Anonymous(this="DATE", expressions=[parsed_date])
+
+    def visit_Time(self, op, *, arg):
+        """Extract time from timestamp in SingleStoreDB.
+
+        Use TIME() function to extract time part from timestamp.
+        """
+        return sge.Anonymous(this="TIME", expressions=[arg])
+
+    def visit_TimeDelta(self, op, *, part, left, right):
+        """Handle time/date/timestamp delta operations in SingleStoreDB.
+
+        Use TIMESTAMPDIFF for date/timestamp values and TIME_TO_SEC for time values.
+        """
+        # Map ibis part names to MySQL TIMESTAMPDIFF units
+        part_mapping = {
+            "hour": "HOUR",
+            "minute": "MINUTE",
+            "second": "SECOND",
+            "microsecond": "MICROSECOND",
+            "day": "DAY",
+            "week": "WEEK",
+            "month": "MONTH",
+            "quarter": "QUARTER",
+            "year": "YEAR",
+        }
+
+        unit = part_mapping.get(part.this, part.this.upper())
+
+        # For time values, TIMESTAMPDIFF doesn't work well in SingleStore
+        # Use TIME_TO_SEC approach instead
+        if op.left.dtype.is_time() and op.right.dtype.is_time():
+            # Convert TIME to seconds, calculate difference, then convert to requested unit
+            left_seconds = sge.Anonymous(this="TIME_TO_SEC", expressions=[left])
+            right_seconds = sge.Anonymous(this="TIME_TO_SEC", expressions=[right])
+            # Calculate (left - right) for the delta
+            # In TimeDelta: left is the end time, right is the start time
+            # So we want left - right (end - start)
+            diff_seconds = sge.Sub(this=left_seconds, expression=right_seconds)
+
+            # Convert seconds to requested unit with explicit parentheses
+            if unit == "HOUR":
+                # FLOOR((TIME_TO_SEC(left) - TIME_TO_SEC(right)) / 3600)
+                paren_diff = sge.Paren(this=diff_seconds)
+                division = sge.Div(
+                    this=paren_diff, expression=sge.Literal.number("3600")
+                )
+                return sge.Anonymous(this="FLOOR", expressions=[division])
+            elif unit == "MINUTE":
+                # FLOOR((TIME_TO_SEC(left) - TIME_TO_SEC(right)) / 60)
+                paren_diff = sge.Paren(this=diff_seconds)
+                division = sge.Div(this=paren_diff, expression=sge.Literal.number("60"))
+                return sge.Anonymous(this="FLOOR", expressions=[division])
+            elif unit == "SECOND":
+                # (TIME_TO_SEC(left) - TIME_TO_SEC(right))
+                return diff_seconds
+            else:
+                # For other units, fall back to TIMESTAMPDIFF (may not work well)
+                return sge.Anonymous(
+                    this="TIMESTAMPDIFF", expressions=[sge.Var(this=unit), right, left]
+                )
+        else:
+            # Use TIMESTAMPDIFF for date/timestamp values
+            return sge.Anonymous(
+                this="TIMESTAMPDIFF", expressions=[sge.Var(this=unit), right, left]
+            )
+
+    # Aliases for different temporal delta types
+    visit_DateDelta = visit_TimeDelta
+    visit_TimestampDelta = visit_TimeDelta
+    visit_DateTimeDelta = visit_TimeDelta
 
     # SingleStoreDB-specific methods can be added here
     def visit_SingleStoreDBSpecificOp(self, op, **kwargs):

@@ -36,6 +36,7 @@ from ibis.backends.tests.errors import (
     PyODBCDataError,
     PyODBCProgrammingError,
     PySparkConnectGrpcException,
+    SingleStoreDBOperationalError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -1612,7 +1613,7 @@ def test_time_literal(con, backend):
             561021,
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "singlestoredb"],
+                    ["mysql"],
                     raises=AssertionError,
                     reason="doesn't have enough precision to capture microseconds",
                 ),
@@ -1977,9 +1978,14 @@ def test_large_timestamp(con):
                     raises=PyODBCProgrammingError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "singlestoredb"],
+                    ["mysql"],
                     reason="doesn't support nanoseconds",
                     raises=MySQLOperationalError,
+                ),
+                pytest.mark.notyet(
+                    ["singlestoredb"],
+                    reason="doesn't support nanoseconds",
+                    raises=SingleStoreDBOperationalError,
                 ),
                 pytest.mark.notyet(
                     ["bigquery"],

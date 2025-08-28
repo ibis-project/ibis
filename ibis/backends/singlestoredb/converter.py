@@ -13,17 +13,63 @@ class SingleStoreDBPandasData(PandasData):
     @classmethod
     def convert_Time(cls, s, dtype, pandas_type):
         """Convert SingleStoreDB TIME values to Python time objects."""
+        import pandas as pd
 
-        def convert(timedelta):
-            if timedelta is None:
+        def convert(value):
+            if value is None:
                 return None
-            comps = timedelta.components
-            return datetime.time(
-                hour=comps.hours,
-                minute=comps.minutes,
-                second=comps.seconds,
-                microsecond=comps.milliseconds * 1000 + comps.microseconds,
-            )
+
+            # Handle Timedelta objects (from TIME operations)
+            if isinstance(value, pd.Timedelta):
+                total_seconds = int(value.total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                seconds = total_seconds % 60
+                microseconds = value.microseconds
+                return datetime.time(
+                    hour=hours % 24,  # Ensure we don't exceed 24 hours
+                    minute=minutes,
+                    second=seconds,
+                    microsecond=microseconds,
+                )
+
+            # Handle timedelta64 objects
+            elif hasattr(value, "components"):
+                comps = value.components
+                return datetime.time(
+                    hour=comps.hours,
+                    minute=comps.minutes,
+                    second=comps.seconds,
+                    microsecond=comps.milliseconds * 1000 + comps.microseconds,
+                )
+
+            # Handle datetime.time objects (already proper)
+            elif isinstance(value, datetime.time):
+                return value
+
+            # Handle string representations
+            elif isinstance(value, str):
+                try:
+                    # Parse HH:MM:SS or HH:MM:SS.ffffff format
+                    if "." in value:
+                        time_part, microsec_part = value.split(".")
+                        microseconds = int(microsec_part.ljust(6, "0")[:6])
+                    else:
+                        time_part = value
+                        microseconds = 0
+
+                    parts = time_part.split(":")
+                    if len(parts) >= 3:
+                        return datetime.time(
+                            hour=int(parts[0]) % 24,
+                            minute=int(parts[1]),
+                            second=int(parts[2]),
+                            microsecond=microseconds,
+                        )
+                except (ValueError, IndexError):
+                    pass
+
+            return value
 
         return s.map(convert, na_action="ignore")
 
@@ -38,9 +84,40 @@ class SingleStoreDBPandasData(PandasData):
     @classmethod
     def convert_Date(cls, s, dtype, pandas_type):
         """Convert SingleStoreDB DATE values."""
+        import pandas as pd
+
+        def convert_date(value):
+            if value is None:
+                return None
+
+            # Handle bytes objects (from STR_TO_DATE)
+            if isinstance(value, bytes):
+                try:
+                    date_str = value.decode("utf-8")
+                    return pd.to_datetime(date_str).date()
+                except (UnicodeDecodeError, ValueError):
+                    return None
+
+            # Handle string representations
+            elif isinstance(value, str):
+                if value == "0000-00-00":
+                    return None
+                try:
+                    return pd.to_datetime(value).date()
+                except ValueError:
+                    return None
+
+            # Handle datetime objects
+            elif hasattr(value, "date"):
+                return value.date()
+
+            return value
+
         if s.dtype == "object":
-            # Handle SingleStoreDB zero dates
-            s = s.replace("0000-00-00", None)
+            # Handle SingleStoreDB zero dates and bytes
+            s = s.map(convert_date, na_action="ignore")
+            return s
+
         return super().convert_Date(s, dtype, pandas_type)
 
     @classmethod
