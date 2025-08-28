@@ -61,7 +61,9 @@ class SingleStoreDBCompiler(MySQLCompiler):
         ops.Hash,  # Hash function not available
         ops.First,  # First aggregate not supported
         ops.Last,  # Last aggregate not supported
-        ops.FindInSet,  # find_in_set function not supported
+        # ops.FindInSet removed - SingleStoreDB supports FIND_IN_SET function
+        # Array operations - SingleStoreDB doesn't support arrays natively
+        ops.ArrayStringJoin,  # No native array-to-string function
     )
 
     # SingleStoreDB supports most MySQL simple operations
@@ -633,11 +635,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
         return arg.rlike(pattern)
 
     def visit_RegexExtract(self, op, *, arg, pattern, index):
-        """Handle regex extract operations in SingleStoreDB.
-
-        SingleStoreDB's REGEXP_SUBSTR doesn't support group extraction like MySQL,
-        so we use a simpler approach.
-        """
+        """Handle regex extract operations in SingleStoreDB using REGEXP_REPLACE with backreferences."""
         # Convert pattern if needed
         if hasattr(pattern, "this") and isinstance(pattern.this, str):
             posix_pattern = self._convert_perl_to_posix_regex(pattern.this)
@@ -646,17 +644,16 @@ class SingleStoreDBCompiler(MySQLCompiler):
             posix_pattern = self._convert_perl_to_posix_regex(pattern)
             pattern = sge.convert(posix_pattern)
 
-        # For index 0, return the whole match
-        if hasattr(index, "this") and index.this == 0:
-            extracted = self.f.regexp_substr(arg, pattern)
-            return self.if_(arg.rlike(pattern), extracted, sge.Null())
-
-        # For other indices, SingleStoreDB doesn't support group extraction
-        # Use a simplified approach that may not work perfectly for all cases
         extracted = self.f.regexp_substr(arg, pattern)
         return self.if_(
             arg.rlike(pattern),
-            extracted,
+            self.if_(
+                index.eq(0),
+                extracted,
+                self.f.regexp_replace(
+                    extracted, pattern, f"\\{index.sql(self.dialect)}"
+                ),
+            ),
             sge.Null(),
         )
 
@@ -707,6 +704,41 @@ class SingleStoreDBCompiler(MySQLCompiler):
         import sqlglot.expressions as sge
 
         return sge.Window(this=sge.Anonymous(this="ROW_NUMBER"))
+
+    def visit_StartsWith(self, op, *, arg, start):
+        """Handle StartsWith operation using BINARY cast for SingleStoreDB."""
+        # Use explicit binary comparison to avoid cast syntax issues
+        return self.f.binary(self.f.left(arg, self.f.length(start))).eq(
+            self.f.binary(start)
+        )
+
+    def visit_EndsWith(self, op, *, arg, end):
+        """Handle EndsWith operation using BINARY cast for SingleStoreDB."""
+        # Use explicit binary comparison to avoid cast syntax issues
+        return self.f.binary(self.f.right(arg, self.f.length(end))).eq(
+            self.f.binary(end)
+        )
+
+    def visit_Repeat(self, op, *, arg, times):
+        """Handle Repeat operation using RPAD since SingleStoreDB doesn't support REPEAT."""
+        # SingleStoreDB doesn't have REPEAT function, so use RPAD to simulate it
+        # RPAD('', times * LENGTH(arg), arg) repeats arg 'times' times
+        return self.f.rpad("", times * self.f.length(arg), arg)
+
+    def visit_FindInSet(self, op, *, needle, values):
+        """Handle FindInSet operation using CASE expression since SingleStoreDB doesn't support FIND_IN_SET."""
+        if not values:
+            return 0
+
+        # Build CASE expression using sqlglot's case
+        import sqlglot as sg
+
+        case_expr = sg.case()
+
+        for i, value in enumerate(values, 1):
+            case_expr = case_expr.when(needle.eq(value), i)
+
+        return case_expr.else_(0)
 
 
 # Create the compiler instance
