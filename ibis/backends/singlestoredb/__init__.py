@@ -435,14 +435,15 @@ class Backend(
         )
 
         this = sg.table(name, catalog=database, quoted=quoted)
-        # Fix: Convert SQLGlot object to SQL string before execution
-        with self._safe_raw_sql(create_stmt.sql(dialect)) as cur:
+        # Convert SQLGlot object to SQL string before execution
+        with self.begin() as cur:
+            cur.execute(create_stmt.sql(dialect))
             if query is not None:
                 cur.execute(sge.Insert(this=table_expr, expression=query).sql(dialect))
 
             if overwrite:
                 cur.execute(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
-                # Fix: Use ALTER TABLE ... RENAME TO syntax supported by SingleStoreDB
+                # Use ALTER TABLE ... RENAME TO syntax supported by SingleStoreDB
                 # Extract just the table name (removing catalog/database prefixes and quotes)
                 temp_table_name = temp_name
                 if quoted:
@@ -743,7 +744,8 @@ class Backend(
             else query
         )
 
-        with self._safe_raw_sql(hinted_query) as cur:
+        with self.begin() as cur:
+            cur.execute(hinted_query)
             return cur.fetchall()
 
     def get_partition_info(self, table_name: str) -> list[dict]:
@@ -1276,8 +1278,8 @@ class Backend(
 
         sql = f"CREATE {unique_str}INDEX `{index_name}` ON `{table_name}` ({columns_str}) USING {index_type}"
 
-        with self._safe_raw_sql(sql):
-            pass
+        with self.begin() as cur:
+            cur.execute(sql)
 
     def drop_index(self, table_name: str, index_name: str) -> None:
         """Drop an index from a table.
@@ -1290,8 +1292,8 @@ class Backend(
             Name of the index to drop
         """
         sql = f"DROP INDEX `{index_name}` ON `{table_name}`"
-        with self._safe_raw_sql(sql):
-            pass
+        with self.begin() as cur:
+            cur.execute(sql)
 
     def analyze_index_usage(self, table_name: Optional[str] = None) -> dict:
         """Analyze index usage statistics.
@@ -2276,8 +2278,8 @@ class Backend(
                     )
 
                     # Clean up for next test
-                    with self._safe_raw_sql(f"DELETE FROM `{test_table}`"):
-                        pass
+                    with self.begin() as cur:
+                        cur.execute(f"DELETE FROM `{test_table}`")
 
                 except Exception as e:
                     method_stats["error"] = str(e)
@@ -2306,8 +2308,8 @@ class Backend(
         finally:
             # Clean up test table
             try:
-                with self._safe_raw_sql(f"DROP TABLE IF EXISTS `{test_table}`"):
-                    pass
+                with self.begin() as cur:
+                    cur.execute(f"DROP TABLE IF EXISTS `{test_table}`")
             except Exception:
                 pass
 
@@ -3046,8 +3048,8 @@ class Backend(
         """
         old_name = self._quote_table_name(old_name)
         new_name = self._quote_table_name(new_name)
-        with self._safe_raw_sql(f"ALTER TABLE {old_name} RENAME TO {new_name}"):
-            pass
+        with self.begin() as cur:
+            cur.execute(f"ALTER TABLE {old_name} RENAME TO {new_name}")
 
     def list_catalogs(self, like: str | None = None) -> list[str]:
         """List catalogs in SingleStoreDB.
