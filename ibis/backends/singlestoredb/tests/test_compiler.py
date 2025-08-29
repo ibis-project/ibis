@@ -347,9 +347,17 @@ class TestSingleStoreDBCompiler:
             op, arg=arg, substr=substr, start=start, end=None
         )
 
-        # Should use LOCATE function with start position
-        assert isinstance(result, sge.Anonymous)
-        assert result.this.lower() == "locate"
+        # Should use CASE expression wrapping LOCATE function
+        assert isinstance(result, sge.Case)
+        # Check that the case condition uses LOCATE
+        ifs = result.args["ifs"]
+        assert len(ifs) == 1
+        condition = ifs[0].this
+        assert hasattr(condition, "this") and hasattr(condition, "expression")
+        # The condition should be LOCATE(...) = 0
+        locate_call = condition.this
+        assert isinstance(locate_call, sge.Anonymous)
+        assert locate_call.this.lower() == "locate"
 
     def test_string_find_with_end_not_supported(self, compiler):
         """Test that string find with end parameter is not supported."""
