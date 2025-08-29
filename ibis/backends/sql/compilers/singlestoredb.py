@@ -592,8 +592,8 @@ class SingleStoreDBCompiler(MySQLCompiler):
         substr = sge.Cast(this=substr, to=sge.DataType(this=sge.DataType.Type.BINARY))
 
         if start is not None:
-            return self.f.locate(substr, arg, start + 1)
-        return self.f.locate(substr, arg)
+            return sge.Anonymous(this="LOCATE", expressions=[substr, arg, start + 1])
+        return sge.Anonymous(this="LOCATE", expressions=[substr, arg])
 
     def _convert_perl_to_posix_regex(self, pattern):
         """Convert Perl-style regex patterns to POSIX patterns for SingleStoreDB.
@@ -737,6 +737,14 @@ class SingleStoreDBCompiler(MySQLCompiler):
             case_expr = case_expr.when(needle.eq(value), i)
 
         return case_expr.else_(0)
+
+    def visit_Xor(self, op, *, left, right):
+        """Handle XOR (exclusive OR) operations in SingleStoreDB.
+
+        SingleStoreDB doesn't support boolean XOR directly, only bitwise XOR for integers.
+        Emulate boolean XOR using: (A OR B) AND NOT(A AND B)
+        """
+        return (left.or_(right)).and_(sg.not_(left.and_(right)))
 
 
 # Create the compiler instance
