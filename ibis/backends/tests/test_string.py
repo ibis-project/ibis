@@ -247,7 +247,7 @@ def uses_java_re(t):
             id="re_extract",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol", "singlestoredb"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -261,7 +261,7 @@ def uses_java_re(t):
             id="re_extract_group",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol", "singlestoredb"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -277,7 +277,7 @@ def uses_java_re(t):
             id="re_extract_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol", "singlestoredb"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
@@ -291,7 +291,7 @@ def uses_java_re(t):
             id="re_extract_whole_group",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol", "singlestoredb"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -307,7 +307,7 @@ def uses_java_re(t):
             id="re_extract_group_1",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol", "singlestoredb"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -323,7 +323,7 @@ def uses_java_re(t):
             id="re_extract_group_2",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol", "singlestoredb"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -339,7 +339,7 @@ def uses_java_re(t):
             id="re_extract_group_3",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol", "singlestoredb"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -353,7 +353,7 @@ def uses_java_re(t):
             id="re_extract_group_at_beginning",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol", "singlestoredb"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -367,7 +367,7 @@ def uses_java_re(t):
             id="re_extract_group_at_end",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol", "singlestoredb"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -407,7 +407,7 @@ def uses_java_re(t):
             lambda t: t.string_col * 2,
             id="repeat_method",
             marks=pytest.mark.notimpl(
-                ["oracle", "singlestoredb"],
+                ["oracle"],
                 raises=(OracleDatabaseError, com.ExpressionError),
                 reason="REPEAT function not supported",
             ),
@@ -417,7 +417,7 @@ def uses_java_re(t):
             lambda t: 2 * t.string_col,
             id="repeat_left",
             marks=pytest.mark.notimpl(
-                ["oracle", "singlestoredb"],
+                ["oracle"],
                 raises=(OracleDatabaseError, com.ExpressionError),
                 reason="REPEAT function not supported",
             ),
@@ -427,7 +427,7 @@ def uses_java_re(t):
             lambda t: t.string_col * 2,
             id="repeat_right",
             marks=pytest.mark.notimpl(
-                ["oracle", "singlestoredb"],
+                ["oracle"],
                 raises=(OracleDatabaseError, com.ExpressionError),
                 reason="REPEAT function not supported",
             ),
@@ -487,7 +487,6 @@ def uses_java_re(t):
                         "exasol",
                         "databricks",
                         "athena",
-                        "singlestoredb",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -517,7 +516,6 @@ def uses_java_re(t):
                         "exasol",
                         "databricks",
                         "athena",
-                        "singlestoredb",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1264,7 +1262,7 @@ def string_temp_table(backend, con):
             id="find_in_set",
             marks=[
                 pytest.mark.notyet(
-                    ["mysql", "singlestoredb"],
+                    ["mysql"],
                     raises=MySQLOperationalError,
                     reason="operand should contain 1 column",
                 ),
