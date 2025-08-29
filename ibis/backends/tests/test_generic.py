@@ -644,7 +644,7 @@ def test_order_by_nulls(con, op, nulls_first, expected):
 
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.never(
-    ["mysql", "singlestoredb"],
+    ["mysql"],
     raises=AssertionError,
     reason="someone decided a long time ago that 'A' = 'a' is true in these systems",
 )
@@ -1367,7 +1367,7 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 
 
 @pytest.mark.notyet(
-    ["mssql", "mysql", "singlestoredb", "exasol", "impala"],
+    ["mssql", "mysql", "exasol", "impala"],
     reason="various syntax errors reported",
 )
 @pytest.mark.notyet(
