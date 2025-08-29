@@ -75,9 +75,30 @@ class SingleStoreDBPandasData(PandasData):
     @classmethod
     def convert_Timestamp(cls, s, dtype, pandas_type):
         """Convert SingleStoreDB TIMESTAMP/DATETIME values."""
+        import pandas as pd
+
+        def convert_timestamp(value):
+            if value is None:
+                return None
+
+            # Handle bytes objects (from STR_TO_DATE operations)
+            if isinstance(value, bytes):
+                try:
+                    timestamp_str = value.decode("utf-8")
+                    return pd.to_datetime(timestamp_str)
+                except (UnicodeDecodeError, ValueError):
+                    return None
+
+            # Handle zero timestamps
+            if isinstance(value, str) and value == "0000-00-00 00:00:00":
+                return None
+
+            return value
+
         if s.dtype == "object":
-            # Handle SingleStoreDB zero timestamps
-            s = s.replace("0000-00-00 00:00:00", None)
+            # Handle SingleStoreDB zero timestamps and bytes
+            s = s.map(convert_timestamp, na_action="ignore")
+
         return super().convert_Timestamp(s, dtype, pandas_type)
 
     @classmethod
