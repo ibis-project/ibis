@@ -3109,28 +3109,7 @@ class Backend(
         with self.begin() as cur:
             cur.execute(f"ALTER TABLE {old_name} RENAME TO {new_name}")
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
-        """List catalogs in SingleStoreDB.
-
-        SingleStoreDB doesn't have catalogs in the traditional sense, so this returns
-        an empty list for compatibility.
-
-        Parameters
-        ----------
-        like
-            SQL LIKE pattern to filter catalog names (ignored)
-
-        Returns
-        -------
-        list[str]
-            Empty list (SingleStoreDB doesn't support catalogs)
-
-        Examples
-        --------
-        >>> con.list_catalogs()
-        []
-        """
-        return []
+    # Method removed - SingleStoreDB doesn't support catalogs
 
     def _quote_table_name(self, name: str) -> str:
         """Quote a table name for safe SQL usage."""
