@@ -230,21 +230,13 @@ class SingleStoreDBCompiler(MySQLCompiler):
                 this="TIMESTAMP", expressions=[sge.convert(timestamp_str)]
             )
         elif dtype.is_time():
-            # Use MAKETIME function for time literals
-            microseconds = value.microsecond
-            if microseconds:
-                # MAKETIME(hour, minute, second.microsecond)
-                second_with_micro = f"{value.second}.{microseconds:06d}"
+            # SingleStoreDB doesn't support MAKETIME function
+            # Use TIME() function with formatted string instead
+            if value.microsecond:
+                time_str = f"{value.hour:02d}:{value.minute:02d}:{value.second:02d}.{value.microsecond:06d}"
             else:
-                second_with_micro = str(value.second)
-            return sge.Anonymous(
-                this="MAKETIME",
-                expressions=[
-                    sge.convert(value.hour),
-                    sge.convert(value.minute),
-                    sge.convert(second_with_micro),
-                ],
-            )
+                time_str = f"{value.hour:02d}:{value.minute:02d}:{value.second:02d}"
+            return sge.Anonymous(this="TIME", expressions=[sge.convert(time_str)])
         elif dtype.is_array() or dtype.is_struct() or dtype.is_map():
             # SingleStoreDB has some JSON support for these types
             # For now, treat them as unsupported like MySQL
@@ -589,11 +581,25 @@ class SingleStoreDBCompiler(MySQLCompiler):
             raise NotImplementedError(
                 "`end` argument is not implemented for SingleStoreDB `StringValue.find`"
             )
-        substr = sge.Cast(this=substr, to=sge.DataType(this=sge.DataType.Type.BINARY))
 
+        # LOCATE returns 1-based positions (or 0 for not found)
+        # Python str.find() expects 0-based positions (or -1 for not found)
+        # However, the one_to_zero_index rewrite rule will automatically subtract 1
+        # So we need to return the correct 0-based result + 1 to compensate for the rewrite
         if start is not None:
-            return sge.Anonymous(this="LOCATE", expressions=[substr, arg, start + 1])
-        return sge.Anonymous(this="LOCATE", expressions=[substr, arg])
+            locate_result = sge.Anonymous(
+                this="LOCATE", expressions=[substr, arg, start + 1]
+            )
+        else:
+            locate_result = sge.Anonymous(this="LOCATE", expressions=[substr, arg])
+
+        # Convert LOCATE result: 0 (not found) -> 0, n (1-based) -> n
+        # The rewrite rule will subtract 1 from this result, giving us:
+        # 0 -> -1 (correct for not found), n -> n-1 (correct for 0-based position)
+        return sge.Case(
+            ifs=[sge.If(this=locate_result.eq(0), true=sge.Literal.number("0"))],
+            default=locate_result,
+        )
 
     def _convert_perl_to_posix_regex(self, pattern):
         """Convert Perl-style regex patterns to POSIX patterns for SingleStoreDB.

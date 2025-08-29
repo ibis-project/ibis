@@ -261,9 +261,13 @@ class TestSingleStoreDBCompiler:
 
         result = compiler.visit_NonNullLiteral(op, value=time_value, dtype=time_dtype)
 
-        # Should use MAKETIME function
+        # Should use TIME function (not MAKETIME since it's not supported in SingleStoreDB)
         assert isinstance(result, sge.Anonymous)
-        assert result.this.lower() == "maketime"
+        assert result.this.lower() == "time"
+        # Should format as TIME('14:30:45.123456')
+        assert len(result.expressions) == 1
+        time_str = result.expressions[0].this
+        assert time_str == "14:30:45.123456"
 
     def test_visit_nonull_literal_unsupported_types(self, compiler):
         """Test that arrays, structs, and maps are unsupported."""
