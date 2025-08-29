@@ -41,7 +41,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
 
     __slots__ = ()
 
-    dialect = SingleStore  # SingleStoreDB uses SingleStore dialect in SQLGlot
+    dialect = SingleStore
     type_mapper = SingleStoreDBType  # Use SingleStoreDB-specific type mapper
     rewrites = (
         rewrite_limit,
@@ -90,20 +90,9 @@ class SingleStoreDBCompiler(MySQLCompiler):
         """Handle casting operations in SingleStoreDB.
 
         Includes support for SingleStoreDB-specific types like VECTOR and enhanced JSON.
-        Uses MySQL-compatible CAST syntax by creating a custom CAST expression.
+        Uses MySQL-compatible CAST syntax to avoid the :> operator issue.
         """
         from_ = op.arg.dtype
-
-        # Helper function to create MySQL-style CAST
-        def mysql_cast(expr, target_type):
-            # Create a Cast expression but force it to render as MySQL syntax
-            cast_expr = sge.Cast(this=sge.convert(expr), to=target_type)
-            # Override the sql method to use MySQL dialect
-            original_sql = cast_expr.sql
-            cast_expr.sql = lambda dialect="mysql", **kwargs: original_sql(
-                dialect="mysql", **kwargs
-            )
-            return cast_expr
 
         # Handle numeric to timestamp casting - use FROM_UNIXTIME instead of CAST
         if from_.is_numeric() and to.is_timestamp():
@@ -125,7 +114,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
                     scale=6, timezone=to.timezone, nullable=to.nullable
                 )
                 target_type = self.type_mapper.from_ibis(fixed_timestamp)
-                return mysql_cast(arg, target_type)
+                return sge.Cast(this=arg, to=target_type)
             elif to.scale is not None and to.scale not in (0, 6):
                 # Other unsupported precisions - convert to closest supported one
                 closest_scale = 6 if to.scale > 0 else 0
@@ -133,7 +122,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
                     scale=closest_scale, timezone=to.timezone, nullable=to.nullable
                 )
                 target_type = self.type_mapper.from_ibis(fixed_timestamp)
-                return mysql_cast(arg, target_type)
+                return sge.Cast(this=arg, to=target_type)
 
         # Interval casting - SingleStoreDB uses different syntax
         if to.is_interval():
@@ -159,11 +148,11 @@ class SingleStoreDBCompiler(MySQLCompiler):
             char_type = sge.DataType(
                 this=sge.DataType.Type.CHAR, expressions=[sge.convert(36)]
             )
-            return mysql_cast(arg, char_type)
+            return sge.Cast(this=arg, to=char_type)
         elif from_.is_uuid():
             # Cast from UUID is already CHAR(36), so just cast normally
             target_type = self.type_mapper.from_ibis(to)
-            return mysql_cast(arg, target_type)
+            return sge.Cast(this=arg, to=target_type)
 
         # JSON casting - SingleStoreDB has enhanced JSON support
         if from_.is_json() and to.is_json():
@@ -172,7 +161,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
         elif from_.is_string() and to.is_json():
             # Cast string to JSON
             json_type = sge.DataType(this=sge.DataType.Type.JSON)
-            return mysql_cast(arg, json_type)
+            return sge.Cast(this=arg, to=json_type)
 
         # Timestamp timezone casting - SingleStoreDB doesn't support TIMESTAMPTZ
         elif to.is_timestamp() and to.timezone is not None:
@@ -181,7 +170,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
             # Note: This means we lose timezone information, which is a limitation
             regular_timestamp = dt.Timestamp(scale=to.scale, nullable=to.nullable)
             target_type = self.type_mapper.from_ibis(regular_timestamp)
-            return mysql_cast(arg, target_type)
+            return sge.Cast(this=arg, to=target_type)
 
         # Binary casting (includes VECTOR type support)
         elif from_.is_string() and to.is_binary():
@@ -200,9 +189,10 @@ class SingleStoreDBCompiler(MySQLCompiler):
         elif from_.is_geospatial() and to.is_string():
             return sge.Anonymous(this="ST_ASTEXT", expressions=[arg])
 
-        # For all other cases, use MySQL-style CAST
+        # For all other cases, use standard CAST syntax
+        # This ensures we don't get :> syntax from SQLGlot's SingleStore dialect
         target_type = self.type_mapper.from_ibis(to)
-        return mysql_cast(arg, target_type)
+        return sge.Cast(this=arg, to=target_type)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         """Handle non-null literal values for SingleStoreDB."""

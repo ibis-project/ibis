@@ -1774,6 +1774,7 @@ DEFAULT_CON_ATTR = "con"
 
 @pytest.mark.parametrize("top_level", [True, False])
 @pytest.mark.never(["polars"], reason="don't have a connection concept")
+@pytest.mark.notyet(["singlestoredb"], reason="can't reuse connections")
 def test_from_connection(con, top_level):
     backend = getattr(ibis, con.name) if top_level else type(con)
     new_con = backend.from_connection(getattr(con, CON_ATTR.get(con.name, "con")))

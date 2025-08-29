@@ -29,7 +29,7 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkAnalysisException,
     PySparkPythonException,
-    SingleStoreDBNotSupportedError,
+    SingleStoreDBOperationalError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -1700,7 +1700,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
 @pytest.mark.notyet(["mysql"], raises=MySQLNotSupportedError)
-@pytest.mark.notyet(["singlestoredb"], raises=SingleStoreDBNotSupportedError)
+@pytest.mark.notyet(["singlestoredb"], raises=SingleStoreDBOperationalError)
 @pytest.mark.notyet(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
