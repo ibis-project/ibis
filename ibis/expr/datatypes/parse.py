@@ -172,7 +172,7 @@ def parse(
 
     timestamp_no_tz_args = LPAREN.then(parsy.seq(scale=timestamp_scale).skip(RPAREN))
 
-    timestamp = spaceless_string("timestamp").then(
+    timestamp = spaceless_string("timestamp", "datetime").then(
         (timestamp_tz_args | timestamp_no_tz_args)
         .optional({})
         .combine_dict(dt.Timestamp)
