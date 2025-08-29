@@ -79,8 +79,10 @@ class Backend(
         """Convert expression to PyArrow record batches.
 
         This method ensures proper data type conversion, particularly for
-        boolean values that come from TINYINT(1) columns.
+        boolean values that come from TINYINT(1) columns and JSON columns.
         """
+        import json
+
         import pyarrow as pa
 
         self._run_pre_execute_hooks(expr)
@@ -93,6 +95,34 @@ class Backend(
         with self.begin() as cursor:
             cursor.execute(sql)
             df = self._fetch_from_cursor(cursor, schema)
+
+        # Handle JSON columns for PyArrow compatibility
+        # PyArrow expects JSON data as strings, but our converter returns parsed objects
+        import ibis.expr.datatypes as dt
+
+        for col_name, col_type in schema.items():
+            if isinstance(col_type, dt.JSON) and col_name in df.columns:
+                # Convert JSON objects back to JSON strings for PyArrow
+                def json_to_string(val):
+                    if val is None:
+                        # For JSON columns, None should become 'null' JSON string
+                        # But we need to distinguish between JSON null and SQL NULL
+                        # JSON null should be 'null', SQL NULL should remain None
+                        # Since our converter already parsed JSON, None here means JSON null
+                        return "null"
+                    elif isinstance(val, str):
+                        # Already a string, ensure it's valid JSON
+                        try:
+                            # Parse and re-serialize to ensure consistent formatting
+                            return json.dumps(json.loads(val))
+                        except (json.JSONDecodeError, ValueError):
+                            # Not valid JSON, return as string
+                            return json.dumps(val)
+                    else:
+                        # Convert Python object to JSON string
+                        return json.dumps(val)
+
+                df[col_name] = df[col_name].map(json_to_string)
 
         # Convert to PyArrow table with proper type conversion
         table = pa.Table.from_pandas(
@@ -450,9 +480,11 @@ class Backend(
         else:
             query = None
 
-        if overwrite:
+        if overwrite and not temp:
+            # For non-temporary tables, use the rename strategy
             temp_name = util.gen_name(f"{self.name}_table")
         else:
+            # For temporary tables or non-overwrite, use the target name directly
             temp_name = name
 
         if not schema:
@@ -461,7 +493,9 @@ class Backend(
         quoted = self.compiler.quoted
         dialect = self.dialect
 
-        table_expr = sg.table(temp_name, catalog=database, quoted=quoted)
+        # For temporary tables, don't include the database prefix as it's not allowed
+        table_database = database if not temp else None
+        table_expr = sg.table(temp_name, catalog=table_database, quoted=quoted)
         target = sge.Schema(
             this=table_expr, expressions=schema.to_sqlglot_column_defs(dialect)
         )
@@ -470,15 +504,30 @@ class Backend(
             kind="TABLE", this=target, properties=sge.Properties(expressions=properties)
         )
 
-        this = sg.table(name, catalog=database, quoted=quoted)
+        this = sg.table(name, catalog=table_database, quoted=quoted)
+
         # Convert SQLGlot object to SQL string before execution
         with self.begin() as cur:
+            if overwrite and temp:
+                # For temporary tables with overwrite, drop the existing table first
+                try:
+                    cur.execute(
+                        sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect)
+                    )
+                except Exception:
+                    # Ignore errors if table doesn't exist
+                    pass
+
             cur.execute(create_stmt.sql(dialect))
             if query is not None:
                 cur.execute(sge.Insert(this=table_expr, expression=query).sql(dialect))
 
-            if overwrite:
-                cur.execute(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
+            if overwrite and not temp:
+                # Only use rename strategy for non-temporary tables
+                final_this = sg.table(name, catalog=database, quoted=quoted)
+                cur.execute(
+                    sge.Drop(kind="TABLE", this=final_this, exists=True).sql(dialect)
+                )
                 # Use ALTER TABLE ... RENAME TO syntax supported by SingleStoreDB
                 # Extract just the table name (removing catalog/database prefixes and quotes)
                 temp_table_name = temp_name
@@ -494,11 +543,14 @@ class Backend(
                 cur.execute(rename_sql)
 
         if schema is None:
-            return self.table(name, database=database)
+            return self.table(name, database=database if not temp else None)
 
         # preserve the input schema if it was provided
         return ops.DatabaseTable(
-            name, schema=schema, source=self, namespace=ops.Namespace(database=database)
+            name,
+            schema=schema,
+            source=self,
+            namespace=ops.Namespace(database=database if not temp else None),
         ).to_expr()
 
     def drop_table(
@@ -583,6 +635,24 @@ class Backend(
     def _safe_raw_sql(self, *args, **kwargs):
         with self.raw_sql(*args, **kwargs) as result:
             yield result
+
+    def _get_table_schema_from_describe(self, table_name: str) -> sch.Schema:
+        """Get table schema using DESCRIBE and backend-specific type parsing."""
+        from ibis.backends.singlestoredb.datatypes import SingleStoreDBType
+
+        with self._safe_raw_sql(f"DESCRIBE {table_name}") as cur:
+            rows = cur.fetchall()
+
+        # Use backend-specific type parsing instead of generic ibis.dtype()
+        types = []
+        names = []
+        for name, typ, *_ in rows:
+            names.append(name)
+            # Use SingleStoreDB-specific type parsing
+            parsed_type = SingleStoreDBType.from_string(typ)
+            types.append(parsed_type)
+
+        return sch.Schema(dict(zip(names, types)))
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):

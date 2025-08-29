@@ -478,3 +478,28 @@ class SingleStoreDBType(SqlglotType):
 
         # Fall back to parent implementation for standard types
         return super().from_ibis(dtype)
+
+    @classmethod
+    def from_string(cls, type_string, nullable=True):
+        """Convert type string to Ibis type.
+
+        Handles SingleStoreDB-specific type names and aliases.
+        """
+        # Handle SingleStoreDB's datetime type - map to timestamp
+        if type_string.lower().startswith("datetime"):
+            # Extract scale parameter if present
+            if "(" in type_string and ")" in type_string:
+                # datetime(6) -> extract the 6
+                scale_part = type_string[
+                    type_string.find("(") + 1 : type_string.find(")")
+                ].strip()
+                try:
+                    scale = int(scale_part)
+                    return dt.Timestamp(scale=scale, nullable=nullable)
+                except ValueError:
+                    # Invalid scale, use default
+                    pass
+            return dt.Timestamp(nullable=nullable)
+
+        # Fall back to parent implementation for other types
+        return super().from_string(type_string, nullable=nullable)
