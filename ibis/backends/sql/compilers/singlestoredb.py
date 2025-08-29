@@ -592,10 +592,8 @@ class SingleStoreDBCompiler(MySQLCompiler):
         substr = sge.Cast(this=substr, to=sge.DataType(this=sge.DataType.Type.BINARY))
 
         if start is not None:
-            # LOCATE returns 1-based position, but base class subtracts 1 automatically
-            # So we return the raw LOCATE result and let base class handle conversion
-            return sge.Anonymous(this="LOCATE", expressions=[substr, arg, start + 1])
-        return sge.Anonymous(this="LOCATE", expressions=[substr, arg])
+            return self.f.locate(substr, arg, start + 1)
+        return self.f.locate(substr, arg)
 
     def _convert_perl_to_posix_regex(self, pattern):
         """Convert Perl-style regex patterns to POSIX patterns for SingleStoreDB.
