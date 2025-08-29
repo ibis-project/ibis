@@ -787,6 +787,7 @@ def test_insert_from_memtable(con, temp_table):
         "exasol",
         "impala",
         "mysql",
+        "singlestoredb",
         "oracle",
         "polars",
         "flink",
@@ -1075,6 +1076,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "trino",
                         "databricks",
                         "athena",
+                        "singlestoredb",
                     ]
                 )
             ],
@@ -1106,6 +1108,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "trino",
                         "databricks",
                         "athena",
+                        "singlestoredb",
                     ],
                     raises=com.UnsupportedOperationError,
                     reason="we don't materialize datasets to avoid perf footguns",
@@ -1448,6 +1451,7 @@ def test_set_backend_url(url, monkeypatch):
         "pyspark",
         "sqlite",
         "databricks",
+        "singlestoredb",
     ],
     reason="backend doesn't support timestamp with scale parameter",
 )
