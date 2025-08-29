@@ -61,6 +61,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
         ops.Hash,  # Hash function not available
         ops.First,  # First aggregate not supported
         ops.Last,  # Last aggregate not supported
+        ops.CumeDist,  # CumeDist window function not supported in SingleStoreDB
         # ops.FindInSet removed - SingleStoreDB supports FIND_IN_SET function
         # Array operations - SingleStoreDB doesn't support arrays natively
         ops.ArrayStringJoin,  # No native array-to-string function

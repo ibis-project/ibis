@@ -145,7 +145,8 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="cume_dist",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse", "exasol"], raises=com.OperationNotDefinedError
+                    ["clickhouse", "exasol", "singlestoredb"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -791,7 +792,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             id="unordered-lag",
             marks=[
                 pytest.mark.notimpl(
-                    ["trino", "exasol", "athena"],
+                    ["trino", "exasol", "athena", "singlestoredb"],
                     reason="this isn't actually broken: the backend result is equal up to ordering",
                     raises=AssertionError,
                     strict=False,  # sometimes it passes
@@ -832,9 +833,9 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             id="unordered-lead",
             marks=[
                 pytest.mark.notimpl(
-                    ["trino", "athena"],
+                    ["trino", "athena", "singlestoredb"],
                     reason=(
-                        "this isn't actually broken: the trino backend "
+                        "this isn't actually broken: the backend "
                         "result is equal up to ordering"
                     ),
                     raises=AssertionError,
