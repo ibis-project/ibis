@@ -541,6 +541,14 @@ class Backend(
                 f"got null typed columns: {null_columns}"
             )
 
+        # Check for unsupported complex types
+        for field_name, field_type in schema.items():
+            if field_type.is_array() or field_type.is_struct() or field_type.is_map():
+                raise com.UnsupportedBackendType(
+                    f"SingleStoreDB does not support complex types like arrays, structs, or maps. "
+                    f"Column '{field_name}' has type '{field_type}'"
+                )
+
         name = op.name
         quoted = self.compiler.quoted
         dialect = self.dialect
