@@ -64,7 +64,7 @@ def test_uuid_literal(con, backend, value):
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.never(
-    ["mysql", "singlestoredb"],
+    ["mysql"],
     raises=AssertionError,
     reason="MySQL generates version 1 UUIDs",
 )
