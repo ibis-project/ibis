@@ -399,6 +399,74 @@ class TestSingleStoreDBCompiler:
         result = compiler._minimize_spec(non_rank_op, spec)
         assert result == spec
 
+    def test_visit_sum_boolean_uses_if(self, compiler):
+        """Test that SUM with boolean argument uses IF instead of CAST."""
+        import sqlglot.expressions as sge
+
+        import ibis.expr.datatypes as dt
+
+        class MockSumOp:
+            def __init__(self):
+                self.arg = type("MockArg", (), {"dtype": dt.Boolean()})()
+                self.dtype = dt.Int64()
+
+        op = MockSumOp()
+        arg = sge.Column(this="bool_col")
+        where = None
+
+        result = compiler.visit_Sum(op, arg=arg, where=where)
+
+        # Should generate SUM(IF(bool_col, 1, 0))
+        assert isinstance(result, sge.Sum)
+        # The argument to SUM should be an IF expression
+        sum_arg = result.this
+        assert isinstance(sum_arg, sge.If)
+
+    def test_visit_mean_boolean_uses_if(self, compiler):
+        """Test that MEAN with boolean argument uses IF instead of CAST."""
+        import sqlglot.expressions as sge
+
+        import ibis.expr.datatypes as dt
+
+        class MockMeanOp:
+            def __init__(self):
+                self.arg = type("MockArg", (), {"dtype": dt.Boolean()})()
+                self.dtype = dt.Float64()
+
+        op = MockMeanOp()
+        arg = sge.Column(this="bool_col")
+        where = None
+
+        result = compiler.visit_Mean(op, arg=arg, where=where)
+
+        # Should generate AVG(IF(bool_col, 1, 0))
+        assert isinstance(result, sge.Avg)
+        # The argument to AVG should be an IF expression
+        avg_arg = result.this
+        assert isinstance(avg_arg, sge.If)
+
+    def test_visit_count_star_with_where_uses_if(self, compiler):
+        """Test that COUNT(*) with where clause uses IF instead of CAST."""
+        import sqlglot.expressions as sge
+
+        import ibis.expr.datatypes as dt
+
+        class MockCountStarOp:
+            def __init__(self):
+                self.dtype = dt.Int64()
+
+        op = MockCountStarOp()
+        arg = None  # COUNT(*) doesn't use arg
+        where = sge.Column(this="bool_col")
+
+        result = compiler.visit_CountStar(op, arg=arg, where=where)
+
+        # Should generate SUM(IF(where, 1, 0))
+        assert isinstance(result, sge.Sum)
+        # The argument to SUM should be an IF expression
+        sum_arg = result.this
+        assert isinstance(sum_arg, sge.If)
+
 
 class TestSingleStoreDBCompilerIntegration:
     """Integration tests for the SingleStoreDB compiler."""
