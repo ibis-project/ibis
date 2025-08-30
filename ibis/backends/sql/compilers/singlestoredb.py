@@ -544,6 +544,28 @@ class SingleStoreDBCompiler(MySQLCompiler):
         sign_func = sge.Anonymous(this="SIGN", expressions=[arg])
         return self.cast(sign_func, dt.Float64())
 
+    def visit_Sum(self, op, *, arg, where):
+        """Handle SUM operations with boolean arguments to avoid cast syntax issues."""
+        if op.arg.dtype.is_boolean():
+            # Use IF(condition, 1, 0) instead of CAST to avoid :> operator issues
+            arg = self.if_(arg, 1, 0)
+        return self.agg.sum(arg, where=where)
+
+    def visit_Mean(self, op, *, arg, where):
+        """Handle MEAN operations with boolean arguments to avoid cast syntax issues."""
+        if op.arg.dtype.is_boolean():
+            # Use IF(condition, 1, 0) instead of CAST to avoid :> operator issues
+            arg = self.if_(arg, 1, 0)
+        return self.agg.avg(arg, where=where)
+
+    def visit_CountStar(self, op, *, arg, where):
+        """Handle COUNT(*) operations with where clause to avoid cast syntax issues."""
+        if where is not None:
+            # Use SUM(IF(where, 1, 0)) instead of SUM(CAST(where, op.dtype))
+            # to avoid :> operator issues
+            return self.f.sum(self.if_(where, 1, 0))
+        return self.f.count(STAR)
+
     def visit_Equals(self, op, *, left, right):
         """Override MySQL's binary comparison for string equality.
 
