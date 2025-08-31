@@ -408,6 +408,40 @@ def test_create_table_with_options(con):
         con.drop_table(name)
 
 
+def test_create_table_with_partition_by_range_expr(con):
+    name = gen_name("bigquery_temp_table")
+    schema = ibis.schema(dict(abc="int64"))
+    t = con.create_table(
+        name,
+        schema=schema,
+        overwrite=True,
+        partition_by="RANGE_BUCKET(abc, GENERATE_ARRAY(0, 64))",
+    )
+    try:
+        table = t.execute()
+        assert table.empty
+        assert list(table.columns) == ["abc"]
+    finally:
+        con.drop_table(name)
+
+
+def test_create_table_with_partition_by_time_expr(con):
+    name = gen_name("bigquery_temp_table")
+    schema = ibis.schema(dict(abc="timestamp"))
+    t = con.create_table(
+        name,
+        schema=schema,
+        overwrite=True,
+        partition_by="TIMESTAMP_TRUNC(abc, HOUR)",
+    )
+    try:
+        table = t.execute()
+        assert table.empty
+        assert list(table.columns) == ["abc"]
+    finally:
+        con.drop_table(name)
+
+
 def test_create_temp_table_from_scratch(project_id, dataset_id):
     con = ibis.bigquery.connect(project_id=project_id, dataset_id=dataset_id)
     name = gen_name("bigquery_temp_table")
