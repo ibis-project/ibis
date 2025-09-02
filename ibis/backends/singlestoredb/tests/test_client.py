@@ -247,6 +247,53 @@ def test_invalid_port():
         ibis.connect(url)
 
 
+def test_url_query_parameters():
+    """Test that query parameters from URL are passed to do_connect."""
+    from urllib.parse import ParseResult
+
+    from ibis.backends.singlestoredb import Backend
+
+    # Create a mock URL with query parameters
+    url = ParseResult(
+        scheme="singlestoredb",
+        netloc=f"{SINGLESTOREDB_USER}:{SINGLESTOREDB_PASS}@{SINGLESTOREDB_HOST}:3306",
+        path=f"/{IBIS_TEST_SINGLESTOREDB_DB}",
+        params="",
+        query="local_infile=1&ssl_disabled=1&autocommit=0",
+        fragment="",
+    )
+
+    # Mock the do_connect method to capture parameters
+    original_do_connect = Backend.do_connect
+    captured_kwargs = {}
+
+    def mock_do_connect(_self, *_args, **kwargs):
+        captured_kwargs.update(kwargs)
+        # Don't actually connect, just capture the parameters
+
+    Backend.do_connect = mock_do_connect
+
+    try:
+        Backend._from_url(url)
+
+        # Verify query parameters were passed
+        assert "local_infile" in captured_kwargs
+        assert captured_kwargs["local_infile"] == "1"
+        assert "ssl_disabled" in captured_kwargs
+        assert captured_kwargs["ssl_disabled"] == "1"
+        assert "autocommit" in captured_kwargs
+        assert captured_kwargs["autocommit"] == "0"
+
+        # Verify standard parameters are also present
+        assert captured_kwargs["host"] == SINGLESTOREDB_HOST
+        assert captured_kwargs["user"] == SINGLESTOREDB_USER
+        assert captured_kwargs["database"] == IBIS_TEST_SINGLESTOREDB_DB
+
+    finally:
+        # Restore original method
+        Backend.do_connect = original_do_connect
+
+
 def test_create_database_exists(con):
     con.create_database(dbname := gen_name("dbname"))
 

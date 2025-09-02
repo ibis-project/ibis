@@ -262,8 +262,22 @@ class SingleStoreDBPandasData(PandasData):
             253: "VAR_STRING",
             254: "STRING",
             255: "GEOMETRY",
+            # SingleStoreDB-specific types
+            1001: "BSON",
+            # Vector JSON types
+            2001: "FLOAT32_VECTOR_JSON",
+            2002: "FLOAT64_VECTOR_JSON",
+            2003: "INT8_VECTOR_JSON",
+            2004: "INT16_VECTOR_JSON",
+            2005: "INT32_VECTOR_JSON",
+            2006: "INT64_VECTOR_JSON",
+            # Vector binary types
             3001: "FLOAT32_VECTOR",
             3002: "FLOAT64_VECTOR",
+            3003: "INT8_VECTOR",
+            3004: "INT16_VECTOR",
+            3005: "INT32_VECTOR",
+            3006: "INT64_VECTOR",
         }
 
         return type_code_map.get(type_code, "UNKNOWN")
@@ -319,9 +333,22 @@ class SingleStoreDBPandasData(PandasData):
         # SingleStoreDB-specific mappings
         singlestore_specific = {
             "VECTOR": dt.binary,
+            "BSON": dt.JSON,
+            "GEOGRAPHY": dt.geometry,
+            # Vector binary types
             "FLOAT32_VECTOR": dt.binary,
             "FLOAT64_VECTOR": dt.binary,
-            "GEOGRAPHY": dt.geometry,
+            "INT8_VECTOR": dt.binary,
+            "INT16_VECTOR": dt.binary,
+            "INT32_VECTOR": dt.binary,
+            "INT64_VECTOR": dt.binary,
+            # Vector JSON types
+            "FLOAT32_VECTOR_JSON": dt.JSON,
+            "FLOAT64_VECTOR_JSON": dt.JSON,
+            "INT8_VECTOR_JSON": dt.JSON,
+            "INT16_VECTOR_JSON": dt.JSON,
+            "INT32_VECTOR_JSON": dt.JSON,
+            "INT64_VECTOR_JSON": dt.JSON,
         }
 
         ibis_type = singlestore_specific.get(normalized_name)

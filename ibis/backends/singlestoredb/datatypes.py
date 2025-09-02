@@ -93,8 +93,24 @@ except ImportError:
         253: "VAR_STRING",
         254: "STRING",
         255: "GEOMETRY",
-        # SingleStoreDB-specific type codes (hypothetical values)
-        256: "VECTOR",  # Vector type for ML/AI workloads
+        # SingleStoreDB-specific type codes
+        1001: "BSON",
+        # Vector JSON types
+        2001: "FLOAT32_VECTOR_JSON",
+        2002: "FLOAT64_VECTOR_JSON",
+        2003: "INT8_VECTOR_JSON",
+        2004: "INT16_VECTOR_JSON",
+        2005: "INT32_VECTOR_JSON",
+        2006: "INT64_VECTOR_JSON",
+        # Vector binary types
+        3001: "FLOAT32_VECTOR",
+        3002: "FLOAT64_VECTOR",
+        3003: "INT8_VECTOR",
+        3004: "INT16_VECTOR",
+        3005: "INT32_VECTOR",
+        3006: "INT64_VECTOR",
+        # Legacy fallback types
+        256: "VECTOR",  # General vector type
         257: "GEOGRAPHY",  # Extended geospatial support
     }
 
@@ -254,8 +270,22 @@ _type_mapping = {
     # Collection types
     "SET": partial(dt.Array, dt.String),
     # SingleStoreDB-specific types
-    # VECTOR type for machine learning and AI workloads
-    "VECTOR": dt.Binary,  # Map to Binary for now, could be Array[Float32] in future
+    "BSON": dt.JSON,
+    # Vector types for machine learning and AI workloads
+    "VECTOR": dt.Binary,  # General vector type
+    "FLOAT32_VECTOR": dt.Binary,
+    "FLOAT64_VECTOR": dt.Binary,
+    "INT8_VECTOR": dt.Binary,
+    "INT16_VECTOR": dt.Binary,
+    "INT32_VECTOR": dt.Binary,
+    "INT64_VECTOR": dt.Binary,
+    # Vector JSON types (stored as JSON with vector semantics)
+    "FLOAT32_VECTOR_JSON": dt.JSON,
+    "FLOAT64_VECTOR_JSON": dt.JSON,
+    "INT8_VECTOR_JSON": dt.JSON,
+    "INT16_VECTOR_JSON": dt.JSON,
+    "INT32_VECTOR_JSON": dt.JSON,
+    "INT64_VECTOR_JSON": dt.JSON,
     # Extended types (SingleStoreDB-specific extensions)
     "GEOGRAPHY": dt.Geometry,  # Enhanced geospatial support
 }
@@ -289,9 +319,7 @@ class SingleStoreDBType(SqlglotType):
     _singlestore_type_mapping = {
         # Standard types (same as MySQL)
         **_type_mapping,
-        # SingleStoreDB-specific enhancements
-        "VECTOR": dt.Binary,  # Vector type for ML/AI (mapped to Binary for now)
-        "GEOGRAPHY": dt.Geometry,  # Enhanced geospatial support
+        # All vector and SingleStoreDB-specific types are already included in _type_mapping
     }
 
     @classmethod
