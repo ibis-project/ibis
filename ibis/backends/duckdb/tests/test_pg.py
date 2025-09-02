@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 import ibis
-from ibis.backends.postgres.tests.conftest import TestConf as PGTestConf
 
 if TYPE_CHECKING:
     from ibis.backends.duckdb import Backend as DuckdbBackend
@@ -21,6 +20,8 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture(scope="session")
 def pgcon(tmp_path_factory, data_dir, worker_id):
+    from ibis.backends.postgres.tests.conftest import TestConf as PGTestConf
+
     with PGTestConf.load_data(data_dir, tmp_path_factory, worker_id) as be:
         conn: PGBackend = be.connection
         yield conn
