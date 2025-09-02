@@ -75,6 +75,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.TimeFromHMS: "make_time",
         ops.GeoPoint: "st_point",
         ops.GeoAsText: "st_astext",
+        ops.GeoAsBinary: "st_aswkb",
         ops.GeoArea: "st_area",
         ops.GeoBuffer: "st_buffer",
         ops.GeoCentroid: "st_centroid",
@@ -106,33 +107,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.GeoY: "st_y",
         ops.RandomScalar: "random",
     }
-
-    def to_sqlglot(
-        self,
-        expr: ir.Expr,
-        *,
-        limit: str | None = None,
-        params: Mapping[ir.Expr, Any] | None = None,
-    ):
-        sql = super().to_sqlglot(expr, limit=limit, params=params)
-
-        table_expr = expr.as_table()
-        geocols = table_expr.schema().geospatial
-
-        if not geocols:
-            return sql
-
-        quoted = self.quoted
-        return sg.select(
-            sge.Star(
-                replace=[
-                    self.f.st_aswkb(sg.column(col, quoted=quoted)).as_(
-                        col, quoted=quoted
-                    )
-                    for col in geocols
-                ]
-            )
-        ).from_(sql.subquery())
 
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(
