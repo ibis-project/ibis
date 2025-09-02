@@ -1,5 +1,16 @@
-{ stdenv, lib, esbuild, fetchurl, dart-sass, makeWrapper, rWrapper, rPackages
-, autoPatchelfHook, libgcc, which, }:
+{
+  stdenv,
+  lib,
+  esbuild,
+  fetchurl,
+  dart-sass,
+  makeWrapper,
+  rWrapper,
+  rPackages,
+  autoPatchelfHook,
+  libgcc,
+  which,
+}:
 
 let
   platforms = rec {
@@ -10,36 +21,42 @@ let
 
   inherit (stdenv.hostPlatform) system;
   versionInfo = builtins.fromJSON (builtins.readFile ./version-info.json);
-in stdenv.mkDerivation rec {
+in
+stdenv.mkDerivation rec {
   pname = "quarto";
   inherit (versionInfo) version;
   src = fetchurl {
-    url =
-      "https://github.com/quarto-dev/quarto-cli/releases/download/v${version}/quarto-${version}-${
-        platforms.${system}
-      }.tar.gz";
+    url = "https://github.com/quarto-dev/quarto-cli/releases/download/v${version}/quarto-${version}-${platforms.${system}}.tar.gz";
     sha256 = versionInfo.hashes.${system};
   };
 
   preUnpack = lib.optionalString stdenv.isDarwin "mkdir ${sourceRoot}";
   sourceRoot = lib.optionalString stdenv.isDarwin "quarto-${version}";
-  unpackCmd = lib.optionalString stdenv.isDarwin
-    "tar xzf $curSrc --directory=$sourceRoot";
+  unpackCmd = lib.optionalString stdenv.isDarwin "tar xzf $curSrc --directory=$sourceRoot";
 
-  nativeBuildInputs = lib.optionals stdenv.isLinux [ autoPatchelfHook ]
-    ++ [ makeWrapper libgcc ];
+  nativeBuildInputs = lib.optionals stdenv.isLinux [ autoPatchelfHook ] ++ [
+    makeWrapper
+    libgcc
+  ];
 
-  preFixup = let
-    rEnv = rWrapper.override {
-      packages = with rPackages; [ dplyr reticulate rmarkdown tidyr ];
-    };
-  in ''
-    wrapProgram $out/bin/quarto \
-      --prefix QUARTO_ESBUILD : ${lib.getExe esbuild} \
-      --prefix QUARTO_R : ${lib.getExe' rEnv "R"} \
-      --prefix QUARTO_DART_SASS : ${lib.getExe dart-sass} \
-      --prefix PATH : ${lib.makeBinPath [ which ]}
-  '';
+  preFixup =
+    let
+      rEnv = rWrapper.override {
+        packages = with rPackages; [
+          dplyr
+          reticulate
+          rmarkdown
+          tidyr
+        ];
+      };
+    in
+    ''
+      wrapProgram $out/bin/quarto \
+        --prefix QUARTO_ESBUILD : ${lib.getExe esbuild} \
+        --prefix QUARTO_R : ${lib.getExe' rEnv "R"} \
+        --prefix QUARTO_DART_SASS : ${lib.getExe dart-sass} \
+        --prefix PATH : ${lib.makeBinPath [ which ]}
+    '';
 
   installPhase = ''
     runHook preInstall
@@ -53,17 +70,18 @@ in stdenv.mkDerivation rec {
   '';
 
   meta = with lib; {
-    description =
-      "Open-source scientific and technical publishing system built on Pandoc";
+    description = "Open-source scientific and technical publishing system built on Pandoc";
     longDescription = ''
       Quarto is an open-source scientific and technical publishing system built on Pandoc.
       Quarto documents are authored using markdown, an easy to write plain text format.
     '';
     homepage = "https://quarto.org/";
-    changelog =
-      "https://github.com/quarto-dev/quarto-cli/releases/tag/v${version}";
+    changelog = "https://github.com/quarto-dev/quarto-cli/releases/tag/v${version}";
     license = licenses.gpl2Plus;
     platforms = builtins.attrNames platforms;
-    sourceProvenance = with sourceTypes; [ binaryNativeCode binaryBytecode ];
+    sourceProvenance = with sourceTypes; [
+      binaryNativeCode
+      binaryBytecode
+    ];
   };
 }
