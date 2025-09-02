@@ -19,6 +19,7 @@ from ibis.backends.tests.errors import (
     PyDruidProgrammingError,
     PyODBCProgrammingError,
     PySparkPythonException,
+    SingleStoreDBOperationalError,
     SnowflakeProgrammingError,
 )
 from ibis.conftest import IS_SPARK_REMOTE
@@ -1121,8 +1122,11 @@ def test_first_last(backend):
     ["impala"], raises=ImpalaHiveServer2Error, reason="not supported by Impala"
 )
 @pytest.mark.notyet(
-    ["mysql", "singlestoredb"],
-    raises=MySQLOperationalError,
+    ["mysql"], raises=MySQLOperationalError, reason="not supported by MySQL"
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=SingleStoreDBOperationalError,
     reason="not supported by MySQL",
 )
 @pytest.mark.notyet(
