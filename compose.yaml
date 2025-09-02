@@ -44,10 +44,6 @@ services:
     environment:
       ROOT_PASSWORD: ibis_testing
       SINGLESTORE_LICENSE: "" # Optional license key
-      MYSQL_DATABASE: ibis_testing
-      MYSQL_PASSWORD: ibis_testing
-      MYSQL_USER: root
-      MYSQL_PORT: 3307
       SINGLESTOREDB_DATABASE: ibis_testing
       SINGLESTOREDB_PASSWORD: ibis_testing
       SINGLESTOREDB_USER: root
@@ -57,13 +53,12 @@ services:
       retries: 20
       test:
         - CMD-SHELL
-        - mysqladmin
-        - ping
+        - sdb-admin query --host 127.0.0.1 --user root --password ibis_testing --port 3306 --sql 'select 1'
     image: ghcr.io/singlestore-labs/singlestoredb-dev:latest
     ports:
       - 3307:3306 # Use 3307 to avoid conflict with MySQL
+      - 9089:9000 # Data API (use 9089 to avoid conflicts)
       # - 9088:8080 # SingleStore Studio UI (use 9088 to avoid conflicts)
-      # - 9089:9000 # Data API (use 9089 to avoid conflicts)
     networks:
       - singlestoredb
     volumes:
