@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import datetime
+import zoneinfo
+
 import pytest
 
 import ibis
@@ -26,6 +29,21 @@ def test_scalar(con, template, expected_result):
     expr = ibis.sql_value(template)
     result = con.execute(expr)
     assert result == expected_result
+
+
+@pytest.mark.xfail(
+    reason="sqlglot hasn't implemented inferring the dtype from this complex expression"
+)
+def test_complex_timestamp():
+    # parse a UTC timestamp into alaska local time, eg "8/1/2024 21:44:00" into 2024-08-01 13:44:00 (8 hours before UTC).
+    con = ibis.duckdb.connect()
+    timestamp = ibis.timestamp("2024-08-01 21:44:00")  # noqa: F841
+    in_ak_time = ibis.sql_value(t("{timestamp} AT TIME ZONE 'America/Anchorage'"))
+    result = con.execute(in_ak_time)
+    expected = datetime.datetime(
+        2024, 8, 1, 13, 44, 0, tzinfo=zoneinfo.ZoneInfo("America/Anchorage")
+    )
+    assert result == expected
 
 
 @pytest.mark.notimpl(["polars"])
