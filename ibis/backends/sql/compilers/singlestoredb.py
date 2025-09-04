@@ -199,6 +199,16 @@ class SingleStoreDBCompiler(MySQLCompiler):
             raise com.UnsupportedOperationError(
                 "SingleStoreDB does not support NaN or infinity"
             )
+        elif dtype.is_interval():
+            # SingleStoreDB requires unquoted numeric values for intervals
+            # e.g., INTERVAL 1 SECOND instead of INTERVAL '1' SECOND
+            # Convert to numeric literal instead of string literal to avoid quotes
+            return sge.Interval(
+                this=sge.Literal.number(
+                    str(value)
+                ),  # Create numeric literal without quotes
+                unit=sge.Var(this=dtype.resolution.upper()),
+            )
         elif dtype.is_binary():
             return self.f.unhex(value.hex())
         elif dtype.is_date():
