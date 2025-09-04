@@ -37,6 +37,7 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkConnectGrpcException,
     SingleStoreDBOperationalError,
+    SingleStoreDBProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -1672,9 +1673,14 @@ INTERVAL_BACKEND_TYPES = {
     raises=ImpalaHiveServer2Error,
 )
 @pytest.mark.notimpl(
-    ["mysql", "singlestoredb"],
+    ["mysql"],
     "The backend implementation is broken. ",
     raises=MySQLProgrammingError,
+)
+@pytest.mark.notimpl(
+    ["singlestoredb"],
+    "The backend implementation is broken. ",
+    raises=SingleStoreDBProgrammingError,
 )
 @pytest.mark.notimpl(
     ["bigquery", "duckdb"],

@@ -37,6 +37,7 @@ keywords = [
   "sqlite",
   "impala",
   "postgresql",
+  "singlestoredb",
   "snowflake",
   "pandas",
   "pyspark",
