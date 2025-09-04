@@ -82,17 +82,35 @@ class TestSingleStoreDBDataTypes:
 
     def test_decimal_type_with_precision_and_scale(self):
         """Test DECIMAL type with precision and scale parameters."""
-        # Mock cursor info for DECIMAL type
+        # Mock cursor info for DECIMAL type with explicit precision and scale
         result = _type_from_cursor_info(
             flags=0,
             type_code=0,  # DECIMAL type code
             field_length=10,
             scale=2,
             multi_byte_maximum_length=1,
+            precision=10,  # Both protocols provide precision explicitly
         )
 
         assert isinstance(result, dt.Decimal)
-        assert result.precision == 8  # Calculated precision
+        assert result.precision == 10  # Direct precision from cursor
+        assert result.scale == 2
+        assert result.nullable is True
+
+    def test_decimal_type_with_http_protocol_precision(self):
+        """Test DECIMAL type with precision directly from HTTP protocol cursor."""
+        # Mock HTTP protocol cursor info for DECIMAL type - no field_length, but has precision
+        result = _type_from_cursor_info(
+            flags=0,
+            type_code=0,  # DECIMAL type code
+            field_length=None,  # HTTP protocol may not provide field_length
+            scale=2,
+            multi_byte_maximum_length=1,
+            precision=10,  # HTTP protocol provides precision directly
+        )
+
+        assert isinstance(result, dt.Decimal)
+        assert result.precision == 10  # Direct precision from HTTP protocol
         assert result.scale == 2
         assert result.nullable is True
 
@@ -228,6 +246,32 @@ class TestSingleStoreDBDataTypes:
             field_length=255,
             scale=0,
             multi_byte_maximum_length=1,
+        )
+        assert isinstance(string_result, dt.String)
+        assert string_result.length == 255
+
+    def test_charset_63_binary_detection(self):
+        """Test charset 63 detection for binary columns."""
+        # Test that charset 63 (binary charset) correctly identifies binary columns
+        # even without BINARY flag set
+        binary_result = _type_from_cursor_info(
+            flags=0,  # No BINARY flag
+            type_code=254,  # STRING type code
+            field_length=255,
+            scale=0,
+            multi_byte_maximum_length=1,
+            charset=63,  # Binary charset
+        )
+        assert isinstance(binary_result, dt.Binary)
+
+        # Test that non-binary charset results in String type
+        string_result = _type_from_cursor_info(
+            flags=0,  # No BINARY flag
+            type_code=254,  # STRING type code
+            field_length=255,
+            scale=0,
+            multi_byte_maximum_length=1,
+            charset=33,  # UTF8 charset (not binary)
         )
         assert isinstance(string_result, dt.String)
         assert string_result.length == 255

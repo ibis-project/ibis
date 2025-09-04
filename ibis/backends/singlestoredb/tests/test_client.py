@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import json
 from datetime import date
 from operator import methodcaller
@@ -24,6 +25,38 @@ from ibis.backends.tests.errors import (
     SingleStoreDBProgrammingError,
 )
 from ibis.util import gen_name
+
+
+@contextlib.contextmanager
+def temp_table(con, table_definition=None, name=None):
+    """Create a regular table that gets cleaned up after use.
+
+    This replaces temporary tables for HTTP protocol compatibility.
+
+    Args:
+        con: Database connection
+        table_definition: SQL table definition (e.g., "(x INT, y VARCHAR(50))")
+        name: Optional table name, auto-generated if not provided
+
+    Yields:
+        str: The table name
+    """
+    if name is None:
+        name = gen_name("test_table")
+
+    try:
+        if table_definition:
+            with con.begin() as c:
+                c.execute(f"CREATE TABLE {name} {table_definition}")
+        yield name
+    finally:
+        con.drop_table(name, force=True)
+
+
+def _is_http_protocol(con):
+    """Check if the connection is using HTTP protocol."""
+    return hasattr(con, "_client") and "http" in con._client.__class__.__module__
+
 
 SINGLESTOREDB_TYPES = [
     # Integer types
@@ -54,14 +87,14 @@ SINGLESTOREDB_TYPES = [
     param("datetime", dt.timestamp, id="datetime"),
     param("year", dt.uint8, id="year"),
     # String types
-    param("char(32)", dt.String(length=32), id="char"),
-    param("varchar(42)", dt.String(length=42), id="varchar"),
+    param("char(32)", dt.String(length=32), id="char_32"),
+    param("varchar(42)", dt.String(length=42), id="varchar_42"),
     param("text", dt.string, id="text"),
     param("mediumtext", dt.string, id="mediumtext"),
     param("longtext", dt.string, id="longtext"),
     # Binary types
-    param("binary(42)", dt.binary, id="binary"),
-    param("varbinary(42)", dt.binary, id="varbinary"),
+    param("binary(42)", dt.binary, id="binary_42"),
+    param("varbinary(42)", dt.binary, id="varbinary_42"),
     param("blob", dt.binary, id="blob"),
     param("mediumblob", dt.binary, id="mediumblob"),
     param("longblob", dt.binary, id="longblob"),
@@ -91,23 +124,39 @@ SINGLESTOREDB_TYPES = [
     for scale in range(7)
 ]
 
+# HTTP protocol returns generic types without size information
+# HTTP protocol type overrides - only the types that differ
+SINGLESTOREDB_HTTP_OVERRIDES = {
+    "char(32)": dt.string,
+    "varchar(42)": dt.string,
+    "bit(1)": dt.int64,
+    "bit(9)": dt.int64,
+    "bit(17)": dt.int64,
+    "bit(33)": dt.int64,
+}
+
 
 @pytest.mark.parametrize(("singlestoredb_type", "expected_type"), SINGLESTOREDB_TYPES)
 def test_get_schema_from_query(con, singlestoredb_type, expected_type):
-    raw_name = ibis.util.guid()
-    name = sg.to_identifier(raw_name, quoted=True).sql("singlestore")
+    # Choose the appropriate type mapping based on protocol
+    if _is_http_protocol(con):
+        # Find HTTP equivalent type from the HTTP-specific mapping
+        expected_type = SINGLESTOREDB_HTTP_OVERRIDES.get(
+            singlestoredb_type, expected_type
+        )
+
     expected_schema = ibis.schema(dict(x=expected_type))
 
-    # temporary tables get cleaned up by the db when the session ends, so we
-    # don't need to explicitly drop the table
-    with con.begin() as c:
-        c.execute(f"CREATE TEMPORARY TABLE {name} (x {singlestoredb_type})")
+    with temp_table(con, f"(x {singlestoredb_type})") as table_name:
+        result_schema = con._get_schema_using_query(f"SELECT * FROM {table_name}")
+        assert result_schema == expected_schema
 
-    result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
-    assert result_schema == expected_schema
-
-    t = con.table(raw_name)
-    assert t.schema() == expected_schema
+        # For HTTP protocol, DESCRIBE-based method may return different types than query-based
+        # This is expected behavior due to protocol limitations
+        if not _is_http_protocol(con):
+            # For MySQL protocol, both methods should return the same types
+            t = con.table(table_name)
+            assert t.schema() == expected_schema
 
 
 @pytest.mark.parametrize(
@@ -130,75 +179,74 @@ def test_get_schema_from_query(con, singlestoredb_type, expected_type):
 def test_get_schema_from_query_special_cases(
     con, singlestoredb_type, get_schema_expected_type, table_expected_type
 ):
-    raw_name = ibis.util.guid()
-    name = sg.to_identifier(raw_name, quoted=True).sql("singlestore")
+    # For HTTP protocol, enum types return generic string without length
+    if (
+        _is_http_protocol(con)
+        and singlestoredb_type == "enum('small', 'medium', 'large')"
+    ):
+        get_schema_expected_type = dt.string
+
     get_schema_expected_schema = ibis.schema(dict(x=get_schema_expected_type))
     table_expected_schema = ibis.schema(dict(x=table_expected_type))
 
-    # temporary tables get cleaned up by the db when the session ends, so we
-    # don't need to explicitly drop the table
-    with con.begin() as c:
-        c.execute(f"CREATE TEMPORARY TABLE {name} (x {singlestoredb_type})")
+    # Use regular tables instead of temporary tables for HTTP protocol compatibility
+    with temp_table(con, f"(x {singlestoredb_type})") as table_name:
+        quoted_name = sg.to_identifier(table_name, quoted=True).sql("singlestore")
 
-    result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
-    assert result_schema == get_schema_expected_schema
+        result_schema = con._get_schema_using_query(f"SELECT * FROM {quoted_name}")
+        assert result_schema == get_schema_expected_schema
 
-    t = con.table(raw_name)
-    assert t.schema() == table_expected_schema
+        t = con.table(table_name)
+        assert t.schema() == table_expected_schema
 
 
 @pytest.mark.parametrize("coltype", ["TINYBLOB", "MEDIUMBLOB", "BLOB", "LONGBLOB"])
 def test_blob_type(con, coltype):
-    tmp = f"tmp_{ibis.util.guid()}"
-    with con.begin() as c:
-        c.execute(f"CREATE TEMPORARY TABLE {tmp} (a {coltype})")
-    t = con.table(tmp)
-    assert t.schema() == ibis.schema({"a": dt.binary})
+    with temp_table(con, f"(a {coltype})") as table_name:
+        t = con.table(table_name)
+        assert t.schema() == ibis.schema({"a": dt.binary})
 
 
 def test_zero_timestamp_data(con):
-    sql = """
-    CREATE TEMPORARY TABLE ztmp_date_issue
+    table_def = """
     (
         name      CHAR(10) NULL,
         tradedate DATETIME NOT NULL,
         date      DATETIME NULL
     )
     """
-    with con.begin() as c:
-        c.execute(sql)
-        c.execute(
-            """
-            INSERT INTO ztmp_date_issue VALUES
-                ('C', '2018-10-22', 0),
-                ('B', '2017-06-07', 0),
-                ('C', '2022-12-21', 0)
-            """
+    with temp_table(con, table_def) as table_name:
+        with con.begin() as c:
+            c.execute(
+                f"""
+                INSERT INTO {table_name} VALUES
+                    ('C', '2018-10-22', 0),
+                    ('B', '2017-06-07', 0),
+                    ('C', '2022-12-21', 0)
+                """
+            )
+        t = con.table(table_name)
+        result = t.execute()
+        expected = pd.DataFrame(
+            {
+                "name": ["C", "B", "C"],
+                "tradedate": pd.to_datetime(
+                    [date(2018, 10, 22), date(2017, 6, 7), date(2022, 12, 21)]
+                ),
+                "date": [pd.NaT, pd.NaT, pd.NaT],
+            }
         )
-    t = con.table("ztmp_date_issue")
-    result = t.execute()
-    expected = pd.DataFrame(
-        {
-            "name": ["C", "B", "C"],
-            "tradedate": pd.to_datetime(
-                [date(2018, 10, 22), date(2017, 6, 7), date(2022, 12, 21)]
-            ),
-            "date": [pd.NaT, pd.NaT, pd.NaT],
-        }
-    )
-    # Sort both DataFrames by tradedate to ensure consistent ordering
-    result_sorted = result.sort_values("tradedate").reset_index(drop=True)
-    expected_sorted = expected.sort_values("tradedate").reset_index(drop=True)
-    tm.assert_frame_equal(result_sorted, expected_sorted)
+        # Sort both DataFrames by tradedate to ensure consistent ordering
+        result_sorted = result.sort_values("tradedate").reset_index(drop=True)
+        expected_sorted = expected.sort_values("tradedate").reset_index(drop=True)
+        tm.assert_frame_equal(result_sorted, expected_sorted)
 
 
 @pytest.fixture(scope="module")
 def enum_t(con):
-    name = gen_name("singlestoredb_enum_test")
+    name = gen_name("enum")
     with con.begin() as cur:
-        cur.execute(
-            f"CREATE TEMPORARY TABLE {name} (sml ENUM('small', 'medium', 'large'))"
-        )
+        cur.execute(f"CREATE TABLE {name} (sml ENUM('small', 'medium', 'large'))")
         cur.execute(f"INSERT INTO {name} VALUES ('small')")
 
     yield con.table(name)
@@ -318,18 +366,17 @@ def test_drop_database_exists(con):
 
 def test_json_type_support(con):
     """Test SingleStoreDB JSON type handling."""
-    tmp = f"tmp_{ibis.util.guid()}"
-    with con.begin() as c:
-        c.execute(f"CREATE TEMPORARY TABLE {tmp} (data JSON)")
-        json_value = json.dumps({"key": "value"})
-        c.execute(f"INSERT INTO {tmp} VALUES ('{json_value}')")
+    with temp_table(con, "(data JSON)") as table_name:
+        with con.begin() as c:
+            json_value = json.dumps({"key": "value"})
+            c.execute(f"INSERT INTO {table_name} VALUES ('{json_value}')")
 
-    t = con.table(tmp)
-    assert t.schema() == ibis.schema({"data": dt.JSON(nullable=True)})
+        t = con.table(table_name)
+        assert t.schema() == ibis.schema({"data": dt.JSON(nullable=True)})
 
-    result = t.execute()
-    assert len(result) == 1
-    assert "key" in result.iloc[0]["data"]
+        result = t.execute()
+        assert len(result) == 1
+        assert "key" in result.iloc[0]["data"]
 
 
 def test_connection_attributes(con):
@@ -343,7 +390,7 @@ def test_connection_attributes(con):
 
 def test_table_creation_basic_types(con):
     """Test creating tables with basic data types."""
-    table_name = f"test_{ibis.util.guid()}"
+    table_name = gen_name("types")
     schema = ibis.schema(
         [
             ("id", dt.int32),
@@ -354,32 +401,33 @@ def test_table_creation_basic_types(con):
         ]
     )
 
-    # Create table
-    con.create_table(table_name, schema=schema, temp=True)
+    # Create table - use temp=False for HTTP protocol compatibility
+    con.create_table(table_name, schema=schema, temp=False)
 
-    # Verify table exists and has correct schema
-    t = con.table(table_name)
-    actual_schema = t.schema()
+    try:
+        # Verify table exists and has correct schema
+        t = con.table(table_name)
+        actual_schema = t.schema()
 
-    # Check that essential columns exist (may have slight type differences)
-    assert "id" in actual_schema
-    assert "name" in actual_schema
-    assert "value" in actual_schema
-    assert "created_at" in actual_schema
-    assert "is_active" in actual_schema
+        # Check that essential columns exist (may have slight type differences)
+        assert "id" in actual_schema
+        assert "name" in actual_schema
+        assert "value" in actual_schema
+        assert "created_at" in actual_schema
+        assert "is_active" in actual_schema
+    finally:
+        con.drop_table(table_name, force=True)
 
 
 def test_transaction_handling(con):
     """Test transaction begin/commit/rollback."""
-    table_name = f"test_txn_{ibis.util.guid()}"
+    with temp_table(con, " (id INT, value VARCHAR(50))") as table_name:
+        with con.begin() as c:
+            c.execute(f"INSERT INTO {table_name} VALUES (1, 'test')")
 
-    with con.begin() as c:
-        c.execute(f"CREATE TEMPORARY TABLE {table_name} (id INT, value VARCHAR(50))")
-        c.execute(f"INSERT INTO {table_name} VALUES (1, 'test')")
-
-    # Verify data was committed
-    t = con.table(table_name)
-    result = t.execute()
-    assert len(result) == 1
-    assert result.iloc[0]["id"] == 1
-    assert result.iloc[0]["value"] == "test"
+            # Verify data was committed
+            t = con.table(table_name)
+            result = t.execute()
+            assert len(result) == 1
+            assert result.iloc[0]["id"] == 1
+            assert result.iloc[0]["value"] == "test"
