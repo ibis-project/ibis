@@ -44,6 +44,8 @@ class Backend(
 ):
     name = "singlestoredb"
     supports_create_or_replace = True
+    # Note: Temporary tables work with MySQL protocol but may have issues with HTTP protocol
+    # Tests use regular tables with cleanup for HTTP protocol compatibility
     supports_temporary_tables = True
     compiler = compiler
 
@@ -133,6 +135,29 @@ class Backend(
     def con(self):
         """Return the database connection for compatibility with base class."""
         return self._client
+
+    def _get_autocommit(self, con) -> bool:
+        """Get autocommit state for both MySQL and HTTP connections.
+
+        Parameters
+        ----------
+        con
+            Connection object (MySQL or HTTP protocol)
+
+        Returns
+        -------
+        bool
+            Current autocommit state
+        """
+        if hasattr(con, "get_autocommit"):
+            # MySQL protocol
+            return con.get_autocommit()
+        elif hasattr(con, "_autocommit"):
+            # HTTP protocol
+            return con._autocommit
+        else:
+            # Default to True if we can't determine
+            return True
 
     @util.experimental
     @classmethod
@@ -776,7 +801,7 @@ class Backend(
             query = query.sql(dialect=self.dialect)
 
         con = self.con
-        autocommit = con.get_autocommit()
+        autocommit = self._get_autocommit(con)
 
         cursor = con.cursor()
 
@@ -804,37 +829,35 @@ class Backend(
         from ibis.backends.singlestoredb.converter import SingleStoreDBPandasData
         from ibis.backends.singlestoredb.datatypes import _type_from_cursor_info
 
-        # First try to wrap the query directly without parsing
-        # This avoids issues with sqlglot's SingleStore parser on complex queries
-        sql = f"SELECT * FROM ({query}) AS {util.gen_name('query_schema')} LIMIT 0"
+        # Generate a unique alias for the subquery
+        alias = util.gen_name("query_schema")
+
+        # First try to wrap the query directly
+        # This is the most reliable approach for SingleStoreDB
+        sql = f"SELECT * FROM ({query}) AS `{alias}` LIMIT 0"
 
         try:
             with self.begin() as cur:
                 cur.execute(sql)
                 description = cur.description
-        except Exception:
-            # Fallback to the original parsing approach if direct wrapping fails
+        except Exception as e:
+            # If the direct approach fails, try to parse and reconstruct the query
+            # This handles edge cases where the query might have syntax issues
             try:
-                # First try with SingleStore dialect
+                # Try parsing with SingleStore dialect first
                 parsed = sg.parse_one(query, dialect=self.dialect)
             except Exception:
                 try:
-                    # Fallback to MySQL dialect which SingleStore is based on
+                    # Fallback to MySQL dialect
                     parsed = sg.parse_one(query, dialect="mysql")
                 except Exception:
-                    # Last resort - use generic SQL dialect
-                    parsed = sg.parse_one(query, dialect="")
+                    # If all parsing fails, re-raise the original execution error
+                    raise e from None
 
-            # Use SQLGlot to properly construct the query
+            # Use SQLGlot to properly construct the wrapped query
             sql = (
                 sg.select(sge.Star())
-                .from_(
-                    parsed.subquery(
-                        sg.to_identifier(
-                            util.gen_name("query_schema"), quoted=self.compiler.quoted
-                        )
-                    )
-                )
+                .from_(parsed.subquery(sg.to_identifier(alias, quoted=True)))
                 .limit(0)
                 .sql(self.dialect)
             )
@@ -845,20 +868,27 @@ class Backend(
 
         names = []
         ibis_types = []
+
         for col_info in description:
             name = col_info[0]
             names.append(name)
 
             # Use the detailed cursor info for type conversion
-            if len(col_info) >= 7:
-                # Full cursor description available
+            if len(col_info) >= 6:
+                # Cursor description has precision and scale info (HTTP protocol support)
                 # SingleStoreDB uses 4-byte character encoding by default
                 ibis_type = _type_from_cursor_info(
                     flags=col_info[7] if len(col_info) > 7 else 0,
                     type_code=col_info[1],
-                    field_length=col_info[3],
-                    scale=col_info[5],
+                    field_length=col_info[3] if len(col_info) > 3 else None,
+                    scale=col_info[5] if len(col_info) > 5 else None,
                     multi_byte_maximum_length=4,  # Use 4 for SingleStoreDB's UTF8MB4 encoding
+                    precision=col_info[4]
+                    if len(col_info) > 4
+                    else None,  # HTTP protocol precision
+                    charset=col_info[8]
+                    if len(col_info) > 8
+                    else None,  # Binary charset detection
                 )
             else:
                 # Fallback for limited cursor info
