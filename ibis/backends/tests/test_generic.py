@@ -32,6 +32,7 @@ from ibis.backends.tests.errors import (
     PyDruidProgrammingError,
     PyODBCDataError,
     PyODBCProgrammingError,
+    SingleStoreDBProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -2147,8 +2148,13 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     ids=str,
 )
 @pytest.mark.notyet(
-    ["mysql", "singlestoredb"],
+    ["mysql"],
     raises=MySQLProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=SingleStoreDBProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(
@@ -2210,8 +2216,13 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 
 
 @pytest.mark.notyet(
-    ["mysql", "singlestoredb"],
+    ["mysql"],
     raises=MySQLProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=SingleStoreDBProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(
