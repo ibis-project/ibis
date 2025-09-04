@@ -144,12 +144,23 @@ except ImportError:
 
 
 def _type_from_cursor_info(
-    *, flags, type_code, field_length, scale, multi_byte_maximum_length
+    *,
+    flags,
+    type_code,
+    field_length,
+    scale,
+    multi_byte_maximum_length,
+    precision=None,
+    charset=None,
 ) -> dt.DataType:
     """Construct an ibis type from SingleStoreDB field metadata.
 
     SingleStoreDB uses the MySQL protocol, so this closely follows
     the MySQL implementation with SingleStoreDB-specific considerations.
+
+    Note: HTTP protocol provides limited metadata compared to MySQL protocol.
+    Some types (BIT, DECIMAL, VARCHAR with specific lengths) may have reduced
+    precision in schema detection when using HTTP protocol.
     """
     flags = _FieldFlags(flags)
     typename = _type_codes.get(type_code)
@@ -169,11 +180,25 @@ def _type_from_cursor_info(
         )
 
     if typename in ("DECIMAL", "NEWDECIMAL"):
-        precision = _decimal_length_to_precision(
-            length=field_length, scale=scale, is_unsigned=flags.is_unsigned
-        )
-        typ = partial(_type_mapping[typename], precision=precision, scale=scale)
+        # Both MySQL and HTTP protocols provide precision and scale explicitly in cursor description
+        if precision is not None and scale is not None:
+            typ = partial(_type_mapping[typename], precision=precision, scale=scale)
+        elif scale is not None:
+            typ = partial(_type_mapping[typename], scale=scale)
+        else:
+            typ = _type_mapping[typename]  # Generic Decimal without precision/scale
     elif typename == "BIT":
+        # HTTP protocol may not provide field_length or precision
+        # This is a known limitation - HTTP protocol lacks detailed type metadata
+        if field_length is None or field_length == 0:
+            if precision is not None and precision > 0:
+                # For BIT type, HTTP protocol may store bit length in precision
+                field_length = precision
+            else:
+                # HTTP protocol limitation: default to BIT(64) when no info available
+                # This may not match the actual column definition but is the best we can do
+                field_length = 64
+
         if field_length <= 8:
             typ = dt.int8
         elif field_length <= 16:
@@ -183,7 +208,7 @@ def _type_from_cursor_info(
         elif field_length <= 64:
             typ = dt.int64
         else:
-            raise AssertionError("invalid field length for BIT type")
+            raise AssertionError(f"invalid field length for BIT type: {field_length}")
     elif typename == "TINY" and field_length == 1:
         # TINYINT(1) is commonly used as BOOLEAN in MySQL/SingleStoreDB
         # Note: SingleStoreDB BOOLEAN columns show field_length=4 at cursor level,
@@ -198,22 +223,32 @@ def _type_from_cursor_info(
         # Sets are limited to strings in SingleStoreDB
         typ = dt.Array(dt.string)
     elif type_code in TEXT_TYPES:
-        if flags.is_binary:
+        # Check charset 63 (binary charset) to distinguish binary from text
+        # Both MySQL and HTTP protocols provide this info at cursor index 8
+        is_binary_type = flags.is_binary or (charset == 63)
+
+        if is_binary_type:
             typ = dt.Binary
         # For TEXT, MEDIUMTEXT, LONGTEXT (BLOB, MEDIUM_BLOB, LONG_BLOB)
         # don't include length as they are variable-length text types
         elif typename in ("BLOB", "MEDIUM_BLOB", "LONG_BLOB"):
             typ = dt.String  # No length parameter for unlimited text types
-        else:
-            # For VARCHAR, CHAR, etc. include the length
+        # For VARCHAR, CHAR, etc. include the length if available
+        elif field_length is not None:
             typ = partial(dt.String, length=field_length // multi_byte_maximum_length)
+        else:
+            # HTTP protocol: field_length is None, use String without length
+            # This is a known limitation of HTTP protocol
+            typ = dt.String
     elif flags.is_timestamp or typename == "TIMESTAMP":
         # SingleStoreDB timestamps - note timezone handling
         # SingleStoreDB stores timestamps in UTC by default in columnstore tables
         typ = partial(dt.Timestamp, timezone="UTC", scale=scale or None)
     elif typename == "DATETIME":
         # DATETIME doesn't have timezone info in SingleStoreDB
-        typ = partial(dt.Timestamp, scale=scale or None)
+        # HTTP protocol: use precision from col_info[4] when scale is None
+        datetime_scale = scale if scale is not None else precision
+        typ = partial(dt.Timestamp, scale=datetime_scale or None)
     elif typename == "JSON":
         # SingleStoreDB has enhanced JSON support with columnstore optimizations
         typ = dt.JSON
@@ -513,8 +548,12 @@ class SingleStoreDBType(SqlglotType):
 
         Handles SingleStoreDB-specific type names and aliases.
         """
+        import re
+
+        type_string = type_string.strip().upper()
+
         # Handle SingleStoreDB's datetime type - map to timestamp
-        if type_string.lower().startswith("datetime"):
+        if type_string.startswith("DATETIME"):
             # Extract scale parameter if present
             if "(" in type_string and ")" in type_string:
                 # datetime(6) -> extract the 6
@@ -528,6 +567,51 @@ class SingleStoreDBType(SqlglotType):
                     # Invalid scale, use default
                     pass
             return dt.Timestamp(nullable=nullable)
+
+        # Handle DECIMAL types with precision/scale
+        elif re.match(r"DECIMAL\(\d+(,\s*\d+)?\)", type_string):
+            match = re.match(r"DECIMAL\((\d+)(?:,\s*(\d+))?\)", type_string)
+            if match:
+                precision = int(match.group(1))
+                scale = int(match.group(2)) if match.group(2) else 0
+                return dt.Decimal(precision=precision, scale=scale, nullable=nullable)
+
+        # Handle BIT types with length
+        elif re.match(r"BIT\(\d+\)", type_string):
+            match = re.match(r"BIT\((\d+)\)", type_string)
+            if match:
+                bit_length = int(match.group(1))
+                if bit_length <= 8:
+                    return dt.Int8(nullable=nullable)
+                elif bit_length <= 16:
+                    return dt.Int16(nullable=nullable)
+                elif bit_length <= 32:
+                    return dt.Int32(nullable=nullable)
+                elif bit_length <= 64:
+                    return dt.Int64(nullable=nullable)
+
+        # Handle CHAR/VARCHAR with length
+        elif re.match(r"(CHAR|VARCHAR)\(\d+\)", type_string):
+            match = re.match(r"(?:CHAR|VARCHAR)\((\d+)\)", type_string)
+            if match:
+                length = int(match.group(1))
+                return dt.String(length=length, nullable=nullable)
+
+        # Handle binary blob types
+        elif type_string in ("BLOB", "MEDIUMBLOB", "LONGBLOB", "TINYBLOB"):
+            return dt.Binary(nullable=nullable)
+
+        # Handle binary types with length
+        elif re.match(r"(BINARY|VARBINARY)\(\d+\)", type_string):
+            return dt.Binary(nullable=nullable)
+
+        # Handle other SingleStoreDB types
+        elif type_string == "JSON":
+            return dt.JSON(nullable=nullable)
+        elif type_string == "GEOGRAPHY":
+            return dt.Geometry(nullable=nullable)
+        elif type_string == "BOOLEAN":
+            return dt.Boolean(nullable=nullable)
 
         # Fall back to parent implementation for other types
         return super().from_string(type_string, nullable=nullable)

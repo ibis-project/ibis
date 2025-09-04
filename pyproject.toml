@@ -467,6 +467,8 @@ filterwarnings = [
   "ignore:unclosed file <_io.BufferedReader.*pins.*>:ResourceWarning",
   # impala leaves sockets open
   "ignore:unclosed .*socket.*:ResourceWarning",
+  # singlestoredb HTTP protocol cannot set session timezone
+  "ignore:Unable to set session timezone to UTC:UserWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
@@ -497,6 +499,8 @@ markers = [
   "risingwave: RisingWave tests",
   "pyspark: PySpark tests",
   "singlestoredb: SingleStoreDB tests",
+  "singlestoredb_mysql: SingleStoreDB MySQL protocol tests",
+  "singlestoredb_http: SingleStoreDB HTTP protocol tests",
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",
   "trino: Trino tests",
