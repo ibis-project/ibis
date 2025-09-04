@@ -5,8 +5,6 @@ import json
 from datetime import date
 from operator import methodcaller
 
-import pandas as pd
-import pandas.testing as tm
 import pytest
 import sqlglot as sg
 from pytest import param
@@ -208,6 +206,9 @@ def test_blob_type(con, coltype):
 
 
 def test_zero_timestamp_data(con):
+    import pandas as pd
+    import pandas.testing as tm
+
     table_def = """
     (
         name      CHAR(10) NULL,
@@ -254,20 +255,24 @@ def enum_t(con):
 
 
 @pytest.mark.parametrize(
-    ("expr_fn", "expected"),
+    ("expr_fn", "expected_data"),
     [
-        (methodcaller("startswith", "s"), pd.Series([True], name="sml")),
-        (methodcaller("endswith", "m"), pd.Series([False], name="sml")),
-        (methodcaller("re_search", "mall"), pd.Series([True], name="sml")),
-        (methodcaller("lstrip"), pd.Series(["small"], name="sml")),
-        (methodcaller("rstrip"), pd.Series(["small"], name="sml")),
-        (methodcaller("strip"), pd.Series(["small"], name="sml")),
+        (methodcaller("startswith", "s"), [True]),
+        (methodcaller("endswith", "m"), [False]),
+        (methodcaller("re_search", "mall"), [True]),
+        (methodcaller("lstrip"), ["small"]),
+        (methodcaller("rstrip"), ["small"]),
+        (methodcaller("strip"), ["small"]),
     ],
     ids=["startswith", "endswith", "re_search", "lstrip", "rstrip", "strip"],
 )
-def test_enum_as_string(enum_t, expr_fn, expected):
+def test_enum_as_string(enum_t, expr_fn, expected_data):
+    import pandas as pd
+    import pandas.testing as tm
+
     expr = expr_fn(enum_t.sml).name("sml")
     res = expr.execute()
+    expected = pd.Series(expected_data, name="sml")
     tm.assert_series_equal(res, expected)
 
 

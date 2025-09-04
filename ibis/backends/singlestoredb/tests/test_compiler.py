@@ -22,7 +22,7 @@ class TestSingleStoreDBCompiler:
 
     def test_compiler_uses_singlestoredb_type_mapper(self, compiler):
         """Test that the compiler uses SingleStoreDB type mapper."""
-        from ibis.backends.singlestoredb.datatypes import SingleStoreDBType
+        from ibis.backends.sql.datatypes import SingleStoreDBType
 
         assert compiler.type_mapper == SingleStoreDBType
 
