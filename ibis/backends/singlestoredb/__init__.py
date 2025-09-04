@@ -757,7 +757,7 @@ class Backend(
 
     def _get_table_schema_from_describe(self, table_name: str) -> sch.Schema:
         """Get table schema using DESCRIBE and backend-specific type parsing."""
-        from ibis.backends.singlestoredb.datatypes import SingleStoreDBType
+        from ibis.backends.sql.datatypes import SingleStoreDBType
 
         with self._safe_raw_sql(f"DESCRIBE {table_name}") as cur:
             rows = cur.fetchall()
