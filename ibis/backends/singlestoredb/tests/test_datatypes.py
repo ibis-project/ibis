@@ -10,10 +10,10 @@ import pytest
 import ibis.expr.datatypes as dt
 from ibis.backends.singlestoredb.converter import SingleStoreDBPandasData
 from ibis.backends.singlestoredb.datatypes import (
-    SingleStoreDBType,
     _type_from_cursor_info,
     _type_mapping,
 )
+from ibis.backends.sql.datatypes import SingleStoreDBType
 
 
 class TestSingleStoreDBDataTypes:
@@ -279,16 +279,6 @@ class TestSingleStoreDBDataTypes:
 
 class TestSingleStoreDBTypeClass:
     """Test the SingleStoreDBType class."""
-
-    def test_singlestore_type_mapping_includes_all_types(self):
-        """Test that SingleStoreDBType includes all expected mappings."""
-        type_mapper = SingleStoreDBType()
-
-        # Should include all standard mappings plus SingleStoreDB-specific ones
-        expected_keys = set(_type_mapping.keys()) | {"VECTOR", "GEOGRAPHY"}
-        actual_keys = set(type_mapper._singlestore_type_mapping.keys())
-
-        assert expected_keys.issubset(actual_keys)
 
     def test_from_ibis_json_type(self):
         """Test conversion from Ibis JSON type to SingleStoreDB."""
