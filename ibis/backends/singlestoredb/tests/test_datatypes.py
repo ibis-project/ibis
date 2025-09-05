@@ -215,6 +215,48 @@ class TestSingleStoreDBDataTypes:
         assert isinstance(result, dt.Array)
         assert isinstance(result.value_type, dt.String)
 
+    def test_set_value_conversion(self):
+        """Test SET value conversion from comma-separated strings to arrays."""
+        import pandas as pd
+
+        import ibis.expr.datatypes as dt
+        from ibis.backends.singlestoredb.converter import SingleStoreDBPandasData
+
+        # Create test data as it would come from the database
+        set_data = pd.Series(
+            [
+                "apple,banana,cherry",  # Multiple items
+                "single",  # Single item
+                "",  # Empty set
+                "one,two,three",  # More items
+                None,  # NULL value
+            ]
+        )
+
+        # SET columns map to Array[String]
+        dtype = dt.Array(dt.String())
+
+        # Convert the data
+        converter = SingleStoreDBPandasData()
+        result = converter.convert_Array(set_data, dtype, None)
+
+        # Check the results
+        expected = [
+            ["apple", "banana", "cherry"],
+            ["single"],
+            [],
+            ["one", "two", "three"],
+            None,
+        ]
+
+        for i, (actual, expected_val) in enumerate(zip(result, expected)):
+            if expected_val is None:
+                assert actual is None, f"Index {i}: expected None, got {actual}"
+            else:
+                assert actual == expected_val, (
+                    f"Index {i}: expected {expected_val}, got {actual}"
+                )
+
     def test_unsigned_integer_mapping(self):
         """Test unsigned integer types are properly mapped."""
         result = _type_from_cursor_info(

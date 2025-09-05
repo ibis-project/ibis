@@ -57,7 +57,7 @@ class Backend(
 
         try:
             df = pd.DataFrame.from_records(
-                cursor, columns=schema.names, coerce_float=True
+                cursor, columns=schema.names, coerce_float=False
             )
         except Exception:
             # clean up the cursor if we fail to create the DataFrame
