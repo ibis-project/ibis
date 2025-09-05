@@ -206,6 +206,33 @@ class SingleStoreDBPandasData(PandasData):
         # For now, we preserve empty strings to fix JSON unwrap operations
         return super().convert_String(s, dtype, pandas_type)
 
+    @classmethod
+    def convert_Array(cls, s, dtype, pandas_type):
+        """Convert SingleStoreDB SET values to arrays.
+
+        SET columns in SingleStoreDB return comma-separated string values
+        that need to be split into arrays.
+        """
+
+        def convert_set(value):
+            if value is None:
+                return None
+
+            # Handle string values (typical for SET columns)
+            if isinstance(value, str):
+                if not value:  # Empty string
+                    return []
+                # Split on comma and strip whitespace
+                return [item.strip() for item in value.split(",") if item.strip()]
+
+            # If already a list/array, return as-is
+            if isinstance(value, (list, tuple)):
+                return list(value)
+
+            return value
+
+        return s.map(convert_set, na_action="ignore")
+
     def handle_null_value(self, value, dtype):
         """Handle various NULL representations."""
         import ibis.expr.datatypes as dt
