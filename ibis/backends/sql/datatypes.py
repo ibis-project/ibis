@@ -1520,6 +1520,8 @@ class SingleStoreDBType(MySQLType):
                 return dt.Geometry(nullable=nullable)
             elif type_name == "GEOMETRY":
                 return dt.Geometry(nullable=nullable)
+            elif type_name == "VECTOR":
+                return dt.Binary(nullable=nullable)
 
         # Fall back to parent implementation for standard types
         return super().to_ibis(typ, nullable=nullable)

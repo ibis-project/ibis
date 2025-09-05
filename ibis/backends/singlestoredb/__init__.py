@@ -1042,13 +1042,6 @@ def connect(
     local_infile : bool, default True
         Enable LOAD DATA LOCAL INFILE support
     kwargs
-        Additional connection parameters:
-        - local_infile: Enable LOCAL INFILE capability (default 0)
-        - charset: Character set (default utf8mb4)
-        - ssl_disabled: Disable SSL connection
-        - connect_timeout: Connection timeout in seconds
-        - read_timeout: Read timeout in seconds
-        - write_timeout: Write timeout in seconds
         See SingleStoreDB Python client documentation for more options.
 
     Returns
