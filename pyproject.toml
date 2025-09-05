@@ -208,6 +208,14 @@ pyspark = [
   "pandas>=1.5.3,<3",
   "rich>=12.4.4",
 ]
+singlestoredb = [
+  "singlestoredb>=1.0",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4",
+]
 snowflake = [
   "snowflake-connector-python>=3.0.2,!=3.3.0b1",
   "pyarrow>=10.0.1",
@@ -327,6 +335,7 @@ polars = "ibis.backends.polars"
 postgres = "ibis.backends.postgres"
 risingwave = "ibis.backends.risingwave"
 pyspark = "ibis.backends.pyspark"
+singlestoredb = "ibis.backends.singlestoredb"
 snowflake = "ibis.backends.snowflake"
 sqlite = "ibis.backends.sqlite"
 trino = "ibis.backends.trino"
@@ -455,6 +464,8 @@ filterwarnings = [
   "ignore:The 'shapely\\.geos' module is deprecated, and will be removed in a future version:DeprecationWarning",
   # snowflake vendors pyopenssl, because why not, and pyopenssl raises a warning on snowflake's use of it
   "ignore:Attempting to mutate a Context after a Connection was created\\. In the future, this will raise an exception:DeprecationWarning",
+  # singlestoredb HTTP protocol cannot set session timezone
+  "ignore:Unable to set session timezone to UTC:UserWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
@@ -484,6 +495,9 @@ markers = [
   "postgres: PostgreSQL tests",
   "risingwave: RisingWave tests",
   "pyspark: PySpark tests",
+  "singlestoredb: SingleStoreDB tests",
+  "singlestoredb_mysql: SingleStoreDB MySQL protocol tests",
+  "singlestoredb_http: SingleStoreDB HTTP protocol tests",
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",
   "trino: Trino tests",

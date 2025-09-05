@@ -657,6 +657,7 @@ def test_insert_from_memtable(con, temp_table):
         "exasol",
         "impala",
         "mysql",
+        "singlestoredb",
         "oracle",
         "polars",
         "flink",
@@ -677,6 +678,7 @@ def test_list_catalogs(con):
         "oracle": set(),
         "postgres": {"postgres", "ibis_testing"},
         "risingwave": {"dev"},
+        "singlestoredb": set(),  # SingleStoreDB doesn't support catalogs
         "snowflake": {"IBIS_TESTING"},
         "trino": {"memory"},
         "pyspark": {"spark_catalog"},
@@ -708,6 +710,7 @@ def test_list_database_contents(con):
         "postgres": {"public", "information_schema"},
         "pyspark": set(),
         "risingwave": {"public", "rw_catalog", "information_schema"},
+        "singlestoredb": {"ibis_testing", "information_schema"},
         "snowflake": {"IBIS_TESTING"},
         "sqlite": {"main"},
         "trino": {"default", "information_schema"},
@@ -767,6 +770,11 @@ def test_unsigned_integer_type(con, temp_table):
         param("datafusion://", marks=mark.datafusion, id="datafusion"),
         param("impala://localhost:21050/default", marks=mark.impala, id="impala"),
         param("mysql://ibis:ibis@localhost:3306", marks=mark.mysql, id="mysql"),
+        param(
+            "singlestoredb://root:ibis_testing@localhost:3307/ibis_testing",
+            marks=mark.singlestoredb,
+            id="singlestoredb",
+        ),
         param("polars://", marks=mark.polars, id="polars"),
         param(
             "postgres://postgres:postgres@localhost:5432",
@@ -938,6 +946,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "trino",
                         "databricks",
                         "athena",
+                        "singlestoredb",
                     ]
                 )
             ],
@@ -969,6 +978,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "trino",
                         "databricks",
                         "athena",
+                        "singlestoredb",
                     ],
                     raises=com.UnsupportedOperationError,
                     reason="we don't materialize datasets to avoid perf footguns",
@@ -1272,6 +1282,11 @@ def test_set_backend_name(name, monkeypatch):
             id="mysql",
         ),
         param(
+            "singlestoredb://root:ibis_testing@localhost:3307/ibis_testing",
+            marks=mark.singlestoredb,
+            id="singlestoredb",
+        ),
+        param(
             "postgres://postgres:postgres@localhost:5432",
             marks=mark.postgres,
             id="postgres",
@@ -1306,6 +1321,7 @@ def test_set_backend_url(url, monkeypatch):
         "pyspark",
         "sqlite",
         "databricks",
+        "singlestoredb",
     ],
     reason="backend doesn't support timestamp with scale parameter",
 )

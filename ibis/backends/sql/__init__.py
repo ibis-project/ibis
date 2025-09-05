@@ -450,7 +450,7 @@ class SQLBackend(BaseBackend):
             target=name, source=obj, db=db, catalog=catalog
         )
 
-        with self._safe_raw_sql(query):
+        with self._safe_raw_sql(query.sql(self.dialect)):
             pass
 
     def _build_insert_from_table(
@@ -584,10 +584,10 @@ class SQLBackend(BaseBackend):
     def _to_catalog_db_tuple(self, table_loc: sge.Table):
         if (sg_cat := table_loc.args["catalog"]) is not None:
             sg_cat.args["quoted"] = False
-            sg_cat = sg_cat.sql(self.name)
+            sg_cat = sg_cat.sql(self.dialect)
         if (sg_db := table_loc.args["db"]) is not None:
             sg_db.args["quoted"] = False
-            sg_db = sg_db.sql(self.name)
+            sg_db = sg_db.sql(self.dialect)
 
         return sg_cat, sg_db
 
