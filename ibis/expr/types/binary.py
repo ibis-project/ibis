@@ -7,12 +7,15 @@ if TYPE_CHECKING:
 
 from public import public
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.types.generic import Column, Scalar, Value
 
 
 @public
 class BinaryValue(Value):
+    __dtype__ = dt.binary
+
     def hashbytes(
         self, how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256", /
     ) -> ir.BinaryValue:
