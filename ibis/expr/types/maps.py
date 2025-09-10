@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from public import public
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.deferred import deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
@@ -79,6 +80,8 @@ class MapValue(Value):
     │              NULL │
     └───────────────────┘
     """
+
+    __dtype_supertype__ = dt.Map
 
     def get(self, key: ir.Value, default: ir.Value | None = None, /) -> ir.Value:
         """Return the value for `key` from `expr`.

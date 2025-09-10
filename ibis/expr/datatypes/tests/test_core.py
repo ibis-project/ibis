@@ -7,10 +7,12 @@ import uuid  # noqa: TC003
 from dataclasses import dataclass
 from typing import Annotated, NamedTuple, Optional, Union
 
+import parsy
 import pytest
 from pytest import param
 
 import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
 from ibis.common.annotations import ValidationError
 from ibis.common.patterns import As, Attrs, NoMatch, Pattern
 from ibis.common.temporal import TimestampUnit, TimeUnit
@@ -358,6 +360,67 @@ def test_dtype_from_typehints(hint, expected):
 @pytest.mark.parametrize(("hint", "expected"), [(PyStruct2, py_struct_2)])
 def test_dtype_from_newer_typehints(hint, expected):
     assert dt.dtype(hint) == expected
+
+
+def test_dtype_from_string_expr_class():
+    assert dt.dtype(ir.StringValue) == dt.String(nullable=True)
+    assert dt.dtype(ir.StringColumn) == dt.String(nullable=True)
+    assert dt.dtype(ir.StringScalar) == dt.String(nullable=True)
+
+    assert dt.dtype(ir.StringValue["string"]) == dt.String(nullable=True)
+    assert ir.StringValue["!string"].__dtype__ == dt.String(nullable=False)
+    assert dt.dtype(ir.StringValue["!string"]) == dt.String(nullable=False)
+
+    len_string = dt.String(nullable=False, length=10)
+    assert dt.dtype(ir.StringValue[len_string]) == len_string
+
+    with pytest.raises(TypeError):
+        ir.StringValue["int64"]
+    with pytest.raises(parsy.ParseError):
+        ir.StringValue["bogus"]
+
+
+def test_dtype_from_integer_expr_class():
+    assert dt.dtype(ir.IntegerValue) == dt.Int64(nullable=True)
+    assert dt.dtype(ir.IntegerValue["int64"]) == dt.Int64(nullable=True)
+    assert dt.dtype(ir.IntegerValue["!int64"]) == dt.Int64(nullable=False)
+    assert dt.dtype(ir.IntegerValue["!int64"]) == dt.Int64(nullable=False)
+
+    with pytest.raises(TypeError):
+        ir.IntegerValue["float64"]
+    with pytest.raises(parsy.ParseError):
+        ir.IntegerValue["bogus"]
+
+
+def test_dtype_from_struct_expr_class():
+    with pytest.raises(TypeError):
+        dt.dtype(ir.StructValue)
+    assert dt.dtype(ir.StructValue["struct<a: string, b: !int64>"]) == dt.Struct(
+        {"a": dt.string, "b": dt.Int64(nullable=False)}
+    )
+
+
+def test_dtype_from_struct_subclass():
+    class MyStruct(ir.StructValue):
+        a: ir.StringValue
+        b: ir.IntegerValue["!int64"]
+
+    expected = dt.Struct({"a": dt.string, "b": dt.Int64(nullable=False)})
+    actual = dt.dtype(MyStruct)
+    assert actual == expected
+
+
+def test_dtype_from_abstract_expr_class_fails():
+    with pytest.raises(TypeError):
+        dt.dtype(ir.Value)
+    with pytest.raises(TypeError):
+        dt.dtype(ir.Column)
+    with pytest.raises(TypeError):
+        dt.dtype(ir.Scalar)
+    with pytest.raises(TypeError):
+        dt.dtype(ir.ArrayValue)
+    with pytest.raises(TypeError):
+        dt.dtype(ir.MapValue)
 
 
 def test_dtype_from_invalid_python_value():
