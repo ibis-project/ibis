@@ -478,6 +478,36 @@ def test_create_table_with_quoted_columns():
     con.create_table(name, df, temp=True)
 
 
+def test_create_table_with_reserved_word_columns():
+    """Test creating tables with column names that are SQL reserved words.
+    
+    This specifically addresses issue #11591 where columns named 'group' 
+    caused parser errors.
+    """
+    con = ibis.duckdb.connect()
+    
+    # Test various reserved words that could cause issues
+    reserved_words = ["group", "order", "where", "select", "from", "join", "table"]
+    
+    for word in reserved_words:
+        name = gen_name(f"table_with_{word}")
+        # Test with polars DataFrame (original issue case)
+        try:
+            import polars as pl
+            df_polars = pl.DataFrame({word: [1, 2, 3]})
+            result = con.create_table(name, df_polars, temp=True)
+            assert result.schema()[word] is not None
+        except ImportError:
+            # Polars not available, skip this part
+            pass
+        
+        # Test with pandas DataFrame  
+        df_pandas = pd.DataFrame({word: ["A", "B", "C"]})
+        name_pandas = gen_name(f"pandas_table_with_{word}")
+        result = con.create_table(name_pandas, df_pandas, temp=True)
+        assert result.schema()[word] is not None
+
+
 def test_create_table_with_out_of_order_columns(con):
     name = gen_name("out_of_order_columns_table")
     df = pd.DataFrame({"value": ["E1"], "id": [1], "date": [datetime(2025, 5, 13)]})

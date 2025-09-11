@@ -220,8 +220,9 @@ class Backend(
         final_table = sg.table(name, catalog=catalog, db=database, quoted=quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
+                # Always quote column names to handle reserved words like 'group'
                 columns = [
-                    sge.to_identifier(col, quoted=quoted) for col in table.columns
+                    sge.to_identifier(col, quoted=True) for col in table.columns
                 ]
                 insert_stmt = sge.insert(
                     query, into=initial_table, columns=columns
