@@ -1861,3 +1861,32 @@ def test_analytic_dereference():
     assert expr.op().predicates == (
         ops.Equals(ops.WindowFunction(ops.RowNumber()), ops.Literal(5, dtype="int8")),
     )
+
+
+def test_drop_null_schema_change():
+    orig_schema = ibis.schema({"a": "int64", "b": "string", "c": "!float64"})
+    t = ibis.table(orig_schema)
+
+    expr = t.drop_null()
+    expected_schema = ibis.schema({"a": "!int64", "b": "!string", "c": "!float64"})
+    assert expr.schema() == expected_schema
+
+    expr = t.drop_null("a")
+    expected_schema = ibis.schema({"a": "!int64", "b": "string", "c": "!float64"})
+    assert expr.schema() == expected_schema
+
+    expr = t.drop_null(["a", "c"])
+    expected_schema = ibis.schema({"a": "!int64", "b": "string", "c": "!float64"})
+    assert expr.schema() == expected_schema
+
+    expr = t.drop_null(how="all")
+    expected_schema = orig_schema
+    assert expr.schema() == expected_schema
+
+    expr = t.drop_null("a", how="all")
+    expected_schema = orig_schema
+    assert expr.schema() == expected_schema
+
+    expr = t.drop_null(["a", "c"], how="all")
+    expected_schema = orig_schema
+    assert expr.schema() == expected_schema
