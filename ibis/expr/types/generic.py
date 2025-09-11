@@ -1483,11 +1483,12 @@ class Scalar(Value):
 
         return PolarsData.convert_scalar(df, self.type())
 
-    def as_scalar(self):
-        """Inform ibis that the expression should be treated as a scalar.
+    def as_scalar(self) -> Scalar:
+        """Tell ibis to treat this expression as a single scalar value.
 
-        If the expression is a literal, it will be returned as is. If it depends
-        on a table, it will be turned to a scalar subquery.
+        If the expression is a literal, it will be returned as is.
+        If it depends on a table, eg an aggregation of a column,
+        it will be turned to a scalar subquery.
 
         Returns
         -------
@@ -1518,7 +1519,7 @@ class Scalar(Value):
             return self
 
     def as_table(self) -> ir.Table:
-        """Promote the scalar expression to a table.
+        """Promote the expression to a [Table](./expression-tables.qmd#ibis.expr.types.Table).
 
         Returns
         -------
@@ -1694,14 +1695,16 @@ class Column(Value, FixedTextJupyterMixin):
         return PolarsData.convert_column(df, self.type())
 
     def as_scalar(self) -> Scalar:
-        """Inform ibis that the expression should be treated as a scalar.
+        """Inform ibis to treat this Column as a scalar.
 
-        Creates a scalar subquery from the column expression. Since ibis cannot
-        be sure that the column expression contains only one value, the column
-        expression is wrapped in a scalar subquery and treated as a scalar.
+        Ibis cannot know until execution time whether a column expression
+        contains only one value or many values.
 
-        Note that the execution of the scalar subquery will fail if the column
-        expression contains more than one value.
+        This method is a way to explicitly tell ibis to trust you that
+        this column expression will only contain one value at execution time.
+        This allows you to use this column expression with other tables.
+
+        Note that execution will fail if the column DOES contain more than one value.
 
         Returns
         -------
@@ -1714,6 +1717,22 @@ class Column(Value, FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> heavy_gentoo = t.filter(t.species == "Gentoo", t.body_mass_g > 6200)
+
+        We know from domain knowledge that there is only one Gentoo penguin
+        with body mass greater than 6200g, so heavy_gentoo is a table with
+        exactly one row.
+
+        If we try to use `heavy_gentoo.island` directly in a filter,
+        ibis will raise an error because we are trying to compare two tables
+        to each other, which we don't know know to align without a specific join:
+
+        >>> from_that_island = t.filter(t.island == heavy_gentoo.island)
+        Traceback (most recent call last):
+            ...
+
+        Instead, we should use `as_scalar()` to tell ibis that we know
+        `heavy_gentoo.island` contains exactly one value:
+
         >>> from_that_island = t.filter(t.island == heavy_gentoo.island.as_scalar())
         >>> from_that_island.species.value_counts().order_by("species")
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━┓
