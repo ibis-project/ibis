@@ -868,6 +868,31 @@ def test_sort_then_group_by_propagates_keys(snapshot):
     snapshot.assert_match(to_sql(result), "result2.sql")
 
 
+def test_order_by_then_select(snapshot):
+    # https://github.com/ibis-project/ibis/issues/11605
+    t = ibis.table(schema={"a": "string", "b": "int64"}, name="t")
+
+    result = t.order_by("a", "b").select("b", "a")
+    snapshot.assert_match(to_sql(result), "result_swapped.sql")
+
+    result = t.order_by("a", "b").select("b")
+    snapshot.assert_match(to_sql(result), "result_missing.sql")
+    # assert False
+
+    result = t.order_by("a", ibis.literal(5)).select("b")
+    snapshot.assert_match(to_sql(result), "result_literal_missing.sql")
+    # assert False
+
+    result = t.order_by("a", ibis.literal(5) + 3).select("a")
+    snapshot.assert_match(to_sql(result), "result_literal_present.sql")
+
+    result = t.order_by(t.a.upper(), "b").select("b")
+    snapshot.assert_match(to_sql(result), "result_derived.sql")
+
+    result = t.order_by(t.a.upper() + t.b.cast(str) + "foo").select("b")
+    snapshot.assert_match(to_sql(result), "result_derived_both.sql")
+
+
 def test_incorrect_predicate_pushdown(snapshot):
     t = ibis.table({"x": int}, name="t")
     result = t.mutate(x=_.x + 1).filter(_.x > 1)

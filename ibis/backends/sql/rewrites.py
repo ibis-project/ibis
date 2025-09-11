@@ -241,7 +241,7 @@ def complexity(node):
 
 
 @replace(Object(Select, Object(Select)))
-def merge_select_select(_, **kwargs):
+def merge_select_select(_: Select, **kwargs):
     """Merge subsequent Select relations into one.
 
     This rewrites eliminates `_.parent` by merging the outer and the inner
@@ -312,21 +312,42 @@ def merge_select_select(_, **kwargs):
     qualified = tuple(p.replace(subs, filter=ops.Value) for p in _.qualified)
     unique_qualified = toolz.unique(_.parent.qualified + qualified)
 
-    sort_keys = tuple(s.replace(subs, filter=ops.Value) for s in _.sort_keys)
+    sort_keys: tuple[ops.SortKey, ...] = tuple(
+        s.replace(subs, filter=ops.Value) for s in _.sort_keys
+    )
     sort_key_exprs = {s.expr for s in sort_keys}
     parent_sort_keys = tuple(
         k for k in _.parent.sort_keys if k.expr not in sort_key_exprs
     )
     unique_sort_keys = sort_keys + parent_sort_keys
+    # Remove any sort keys that just depend on Literals.
+    # TODO: Currently, if we bail on merging because of sort keys,
+    # we also don't remove the constant sort keys.
+    # We could improve this by pulling out the remove_constant_sort_keys logic
+    # into its own rewrite and applying it separately.
+    variable_sort_keys = [k for k in unique_sort_keys if k.expr.relations]
+
+    def cant_merge_due_to_sort_keys_being_unavailable():
+        available_fields = set()
+        for selection in selections.values():
+            available_fields.update(selection.find(ops.Field, filter=ops.Value))
+
+        def is_sort_key_unavailable(sort_key: ops.SortKey):
+            referenced_fields = sort_key.expr.find(ops.Field, filter=ops.Value)
+            return any(field not in available_fields for field in referenced_fields)
+
+        return any(is_sort_key_unavailable(sort_key) for sort_key in variable_sort_keys)
+
+    if cant_merge_due_to_sort_keys_being_unavailable():
+        # don't merge, return original to force subquery
+        return _
 
     result = Select(
         _.parent.parent,
         selections=selections,
         predicates=unique_predicates,
         qualified=unique_qualified,
-        sort_keys=tuple(
-            key for key in unique_sort_keys if not isinstance(key.expr, ops.Literal)
-        ),
+        sort_keys=variable_sort_keys,
         distinct=distinct,
     )
     return result if complexity(result) <= complexity(_) else _
