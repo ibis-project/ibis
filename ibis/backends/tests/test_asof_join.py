@@ -83,8 +83,11 @@ def time_keyed_right(time_keyed_df2):
     ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
 )
 @pytest.mark.notyet(
+    "clickhouse",
+    reason="does not support asof joins that do not also have an equality predicate on the join.",
+)
+@pytest.mark.notyet(
     [
-        "clickhouse",
         "datafusion",
         "trino",
         "mysql",
