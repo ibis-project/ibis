@@ -32,6 +32,7 @@ from ibis.backends import (
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
+from ibis.backends.sql.rewrites import convert_pandas_udf_to_pyarrow
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
@@ -268,14 +269,17 @@ class Backend(
             if udf_node.__input_type__ == InputType.PYARROW:
                 udf = self._compile_pyarrow_udf(udf_node)
                 self.con.register_udf(udf)
+            if udf_node.__input_type__ == InputType.PANDAS:
+                udf = self._compile_pandas_udf(udf_node)
+                self.con.register_udf(udf)
 
         for udf_node in expr.op().find(ops.ElementWiseVectorizedUDF):
             udf = self._compile_elementwise_udf(udf_node)
             self.con.register_udf(udf)
 
-    def _compile_pyarrow_udf(self, udf_node):
+    def _compile_udf(self, udf_node, func):
         return df.udf(
-            udf_node.__func__,
+            func,
             input_types=[PyArrowType.from_ibis(arg.dtype) for arg in udf_node.args],
             return_type=PyArrowType.from_ibis(udf_node.dtype),
             volatility=getattr(udf_node, "__config__", {}).get(
@@ -283,6 +287,13 @@ class Backend(
             ),
             name=udf_node.__func_name__,
         )
+
+    def _compile_pyarrow_udf(self, udf_node):
+        return self._compile_udf(udf_node, func=udf_node.__func__)
+
+    def _compile_pandas_udf(self, udf_node):
+        pyarrow_udf = convert_pandas_udf_to_pyarrow(udf_node.__func__)
+        return self._compile_udf(udf_node, func=pyarrow_udf)
 
     def _compile_elementwise_udf(self, udf_node):
         return df.udf(
