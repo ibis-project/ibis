@@ -423,7 +423,7 @@ class SQLBackend(BaseBackend):
         Parameters
         ----------
         name
-            The name of the table to which data needs will be inserted
+            The name of the table to which data will be inserted
         obj
             The source data or expression to insert
         database
@@ -525,6 +525,117 @@ class SQLBackend(BaseBackend):
                 else None
             ),
         ).sql(self.dialect)
+
+    def upsert(
+        self,
+        name: str,
+        /,
+        obj: pd.DataFrame | ir.Table | list | dict,
+        on: str,
+        *,
+        database: str | None = None,
+    ) -> None:
+        """Upsert data into a table.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        name
+            The name of the table to which data will be upserted
+        obj
+            The source data or expression to upsert
+        on
+            Column name to join on
+        database
+            Name of the attached database that the table is located in.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
+        """
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        if not isinstance(obj, ir.Table):
+            obj = ibis.memtable(obj)
+
+        self._run_pre_execute_hooks(obj)
+
+        query = self._build_upsert_from_table(
+            target=name, source=obj, on=on, db=db, catalog=catalog
+        )
+
+        with self._safe_raw_sql(query):
+            pass
+
+    def _build_upsert_from_table(
+        self,
+        *,
+        target: str,
+        source,
+        on: str,
+        db: str | None = None,
+        catalog: str | None = None,
+    ):
+        compiler = self.compiler
+        quoted = compiler.quoted
+        # Compare the columns between the target table and the object to be inserted
+        # If source is a subset of target, use source columns for insert list
+        # Otherwise, assume auto-generated column names and use positional ordering.
+        target_cols = self.get_schema(target, catalog=catalog, database=db).keys()
+
+        columns = (
+            source_cols
+            if (source_cols := source.schema().keys()) <= target_cols
+            else target_cols
+        )
+
+        source_alias = util.gen_name("source")
+        target_alias = util.gen_name("target")
+        query = sge.merge(
+            sge.When(
+                matched=True,
+                then=sge.Update(
+                    expressions=[
+                        sg.column(col, quoted=quoted).eq(
+                            sg.column(col, source_alias, quoted=quoted)
+                        )
+                        for col in columns
+                    ]
+                ),
+            ),
+            sge.When(
+                matched=False,
+                then=sge.Insert(
+                    this=sge.Tuple(expressions=columns),
+                    expression=sge.Tuple(
+                        expressions=[
+                            sg.column(col, source_alias, quoted=quoted)
+                            for col in columns
+                        ]
+                    ),
+                ),
+            ),
+            into=sg.table(target, db=db, catalog=catalog, quoted=quoted).as_(
+                target_alias
+            ),
+            using=f"({self.compile(source)}) AS {source_alias}",
+            on=sg.column(on, table=target_alias, quoted=quoted).eq(
+                sg.column(on, table=source_alias, quoted=quoted)
+            ),
+            dialect=compiler.dialect,
+        )
+        return query
 
     def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         """Delete all rows from a table.
