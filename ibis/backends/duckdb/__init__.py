@@ -1381,13 +1381,9 @@ class Backend(
         import pyarrow as pa
         from ibis.backends.duckdb.converter import DuckDBPyArrowData
 
-        result = self._to_duckdb_relation(
+        table = self._to_duckdb_relation(
             expr, params=params, limit=limit, **kwargs
-        ).arrow()
-        if isinstance(result, pa.RecordBatchReader):
-            table = result.read_all()
-        else:
-            table = result
+        ).to_arrow_table()
         return expr.__pyarrow_result__(table, data_mapper=DuckDBPyArrowData)
 
     def execute(
@@ -1408,11 +1404,7 @@ class Backend(
         from ibis.backends.duckdb.converter import DuckDBPandasData
 
         rel = self._to_duckdb_relation(expr, params=params, limit=limit, **kwargs)
-        result = rel.arrow()
-        if isinstance(result, pa.RecordBatchReader):
-            table = result.read_all()
-        else:
-            table = result
+        table = rel.to_arrow_table()
 
         df = pd.DataFrame(
             {
