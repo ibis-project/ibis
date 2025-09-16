@@ -1378,11 +1378,16 @@ class Backend(
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
+        import pyarrow as pa
         from ibis.backends.duckdb.converter import DuckDBPyArrowData
 
-        table = self._to_duckdb_relation(
+        result = self._to_duckdb_relation(
             expr, params=params, limit=limit, **kwargs
         ).arrow()
+        if isinstance(result, pa.RecordBatchReader):
+            table = result.read_all()
+        else:
+            table = result
         return expr.__pyarrow_result__(table, data_mapper=DuckDBPyArrowData)
 
     def execute(
@@ -1396,13 +1401,18 @@ class Backend(
     ) -> pd.DataFrame | pd.Series | Any:
         """Execute an expression."""
         import pandas as pd
+        import pyarrow as pa
         import pyarrow.types as pat
         import pyarrow_hotfix  # noqa: F401
 
         from ibis.backends.duckdb.converter import DuckDBPandasData
 
         rel = self._to_duckdb_relation(expr, params=params, limit=limit, **kwargs)
-        table = rel.arrow()
+        result = rel.arrow()
+        if isinstance(result, pa.RecordBatchReader):
+            table = result.read_all()
+        else:
+            table = result
 
         df = pd.DataFrame(
             {
