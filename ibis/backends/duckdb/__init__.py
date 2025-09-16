@@ -1378,7 +1378,6 @@ class Backend(
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
-        import pyarrow as pa
         from ibis.backends.duckdb.converter import DuckDBPyArrowData
 
         table = self._to_duckdb_relation(
@@ -1397,7 +1396,6 @@ class Backend(
     ) -> pd.DataFrame | pd.Series | Any:
         """Execute an expression."""
         import pandas as pd
-        import pyarrow as pa
         import pyarrow.types as pat
         import pyarrow_hotfix  # noqa: F401
 
