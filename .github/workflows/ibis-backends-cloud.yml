@@ -143,7 +143,7 @@ jobs:
       - name: download backend data
         run: just download-data
 
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@v3
         if: matrix.backend.name == 'bigquery'
         with:
           project_id: "ibis-gbq"
