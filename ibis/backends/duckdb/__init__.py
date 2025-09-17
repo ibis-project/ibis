@@ -1382,7 +1382,7 @@ class Backend(
 
         table = self._to_duckdb_relation(
             expr, params=params, limit=limit, **kwargs
-        ).arrow()
+        ).to_arrow_table()
         return expr.__pyarrow_result__(table, data_mapper=DuckDBPyArrowData)
 
     def execute(
@@ -1402,7 +1402,7 @@ class Backend(
         from ibis.backends.duckdb.converter import DuckDBPandasData
 
         rel = self._to_duckdb_relation(expr, params=params, limit=limit, **kwargs)
-        table = rel.arrow()
+        table = rel.to_arrow_table()
 
         df = pd.DataFrame(
             {
