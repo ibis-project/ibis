@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from public import public
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.deferred import deferrable
 from ibis.common.exceptions import IbisError
@@ -14,7 +15,6 @@ from ibis.expr.types.generic import Column, Scalar, Value, literal
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
 
-    import ibis.expr.datatypes as dt
     import ibis.expr.types as ir
 
 
@@ -139,6 +139,8 @@ class StructValue(Value):
     │  NULL │
     └───────┘
     """
+
+    __dtype_supertype__ = dt.Struct
 
     def __dir__(self):
         out = set(dir(type(self)))

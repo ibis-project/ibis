@@ -11,6 +11,7 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
+    ClassVar,
     Generic,
     Literal,
     NamedTuple,
@@ -41,52 +42,58 @@ if TYPE_CHECKING:
 
 
 @overload
-def dtype(value: type[int] | Literal["int"], nullable: bool = True) -> Int64: ...
+def dtype(value: type[int] | Literal["int"], nullable: bool | None = None) -> Int64: ...
 @overload
 def dtype(
-    value: type[str] | Literal["str", "string"], nullable: bool = True
+    value: type[str] | Literal["str", "string"], nullable: bool | None = None
 ) -> String: ...
 @overload
 def dtype(
-    value: type[bool] | Literal["bool", "boolean"], nullable: bool = True
+    value: type[bool] | Literal["bool", "boolean"], nullable: bool | None = None
 ) -> Boolean: ...
 @overload
-def dtype(value: type[bytes] | Literal["bytes"], nullable: bool = True) -> Binary: ...
-@overload
-def dtype(value: type[Real] | Literal["float"], nullable: bool = True) -> Float64: ...
+def dtype(
+    value: type[bytes] | Literal["bytes"], nullable: bool | None = None
+) -> Binary: ...
 @overload
 def dtype(
-    value: type[pydecimal.Decimal] | Literal["decimal"], nullable: bool = True
+    value: type[Real] | Literal["float"], nullable: bool | None = None
+) -> Float64: ...
+@overload
+def dtype(
+    value: type[pydecimal.Decimal] | Literal["decimal"], nullable: bool | None = None
 ) -> Decimal: ...
 @overload
 def dtype(
-    value: type[pydatetime.datetime] | Literal["timestamp"], nullable: bool = True
+    value: type[pydatetime.datetime] | Literal["timestamp"],
+    nullable: bool | None = None,
 ) -> Timestamp: ...
 @overload
 def dtype(
-    value: type[pydatetime.date] | Literal["date"], nullable: bool = True
+    value: type[pydatetime.date] | Literal["date"], nullable: bool | None = None
 ) -> Date: ...
 @overload
 def dtype(
-    value: type[pydatetime.time] | Literal["time"], nullable: bool = True
+    value: type[pydatetime.time] | Literal["time"], nullable: bool | None = None
 ) -> Time: ...
 @overload
 def dtype(
-    value: type[pydatetime.timedelta] | Literal["interval"], nullable: bool = True
+    value: type[pydatetime.timedelta] | Literal["interval"],
+    nullable: bool | None = None,
 ) -> Interval: ...
 @overload
 def dtype(
-    value: type[pyuuid.UUID] | Literal["uuid"], nullable: bool = True
+    value: type[pyuuid.UUID] | Literal["uuid"], nullable: bool | None = None
 ) -> UUID: ...
 @overload
 def dtype(
     value: DataType | str | np.dtype | ExtensionDtype | pl.DataType | pa.DataType,
-    nullable: bool = True,
+    nullable: bool | None = None,
 ) -> DataType: ...
 
 
 @lazy_singledispatch
-def dtype(value, nullable=True) -> DataType:
+def dtype(value, nullable: bool | None = None) -> DataType:
     """Create a DataType object.
 
     Parameters
@@ -96,7 +103,11 @@ def dtype(value, nullable=True) -> DataType:
         strings, python type annotations, numpy dtypes, pandas dtypes, and
         pyarrow types.
     nullable
-        Whether the type should be nullable. Defaults to True.
+        Whether the type should be nullable. By default:
+
+        - if the value is already a DataType, its nullability is preserved.
+        - If the value is not a DataType, it is treated as nullable.
+
         If `value` is a string prefixed by "!", the type is always non-nullable.
 
     Examples
@@ -124,13 +135,19 @@ def dtype(value, nullable=True) -> DataType:
 
     """
     if isinstance(value, DataType):
-        return value
+        if nullable is None:
+            return value
+        return value.copy(nullable=nullable)
+    elif getattr(value, "__dtype__", None) is not None:
+        return dtype(value.__dtype__, nullable=nullable)
     else:
+        if nullable is None:
+            nullable = True
         return DataType.from_typehint(value, nullable)
 
 
 @dtype.register(str)
-def from_string(value, nullable: bool = True):
+def from_string(value, nullable=True):
     return DataType.from_string(value, nullable)
 
 
@@ -290,6 +307,14 @@ class DataType(Concrete, Coercible):
                 elif issubclass(typ, pyuuid.UUID):
                     return UUID(nullable=nullable)
                 elif annots := get_type_hints(typ):
+                    from ibis.expr import types as ir
+
+                    if issubclass(typ, ir.Table):
+                        annots = {
+                            k: v
+                            for k, v in annots.items()
+                            if k not in get_type_hints(ir.Table)
+                        }
                     return Struct(toolz.valmap(dtype, annots), nullable=nullable)
                 else:
                     raise TypeError(
