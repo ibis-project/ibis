@@ -59,7 +59,7 @@ jobs:
           project_id: "ibis-gbq"
           workload_identity_provider: "${{ vars.WIF_PROVIDER_NAME }}"
 
-      - uses: google-github-actions/setup-gcloud@v2
+      - uses: google-github-actions/setup-gcloud@v3
 
       - name: show gcloud info
         run: gcloud info
