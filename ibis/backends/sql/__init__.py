@@ -607,31 +607,39 @@ class SQLBackend(BaseBackend):
                 matched=True,
                 then=sge.Update(
                     expressions=[
-                        sg.column(col, quoted=quoted).eq(
-                            sg.column(col, source_alias, quoted=quoted)
+                        sg.column(col, table=target_alias, quoted=quoted).eq(
+                            sg.column(col, table=source_alias, quoted=quoted)
                         )
                         for col in columns
+                        if col != on
                     ]
                 ),
             ),
             sge.When(
                 matched=False,
                 then=sge.Insert(
-                    this=sge.Tuple(expressions=columns),
+                    this=sge.Tuple(
+                        expressions=[
+                            sg.column(col, table=target_alias, quoted=quoted)
+                            for col in columns
+                        ]
+                    ),
                     expression=sge.Tuple(
                         expressions=[
-                            sg.column(col, source_alias, quoted=quoted)
+                            sg.column(col, table=source_alias, quoted=quoted)
                             for col in columns
                         ]
                     ),
                 ),
             ),
             into=sg.table(target, db=db, catalog=catalog, quoted=quoted).as_(
-                target_alias
+                sg.to_identifier(target_alias, quoted=quoted)
             ),
-            using=f"({self.compile(source)}) AS {source_alias}",
-            on=sg.column(on, table=target_alias, quoted=quoted).eq(
-                sg.column(on, table=source_alias, quoted=quoted)
+            using=f"({self.compile(source)}) AS {sg.to_identifier(source_alias, quoted=quoted)}",
+            on=sge.Paren(
+                this=sg.column(on, table=target_alias, quoted=quoted).eq(
+                    sg.column(on, table=source_alias, quoted=quoted)
+                )
             ),
             dialect=compiler.dialect,
         )
