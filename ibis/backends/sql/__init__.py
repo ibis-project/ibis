@@ -607,9 +607,11 @@ class SQLBackend(BaseBackend):
                 matched=True,
                 then=sge.Update(
                     expressions=[
-                        sg.column(col, table=target_alias, quoted=quoted).eq(
-                            sg.column(col, table=source_alias, quoted=quoted)
-                        )
+                        sg.column(
+                            col,
+                            table=target_alias if self.name == "oracle" else None,
+                            quoted=quoted,
+                        ).eq(sg.column(col, table=source_alias, quoted=quoted))
                         for col in columns
                         if col != on
                     ]
@@ -620,7 +622,11 @@ class SQLBackend(BaseBackend):
                 then=sge.Insert(
                     this=sge.Tuple(
                         expressions=[
-                            sg.column(col, table=target_alias, quoted=quoted)
+                            sg.column(
+                                col,
+                                table=target_alias if self.name == "oracle" else None,
+                                quoted=quoted,
+                            )
                             for col in columns
                         ]
                     ),
