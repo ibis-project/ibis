@@ -49,7 +49,7 @@ jobs:
 
       - name: publish pre-release wheel to test pypi index
         if: contains(steps.get-version.outputs.value, '.dev')
-        uses: pypa/gh-action-pypi-publish@d417ba7e7683fa9104c42abe611c1f2c93c0727d
+        uses: pypa/gh-action-pypi-publish@ab69e431e9c9f48a3310be0a56527c679f56e04d
         with:
           repository-url: https://test.pypi.org/legacy/
           # no need for attestations here, no one should be installing ibis from test-pypi
@@ -57,4 +57,4 @@ jobs:
 
       - name: publish pre-release wheel to pypi
         if: contains(steps.get-version.outputs.value, '.dev')
-        uses: pypa/gh-action-pypi-publish@d417ba7e7683fa9104c42abe611c1f2c93c0727d
+        uses: pypa/gh-action-pypi-publish@ab69e431e9c9f48a3310be0a56527c679f56e04d

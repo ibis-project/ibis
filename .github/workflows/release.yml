@@ -44,4 +44,4 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
 
       - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@d417ba7e7683fa9104c42abe611c1f2c93c0727d
+        uses: pypa/gh-action-pypi-publish@ab69e431e9c9f48a3310be0a56527c679f56e04d
