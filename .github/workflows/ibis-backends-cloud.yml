@@ -189,7 +189,7 @@ jobs:
 
       - name: setup aws credentials
         if: matrix.backend.name == 'athena'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: us-east-2
           role-to-assume: arn:aws:iam::070284473168:role/ibis-project-athena
