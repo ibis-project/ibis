@@ -301,7 +301,7 @@ docs = [
   "rich>=13.8.1",
   "scikit-learn>=1.3,<2",
   "seaborn>=0.12.2,<1",
-  "lonboard==0.11.1",
+  "lonboard==0.12.1",
   "jupyter-cache>=1.0.0,<2",
   "jupyterlab>=4.2.5,<5",
   "jupyterlab-night>=0.4.6,<1",
