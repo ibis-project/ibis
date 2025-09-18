@@ -274,11 +274,6 @@ class Backend(
         con = self.con
         cursor = con.cursor()
 
-        # TODO(deepyaman): Fix Oracle MERGE query generation in SQLGlot.
-        if "MERGE" in query:
-            assert "AS " in query
-            query = query.replace("AS ", "")
-
         try:
             cursor.execute(query, **kwargs)
         except Exception:
