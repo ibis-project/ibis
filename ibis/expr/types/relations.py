@@ -3061,9 +3061,17 @@ class Table(Expr, FixedTextJupyterMixin):
         │ 344 │
         └─────┘
         """
-        if subset is not None:
-            subset = tuple(self.bind(subset))
-        return ops.DropNull(self, how, subset).to_expr()
+        subset_columns = None if subset is not None else tuple(self.bind(subset))
+        result = ops.DropNull(self, how, subset_columns).to_expr()
+        if how == "any":
+            # We now know that all columns in `subset` are non-nullable
+            schema = self.schema()
+            subset_names = (
+                schema.names if subset is None else util.promote_tuple(subset)
+            )
+            new_types = {col: schema[col].copy(nullable=False) for col in subset_names}
+            result = result.cast(new_types)
+        return result
 
     def fill_null(self, replacements: ir.Scalar | Mapping[str, ir.Scalar], /) -> Table:
         """Fill null values in a table expression.
