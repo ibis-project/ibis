@@ -18,7 +18,7 @@ FROM (
 LIMIT 5
 OFFSET (
   SELECT
-    COUNT(*) + -5
+    COUNT(*) + CAST(-5 AS TINYINT)
   FROM (
     SELECT
       *
