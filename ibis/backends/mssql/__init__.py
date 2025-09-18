@@ -424,7 +424,8 @@ class Backend(
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
 
-        query = f"{query};"
+        if "MERGE" in query:
+            query = f"{query};"
 
         with self.begin() as cur:
             cur.execute(query, *args, **kwargs)
