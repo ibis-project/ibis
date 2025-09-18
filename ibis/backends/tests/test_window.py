@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from functools import partial
 from operator import methodcaller
 
@@ -1286,3 +1287,46 @@ def test_duplicate_ordered_sum(con):
     # final position, since the *output* order doesn't depend on ORDER BY
     # provided by the user
     assert result[2:] in ([60, 100], [70, 100], [100, 60], [100, 70])
+
+
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="Aggregate ORDER BY is not implemented for window functions",
+)
+@pytest.mark.notyet(
+    [
+        "snowflake",
+        "sqlite",
+    ],
+    raises=com.UnsupportedOperationError,
+    reason="not support by the backend",
+)
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=com.OperationNotDefinedError,
+    reason="window functions aren't yet implemented for the polars backend",
+)
+@pytest.mark.parametrize(
+    "include_null, expected",
+    [
+        (True, Counter([None, None, "d", "d", "d"])),
+        (False, Counter(["a", "a", "d", "d", "d"])),
+    ],
+)
+def test_first_over_window(con, include_null, expected):
+    t = ibis.memtable(
+        [
+            (1, 2, "a"),
+            (1, 1, None),
+            (2, 5, "c"),
+            (2, 1, "d"),
+            (2, 8, "e"),
+        ],
+        schema={"groupby": "int", "rank": "int", "val": "string"},
+    )
+    t = t.group_by("groupby").mutate(
+        first_val_ordered=t.val.first(order_by=t.rank, include_null=include_null)
+    )
+    result = Counter(con.to_pyarrow(t.first_val_ordered).to_pylist())
+    assert result == expected
