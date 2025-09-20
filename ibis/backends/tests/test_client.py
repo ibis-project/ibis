@@ -7,6 +7,7 @@ import inspect
 import json
 import os
 import re
+import sqlite3
 import string
 import subprocess
 import sys
@@ -26,9 +27,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
     DatabricksServerOperationError,
     ExaQueryError,
     ImpalaHiveServer2Error,
+    MySQLProgrammingError,
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPgUndefinedObject,
@@ -668,11 +671,31 @@ except ImportError:
     pyspark_merge_exception = None
 
 
+@pytest.mark.notyet(
+    ["clickhouse"], raises=ClickHouseDatabaseError, reason="MERGE INTO is not supported"
+)
+@pytest.mark.notyet(["datafusion"], reason="MERGE INTO is not supported")
+@pytest.mark.notyet(
+    ["impala"],
+    raises=ImpalaHiveServer2Error,
+    reason="target table must be an Iceberg table",
+)
+@pytest.mark.notyet(
+    ["mysql"], raises=MySQLProgrammingError, reason="MERGE INTO is not supported"
+)
 @pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
 @pytest.mark.notyet(
     ["pyspark"],
     raises=pyspark_merge_exception,
     reason="MERGE INTO TABLE is not supported temporarily",
+)
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="MERGE INTO is not supported",
+)
+@pytest.mark.notyet(
+    ["sqlite"], raises=sqlite3.OperationalError, reason="MERGE INTO is not supported"
 )
 @pytest.mark.notyet(
     ["trino"],
@@ -696,11 +719,31 @@ def test_upsert_from_dataframe(
     )
 
 
+@pytest.mark.notyet(
+    ["clickhouse"], raises=ClickHouseDatabaseError, reason="MERGE INTO is not supported"
+)
+@pytest.mark.notyet(["datafusion"], reason="MERGE INTO is not supported")
+@pytest.mark.notyet(
+    ["impala"],
+    raises=ImpalaHiveServer2Error,
+    reason="target table must be an Iceberg table",
+)
+@pytest.mark.notyet(
+    ["mysql"], raises=MySQLProgrammingError, reason="MERGE INTO is not supported"
+)
 @pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
 @pytest.mark.notyet(
     ["pyspark"],
     raises=pyspark_merge_exception,
     reason="MERGE INTO TABLE is not supported temporarily",
+)
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="MERGE INTO is not supported",
+)
+@pytest.mark.notyet(
+    ["sqlite"], raises=sqlite3.OperationalError, reason="MERGE INTO is not supported"
 )
 @pytest.mark.notyet(
     ["trino"],
