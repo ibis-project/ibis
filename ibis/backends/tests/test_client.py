@@ -37,6 +37,7 @@ from ibis.backends.tests.errors import (
     PyDruidProgrammingError,
     PyODBCProgrammingError,
     SnowflakeProgrammingError,
+    TrinoUserError,
 )
 from ibis.util import gen_name
 
@@ -655,6 +656,11 @@ def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
 
 
 @pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
+@pytest.mark.notyet(
+    ["trino"],
+    raises=TrinoUserError,
+    reason="connector does not support modifying table rows",
+)
 def test_upsert_from_dataframe(
     backend, con, employee_data_1_temp_table, test_employee_data_3
 ):
@@ -673,6 +679,11 @@ def test_upsert_from_dataframe(
 
 
 @pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
+@pytest.mark.notyet(
+    ["trino"],
+    raises=TrinoUserError,
+    reason="connector does not support modifying table rows",
+)
 def test_upsert_from_expr(
     backend, con, employee_data_1_temp_table, employee_data_3_temp_table
 ):
