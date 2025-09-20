@@ -124,7 +124,7 @@ jobs:
           github_token: ${{ steps.generate_token.outputs.token }}
 
       - name: install python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
