@@ -36,6 +36,7 @@ from ibis.backends.tests.errors import (
     PyAthenaDatabaseError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
+    PySparkUnsupportedOperationException,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -49,6 +50,7 @@ np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 pa = pytest.importorskip("pyarrow")
 ds = pytest.importorskip("pyarrow.dataset")
+pyspark = pytest.importorskip("pyspark")
 
 
 @pytest.fixture
@@ -657,6 +659,13 @@ def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
 
 @pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
 @pytest.mark.notyet(
+    ["pyspark"],
+    raises=PySparkUnsupportedOperationException
+    if vparse(pyspark.__version__) >= vparse("3.5")
+    else Py4JJavaError,
+    reason="MERGE INTO TABLE is not supported temporarily",
+)
+@pytest.mark.notyet(
     ["trino"],
     raises=TrinoUserError,
     reason="connector does not support modifying table rows",
@@ -679,6 +688,13 @@ def test_upsert_from_dataframe(
 
 
 @pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
+@pytest.mark.notyet(
+    ["pyspark"],
+    raises=PySparkUnsupportedOperationException
+    if vparse(pyspark.__version__) >= vparse("3.5")
+    else Py4JJavaError,
+    reason="MERGE INTO TABLE is not supported temporarily",
+)
 @pytest.mark.notyet(
     ["trino"],
     raises=TrinoUserError,
