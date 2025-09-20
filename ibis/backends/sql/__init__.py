@@ -588,6 +588,7 @@ class SQLBackend(BaseBackend):
         catalog: str | None = None,
     ):
         compiler = self.compiler
+        qualify_target_columns = self._qualify_merge_target_columns
         quoted = compiler.quoted
         # Compare the columns between the target table and the object to be inserted
         # If source is a subset of target, use source columns for insert list
@@ -609,7 +610,7 @@ class SQLBackend(BaseBackend):
                     expressions=[
                         sg.column(
                             col,
-                            table=target_alias if self.name == "oracle" else None,
+                            table=target_alias if qualify_target_columns else None,
                             quoted=quoted,
                         ).eq(sg.column(col, table=source_alias, quoted=quoted))
                         for col in columns
@@ -624,7 +625,7 @@ class SQLBackend(BaseBackend):
                         expressions=[
                             sg.column(
                                 col,
-                                table=target_alias if self.name == "oracle" else None,
+                                table=target_alias if qualify_target_columns else None,
                                 quoted=quoted,
                             )
                             for col in columns
