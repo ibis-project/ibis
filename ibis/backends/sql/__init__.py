@@ -639,7 +639,7 @@ class SQLBackend(BaseBackend):
                 ),
             ),
             into=sg.table(target, db=db, catalog=catalog, quoted=quoted).as_(
-                sg.to_identifier(target_alias, quoted=quoted)
+                sg.to_identifier(target_alias, quoted=quoted), table=True
             ),
             using=f"({self.compile(source)}) AS {sg.to_identifier(source_alias, quoted=quoted)}",
             on=sge.Paren(
