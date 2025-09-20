@@ -16,7 +16,7 @@ jobs:
       failed: ${{ steps.lint.outputs.failed }}
     steps:
       - name: install node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
