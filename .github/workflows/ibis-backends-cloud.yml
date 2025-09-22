@@ -110,7 +110,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: actions/create-github-app-token@v2.1.1
+      - uses: actions/create-github-app-token@v2.1.4
         id: generate_token
         with:
           app-id: ${{ secrets.DOCS_BOT_APP_ID }}
@@ -124,13 +124,13 @@ jobs:
           github_token: ${{ steps.generate_token.outputs.token }}
 
       - name: install python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v6.6.0
+        uses: astral-sh/setup-uv@v6.7.0
 
       - name: install additional deps
         if: matrix.backend.key == 'snowpark'
@@ -143,7 +143,7 @@ jobs:
       - name: download backend data
         run: just download-data
 
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@v3
         if: matrix.backend.name == 'bigquery'
         with:
           project_id: "ibis-gbq"
@@ -189,7 +189,7 @@ jobs:
 
       - name: setup aws credentials
         if: matrix.backend.name == 'athena'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: us-east-2
           role-to-assume: arn:aws:iam::070284473168:role/ibis-project-athena

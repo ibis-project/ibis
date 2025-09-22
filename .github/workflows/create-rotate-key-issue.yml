@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Generate a GitHub token
-        uses: actions/create-github-app-token@v2.1.1
+        uses: actions/create-github-app-token@v2.1.4
         id: generate_token
         with:
           app-id: ${{ secrets.SQUAWK_BOT_APP_ID }}
