@@ -440,10 +440,11 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         new_backend._post_connect(memtable_volume=memtable_volume)
         return new_backend
 
-    def _post_connect(self, *, memtable_volume: str) -> None:
-        sql = f"CREATE VOLUME IF NOT EXISTS `{memtable_volume}` COMMENT 'Ibis memtable storage volume'"
-        with self.con.cursor() as cur:
-            cur.execute(sql)
+    def _post_connect(self, *, memtable_volume: str | None) -> None:
+        if memtable_volume is not None:
+            sql = f"CREATE VOLUME IF NOT EXISTS `{memtable_volume}` COMMENT 'Ibis memtable storage volume'"
+            with self.con.cursor() as cur:
+                cur.execute(sql)
 
     @functools.cached_property
     def _memtable_volume_path(self) -> str:
