@@ -84,7 +84,7 @@ services:
       - mssql
 
   hive-metastore-db:
-    image: postgres:17.6-alpine
+    image: postgres:18.0-alpine
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -163,7 +163,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:476
+    image: trinodb/trino:477
     ports:
       - 8080:8080
     networks:
@@ -174,7 +174,7 @@ services:
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
   druid-postgres:
-    image: postgres:17.6-alpine
+    image: postgres:18.0-alpine
     container_name: druid-postgres
     environment:
       POSTGRES_PASSWORD: FoolishPassword
