@@ -1166,9 +1166,17 @@ class Value(Expr):
         ).to_expr()
 
     def identical_to(self, other: Value, /) -> ir.BooleanValue:
-        """Return whether this expression is identical to other.
+        """Like `==`, but always returns non-NULL, even when comparing NULLs.
 
-        Corresponds to `IS NOT DISTINCT FROM` in SQL.
+        With regular equality, `NULL == <anything>` is always `NULL`,
+        even for `NULL == NULL`.
+
+        In contrast, `identical_to` treats `NULL` as a singleton value, so that
+
+        - `NULL.identical_to(NULL)` is `True`.
+        - `NULL.identical_to(<non-null>)` is `False`.
+
+        This corresponds to `IS NOT DISTINCT FROM` in SQL.
 
         Parameters
         ----------
@@ -1184,12 +1192,31 @@ class Value(Expr):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> one = ibis.literal(1)
-        >>> two = ibis.literal(2)
-        >>> two.identical_to(one + one)
-        ┌──────┐
-        │ True │
-        └──────┘
+        >>> t = ibis.memtable(
+        ...     [
+        ...         (1, 1),
+        ...         (1, 2),
+        ...         (1, None),
+        ...         (None, None),
+        ...     ],
+        ...     schema={"a": "int64", "b": "int64"},
+        ... )
+        >>> t.mutate(
+        ...     eq=_.a == _.b,
+        ...     neq=_.a != _.b,
+        ...     identical=_.a.identical_to(_.b),
+        ...     not_identical=~_.a.identical_to(_.b),
+        ... )
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+        ┃ a     ┃ b     ┃ eq      ┃ neq     ┃ identical ┃ not_identical ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+        │ int64 │ int64 │ boolean │ boolean │ boolean   │ boolean       │
+        ├───────┼───────┼─────────┼─────────┼───────────┼───────────────┤
+        │     1 │     1 │ True    │ False   │ True      │ False         │
+        │     1 │     2 │ False   │ True    │ False     │ True          │
+        │     1 │  NULL │ NULL    │ NULL    │ False     │ True          │
+        │  NULL │  NULL │ NULL    │ NULL    │ True      │ False         │
+        └───────┴───────┴─────────┴─────────┴───────────┴───────────────┘
         """
         try:
             return ops.IdenticalTo(self, other).to_expr()
