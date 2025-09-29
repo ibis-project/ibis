@@ -381,7 +381,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         http_headers: list[tuple[str, str]] | None = None,
         catalog: str | None = None,
         schema: str = "default",
-        use_cloud_fetch: bool = False,
+        use_cloud_fetch: bool = True,
         memtable_volume: str | None = None,
         staging_allowed_local_path: str | None = None,
         **config: Any,
