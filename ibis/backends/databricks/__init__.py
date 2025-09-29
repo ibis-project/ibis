@@ -384,6 +384,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         use_cloud_fetch: bool = True,
         memtable_volume: str | None = None,
         staging_allowed_local_path: str | None = None,
+        allow_read_only: bool = False,
         **config: Any,
     ) -> None:
         """Create an Ibis client connected to a Databricks cloud instance."""
@@ -407,7 +408,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
             staging_allowed_local_path=staging_allowed_local_path,
             **config,
         )
-        if memtable_volume is None:
+        if memtable_volume is None and not allow_read_only:
             short_version = "".join(map(str, sys.version_info[:3]))
             memtable_volume = (
                 f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
@@ -441,16 +442,20 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         return new_backend
 
     def _post_connect(self, *, memtable_volume: str | None) -> None:
-        if memtable_volume is not None:
-            sql = f"CREATE VOLUME IF NOT EXISTS `{memtable_volume}` COMMENT 'Ibis memtable storage volume'"
-            with self.con.cursor() as cur:
-                cur.execute(sql)
+        if memtable_volume is None:
+            return
+        sql = f"CREATE VOLUME IF NOT EXISTS `{memtable_volume}` COMMENT 'Ibis memtable storage volume'"
+        with self.con.cursor() as cur:
+            cur.execute(sql)
 
     @functools.cached_property
     def _memtable_volume_path(self) -> str:
         return f"/Volumes/{self._memtable_catalog}/{self._memtable_database}/{self._memtable_volume}"
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        if self._memtable_volume is None:
+            return
+
         import pyarrow.parquet as pq
 
         quoted = self.compiler.quoted
@@ -477,7 +482,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
                 cur.execute(put_into)
                 cur.execute(sql)
 
-    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+    def _make_memtable_finalizer(self, name: str) -> None | Callable[..., None]:
+        if self._memtable_volume is None:
+            return None
         path = f"{self._memtable_volume_path}/{name}.parquet"
 
         def finalizer(path: str = path, con=self.con) -> None:
