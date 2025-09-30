@@ -23,6 +23,8 @@ from sqlglot.dialects import ClickHouse as _ClickHouse
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.helper import find_new_name, seq_get
 
+from ibis.backends.sql.dialects.beam import Beam
+
 
 class ClickHouse(_ClickHouse):
     class Generator(_ClickHouse.Generator):
