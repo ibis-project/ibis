@@ -1457,7 +1457,7 @@ class Scalar(Value):
         return PolarsData.convert_scalar(df, self.type())
 
     def as_scalar(self) -> Scalar:
-        """Inform ibis to treat this scalar expression as a free-standing scalar.
+        """Tell ibis to treat this expression as a single scalar value.
 
         If the expression is a literal, it will be returned as is.
         If it depends on a table, eg an aggregation of a column,

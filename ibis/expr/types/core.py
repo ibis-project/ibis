@@ -950,7 +950,7 @@ class Expr(Immutable, Coercible):
         )
 
     def as_scalar(self) -> ir.Scalar:
-        """Inform ibis to treat the Scalar, Column, or Table as a scalar.
+        """Tell ibis to treat the expression as a scalar.
 
         Ibis cannot know until execution time whether a Column or Table expression
         contains only one row or many rows,

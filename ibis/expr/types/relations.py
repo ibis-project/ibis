@@ -671,7 +671,7 @@ class Table(Expr, FixedTextJupyterMixin):
         )
 
     def as_scalar(self) -> ir.Scalar:
-        """Inform ibis to treat this table as a 1 row, 1 column scalar.
+        """Tell ibis to treat this value as 1 row, 1 column table, referred to as a *scalar*.
 
         Ibis cannot know until execution time whether a table expression
         contains only one row or many rows.
