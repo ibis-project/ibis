@@ -260,6 +260,8 @@ For a better development experience see the `conda/mamba` or `nix` setup instruc
 
 1. [Install `gh`](https://cli.github.com/manual/installation)
 
+1. [Install `just`](https://just.systems/man/en/packages.html)
+
 1. Fork and clone the ibis repository:
 
    ```sh
