@@ -349,7 +349,7 @@ class FlinkCompiler(SQLGlotCompiler):
             assert idx.dtype.is_string(), idx.dtype
             query_path = f"$.{val}"
 
-        key_hack = f"{sge.convert(query_path).sql(self.dialect)} WITH CONDITIONAL ARRAY WRAPPER"
+        key_hack = f"{sge.convert(query_path).sql(self.dialect)} RETURNING ARRAY<STRING>"
         return self.f.json_query(arg, self.v[key_hack])
 
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
