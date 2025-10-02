@@ -586,7 +586,6 @@ ignore = [
   "SIM118",  # remove .keys() calls from dictionaries
   "SIM300",  # yoda conditions
   "UP007",   # Optional[str] -> str | None
-  "UP038",   # non-pep604-isinstance, results in slower code
   "UP045",   # Using X | None breaks Python 3.9
   "S101",    # ignore "Use of `assert` detected"
   "PLC0415", # allow imports to not be at the top of a file
