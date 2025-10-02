@@ -130,7 +130,7 @@ provider, which mimics the default behavior of the `aws` CLI and SDKs.
 Ibis doesn't have an Ibis-native API for dealing with DuckDB's secrets, but you can of course
 run `raw_sql` to set them up:
 
-```{python}
+```{.python}
 con.raw_sql("CREATE SECRET s3 (TYPE S3, PROVIDER CREDENTIAL_CHAIN)")
 ```
 
