@@ -352,7 +352,7 @@ def test_output_type_in_list_invalid():
 
     with pytest.raises(
         com.IbisTypeError,
-        match="The output type of a UDF must be a single datatype.",
+        match=r"The output type of a UDF must be a single datatype.",
     ):
         with pytest.warns(FutureWarning, match="v9.0"):
 
@@ -473,7 +473,7 @@ def test_invalid_kwargs():
     # Test that defining a UDF with a non-column argument that is not a
     # keyword argument raises an error
 
-    with pytest.raises(TypeError, match=".*must be defined as keyword only.*"):
+    with pytest.raises(TypeError, match=r".*must be defined as keyword only.*"):
         with pytest.warns(FutureWarning, match="v9.0"):
 
             @elementwise(input_type=[dt.double], output_type=dt.double)

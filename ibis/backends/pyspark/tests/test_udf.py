@@ -69,6 +69,6 @@ def test_illegal_udf_type(t):
 
     with pytest.raises(
         NotImplementedError,
-        match="pyarrow UDFs are only supported in pyspark >= 3.5",
+        match=r"pyarrow UDFs are only supported in pyspark >= 3.5",
     ):
         expr.execute()

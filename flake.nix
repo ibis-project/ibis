@@ -61,7 +61,7 @@
 
         backendDevDeps = with pkgs; [
           # impala UDFs
-          clang_15
+          clang_21
           cmake
           ninja
           # snowflake
@@ -158,7 +158,6 @@
             PYSPARK_PYTHON = "${env}/bin/python";
 
             AWS_PROFILE = "ibis-testing";
-            AWS_REGION = "us-east-2";
 
             # needed for mssql+pyodbc
             ODBCSYSINI = pkgs.writeTextDir "odbcinst.ini" ''

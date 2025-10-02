@@ -590,7 +590,7 @@ def test_tpch_correlated_subquery_failure(con):
 
     # impala can't plan this because its correlated subquery implementation is
     # broken: it cannot detect the outer reference inside the inner query
-    with pytest.raises(HiveServer2Error, match="Could not resolve .+ reference"):
+    with pytest.raises(HiveServer2Error, match=r"Could not resolve .+ reference"):
         con.explain(expr)
 
 

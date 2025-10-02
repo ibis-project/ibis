@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import re
+import ssl
 from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import unquote_plus
 
@@ -61,6 +62,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
         host: str = "localhost",
         port: int = 8563,
         timezone: str = "UTC",
+        websocket_sslopt: Mapping[str, int] | None = None,
         **kwargs: Any,
     ) -> None:
         """Create an Ibis client connected to an Exasol database.
@@ -77,6 +79,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
             Port number to connect to.
         timezone
             The session timezone.
+        websocket_sslopt
+            Websocket SSL options, originating from
         kwargs
             Additional keyword arguments passed to `pyexasol.connect`.
 
@@ -114,11 +118,15 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
                 "Ibis requires all identifiers to be quoted to work correctly."
             )
 
+        if websocket_sslopt is None:
+            websocket_sslopt = {"cert_reqs": ssl.CERT_NONE}
+
         self.con = pyexasol.connect(
             dsn=f"{host}:{port}",
             user=user,
             password=password,
             quote_ident=True,
+            websocket_sslopt=websocket_sslopt,
             **kwargs,
         )
         self._post_connect(timezone)
