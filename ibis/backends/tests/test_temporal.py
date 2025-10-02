@@ -19,7 +19,6 @@ import ibis.expr.datatypes as dt
 from ibis.backends import _get_backend_names
 from ibis.backends.tests.errors import (
     ArrowInvalid,
-    ClickHouseDatabaseError,
     DuckDBInvalidInputException,
     ExaQueryError,
     GoogleBadRequest,
@@ -1673,11 +1672,6 @@ INTERVAL_BACKEND_TYPES = {
     ["datafusion"],
     raises=Exception,
     reason='This feature is not implemented: Can\'t create a scalar from array of type "Duration(Second)"',
-)
-@pytest.mark.notyet(
-    ["clickhouse"],
-    reason="Driver doesn't know how to handle intervals",
-    raises=ClickHouseDatabaseError,
 )
 @pytest.mark.notimpl(
     ["flink"],
