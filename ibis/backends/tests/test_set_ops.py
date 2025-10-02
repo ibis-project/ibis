@@ -37,7 +37,7 @@ def union_subsets(alltypes, df):
 @pytest.mark.parametrize("distinct", [False, True], ids=["all", "distinct"])
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_union(backend, union_subsets, distinct):
-    (a, b, c), (da, db, dc) = union_subsets
+    (a, b, _), (da, db, _) = union_subsets
 
     expr = ibis.union(a, b, distinct=distinct).order_by("id")
     result = expr.execute()
