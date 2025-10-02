@@ -61,7 +61,7 @@
 
         backendDevDeps = with pkgs; [
           # impala UDFs
-          clang_15
+          clang_21
           cmake
           ninja
           # snowflake
