@@ -428,7 +428,7 @@ def test_subquery_with_join(con):
     ) AS "o"
     """
     with pytest.raises(
-        ClickHouseDatabaseError, match="Identifier 'o.a' cannot be resolved"
+        ClickHouseDatabaseError, match=r"Identifier 'o\.a' cannot be resolved"
     ):
         # https://github.com/ClickHouse/ClickHouse/issues/66133
         con.sql(sql)

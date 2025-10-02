@@ -1761,11 +1761,11 @@ def test_join_lname_rname(how):
 
     expr = method(right, rname="{name}_z", lname="{name}_z")
     # As is, the two id columns collide with each other
-    with pytest.raises(com.IntegrityError, match="Name collisions: {'id_z'}"):
+    with pytest.raises(com.IntegrityError, match=r"Name collisions: {'id_z'}"):
         expr.columns  # noqa: B018
-    with pytest.raises(com.IntegrityError, match="Name collisions: {'id_z'}"):
+    with pytest.raises(com.IntegrityError, match=r"Name collisions: {'id_z'}"):
         expr.schema()
-    with pytest.raises(com.IntegrityError, match="Name collisions: {'id_z'}"):
+    with pytest.raises(com.IntegrityError, match=r"Name collisions: {'id_z'}"):
         expr.count()
     # But if we are explicit about selecting out the id columns,
     # we can avoid the collision.
@@ -1867,7 +1867,7 @@ def test_cast():
     assert t.cast({"a": "string"}).equals(t.mutate(a=t.a.cast("string")))
 
     with pytest.raises(
-        com.IbisError, match="fields that are not in the table: .+'d'.+"
+        com.IbisError, match=r"fields that are not in the table: .+'d'.+"
     ):
         t.cast({"d": "array<int>"}).equals(t.select())
 
@@ -1968,7 +1968,7 @@ def test_pivot_wider():
         names=["Release", "Lisbon"], names_from="station", values_from="seen"
     )
     assert res.schema().names == ("fish", "Release", "Lisbon")
-    with pytest.raises(com.IbisInputError, match="Columns .+ are not present in"):
+    with pytest.raises(com.IbisInputError, match=r"Columns .+ are not present in"):
         fish.pivot_wider(names=["Release", "Lisbon"], values_from="seen")
 
 

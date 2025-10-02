@@ -138,7 +138,7 @@ def test_recreate_table_from_schema(
     # create the same table a second time should fail
     with pytest.raises(
         Py4JJavaError,
-        match="org.apache.flink.table.catalog.exceptions.TableAlreadyExistException",
+        match=r"org\.apache\.flink\.table\.catalog\.exceptions\.TableAlreadyExistException",
     ):
         new_table = con.create_table(
             temp_table,

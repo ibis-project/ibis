@@ -249,7 +249,7 @@ def test_signature_from_callable_with_keyword_only_arguments(snapshot):
     }
 
     with pytest.raises(
-        ValidationError, match="missing a required (?:keyword-only )?argument: 'c'"
+        ValidationError, match=r"missing a required (?:keyword-only )?argument: 'c'"
     ) as excinfo:
         sig.validate(test, args=(2, 3), kwargs={})
 
