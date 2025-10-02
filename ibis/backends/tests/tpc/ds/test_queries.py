@@ -917,6 +917,7 @@ def test_11(customer, store_sales, web_sales, date_dim):
 
 
 @tpc_test("ds")
+@pytest.mark.xfail_version(duckdb=["duckdb==1.4.0"])
 def test_12(web_sales, item, date_dim):
     return (
         web_sales.join(item, [("ws_item_sk", "i_item_sk")])
