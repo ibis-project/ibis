@@ -199,14 +199,14 @@ def test_normalize_none_with_non_nullable_type():
 @pytest.mark.parametrize("kind", ["uint", "int"])
 def test_normalize_non_convertible_int(kind, bits):
     typ = getattr(dt, f"{kind}{bits:d}")
-    with pytest.raises(TypeError, match="Unable to normalize .+ to U?Int"):
+    with pytest.raises(TypeError, match=r"Unable to normalize .+ to U?Int"):
         dt.normalize(typ, "not convertible")
 
 
 @pytest.mark.parametrize("typename", ["float32", "float64"])
 def test_normalize_non_convertible_float(typename):
     typ = getattr(dt, typename)
-    with pytest.raises(TypeError, match="Unable to normalize .+ to Float"):
+    with pytest.raises(TypeError, match=r"Unable to normalize .+ to Float"):
         dt.normalize(typ, "not convertible")
 
 

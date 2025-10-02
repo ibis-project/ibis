@@ -277,5 +277,5 @@ def test_project_id_from_default(default_credentials):
 
 
 def test_project_id_missing(credentials):
-    with pytest.raises(ValueError, match="Project ID could not be identified.*"):
+    with pytest.raises(ValueError, match=r"Project ID could not be identified.*"):
         ibis.bigquery.connect(credentials=credentials)
