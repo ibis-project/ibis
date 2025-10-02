@@ -104,16 +104,6 @@ in
     sha256 = "sha256-1fenQNQB+Q0pbb0cbK2S/UIwZDE4PXXG15MH3aVbyLU=";
   };
 
-  lychee = super.lychee.overrideAttrs (
-    attrs:
-    lib.optionalAttrs (stdenv.hostPlatform.isDarwin && stdenv.hostPlatform.isx86_64) {
-      checkFlags = attrs.checkFlags or [ ] ++ [
-        # not sure why, but this single test fails on x86_64-darwin builds
-        "--skip=archive::wayback::tests::wayback_suggestion_mocked"
-      ];
-    }
-  );
-
   ibis310 = mkEnv pkgs.python310;
   ibis311 = mkEnv pkgs.python311;
   ibis312 = mkEnv pkgs.python312;
@@ -196,7 +186,7 @@ in
       pkgs.jq
     ];
     text = ''
-      declare -A systems=(["x86_64-linux"]="linux-amd64" ["aarch64-linux"]="linux-arm64" ["x86_64-darwin"]="macos" ["aarch64-darwin"]="macos")
+      declare -A systems=(["x86_64-linux"]="linux-amd64" ["aarch64-linux"]="linux-arm64" ["aarch64-darwin"]="macos")
       declare -a out=()
       version="$(gh release --repo quarto-dev/quarto-cli list --json isPrerelease,tagName --jq '[.[] | select(.isPrerelease)][0].tagName[1:]')"
       i=1
