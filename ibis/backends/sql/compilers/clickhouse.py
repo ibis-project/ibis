@@ -157,7 +157,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.accurateCastOrNull(arg, self.type_mapper.to_string(to))
 
     def visit_ArrayIndex(self, op, *, arg, index):
-        return arg[self.if_(index >= 0, index + 1, index)]
+        return arg[self.if_(index >= 0, index, index - 1)]
 
     def visit_ArrayRepeat(self, op, *, arg, times):
         param = sg.to_identifier("_")
@@ -236,8 +236,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         if index is None:
             index = 0
-
-        index += 1
 
         then = self.f.extractGroups(arg, pattern)[index]
 
