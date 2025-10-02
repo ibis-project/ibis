@@ -185,11 +185,6 @@ def test_array_concat_with_null(con, op):
     raises=AssertionError,
     reason="doesn't support nullable arrays, so result is not null",
 )
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=Exception,
-    reason="cannot handle concatenating two null values that are typed as arrays",
-)
 def test_array_concat_with_null_non_constant(con):
     t = ibis.memtable({"a": [None]}, schema={"a": "array<int32>"})
     expr = t.a + t.a
@@ -772,11 +767,6 @@ def test_array_contains(backend, con, col, value):
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="SQL validation failed; Flink does not support ARRAY[]",  # https://issues.apache.org/jira/browse/FLINK-20578
-                ),
-                pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="Internal error: start_from index out of bounds",
                 ),
             ],
         ),
@@ -1870,17 +1860,7 @@ def test_array_agg_numeric(con, data, agg, baseline_func):
             ],
             id="nulls",
         ),
-        param(
-            [[True, False], [True], [False], [], None],
-            marks=[
-                pytest.mark.xfail_version(
-                    datafusion=["datafusion>=48.0.0"],
-                    raises=AssertionError,
-                    reason="bug; this worked before 48.0.0",
-                )
-            ],
-            id="no-nulls",
-        ),
+        param([[True, False], [True], [False], [], None], id="no-nulls"),
     ],
 )
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
