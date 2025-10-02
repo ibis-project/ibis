@@ -193,7 +193,6 @@ def test_impure_uncorrelated_same_id(alltypes, impure):
 
 @pytest.mark.notyet(
     [
-        "duckdb",
         "clickhouse",
         "datafusion",
         "mysql",
