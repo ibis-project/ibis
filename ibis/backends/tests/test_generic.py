@@ -453,12 +453,12 @@ def test_table_fill_null_invalid(alltypes):
         alltypes.fill_null({"invalid_col": 0.0})
 
     with pytest.raises(
-        com.IbisTypeError, match="Cannot fill_null on column 'string_col' of type.*"
+        com.IbisTypeError, match=r"Cannot fill_null on column 'string_col' of type.*"
     ):
         alltypes[["int_col", "string_col"]].fill_null(0)
 
     with pytest.raises(
-        com.IbisTypeError, match="Cannot fill_null on column 'int_col' of type.*"
+        com.IbisTypeError, match=r"Cannot fill_null on column 'int_col' of type.*"
     ):
         alltypes.fill_null({"int_col": "oops"})
 
