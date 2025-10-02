@@ -1,2 +1,2 @@
 SELECT
-  farm_fingerprint('test of hash') AS `Hash_'test of hash'`
+  FARM_FINGERPRINT('test of hash') AS `Hash_'test of hash'`
