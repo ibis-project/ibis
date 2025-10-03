@@ -33,7 +33,7 @@ jobs:
           python-version: "3.13"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v6.7.0
+        uses: astral-sh/setup-uv@v6.8.0
 
       - uses: extractions/setup-just@v3
         env:
