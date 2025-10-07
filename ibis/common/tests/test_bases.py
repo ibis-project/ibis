@@ -39,7 +39,7 @@ def test_abstract():
     assert issubclass(type(Foo), AbstractMeta)
     assert Foo.__abstractmethods__ == frozenset({"foo", "bar"})
 
-    with pytest.raises(TypeError, match="Can't instantiate abstract class .*Foo.*"):
+    with pytest.raises(TypeError, match=r"Can't instantiate abstract class .*Foo.*"):
         Foo()
 
     class Bar(Foo):
@@ -289,7 +289,7 @@ def test_final():
     class A(Final):
         pass
 
-    with pytest.raises(TypeError, match="Cannot inherit from final class .*A.*"):
+    with pytest.raises(TypeError, match=r"Cannot inherit from final class .*A.*"):
 
         class B(A):
             pass

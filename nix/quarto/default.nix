@@ -17,7 +17,6 @@ let
     x86_64-linux = "linux-amd64";
     aarch64-linux = "linux-arm64";
     aarch64-darwin = "macos";
-    x86_64-darwin = aarch64-darwin;
   };
 
   inherit (stdenv.hostPlatform) system;

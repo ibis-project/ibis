@@ -349,6 +349,7 @@ class Impala(Hive):
             sge.Interval: lambda self, e: _interval(self, e, quote_arg=False),
             sge.CurrentDate: rename_func("current_date"),
             sge.TableSample: tablesample_percent_to_int,
+            sge.CurrentTimestamp: lambda *_: "NOW()",
         }
 
 

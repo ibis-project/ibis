@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 from uuid import uuid4
 
 import toolz
-from packaging.version import parse as vparse
 
 from ibis.common.typing import Coercible
 
@@ -730,6 +729,8 @@ else:
 
 
 def version(package: str) -> Version:
+    from packaging.version import parse as vparse
+
     try:
         version_info = importlib.metadata.version(package)
     except importlib.metadata.PackageNotFoundError:

@@ -1,2 +1,2 @@
 SELECT
-  CURRENT_TIMESTAMP() AS `TimestampNow()`
+  NOW() AS `TimestampNow()`

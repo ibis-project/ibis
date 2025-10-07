@@ -90,7 +90,7 @@ def test_from_ibis_type_seconds(ibis_dtype, polars_type):
 
 
 def test_decimal():
-    assert PolarsType.to_ibis(pl.Decimal()) == dt.Decimal(precision=None, scale=0)
+    assert PolarsType.to_ibis(pl.Decimal()) == dt.Decimal(precision=38, scale=0)
     assert PolarsType.to_ibis(pl.Decimal(precision=6, scale=3)) == dt.Decimal(
         precision=6, scale=3
     )
