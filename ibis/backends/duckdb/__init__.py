@@ -49,9 +49,15 @@ if TYPE_CHECKING:
     from ibis.expr.schema import SchemaLike
 
 
+try:
+    from duckdb import func as _duckdb_func
+except ImportError:
+    from duckdb import functional as _duckdb_func
+
+
 _UDF_INPUT_TYPE_MAPPING = {
-    InputType.PYARROW: duckdb.functional.ARROW,
-    InputType.PYTHON: duckdb.functional.NATIVE,
+    InputType.PYARROW: _duckdb_func.ARROW,
+    InputType.PYTHON: _duckdb_func.NATIVE,
 }
 
 
