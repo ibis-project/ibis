@@ -48,7 +48,6 @@ if TYPE_CHECKING:
 
     from ibis.expr.schema import SchemaLike
 
-
 try:
     from duckdb import func as _duckdb_func
 except ImportError:
