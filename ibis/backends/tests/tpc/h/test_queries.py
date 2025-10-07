@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 import ibis
-from ibis.backends.tests.errors import ClickHouseDatabaseError
+from ibis.backends.tests.errors import ClickHouseDatabaseError, TrinoUserError
 from ibis.backends.tests.tpc.conftest import add_date, tpc_test
 
 
@@ -464,9 +464,8 @@ def test_14(part, lineitem):
 @tpc_test("h")
 @pytest.mark.notyet(
     ["trino"],
-    reason="unreliable due to floating point differences in repeated evaluations of identical subqueries",
-    raises=AssertionError,
-    strict=False,
+    reason="can't figure out where `supplier_no` is (aliased group by key)",
+    raises=TrinoUserError,
 )
 def test_15(lineitem, supplier):
     """Top Supplier Query (Q15)"""
