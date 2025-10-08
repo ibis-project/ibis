@@ -396,6 +396,12 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
+@pytest.mark.notimpl(
+    ["materialize"],
+    raises=NotImplementedError,
+    reason="rename_table() method not implemented in Materialize backend (could be added using ALTER...RENAME).",
+    # Ref: https://materialize.com/docs/sql/alter-rename/
+)
 def test_rename_table(con, temp_table, temp_table_orig):
     schema = ibis.schema({"a": "string", "b": "bool", "c": "int32"})
     con.create_table(temp_table_orig, schema=schema)
@@ -545,6 +551,12 @@ def employee_data_3_temp_table(
 
 
 @pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_no_overwrite_from_dataframe(
     backend, con, test_employee_data_2, employee_empty_temp_table
 ):
@@ -571,6 +583,12 @@ def test_insert_no_overwrite_from_dataframe(
 @pytest.mark.notyet(
     ["athena"], raises=com.UnsupportedOperationError, reason="s3 location required"
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_overwrite_from_dataframe(
     backend, con, employee_data_1_temp_table, test_employee_data_2
 ):
@@ -586,6 +604,12 @@ def test_insert_overwrite_from_dataframe(
 
 
 @pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_no_overwrite_from_expr(
     backend, con, employee_empty_temp_table, employee_data_2_temp_table
 ):
@@ -610,6 +634,12 @@ def test_insert_no_overwrite_from_expr(
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_overwrite_from_expr(
     backend, con, employee_data_1_temp_table, employee_data_2_temp_table
 ):
@@ -633,6 +663,12 @@ def test_insert_overwrite_from_expr(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
 )
 def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
     def _emp(a, b, c, d):
@@ -760,6 +796,12 @@ def test_upsert_from_memtable(backend, con, temp_table, sch, expectation):
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_from_memtable(con, temp_table):
     df = pd.DataFrame({"x": range(3)})
     table_name = temp_table
@@ -806,6 +848,7 @@ def test_list_catalogs(con):
         "pyspark": {"spark_catalog"},
         "databricks": {"hive_metastore", "ibis", "ibis_testing", "samples", "system"},
         "athena": {"AwsDataCatalog"},
+        "materialize": {"materialize"},
     }
     result = set(con.list_catalogs())
     assert test_catalogs[con.name] <= result
@@ -826,6 +869,7 @@ def test_list_database_contents(con):
         "exasol": {"EXASOL"},
         "flink": {"default_database"},
         "impala": {"ibis_testing", "default", "_impala_builtins"},
+        "materialize": {"public", "mz_catalog", "pg_catalog"},
         "mssql": {"INFORMATION_SCHEMA", "dbo", "guest"},
         "mysql": {"ibis-testing", "information_schema"},
         "oracle": {"SYS", "IBIS"},
@@ -1051,6 +1095,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "duckdb",
                         "exasol",
                         "impala",
+                        "materialize",
                         "mssql",
                         "mysql",
                         "oracle",
@@ -1082,6 +1127,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "clickhouse",
                         "exasol",
                         "impala",
+                        "materialize",
                         "mssql",
                         "mysql",
                         "oracle",
@@ -1447,6 +1493,12 @@ def test_set_backend_url(url, monkeypatch):
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize timestamp precision is limited to 0-6 (microsecond precision max), not 0-9 like Postgres.",
+    # Ref: https://materialize.com/docs/sql/types/timestamp/
+)
 def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
@@ -1517,6 +1569,12 @@ def create_and_destroy_db(con):
     ["flink"],
     reason="unclear whether Flink supports cross catalog/database inserts",
     raises=Py4JJavaError,
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
 )
 def test_insert_with_database_specified(con_create_database):
     con = con_create_database
@@ -1712,6 +1770,12 @@ def test_schema_with_caching(alltypes):
 @pytest.mark.notimpl(
     ["flink"], reason="Temp tables are implemented as views, which don't support insert"
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 @pytest.mark.parametrize(
     "first_row, second_row",
     [
@@ -1766,6 +1830,11 @@ def test_table_not_found(con):
 
 @pytest.mark.notimpl(
     ["flink"], raises=com.IbisError, reason="not yet implemented for Flink"
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Schema resolution issue with cross-database table loading in Materialize (needs investigation).",
 )
 def test_no_accidental_cross_database_table_load(con_create_database):
     con = con_create_database
@@ -1849,6 +1918,12 @@ def test_cross_database_join(con_create_database, monkeypatch):
 )
 @pytest.mark.notimpl(["athena"], reason="insert isn't implemented yet")
 @pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_into_table_missing_columns(con, temp_table):
     db = getattr(con, "current_database", None)
 
@@ -1876,6 +1951,12 @@ def test_insert_into_table_missing_columns(con, temp_table):
 )
 @pytest.mark.notyet(
     ["bigquery"], raises=AssertionError, reason="test is flaky", strict=False
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Memtables not visible in list_tables() due to transaction block restrictions.",
+    # Related to: https://materialize.com/docs/sql/begin/
 )
 def test_memtable_cleanup(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": list("def")})

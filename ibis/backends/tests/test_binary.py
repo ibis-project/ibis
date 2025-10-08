@@ -15,6 +15,7 @@ BINARY_BACKEND_TYPES = {
     "sqlite": "blob",
     "trino": "varbinary",
     "postgres": "bytea",
+    "materialize": "bytea",
     "risingwave": "bytea",
     "flink": "BYTES NOT NULL",
     "databricks": "binary",

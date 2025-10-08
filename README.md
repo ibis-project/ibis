@@ -135,7 +135,7 @@ This allows you to combine the flexibility of Python with the scale and performa
 
 ## Backends
 
-Ibis supports nearly 20 backends:
+Ibis supports 20 backends:
 
 - [Apache DataFusion](https://ibis-project.org/backends/datafusion/)
 - [Apache Druid](https://ibis-project.org/backends/druid/)
@@ -146,6 +146,7 @@ Ibis supports nearly 20 backends:
 - [ClickHouse](https://ibis-project.org/backends/clickhouse/)
 - [DuckDB](https://ibis-project.org/backends/duckdb/)
 - [Exasol](https://ibis-project.org/backends/exasol)
+- [Materialize](https://ibis-project.org/backends/materialize/)
 - [MySQL](https://ibis-project.org/backends/mysql/)
 - [Oracle](https://ibis-project.org/backends/oracle/)
 - [Polars](https://ibis-project.org/backends/polars/)

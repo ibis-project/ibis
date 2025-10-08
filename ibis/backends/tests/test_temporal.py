@@ -57,6 +57,12 @@ sqlite_without_hms_intervals = pytest.mark.notyet(
 )
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.parametrize("attr", ["year", "month", "day"])
 @pytest.mark.parametrize(
     "expr_fn",
@@ -78,6 +84,12 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
     backend.assert_series_equal(result, expected.rename(attr))
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.parametrize(
     "attr",
     [
@@ -112,6 +124,12 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPg2InternalError,
+    reason="Materialize doesn't support 'isoyear' in EXTRACT (not in supported date parts list).",
+    # Ref: https://materialize.com/docs/sql/functions/extract/
+)
 @pytest.mark.parametrize(
     "transform", [toolz.identity, methodcaller("date")], ids=["timestamp", "date"]
 )
@@ -145,6 +163,11 @@ def test_extract_iso_year(backend, alltypes, df, transform):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPg2InternalError,
+    reason="Materialize doesn't support ISO year extraction - backend limitation",
+)
 @pytest.mark.notimpl(
     ["druid"],
     raises=(AttributeError, com.OperationNotDefinedError),
@@ -224,6 +247,12 @@ def test_timestamp_extract_literal(con, func, expected):
     assert con.execute(func(value).name("tmp")) == expected
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["oracle", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["pyspark", "databricks"],
@@ -246,6 +275,12 @@ def test_timestamp_extract_microseconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["oracle", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["sqlite"], raises=AssertionError)
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
@@ -257,6 +292,12 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(
@@ -278,6 +319,12 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_week_of_year(backend, alltypes, df):
     expr = alltypes.timestamp_col.week_of_year().name("tmp")
@@ -364,6 +411,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                         "bigquery",
                         "duckdb",
                         "impala",
+                        "materialize",
                         "mysql",
                         "postgres",
                         "risingwave",
@@ -393,6 +441,12 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             ],
         ),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
     expr = alltypes.timestamp_col.truncate(ibis_unit).name("tmp")
@@ -429,6 +483,12 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
             ],
         ),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 def test_date_truncate(backend, alltypes, df, unit):
@@ -551,6 +611,12 @@ def test_date_truncate(backend, alltypes, df, unit):
         ),
     ],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["druid", "exasol"], raises=com.OperationNotDefinedError)
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
@@ -624,6 +690,12 @@ def test_integer_to_interval_timestamp(
         ),
         param("D", marks=sqlite_without_ymd_intervals),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
@@ -835,6 +907,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
     ],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend).name("tmp")
     expected = expected_fn(df, backend)
@@ -908,6 +986,12 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
         param("10s", minus, id="ten-seconds-minus", marks=sqlite_without_hms_intervals),
     ],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_temporal_binop_pandas_timedelta(
@@ -976,6 +1060,12 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
 @sqlite_without_ymd_intervals
 def test_interval_add_cast_scalar(backend, alltypes):
@@ -988,6 +1078,12 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["flink"], raises=AssertionError, reason="incorrect results")
 @sqlite_without_ymd_intervals
 def test_interval_add_cast_column(backend, alltypes, df):
@@ -1040,6 +1136,12 @@ def test_interval_add_cast_column(backend, alltypes, df):
             id="column_format_str",
         ),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 @pytest.mark.notimpl(
     ["datafusion", "druid", "exasol"], raises=com.OperationNotDefinedError
@@ -1133,6 +1235,12 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
         ),
     ],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(
     ["mysql", "postgres", "risingwave", "sqlite", "oracle"],
     raises=com.OperationNotDefinedError,
@@ -1215,6 +1323,11 @@ def test_integer_to_timestamp(backend, con, unit):
         ),
     ],
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPg2InternalError,
+    reason="Materialize doesn't support to_timestamp(text, format) - backend limitation",
+)
 @pytest.mark.notimpl(
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
@@ -1281,6 +1394,11 @@ def test_string_as_timestamp(alltypes, fmt):
         ),
     ],
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPg2InternalError,
+    reason="Materialize doesn't have to_date() function - backend limitation",
+)
 @pytest.mark.notimpl(
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
@@ -1312,6 +1430,11 @@ def test_string_as_date(alltypes, fmt):
         "athena",
     ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPg2InternalError,
+    reason="Materialize doesn't support time string parsing - backend limitation",
 )
 @pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedOperationError)
 def test_string_as_time(backend, alltypes):
@@ -1353,6 +1476,12 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["oracle", "exasol", "druid"], raises=com.OperationNotDefinedError)
 @mark_notyet_risingwave_14670
 def test_day_of_week_column(backend, alltypes, df):
@@ -1447,6 +1576,7 @@ DATE_BACKEND_TYPES = {
     "duckdb": "DATE",
     "flink": "DATE NOT NULL",
     "impala": "DATE",
+    "materialize": "date",
     "postgres": "date",
     "snowflake": "DATE",
     "sqlite": "text",
@@ -1484,6 +1614,11 @@ TIMESTAMP_BACKEND_TYPES = {
 }
 
 
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPg2InternalError,
+    reason="Materialize doesn't have make_timestamp() function - backend limitation",
+)
 @pytest.mark.notimpl(
     ["pyspark", "mysql", "exasol", "oracle", "databricks"],
     raises=com.OperationNotDefinedError,
@@ -1568,6 +1703,11 @@ TIME_BACKEND_TYPES = {
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPg2InternalError,
+    reason="Materialize doesn't have make_time() function - backend limitation",
+)
+@pytest.mark.notyet(
     ["clickhouse", "impala", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
@@ -1644,6 +1784,7 @@ INTERVAL_BACKEND_TYPES = {
     "duckdb": "INTERVAL",
     "postgres": "interval",
     "risingwave": "interval",
+    "materialize": "interval",
 }
 
 
@@ -1698,6 +1839,12 @@ def test_interval_literal(con, backend):
         assert con.execute(expr.typeof()) == INTERVAL_BACKEND_TYPES[backend_name]
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
 def test_date_column_from_ymd(backend, con, alltypes, df):
     c = alltypes.timestamp_col
@@ -1709,8 +1856,15 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
     backend.assert_series_equal(golden, result.timestamp_col)
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(
-    ["pyspark", "mysql", "exasol", "databricks"], raises=com.OperationNotDefinedError
+    ["pyspark", "mysql", "exasol", "databricks"],
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
@@ -1733,6 +1887,12 @@ def test_date_scalar_from_iso(con):
     assert result.strftime("%Y-%m-%d") == "2022-02-24"
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["exasol"], raises=AssertionError, strict=False)
 def test_date_column_from_iso(backend, con, alltypes, df):
     expr = (
@@ -1757,6 +1917,12 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     assert result == 333
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError, reason="ORA-00932")
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
@@ -1858,6 +2024,12 @@ def build_date_col(t):
     ).cast("date")
 
 
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.parametrize(
     ("left_fn", "right_fn"),
@@ -1987,6 +2159,11 @@ def test_large_timestamp(con):
                     raises=ValueError,
                     reason="Only supports up to microseconds",
                 ),
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPg2InternalError,
+                    reason="precision for type timestamp or timestamptz must be between 0 and 6",
+                ),
                 pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
             ],
         ),
@@ -2027,7 +2204,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
-                    ["exasol", "polars", "sqlite", "oracle", "impala"],
+                    ["exasol", "materialize", "polars", "sqlite", "oracle", "impala"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -2057,6 +2234,12 @@ def test_timestamp_precision_output(con, ts, scale, unit):
             ],
         ),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 def test_delta(con, start, end, unit, expected):
     expr = end.delta(start, unit=unit)
@@ -2152,6 +2335,12 @@ def test_delta(con, start, end, unit, expected):
         ),
     ],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
@@ -2184,6 +2373,12 @@ def test_timestamp_bucket(backend, kws, pd_freq):
     ["clickhouse", "mssql", "snowflake"],
     reason="offset arg not supported",
     raises=com.UnsupportedOperationError,
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 @pytest.mark.parametrize("offset_mins", [2, -2], ids=["pos", "neg"])
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)

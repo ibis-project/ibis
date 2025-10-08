@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 pytestmark = [
-    pytest.mark.notimpl(["druid", "exasol", "oracle"]),
+    pytest.mark.notimpl(["druid", "exasol", "materialize", "oracle"]),
     pytest.mark.notyet(
         ["pyspark"], condition=IS_SPARK_REMOTE, raises=PySparkAnalysisException
     ),

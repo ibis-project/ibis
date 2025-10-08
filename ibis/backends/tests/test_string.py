@@ -40,6 +40,7 @@ pd = pytest.importorskip("pandas")
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(6) NOT NULL",
                 "databricks": "string",
             },
@@ -58,6 +59,7 @@ pd = pytest.importorskip("pandas")
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(7) NOT NULL",
                 "databricks": "string",
             },
@@ -88,6 +90,7 @@ pd = pytest.importorskip("pandas")
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(7) NOT NULL",
                 "databricks": "string",
             },
@@ -457,6 +460,11 @@ def uses_java_re(t):
             lambda t: t.string_col.rpad(10, "a"),
             lambda t: t.string_col.str.pad(10, fillchar="a", side="right"),
             id="rpad",
+            marks=pytest.mark.notimpl(
+                ["materialize"],
+                raises=PsycoPg2InternalError,
+                reason="rpad function does not exist in Materialize",
+            ),
         ),
         param(
             lambda t: t.string_col.find_in_set(["1"]),
@@ -633,6 +641,12 @@ def uses_java_re(t):
         ),
     ],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 def test_string(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes).name("tmp")
     result = expr.execute()
@@ -698,6 +712,12 @@ def test_string(backend, alltypes, df, result_func, expected_func):
             ],
         ),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 def test_substring(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes.date_string_col).name("tmp")
@@ -816,6 +836,12 @@ def test_substr_with_null_values(backend, alltypes, df):
     ],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="URL parsing functions not yet implemented for Materialize",
+    # See: https://materialize.com/docs/sql/functions/#string
+)
 def test_parse_url(con, result_func, expected):
     url = "http://user:pass@example.com:80/docs/books/tutorial/index.html?name=networking#DOWNLOADING"
     expr = result_func(ibis.literal(url))
@@ -901,6 +927,11 @@ def test_subs_with_re_replace(con):
     assert result == "k"
 
 
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize parser bug: rejects bare string literals in simple CASE expressions. Bug reported to Materialize SQL team.",
+)
 def test_multiple_subs(con):
     m = {"foo": "FOO", "bar": "BAR"}
     expr = ibis.literal("foo").substitute(m)
@@ -922,10 +953,10 @@ def test_multiple_subs(con):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
+@pytest.mark.notyet(
+    ["materialize", "risingwave"],
     raises=PsycoPg2InternalError,
-    reason="function levenshtein(character varying, character varying) does not exist",
+    reason="Materialize doesn't have levenshtein() function - backend limitation",
 )
 @pytest.mark.parametrize(
     "right", ["sitting", ibis.literal("sitting")], ids=["python", "ibis"]
@@ -1140,6 +1171,11 @@ def string_temp_table(backend, con):
             lambda t: t.str.pad(4, side="right", fillchar="-"),
             id="rpad",
             marks=[
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPg2InternalError,
+                    reason="rpad function does not exist in Materialize",
+                ),
                 pytest.mark.notyet(
                     ["oracle"],
                     raises=AssertionError,
@@ -1157,6 +1193,11 @@ def string_temp_table(backend, con):
             lambda t: t.str.pad(8, side="right", fillchar="-"),
             id="rpad_gt",
             marks=[
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPg2InternalError,
+                    reason="rpad function does not exist in Materialize",
+                ),
                 pytest.mark.notyet(
                     ["oracle"],
                     raises=AssertionError,
@@ -1259,6 +1300,7 @@ def string_temp_table(backend, con):
                         "clickhouse",
                         "datafusion",
                         "duckdb",
+                        "materialize",
                         "mysql",
                         "postgres",
                         "risingwave",
@@ -1414,11 +1456,21 @@ def string_temp_table_no_complications(backend, con):
             lambda t: t.string_col.rpad(4, "-"),
             lambda t: t.str.pad(4, side="right", fillchar="-"),
             id="rpad_lt",
+            marks=pytest.mark.notimpl(
+                ["materialize"],
+                raises=PsycoPg2InternalError,
+                reason="rpad function does not exist in Materialize",
+            ),
         ),
         param(
             lambda t: t.string_col.rpad(8, "-"),
             lambda t: t.str.pad(8, side="right", fillchar="-"),
             id="rpad_gt",
+            marks=pytest.mark.notimpl(
+                ["materialize"],
+                raises=PsycoPg2InternalError,
+                reason="rpad function does not exist in Materialize",
+            ),
         ),
         param(
             lambda t: t.string_col.lpad(4, "-"),
