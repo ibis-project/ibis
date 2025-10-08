@@ -64,7 +64,9 @@ def test_json_getitem_array(json_t):
 
 @pytest.mark.notimpl(["mysql", "risingwave"])
 @pytest.mark.notyet(["bigquery", "sqlite"], reason="doesn't support maps")
-@pytest.mark.notyet(["postgres"], reason="only supports map<string, string>")
+@pytest.mark.notyet(
+    ["postgres", "materialize"], reason="only supports map<string, string>"
+)
 @pytest.mark.notyet(
     ["pyspark", "flink"], reason="should work but doesn't deserialize JSON"
 )
@@ -113,6 +115,11 @@ def test_json_array(backend, json_t):
     condition=IS_SPARK_REMOTE,
     raises=PySparkPythonException,
     reason="environment issues",
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    reason="returns empty string instead of NULL for JSON empty strings",
+    strict=False,
 )
 @pytest.mark.parametrize(
     ("typ", "expected_data"),

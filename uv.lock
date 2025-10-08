@@ -3075,6 +3075,16 @@ impala = [
     { name = "pyarrow-hotfix" },
     { name = "rich" },
 ]
+materialize = [
+    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "numpy", version = "2.3.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas" },
+    { name = "psycopg" },
+    { name = "pyarrow" },
+    { name = "pyarrow-hotfix" },
+    { name = "rich" },
+]
 mssql = [
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
@@ -3271,6 +3281,7 @@ requires-dist = [
     { name = "numpy", marker = "extra == 'exasol'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'flink'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'impala'", specifier = ">=1.23.2,<3" },
+    { name = "numpy", marker = "extra == 'materialize'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'mssql'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'mysql'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'oracle'", specifier = ">=1.23.2,<3" },
@@ -3296,6 +3307,7 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'exasol'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'flink'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'impala'", specifier = ">=1.5.3,<3" },
+    { name = "pandas", marker = "extra == 'materialize'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'mssql'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'mysql'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'oracle'", specifier = ">=1.5.3,<3" },
@@ -3310,6 +3322,7 @@ requires-dist = [
     { name = "parsy", specifier = ">=2" },
     { name = "pins", extras = ["gcs"], marker = "extra == 'examples'", specifier = ">=0.8.3" },
     { name = "polars", marker = "extra == 'polars'", specifier = ">=1" },
+    { name = "psycopg", marker = "extra == 'materialize'", specifier = ">=3.2.0" },
     { name = "psycopg", marker = "extra == 'postgres'", specifier = ">=3.2.0" },
     { name = "psycopg2", marker = "extra == 'risingwave'", specifier = ">=2.8.4" },
     { name = "pyarrow", marker = "extra == 'athena'", specifier = ">=10.0.1" },
@@ -3322,6 +3335,7 @@ requires-dist = [
     { name = "pyarrow", marker = "extra == 'exasol'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'flink'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'impala'", specifier = ">=10.0.1" },
+    { name = "pyarrow", marker = "extra == 'materialize'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'mssql'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'mysql'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'oracle'", specifier = ">=10.0.1" },
@@ -3342,6 +3356,7 @@ requires-dist = [
     { name = "pyarrow-hotfix", marker = "extra == 'exasol'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'flink'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'impala'", specifier = ">=0.4" },
+    { name = "pyarrow-hotfix", marker = "extra == 'materialize'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'mssql'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'mysql'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'oracle'", specifier = ">=0.4" },
@@ -3371,6 +3386,7 @@ requires-dist = [
     { name = "rich", marker = "extra == 'exasol'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'flink'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'impala'", specifier = ">=12.4.4" },
+    { name = "rich", marker = "extra == 'materialize'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'mssql'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'mysql'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'oracle'", specifier = ">=12.4.4" },
@@ -3389,7 +3405,7 @@ requires-dist = [
     { name = "typing-extensions", specifier = ">=4.3.0" },
     { name = "tzdata", specifier = ">=2022.7" },
 ]
-provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
+provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "materialize", "oracle", "polars", "postgres", "pyspark", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
 
 [package.metadata.requires-dev]
 dev = [
