@@ -77,6 +77,11 @@ def test_scalar_param_array(con):
     ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize doesn't support ROW constructor syntax for struct params",
+)
 def test_scalar_param_struct(con):
     value = dict(a=1, b="abc", c=3.0)
     param = ibis.param("struct<a: int64, b: string, c: float64>")
@@ -90,6 +95,11 @@ def test_scalar_param_struct(con):
     reason="mysql and sqlite will never implement map types",
 )
 @pytest.mark.notyet(["bigquery"])
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize doesn't support jsonb_extract_path_text function",
+)
 def test_scalar_param_map(con):
     value = {"a": "ghi", "b": "def", "c": "abc"}
     param = ibis.param(dt.Map(dt.string, dt.string))
@@ -188,6 +198,11 @@ def test_scalar_param_date(backend, alltypes, value):
         "druid",
         "exasol",
     ]
+)
+@pytest.mark.notimpl(
+    ["materialize"],
+    reason="Nested parameter support not yet implemented for Materialize",
+    # See: https://materialize.com/docs/sql/types/
 )
 def test_scalar_param_nested(con):
     param = ibis.param("struct<x: array<struct<y: array<double>>>>")

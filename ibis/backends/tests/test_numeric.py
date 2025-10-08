@@ -59,6 +59,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
+                "materialize": "integer",
                 "flink": "INT NOT NULL",
                 "databricks": "int",
             },
@@ -77,6 +78,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
+                "materialize": "integer",
                 "flink": "INT NOT NULL",
                 "databricks": "int",
             },
@@ -95,6 +97,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
+                "materialize": "integer",
                 "flink": "INT NOT NULL",
                 "databricks": "int",
             },
@@ -113,6 +116,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
+                "materialize": "integer",
                 "flink": "INT NOT NULL",
                 "databricks": "int",
             },
@@ -131,6 +135,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
+                "materialize": "integer",
                 "flink": "INT NOT NULL",
                 "databricks": "int",
             },
@@ -149,6 +154,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
+                "materialize": "integer",
                 "flink": "INT NOT NULL",
                 "databricks": "int",
             },
@@ -167,6 +173,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
+                "materialize": "integer",
                 "flink": "INT NOT NULL",
                 "databricks": "int",
             },
@@ -185,6 +192,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
+                "materialize": "integer",
                 "flink": "INT NOT NULL",
                 "databricks": "int",
             },
@@ -203,6 +211,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "DECIMAL(2,1)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
+                "materialize": "numeric",
                 "flink": "DECIMAL(2, 1) NOT NULL",
                 "databricks": "decimal(2,1)",
             },
@@ -228,6 +237,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "DECIMAL(2,1)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
+                "materialize": "numeric",
                 "flink": "DECIMAL(2, 1) NOT NULL",
                 "databricks": "decimal(2,1)",
             },
@@ -246,6 +256,7 @@ pa = pytest.importorskip("pyarrow")
                 "duckdb": "DECIMAL(2,1)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
+                "materialize": "numeric",
                 "flink": "DECIMAL(2, 1) NOT NULL",
                 "databricks": "decimal(2,1)",
             },
@@ -279,6 +290,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "impala": decimal.Decimal(1),
                 "postgres": decimal.Decimal("1.1"),
                 "risingwave": decimal.Decimal("1.1"),
+                "materialize": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal(1),
                 "singlestoredb": decimal.Decimal(1),
@@ -301,6 +313,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
+                "materialize": "numeric",
                 "flink": "DECIMAL(38, 18) NOT NULL",
                 "databricks": "decimal(38,18)",
             },
@@ -326,6 +339,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "impala": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
                 "risingwave": decimal.Decimal("1.1"),
+                "materialize": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1.1"),
                 "singlestoredb": decimal.Decimal("1.1"),
@@ -349,6 +363,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "DECIMAL(38,9)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
+                "materialize": "numeric",
                 "flink": "DECIMAL(38, 9) NOT NULL",
                 "databricks": "decimal(38,9)",
             },
@@ -363,6 +378,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
                 "risingwave": decimal.Decimal("1.1"),
+                "materialize": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal(
                     "1.10000000000000003193790845333396190208"
@@ -378,6 +394,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
+                "materialize": "numeric",
             },
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
@@ -420,6 +437,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason="Unsupported precision.",
                     raises=DatabricksServerOperationError,
                 ),
+                pytest.mark.notyet(
+                    ["materialize"],
+                    reason="precision for type numeric must be between 1 and 39",
+                    raises=PsycoPg2InternalError,
+                ),
             ],
             id="decimal-big",
         ),
@@ -431,6 +453,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": decimal.Decimal("Infinity"),
                 "postgres": decimal.Decimal("Infinity"),
                 "risingwave": decimal.Decimal("Infinity"),
+                "materialize": decimal.Decimal("Infinity"),
                 "pyspark": decimal.Decimal("Infinity"),
                 "exasol": float("inf"),
                 "duckdb": float("inf"),
@@ -440,6 +463,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": "real",
                 "postgres": "numeric",
                 "risingwave": "numeric",
+                "materialize": "numeric",
                 "duckdb": "FLOAT",
                 "databricks": "double",
             },
@@ -491,6 +515,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
+                pytest.mark.notyet(
+                    ["materialize"],
+                    reason='invalid input syntax for type numeric: "Infinity"',
+                    raises=PsycoPg2InternalError,
+                ),
             ],
             id="decimal-infinity+",
         ),
@@ -502,6 +531,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": decimal.Decimal("-Infinity"),
                 "postgres": decimal.Decimal("-Infinity"),
                 "risingwave": decimal.Decimal("-Infinity"),
+                "materialize": decimal.Decimal("-Infinity"),
                 "pyspark": decimal.Decimal("-Infinity"),
                 "exasol": float("-inf"),
                 "duckdb": float("-inf"),
@@ -511,6 +541,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": "real",
                 "postgres": "numeric",
                 "risingwave": "numeric",
+                "materialize": "numeric",
                 "duckdb": "FLOAT",
                 "databricks": "double",
             },
@@ -562,6 +593,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
+                pytest.mark.notyet(
+                    ["materialize"],
+                    reason='invalid input syntax for type numeric: "-Infinity"',
+                    raises=PsycoPg2InternalError,
+                ),
             ],
             id="decimal-infinity-",
         ),
@@ -574,6 +610,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": None,
                 "postgres": float("nan"),
                 "risingwave": float("nan"),
+                "materialize": float("nan"),
                 "pyspark": decimal.Decimal("NaN"),
                 "exasol": float("nan"),
                 "duckdb": float("nan"),
@@ -585,6 +622,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": "null",
                 "postgres": "numeric",
                 "risingwave": "numeric",
+                "materialize": "numeric",
                 "duckdb": "FLOAT",
                 "databricks": "double",
             },
@@ -855,7 +893,18 @@ def test_math_functions_literals(con, expr, expected):
         param(L(0.0).acos(), math.acos(0.0), id="acos"),
         param(L(0.0).asin(), math.asin(0.0), id="asin"),
         param(L(0.0).atan(), math.atan(0.0), id="atan"),
-        param(L(0.0).atan2(1.0), math.atan2(0.0, 1.0), id="atan2"),
+        param(
+            L(0.0).atan2(1.0),
+            math.atan2(0.0, 1.0),
+            id="atan2",
+            marks=[
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPg2InternalError,
+                    reason='function "atan2" does not exist',
+                )
+            ],
+        ),
         param(L(0.0).cos(), math.cos(0.0), id="cos"),
         param(L(1.0).cot(), 1.0 / math.tan(1.0), id="cot"),
         param(L(0.0).sin(), math.sin(0.0), id="sin"),
@@ -880,7 +929,12 @@ def test_trig_functions_literals(con, expr, expected):
             marks=[
                 pytest.mark.notyet(
                     ["mssql", "exasol"], raises=(PyODBCProgrammingError, ExaQueryError)
-                )
+                ),
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPg2InternalError,
+                    reason='function "atan2" does not exist',
+                ),
             ],
         ),
         param(_.dc.cos(), np.cos, id="cos"),
@@ -952,6 +1006,12 @@ def test_cotangent(backend, alltypes, df):
             ],
         ),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 def test_simple_math_functions_columns(
     backend, con, alltypes, df, expr_fn, expected_fn
@@ -1045,6 +1105,12 @@ def test_floor_divide_precedence(con):
         ),
     ],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 def test_complex_math_functions_columns(
     backend, con, alltypes, df, expr_fn, expected_fn
 ):
@@ -1106,6 +1172,12 @@ def test_complex_math_functions_columns(
         ),
     ],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected_fn):
     expr = expr_fn(backend, alltypes)
     result = backend.default_series_rename(con.execute(expr.name("tmp")))
@@ -1114,6 +1186,12 @@ def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected
 
 
 @pytest.mark.parametrize("opname", ["add", "sub", "mul", "truediv", "floordiv", "pow"])
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 def test_binary_arithmetic_operations(backend, alltypes, df, opname):
     op = getattr(operator, opname)
     smallint_col = alltypes.smallint_col + 1  # make it nonzero
@@ -1291,6 +1369,11 @@ def test_floating_mod(backend, alltypes, df):
 @pytest.mark.notyet(["mssql"], raises=PyODBCDataError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["postgres"], raises=PsycoPgDivisionByZero)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPg2InternalError,
+    reason="Evaluation error: division by zero",
+)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.xfail_version(duckdb=["duckdb<1.1"])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
@@ -1304,7 +1387,14 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
 
 
 @pytest.mark.notimpl(
-    ["polars", "druid", "risingwave"], raises=com.OperationNotDefinedError
+    ["polars", "druid", "risingwave"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize will never support random() - nondeterministic functions can't be used in materialized views (their core feature)",
+    # Ref: https://materialize.com/docs/sql/functions/#unmaterializable-functions
 )
 def test_random(con):
     expr = ibis.random()
@@ -1314,7 +1404,14 @@ def test_random(con):
 
 
 @pytest.mark.notimpl(
-    ["polars", "druid", "risingwave"], raises=com.OperationNotDefinedError
+    ["polars", "druid", "risingwave"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize will never support random() - nondeterministic functions can't be used in materialized views (their core feature)",
+    # Ref: https://materialize.com/docs/sql/functions/#unmaterializable-functions
 )
 def test_random_different_per_row(alltypes):
     result = alltypes.select("int_col", rand_col=ibis.random()).execute()
@@ -1390,7 +1487,22 @@ def test_histogram(con, alltypes):
     assert con.execute(expr) == 1
 
 
-@pytest.mark.parametrize("const", ["pi", "e"])
+@pytest.mark.parametrize(
+    "const",
+    [
+        param(
+            "pi",
+            marks=[
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPg2InternalError,
+                    reason='function "pi" does not exist',
+                )
+            ],
+        ),
+        "e",
+    ],
+)
 def test_constants(con, const):
     expr = getattr(ibis, const)
     result = con.execute(expr)
@@ -1419,6 +1531,12 @@ flink_no_bitwise = pytest.mark.notyet(
         param(lambda _: 3, lambda t: t.int_col, id="scalar_col"),
         param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 @flink_no_bitwise
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
@@ -1452,6 +1570,12 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @flink_no_bitwise
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
@@ -1499,6 +1623,12 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     ("left", "right"),
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @flink_no_bitwise
 def test_bitwise_scalars(con, op, left, right):
     expr = op(left, right)
@@ -1509,6 +1639,12 @@ def test_bitwise_scalars(con, op, left, right):
 
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @flink_no_bitwise
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
@@ -1519,6 +1655,12 @@ def test_bitwise_not_scalar(con):
 
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 @flink_no_bitwise
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
