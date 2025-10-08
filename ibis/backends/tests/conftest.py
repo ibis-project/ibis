@@ -71,7 +71,7 @@ NO_STRUCT_SUPPORT_MARKS = [
     pytest.mark.never(
         ["mysql", "singlestoredb", "sqlite", "mssql"], reason="No struct support"
     ),
-    pytest.mark.notyet(["impala"]),
+    pytest.mark.notyet(["impala", "materialize"]),
     pytest.mark.notimpl(["druid", "oracle", "exasol"]),
 ]
 NO_STRUCT_SUPPORT = combine_marks(NO_STRUCT_SUPPORT_MARKS)
@@ -82,7 +82,13 @@ NO_MAP_SUPPORT_MARKS = [
         reason="Unlikely to ever add map support",
     ),
     pytest.mark.notyet(
-        ["bigquery", "impala"], reason="Backend doesn't yet implement map types"
+        ["bigquery", "impala"],
+        reason="Backend doesn't yet implement map types",
+    ),
+    pytest.mark.notyet(
+        ["materialize"],
+        reason="Backend has limited map support",
+        strict=False,
     ),
     pytest.mark.notimpl(
         ["exasol", "polars", "druid", "oracle"],

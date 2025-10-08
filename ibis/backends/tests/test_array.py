@@ -268,6 +268,12 @@ builtin_array = toolz.compose(
     raises=com.TableNotFound,
     reason="not yet set up with all testing tables",
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Materialize bug: panics when inserting multi-dimensional arrays with NULL sub-arrays.",
+    # Ref: https://github.com/MaterializeInc/materialize/pull/33786
+)
 def test_array_discovery(backend):
     t = backend.array_types
     expected = ibis.schema(
@@ -450,6 +456,12 @@ def test_unnest_default_name(backend):
     ],
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPg2InternalError,
+    reason="Materialize arrays don't support slice syntax (e.g., arr[1:3]). Only single-element indexing supported.",
+    # Ref: https://materialize.com/docs/sql/types/array/
+)
 @pytest.mark.notimpl(
     ["athena"],
     raises=com.TableNotFound,
@@ -500,6 +512,11 @@ def test_array_slice(backend, start, stop):
                     ["databricks"],
                     raises=AssertionError,
                     reason="nulls come back as NaN",
+                ),
+                pytest.mark.notyet(
+                    ["materialize"],
+                    raises=AssertionError,
+                    reason="nulls in arrays not preserved correctly in array_map results",
                 ),
             ],
             id="nulls",
@@ -559,6 +576,11 @@ def test_array_map(con, input, output, func):
                     ["databricks"],
                     raises=AssertionError,
                     reason="nans instead of nulls",
+                ),
+                pytest.mark.notyet(
+                    ["materialize"],
+                    raises=AssertionError,
+                    reason="nulls in arrays not preserved correctly in array_map results",
                 ),
             ],
             id="nulls",
@@ -913,12 +935,24 @@ def test_array_remove(con, input, expected):
                     raises=Exception,
                     reason="arrays with NaN returns a different number of rows than expected",
                 ),
+                pytest.mark.notyet(
+                    ["materialize"],
+                    raises=AssertionError,
+                    reason="nulls in arrays not preserved correctly in array_unique results",
+                ),
             ],
         ),
         param(
             {"a": [[1, 3, 3], [], [42, 42], [], None]},
             [{3, 1}, set(), {42}, set(), None],
             id="not_null",
+            marks=[
+                pytest.mark.notyet(
+                    ["materialize"],
+                    raises=AssertionError,
+                    reason="NULL values not handled correctly in array_unique results",
+                ),
+            ],
         ),
     ],
 )
@@ -1060,6 +1094,7 @@ def test_array_intersect(con, data):
 
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
+@pytest.mark.notimpl(["materialize"], raises=PsycoPgSyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
@@ -1083,6 +1118,7 @@ def test_unnest_struct(con):
 
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
+@pytest.mark.notimpl(["materialize"], raises=PsycoPgSyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
@@ -1110,7 +1146,16 @@ def test_unnest_struct_with_multiple_fields(con):
 
 
 array_zip_notimpl = pytest.mark.notimpl(
-    ["datafusion", "druid", "oracle", "polars", "postgres", "risingwave", "flink"],
+    [
+        "datafusion",
+        "druid",
+        "oracle",
+        "polars",
+        "postgres",
+        "risingwave",
+        "flink",
+        "materialize",
+    ],
     raises=com.OperationNotDefinedError,
 )
 
@@ -1171,6 +1216,7 @@ def test_zip_null(con, fn):
 
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
+@pytest.mark.notimpl(["materialize"], raises=PsycoPgSyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notimpl(
     ["polars"],
@@ -1284,6 +1330,12 @@ def flatten_data():
     ],
 )
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize doesn't have an array_flatten() function to flatten nested arrays.",
+    # Ref: https://materialize.com/docs/sql/functions/#array
+)
 def test_array_flatten(backend, flatten_data, column, expected):
     data = flatten_data[column]
     ids = range(len(data["data"]))
@@ -1513,7 +1565,8 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
 )
 @timestamp_range_tzinfos
 @pytest.mark.notimpl(
-    ["flink", "datafusion", "athena"], raises=com.OperationNotDefinedError
+    ["flink", "datafusion", "athena"],
+    raises=com.OperationNotDefinedError,
 )
 def test_timestamp_range(con, start, stop, step, freq, tzinfo):
     start = start.replace(tzinfo=tzinfo)
@@ -1572,7 +1625,8 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
 )
 @timestamp_range_tzinfos
 @pytest.mark.notimpl(
-    ["flink", "datafusion", "athena"], raises=com.OperationNotDefinedError
+    ["flink", "datafusion", "athena"],
+    raises=com.OperationNotDefinedError,
 )
 def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
     start = start.replace(tzinfo=tzinfo)
@@ -1648,6 +1702,12 @@ def test_array_literal_with_exprs(con, input, expected):
     ["athena"],
     raises=PyAthenaOperationalError,
     reason="sqlglot generates code that assumes there's only at most two fields to unpack from a struct",
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize doesn't have an array_zip() function to zip multiple arrays together.",
+    # Ref: https://materialize.com/docs/sql/functions/#array
 )
 def test_zip_unnest_lift(con):
     data = pd.DataFrame(dict(array1=[[1, 2, 3]], array2=[[4, 5, 6]]))
@@ -1742,6 +1802,7 @@ def test_table_unnest_column_expr(backend):
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["trino"], raises=TrinoUserError)
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
+@pytest.mark.notimpl(["materialize"], raises=PsycoPgSyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notyet(
     ["risingwave"], raises=PsycoPg2InternalError, reason="not supported in risingwave"
@@ -1811,6 +1872,11 @@ def _agg_with_nulls(agg, x):
                     ["snowflake"],
                     raises=com.OperationNotDefinedError,
                     reason="not yet implemented in Ibis",
+                ),
+                pytest.mark.notyet(
+                    ["materialize"],
+                    raises=PsycoPgSyntaxError,
+                    reason="MODE() WITHIN GROUP syntax not fully supported in Materialize",
                 ),
             ],
         ),
@@ -1894,6 +1960,12 @@ def test_array_agg_bool(con, data, agg, baseline_func):
 @pytest.mark.notimpl(["risingwave", "flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["bigquery"], raises=TypeError, reason="nested arrays aren't supported"
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize bug: requires multi-dimensional arrays to have uniform sub-array dimensions (no ragged arrays).",
+    # Ref: https://github.com/MaterializeInc/materialize/pull/33786
 )
 def test_flatten(con):
     t = ibis.memtable(
