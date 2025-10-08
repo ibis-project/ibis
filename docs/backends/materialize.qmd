@@ -1,0 +1,69 @@
+# Materialize
+
+[https://materialize.com](https://materialize.com)
+
+![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-Materialize tables | Streaming sources-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-Materialize tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square) ![](https://img.shields.io/badge/streaming-SUBSCRIBE-purple?style=flat-square)
+
+## Install
+
+Install Ibis and dependencies for the Materialize backend:
+
+```{.bash}
+pip install 'ibis-framework[materialize]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.materialize.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## Connect
+
+### `ibis.materialize.connect`
+
+```python
+con = ibis.materialize.connect(
+    user="materialize",
+    password="password",
+    host="localhost",
+    port=6875,
+    database="materialize",
+    cluster="quickstart",  # Optional: specify default cluster
+)
+```
+
+::: {.callout-note}
+`ibis.materialize.connect` is a thin wrapper around
+[`ibis.backends.materialize.Backend.do_connect`](#ibis.backends.materialize.Backend.do_connect).
+:::
+
+### Connection Parameters
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("materialize")
+```
+
+### `ibis.connect` URL format
+
+In addition to `ibis.materialize.connect`, you can also connect to Materialize by
+passing a properly-formatted connection URL to `ibis.connect`:
+
+```python
+con = ibis.connect(f"materialize://{user}:{password}@{host}:{port}/{database}")
+```
+
+```{python}
+#| echo: false
+BACKEND = "Materialize"
+```
+
+{{< include ./_templates/api.qmd >}}
