@@ -202,9 +202,23 @@ class DayOfWeekIndex(Unary):
 
 
 @public
+class IsoDayOfWeekIndex(Unary):
+    arg: Value[dt.Date | dt.Timestamp]
+
+    dtype = dt.int16
+
+
+@public
 class DayOfWeekName(Unary):
     """Extract the name of the day of the week from a date or timestamp."""
 
+    arg: Value[dt.Date | dt.Timestamp]
+
+    dtype = dt.string
+
+
+@public
+class IsoDayOfWeekName(Unary):
     arg: Value[dt.Date | dt.Timestamp]
 
     dtype = dt.string
