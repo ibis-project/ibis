@@ -865,7 +865,7 @@ def test_time_expression():
 
 
 def test_timestamp_literals():
-    assert ibis.timestamp(2022, 2, 4, 16, 20, 00).type() == dt.timestamp
+    assert ibis.timestamp(2022, 2, 4, 16, 20, 00).type() == dt.Timestamp(scale=0)
 
 
 def test_timestamp_literal():
@@ -874,11 +874,13 @@ def test_timestamp_literal():
     assert expr.equals(sol)
 
     expr = ibis.timestamp("2022-02-04T01:02:03")
-    sol = ibis.literal("2022-02-04T01:02:03", type=dt.timestamp)
+    sol = ibis.literal("2022-02-04T01:02:03", type=dt.Timestamp(scale=0))
     assert expr.equals(sol)
 
     expr = ibis.timestamp("2022-02-04T01:02:03Z")
-    sol = ibis.literal("2022-02-04T01:02:03", type=dt.Timestamp(timezone="UTC"))
+    sol = ibis.literal(
+        "2022-02-04T01:02:03", type=dt.Timestamp(scale=0, timezone="UTC")
+    )
     assert expr.equals(sol)
 
 

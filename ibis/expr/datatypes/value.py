@@ -10,7 +10,7 @@ import uuid
 from collections.abc import Mapping, Sequence
 from functools import partial
 from operator import attrgetter
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import toolz
 from public import public
@@ -27,6 +27,9 @@ from ibis.common.temporal import (
     normalize_timezone,
 )
 from ibis.expr.datatypes.cast import highest_precedence
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 @lazy_singledispatch
@@ -82,10 +85,7 @@ def infer_date(value: datetime.date) -> dt.Date:
 
 @infer.register(datetime.datetime)
 def infer_timestamp(value: datetime.datetime) -> dt.Timestamp:
-    if value.tzinfo:
-        return dt.Timestamp(timezone=str(value.tzinfo))
-    else:
-        return dt.timestamp
+    return dt.Timestamp.from_datetime(value)
 
 
 @infer.register(datetime.timedelta)
@@ -176,11 +176,8 @@ def infer_numpy_scalar(value):
 
 
 @infer.register("pandas.Timestamp")
-def infer_pandas_timestamp(value):
-    if value.tz is not None:
-        return dt.Timestamp(timezone=str(value.tz))
-    else:
-        return dt.timestamp
+def infer_pandas_timestamp(value: pd.Timestamp) -> dt.Timestamp:
+    return dt.Timestamp.from_pandas(value)
 
 
 @infer.register("pandas.Timedelta")
