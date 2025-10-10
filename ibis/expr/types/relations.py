@@ -681,12 +681,16 @@ class Table(Expr, FixedTextJupyterMixin):
         )
 
     def as_scalar(self) -> ir.Scalar:
-        """Inform ibis that the table expression should be treated as a scalar.
+        """Tell ibis to treat this value as 1 row, 1 column table, referred to as a *scalar*.
 
-        Note that the table must have exactly one column and one row for this to
-        work. If the table has more than one column an error will be raised in
-        expression construction time. If the table has more than one row an
-        error will be raised by the backend when the expression is executed.
+        Ibis cannot know until execution time whether a table expression
+        contains only one row or many rows.
+
+        This method is a way to explicitly tell ibis to trust you that
+        this table expression will only contain one row at execution time.
+        This allows you to use this table expression with other tables.
+
+        Note that execution will fail if the table DOES contain more than one row.
 
         Returns
         -------
@@ -699,6 +703,22 @@ class Table(Expr, FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> heavy_gentoo = t.filter(t.species == "Gentoo", t.body_mass_g > 6200)
+
+        We know from domain knowledge that there is only one Gentoo penguin
+        with body mass greater than 6200g, so heavy_gentoo is a table with
+        exactly one row.
+
+        If we try to use `heavy_gentoo.select("island")` directly in a filter,
+        ibis will raise an error because we are trying to compare two tables
+        to each other, which we don't know know to align without a specific join:
+
+        >>> from_that_island = t.filter(t.island == heavy_gentoo.select("island"))
+        Traceback (most recent call last):
+            ...
+
+        Instead, we should use `as_scalar()` to tell ibis that we know
+        `heavy_gentoo.select("island")` contains exactly one row:
+
         >>> from_that_island = t.filter(t.island == heavy_gentoo.select("island").as_scalar())
         >>> from_that_island.species.value_counts().order_by("species")
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━┓
