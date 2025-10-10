@@ -36,6 +36,8 @@ from ibis.backends.tests.errors import (
     PyODBCDataError,
     PyODBCProgrammingError,
     PySparkConnectGrpcException,
+    SingleStoreDBOperationalError,
+    SingleStoreDBProgrammingError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -123,6 +125,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
 @pytest.mark.notyet(
     [
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "impala",
@@ -153,6 +156,7 @@ def test_extract_iso_year(backend, alltypes, df, transform):
 @pytest.mark.notyet(
     [
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "impala",
@@ -333,7 +337,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "ms",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "sqlite", "datafusion", "exasol"],
+                    ["mysql", "singlestoredb", "sqlite", "datafusion", "exasol"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -344,7 +348,15 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "us",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "sqlite", "trino", "datafusion", "exasol", "athena"],
+                    [
+                        "mysql",
+                        "singlestoredb",
+                        "sqlite",
+                        "trino",
+                        "datafusion",
+                        "exasol",
+                        "athena",
+                    ],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notyet(
@@ -365,6 +377,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                         "duckdb",
                         "impala",
                         "mysql",
+                        "singlestoredb",
                         "postgres",
                         "risingwave",
                         "pyspark",
@@ -686,7 +699,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 ),
                 pytest.mark.notimpl(["impala"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["mysql"], raises=sg.ParseError),
+                pytest.mark.notimpl(["mysql", "singlestoredb"], raises=sg.ParseError),
                 pytest.mark.notimpl(
                     ["druid"],
                     raises=ValidationError,
@@ -707,7 +720,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["impala"], raises=com.UnsupportedOperationError),
-                pytest.mark.notimpl(["mysql"], raises=sg.ParseError),
+                pytest.mark.notimpl(["mysql", "singlestoredb"], raises=sg.ParseError),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 sqlite_without_ymd_intervals,
             ],
@@ -1134,7 +1147,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
     ],
 )
 @pytest.mark.notimpl(
-    ["mysql", "postgres", "risingwave", "sqlite", "oracle"],
+    ["mysql", "singlestoredb", "postgres", "risingwave", "sqlite", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
@@ -1187,7 +1200,7 @@ def test_integer_to_timestamp(backend, con, unit):
                     raises=GoogleBadRequest,
                 ),
                 pytest.mark.never(
-                    ["mysql"],
+                    ["mysql", "singlestoredb"],
                     reason="NaTType does not support strftime",
                     raises=ValueError,
                 ),
@@ -1253,7 +1266,7 @@ def test_string_as_timestamp(alltypes, fmt):
                     raises=GoogleBadRequest,
                 ),
                 pytest.mark.never(
-                    ["mysql"],
+                    ["mysql", "singlestoredb"],
                     reason="NaTType does not support strftime",
                     raises=ValueError,
                 ),
@@ -1485,7 +1498,7 @@ TIMESTAMP_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["pyspark", "mysql", "exasol", "oracle", "databricks"],
+    ["pyspark", "mysql", "singlestoredb", "exasol", "oracle", "databricks"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
@@ -1502,7 +1515,8 @@ def test_timestamp_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    ["mysql", "pyspark", "exasol", "databricks"], raises=com.OperationNotDefinedError
+    ["mysql", "singlestoredb", "pyspark", "exasol", "databricks"],
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
@@ -1564,7 +1578,7 @@ TIME_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pyspark", "mysql", "oracle", "databricks"],
+    ["datafusion", "pyspark", "mysql", "singlestoredb", "oracle", "databricks"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1661,7 +1675,14 @@ INTERVAL_BACKEND_TYPES = {
     raises=ImpalaHiveServer2Error,
 )
 @pytest.mark.notimpl(
-    ["mysql"], "The backend implementation is broken. ", raises=MySQLProgrammingError
+    ["mysql"],
+    "The backend implementation is broken. ",
+    raises=MySQLProgrammingError,
+)
+@pytest.mark.notimpl(
+    ["singlestoredb"],
+    "The backend implementation is broken. ",
+    raises=SingleStoreDBProgrammingError,
 )
 @pytest.mark.notimpl(
     ["bigquery", "duckdb"],
@@ -1710,7 +1731,8 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["pyspark", "mysql", "exasol", "databricks"], raises=com.OperationNotDefinedError
+    ["pyspark", "mysql", "singlestoredb", "exasol", "databricks"],
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
@@ -1969,6 +1991,11 @@ def test_large_timestamp(con):
                     raises=MySQLOperationalError,
                 ),
                 pytest.mark.notyet(
+                    ["singlestoredb"],
+                    reason="doesn't support nanoseconds",
+                    raises=SingleStoreDBOperationalError,
+                ),
+                pytest.mark.notyet(
                     ["bigquery"],
                     reason=(
                         "doesn't support nanoseconds. "
@@ -2046,7 +2073,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     reason="backend computes timezone aware difference",
                 ),
                 pytest.mark.notimpl(
-                    ["mysql"],
+                    ["mysql", "singlestoredb"],
                     raises=com.OperationNotDefinedError,
                     reason="timestampdiff rounds after subtraction and mysql doesn't have a date_trunc function",
                 ),
@@ -2064,7 +2091,17 @@ def test_delta(con, start, end, unit, expected):
 
 
 @pytest.mark.notimpl(
-    ["impala", "mysql", "pyspark", "sqlite", "trino", "druid", "databricks", "athena"],
+    [
+        "impala",
+        "mysql",
+        "singlestoredb",
+        "pyspark",
+        "sqlite",
+        "trino",
+        "druid",
+        "databricks",
+        "athena",
+    ],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize(
@@ -2170,6 +2207,7 @@ def test_timestamp_bucket(backend, kws, pd_freq):
         "datafusion",
         "impala",
         "mysql",
+        "singlestoredb",
         "oracle",
         "pyspark",
         "sqlite",
@@ -2291,6 +2329,11 @@ def test_time_literal_sql(dialect, snapshot, micros):
                     ["clickhouse"],
                     raises=AssertionError,
                     reason="clickhouse doesn't support dates before the UNIX epoch",
+                ),
+                pytest.mark.notyet(
+                    ["singlestoredb"],
+                    raises=Exception,
+                    reason="singlestoredb doesn't support dates before year 1000",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
                 pytest.mark.xfail_version(
