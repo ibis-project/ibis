@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/vscode/devcontainers/python:3.13
-COPY --from=ghcr.io/astral-sh/uv:0.9.1 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.9.2 /uv /uvx /bin/
 ARG USERNAME=vscode
 
 RUN apt-get update && \
