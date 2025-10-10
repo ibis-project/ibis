@@ -112,6 +112,19 @@ def test_create_table(backend, con, temp_table, func, sch):
 
 
 @pytest.mark.parametrize(
+    "keyword", ["group", "order", "where", "select", "from", "join", "table"]
+)
+def test_create_table_with_keyword(con, keyword):
+    """Test creating tables with a name and coumn name that is a SQL keyword."""
+    t = ibis.memtable({keyword: ["a", "b", "c"]})
+    try:
+        con.create_table(keyword, t, temp=True)
+        assert con.table(keyword).schema() == ibis.schema({keyword: "string"})
+    finally:
+        con.drop_table(keyword, force=True)
+
+
+@pytest.mark.parametrize(
     "temp, overwrite",
     [
         param(
