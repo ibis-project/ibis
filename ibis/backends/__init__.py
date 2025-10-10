@@ -13,7 +13,7 @@ import urllib.parse
 import weakref
 from collections import Counter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, NamedTuple, overload
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, overload
 
 import ibis
 import ibis.common.exceptions as exc
@@ -23,7 +23,7 @@ import ibis.expr.types as ir
 from ibis import util
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+    from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -1662,11 +1662,7 @@ def _get_backend_names(*, exclude: tuple[str] = ()) -> frozenset[str]:
     are visible to every caller of this function.
 
     """
-
-    if sys.version_info < (3, 10):
-        entrypoints = importlib.metadata.entry_points()["ibis.backends"]
-    else:
-        entrypoints = importlib.metadata.entry_points(group="ibis.backends")
+    entrypoints = importlib.metadata.entry_points(group="ibis.backends")
     return frozenset(ep.name for ep in entrypoints).difference(exclude)
 
 

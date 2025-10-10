@@ -54,9 +54,9 @@ import builtins
 import inspect
 import operator
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Callable, Optional, Union
+from typing import Optional, Union
 
 from public import public
 

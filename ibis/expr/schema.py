@@ -14,12 +14,14 @@ from ibis.common.patterns import Coercible
 from ibis.util import deprecated, indent
 
 if TYPE_CHECKING:
+    from typing import TypeAlias
+
     import numpy as np
     import pyarrow as pa
     import sqlglot as sg
     import sqlglot.expressions as sge
     from pandas.api.extensions import ExtensionDtype
-    from typing_extensions import Self, TypeAlias
+    from typing_extensions import Self
 
 
 class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):

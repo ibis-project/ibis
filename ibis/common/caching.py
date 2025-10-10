@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import functools
-from typing import Callable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def memoize(func: Callable) -> Callable:

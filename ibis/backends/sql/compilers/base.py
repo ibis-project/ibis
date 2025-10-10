@@ -7,7 +7,7 @@ import math
 import operator
 import string
 from functools import partial, reduce
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Literal
+from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -51,7 +51,7 @@ except ImportError:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir

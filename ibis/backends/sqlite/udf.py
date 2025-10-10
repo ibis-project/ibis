@@ -6,7 +6,7 @@ import math
 import operator
 from collections import defaultdict
 from datetime import date
-from typing import Any, Callable, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 from urllib.parse import parse_qs, urlsplit
 from uuid import uuid4
 
@@ -14,6 +14,9 @@ try:
     import regex as re
 except ImportError:
     import re
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class _UDF(NamedTuple):

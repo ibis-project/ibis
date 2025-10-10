@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, Callable, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Optional
 
 from public import public
 
 import ibis.common.exceptions as com
 from ibis.common.grounds import Annotable
 from ibis.common.patterns import Between
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 PosInt = Annotated[int, Between(lower=0)]
 
