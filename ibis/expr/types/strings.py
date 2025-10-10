@@ -8,6 +8,7 @@ from public import public
 
 import ibis.expr.operations as ops
 from ibis import util
+from ibis.expr import datatypes as dt
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 
@@ -19,6 +20,8 @@ if TYPE_CHECKING:
 
 @public
 class StringValue(Value):
+    __dtype__ = dt.string
+
     def __getitem__(self, key: slice | int | ir.IntegerScalar) -> StringValue:
         """Index or slice a string expression.
 

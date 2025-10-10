@@ -1879,6 +1879,16 @@ def test_cast():
     )
 
 
+def test_cast_subclass():
+    class Users(ibis.Table):
+        name: ibis.ir.StringColumn
+        age: ibis.ir.IntegerColumn["uint8"]
+
+    inp = ibis.table(dict(name="string", age="int64"))
+    result = inp.cast(Users)
+    assert result.schema() == ibis.schema(dict(name="string", age="uint8"))
+
+
 def test_pivot_longer():
     diamonds = ibis.table(
         {
