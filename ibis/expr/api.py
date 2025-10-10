@@ -25,6 +25,7 @@ from ibis.common.grounds import Concrete
 from ibis.common.temporal import normalize_datetime, normalize_timezone
 from ibis.expr.datatypes import DataType
 from ibis.expr.decompile import decompile
+from ibis.expr.operations.template import IntoInterpolation, IntoTemplate
 from ibis.expr.schema import Schema
 from ibis.expr.sql import parse_sql, to_sql
 from ibis.expr.types import (
@@ -62,6 +63,8 @@ __all__ = (
     "DataType",
     "Deferred",
     "Expr",
+    "IntoInterpolation",
+    "IntoTemplate",
     "Scalar",
     "Schema",
     "Table",
@@ -120,6 +123,7 @@ __all__ = (
     "schema",
     "selectors",
     "set_backend",
+    "sql_value",
     "struct",
     "table",
     "time",
@@ -592,6 +596,85 @@ def _deferred_method_call(expr, method_name, **kwargs):
     else:
         value = expr
     return method(value)
+
+
+def sql_value(template: IntoTemplate, /, *, dialect: str | None = None) -> ir.Value:
+    """Create an ibis value from a t-string.
+
+    t-strings, or Template Strings, were added as builtin syntax in Python 3.14.
+    See https://docs.python.org/3.14/library/string.templatelib.html
+    for more information.
+
+    This function allows you to create an ibis value expression from a t-string.
+    It does NOT support generic SELECT statements, only expressions that
+    represent a single value.
+
+    Parameters
+    ----------
+    template
+        The template to use for creating the SQL expression.
+    dialect
+        The SQL dialect to use for the expression.
+        Defaults to "duckdb".
+
+    Returns
+    -------
+    ValueExpr
+        An ibis ValueExpr.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> con = ibis.duckdb.connect()
+    >>> table = con.create_table("my_table", {"a": [1, 2, 3], "b": [4, 5, 6]})
+
+    If you are using python 3.14+, you can replace the lines
+    below with `template = t"{table.b} + 3 - {table.a / 10}"`.
+    Here, since we are testing on older versions,
+    we use a tiny implementation of t-strings included in ibis that works as a replacement.
+    If you are on python < 3.14, you should use a backport such as
+    https://pypi.org/project/tstrings-backport and do `from tstrings import t`.
+
+    >>> from ibis.tests.tstring import t
+    >>> template = t("{table.b} + 3 - {table.a / 10}")
+
+    Now create an ibis expression based on this.
+
+    >>> expr = ibis.sql_value(template)
+    >>> print(expr.to_sql())
+    SELECT
+      "t0"."b" + 3 - "t0"."a" / 10 AS "TemplateSQL((), (b, Divide(a, 10)))"
+    FROM "memory"."main"."my_table" AS "t0"
+    >>> table.mutate(expr=expr, s=expr.cast(str) + "!")
+    ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
+    ┃ a     ┃ b     ┃ expr    ┃ s      ┃
+    ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
+    │ int64 │ int64 │ float64 │ string │
+    ├───────┼───────┼─────────┼────────┤
+    │     1 │     4 │     6.9 │ 6.9!   │
+    │     2 │     5 │     7.8 │ 7.8!   │
+    │     3 │     6 │     8.7 │ 8.7!   │
+    └───────┴───────┴─────────┴────────┘
+
+    You can provide a `dialect` parameter if you pass in a template written in
+    a specific SQL dialect, and then this will be transpiled to
+    the correct dialect upon execution.
+
+    For example, write a template in sqlite syntax (with datatype REAL)
+    and then execute it on duckdb (where REAL will be interpreted as DOUBLE).
+
+    >>> template = t("CAST({table.a} AS REAL)")
+    >>> expr = ibis.sql_value(template, dialect="sqlite")
+    >>> arr = con.to_pyarrow(expr)
+    >>> arr.type
+    DataType(double)
+    >>> arr.to_pylist()
+    [1.0, 2.0, 3.0]
+    """
+    from ibis.expr.operations.template import TemplateSQL
+
+    return TemplateSQL.from_template(template, dialect=dialect).to_expr()
 
 
 def desc(expr: ir.Column | str, /, *, nulls_first: bool = False) -> ir.Value:
