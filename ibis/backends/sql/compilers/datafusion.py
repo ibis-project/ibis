@@ -612,9 +612,9 @@ class DataFusionCompiler(SQLGlotCompiler):
         unit = unit.name.lower()
         return sg.cast(self.f.concat(self.cast(arg, dt.string), f" {unit}"), "interval")
 
-    if (version := util.version("datafusion")) is not None and version >= vparse(
-        "48.0.0"
-    ):
+    if (version := util.version("datafusion")) is not None and vparse(
+        version
+    ) >= vparse("48.0.0"):
 
         def visit_ApproxQuantile(self, op, *, arg, quantile, where):
             expr = sge.WithinGroup(

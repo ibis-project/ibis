@@ -30,8 +30,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
     from pathlib import Path
 
-    from packaging.version import Version
-
     import ibis.expr.types as ir
 
 T = TypeVar("T", covariant=True)
@@ -728,12 +726,8 @@ else:
         return tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 
 
-def version(package: str) -> Version:
-    from packaging.version import parse as vparse
-
+def version(package: str) -> str:
     try:
-        version_info = importlib.metadata.version(package)
+        return importlib.metadata.version(package)
     except importlib.metadata.PackageNotFoundError:
         return None
-    else:
-        return vparse(version_info)

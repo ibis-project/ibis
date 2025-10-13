@@ -130,7 +130,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v6.8.0
+        uses: astral-sh/setup-uv@v7.0.0
 
       - name: install additional deps
         if: matrix.backend.key == 'snowpark'

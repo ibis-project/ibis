@@ -443,7 +443,17 @@ def _regular_join_method(
         /,
         predicates: (
             str
-            | Sequence[str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue]
+            | Sequence[
+                str
+                | ir.BooleanColumn
+                | Literal[True]
+                | Literal[False]
+                | tuple[
+                    str | ir.Column | ir.Deferred,
+                    str | ir.Column | ir.Deferred,
+                ]
+                | ir.BooleanValue
+            ]
         ) = (),
         *,
         lname: str = "",
@@ -3482,6 +3492,7 @@ class Table(Expr, FixedTextJupyterMixin):
                     str | ir.Column | ir.Deferred,
                     str | ir.Column | ir.Deferred,
                 ]
+                | ir.BooleanValue
             ]
         ) = (),
         *,
