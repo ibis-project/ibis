@@ -108,19 +108,23 @@
           export LD_LIBRARY_PATH="$(pg_config --libdir)"
         '';
 
-        preCommitDeps = with pkgs; [
-          actionlint
-          codespell
-          deadnix
-          git
-          just
-          nixfmt-rfc-style
-          nodejs.pkgs.prettier
-          shellcheck
-          shfmt
-          statix
-          taplo-cli
-        ];
+        preCommitDeps =
+          with pkgs;
+          lib.optionals (!stdenv.isDarwin) [
+            actionlint
+          ]
+          ++ [
+            codespell
+            deadnix
+            git
+            just
+            nixfmt-rfc-style
+            nodejs.pkgs.prettier
+            shellcheck
+            shfmt
+            statix
+            taplo-cli
+          ];
 
         mkDevShell =
           env:
