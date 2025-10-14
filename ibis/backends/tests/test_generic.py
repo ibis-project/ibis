@@ -1100,9 +1100,6 @@ def test_int_scalar(alltypes):
 
 
 @pytest.mark.notimpl(["polars", "druid"])
-@pytest.mark.notyet(
-    ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
-)
 @pytest.mark.parametrize("method_name", ["any", "notany"])
 def test_exists(batting, awards_players, method_name):
     years = [1980, 1981]
