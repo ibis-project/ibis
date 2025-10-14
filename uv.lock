@@ -3257,7 +3257,7 @@ docs = [
     { name = "altair", specifier = ">=5.0.1,<6" },
     { name = "griffe", specifier = ">=1.7.3" },
     { name = "ipykernel", specifier = ">=6.25.1,<8" },
-    { name = "itables", specifier = ">=1.6.3,<2.5" },
+    { name = "itables", specifier = ">=1.6.3,<2.6" },
     { name = "jupyter-cache", specifier = ">=1.0.0,<2" },
     { name = "jupyterlab", specifier = ">=4.2.5,<5" },
     { name = "jupyterlab-night", specifier = ">=0.4.6,<1" },
