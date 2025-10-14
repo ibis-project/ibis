@@ -3930,7 +3930,7 @@ class Table(Expr, FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
-        return ops.View(child=self, name=alias).to_expr()
+        return ops.View(parent=self, name=alias).to_expr()
 
     def sql(self, query: str, /, *, dialect: str | None = None) -> ir.Table:
         '''Run a SQL query against a table expression.
@@ -4026,7 +4026,7 @@ class Table(Expr, FixedTextJupyterMixin):
 
         if isinstance(op, ops.View):
             name = op.name
-            expr = op.child.to_expr()
+            expr = op.parent.to_expr()
         else:
             name = util.gen_name("sql_query")
             expr = self
