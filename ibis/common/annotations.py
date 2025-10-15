@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import functools
 import inspect
 import types
@@ -301,7 +302,11 @@ class Signature(inspect.Signature):
     Primarily used in the implementation of `ibis.common.grounds.Annotable`.
     """
 
-    __slots__ = ()
+    __slots__ = ('_cached_params')
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._cached_params = dict(self.parameters)  # avoids access via MappingProxyType which is slow compared to dict
 
     @classmethod
     def merge(cls, *signatures, **annotations):
@@ -509,13 +514,25 @@ class Signature(inspect.Signature):
 
         return this
 
+    def validate_nobind_using_dataclass(self, cls, *args, **kwargs):
+        try:
+            instance = cls.__dataclass__(*args, **kwargs)
+        except TypeError as err:
+            raise SignatureValidationError(
+                "{call} {cause}\n\nExpected signature: {sig}",
+                sig=self,
+                func=cls,
+                args=args,
+                kwargs=kwargs,
+            ) from err
+
+        return self.validate_nobind(cls, instance.__dict__)
+
     def validate_nobind(self, func, kwargs):
         """Validate the arguments against the signature without binding."""
         this, errors = {}, []
-        for name, param in self.parameters.items():
-            value = kwargs.get(name, param.default)
-            if value is EMPTY:
-                raise TypeError(f"missing required argument `{name!r}`")
+        for name, param in self._cached_params.items():
+            value = kwargs[name]
 
             pattern = param.annotation.pattern
             result = pattern.match(value, this)
@@ -564,6 +581,36 @@ class Signature(inspect.Signature):
             )
 
         return result
+    
+    def to_dataclass(self, cls_name: str) -> type:
+        """Create a dataclass from this signature.
+
+        Later, instantiating a dataclass from arg+kwargs and accessing the resulting __dict__
+        is much faster (~100x) than using Signature.bind
+        """
+        fields = []
+        for k, v in self.parameters.items():
+            if v.default is inspect.Parameter.empty:
+                fields.append((k, v.annotation))
+            elif v.annotation.__hash__ is None:
+                # unhashable types (e.g. list) cannot be used as default values
+                # in dataclasses, so we use a default factory instead
+                fields.append((k, v.annotation, dataclasses.field(default_factory=DefaultFactory(v.default))))
+            else:
+                fields.append((k, v.annotation, dataclasses.field(default=v.default)))
+        return dataclasses.make_dataclass(cls_name, fields)
+    
+
+class DefaultFactory:
+    """Helper to create default factories for dataclass fields."""
+
+    __slots__ = ("value",)
+
+    def __init__(self, value):
+        self.value = value
+
+    def __call__(self):
+        return self.value
 
 
 def annotated(_1=None, _2=None, _3=None, **kwargs):
