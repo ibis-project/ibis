@@ -596,7 +596,6 @@ class SQLBackend(BaseBackend):
         catalog: str | None = None,
     ):
         compiler = self.compiler
-        qualify_target_columns = self._qualify_merge_target_columns
         quoted = compiler.quoted
 
         columns = self._get_columns_to_insert(
@@ -610,11 +609,9 @@ class SQLBackend(BaseBackend):
                 matched=True,
                 then=sge.Update(
                     expressions=[
-                        sg.column(
-                            col,
-                            table=target_alias if qualify_target_columns else None,
-                            quoted=quoted,
-                        ).eq(sg.column(col, table=source_alias, quoted=quoted))
+                        sg.column(col, quoted=quoted).eq(
+                            sg.column(col, table=source_alias, quoted=quoted)
+                        )
                         for col in columns
                         if col != on
                     ]
@@ -624,14 +621,7 @@ class SQLBackend(BaseBackend):
                 matched=False,
                 then=sge.Insert(
                     this=sge.Tuple(
-                        expressions=[
-                            sg.column(
-                                col,
-                                table=target_alias if qualify_target_columns else None,
-                                quoted=quoted,
-                            )
-                            for col in columns
-                        ]
+                        expressions=[sg.column(col, quoted=quoted) for col in columns]
                     ),
                     expression=sge.Tuple(
                         expressions=[
