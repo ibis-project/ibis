@@ -750,24 +750,21 @@ def test_upsert_from_dataframe(
     raises=TrinoUserError,
     reason="connector does not support modifying table rows",
 )
-@pytest.mark.parametrize(
-    "from_table_modifier", [
-        param(lambda x: x, id="simple"),
-        param(
-            lambda x: x.filter(ibis._.salary > 0).order_by("first_name"),
-            id="with_filter_and_order_by"
-        ),
-    ],
-)
+@pytest.mark.parametrize("with_order_by", [True, False])
 def test_upsert_from_expr(
-    backend,
-    con,
-    employee_data_1_temp_table,
-    employee_data_3_temp_table,
-    from_table_modifier,
+    backend, con, employee_data_1_temp_table, employee_data_3_temp_table, with_order_by
 ):
     temporary = con.table(employee_data_1_temp_table)
-    from_table = from_table_modifier(con.table(employee_data_3_temp_table))
+    from_table = con.table(employee_data_3_temp_table)
+    if with_order_by:
+        if backend.name() == "mssql":
+            pytest.xfail(
+                "MSSQL doesn't allow ORDER BY in subqueries, unless "
+                "TOP, OFFSET or FOR XML is also specified"
+            )
+
+        from_table = from_table.filter(ibis._.salary > 0).order_by("first_name")
+
     df1 = temporary.execute().set_index("first_name")
 
     con.upsert(employee_data_1_temp_table, obj=from_table, on="first_name")
