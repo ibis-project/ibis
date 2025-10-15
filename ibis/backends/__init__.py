@@ -977,7 +977,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         self._con_kwargs: dict[str, Any] = kwargs
         self._can_reconnect: bool = True
         self._memtables = weakref.WeakSet()
-        self._qualify_merge_target_columns = False
         super().__init__()
 
     @property
