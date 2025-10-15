@@ -453,20 +453,28 @@ class SQLBackend(BaseBackend):
         with self._safe_raw_sql(query):
             pass
 
-    def _build_insert_from_table(
+    def _get_columns_to_insert(
         self, *, target: str, source, db: str | None = None, catalog: str | None = None
     ):
-        compiler = self.compiler
-        quoted = compiler.quoted
         # Compare the columns between the target table and the object to be inserted
         # If source is a subset of target, use source columns for insert list
         # Otherwise, assume auto-generated column names and use positional ordering.
         target_cols = self.get_schema(target, catalog=catalog, database=db).keys()
 
-        columns = (
+        return (
             source_cols
             if (source_cols := source.schema().keys()) <= target_cols
             else target_cols
+        )
+
+    def _build_insert_from_table(
+        self, *, target: str, source, db: str | None = None, catalog: str | None = None
+    ):
+        compiler = self.compiler
+        quoted = compiler.quoted
+
+        columns = self._get_columns_to_insert(
+            target=target, source=source, db=db, catalog=catalog
         )
 
         query = sge.insert(
@@ -590,15 +598,9 @@ class SQLBackend(BaseBackend):
         compiler = self.compiler
         qualify_target_columns = self._qualify_merge_target_columns
         quoted = compiler.quoted
-        # Compare the columns between the target table and the object to be inserted
-        # If source is a subset of target, use source columns for insert list
-        # Otherwise, assume auto-generated column names and use positional ordering.
-        target_cols = self.get_schema(target, catalog=catalog, database=db).keys()
 
-        columns = (
-            source_cols
-            if (source_cols := source.schema().keys()) <= target_cols
-            else target_cols
+        columns = self._get_columns_to_insert(
+            target=target, source=source, db=db, catalog=catalog
         )
 
         source_alias = util.gen_name("source")
