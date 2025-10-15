@@ -91,10 +91,6 @@ class Backend(
     compiler = sc.oracle.compiler
     supports_temporary_tables = True
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._qualify_merge_target_columns = True
-
     @cached_property
     def version(self):
         matched = re.search(r"(\d+)\.(\d+)\.(\d+)", self.con.version)
