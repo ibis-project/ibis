@@ -45,7 +45,7 @@ module.exports = {
         replacements: [
           {
             files: ["ibis/__init__.py"],
-            from: '__version__ = "${lastRelease.version}"',
+            from: '__version__ = ".*"',
             to: '__version__ = "${nextRelease.version}"',
             results: [
               {
@@ -59,7 +59,7 @@ module.exports = {
           },
           {
             files: ["CITATION.cff"],
-            from: "version: ${lastRelease.version}",
+            from: "version: .*",
             to: "version: ${nextRelease.version}",
             results: [
               {
