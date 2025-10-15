@@ -1,6 +1,6 @@
 [project]
 name = "ibis-framework"
-version = "10.8.0"
+version = "11.0.0"
 requires-python = ">=3.9"
 description = "The portable Python dataframe library"
 readme = "README.md"
@@ -289,8 +289,8 @@ tests = [
 docs = [
   "altair>=5.0.1,<6",
   "griffe>=1.7.3",
-  "ipykernel>=6.25.1,<7",
-  "itables>=1.6.3,<2.5",
+  "ipykernel>=6.25.1,<8",
+  "itables>=1.6.3,<2.6",
   "nbclient>=0.8.0,<1",
   "plotly>=5.16.1",
   "plotnine>=0.12.2,<1",

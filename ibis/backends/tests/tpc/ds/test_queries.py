@@ -2066,11 +2066,6 @@ def test_40(catalog_sales, catalog_returns, warehouse, item, date_dim):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 def test_41(item):
     return (
         item.view()
@@ -3417,7 +3412,6 @@ def test_64(
 
 
 @tpc_test("ds", result_is_empty=True)
-@pytest.mark.notyet(["clickhouse"], reason="Broken")
 def test_65(store, item, store_sales, date_dim):
     sa = (
         store_sales.join(
@@ -4110,14 +4104,7 @@ def test_75(
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["clickhouse"], raises=AssertionError, reason="incorrect result")
-def test_76(
-    store_sales,
-    item,
-    date_dim,
-    web_sales,
-    catalog_sales,
-):
+def test_76(store_sales, item, date_dim, web_sales, catalog_sales):
     def _sales(
         sales, customer_sk, sold_date, item_sk, channel, col_name, ext_sales_price
     ):

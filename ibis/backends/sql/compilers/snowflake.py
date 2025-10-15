@@ -685,10 +685,6 @@ $$""",
         return spec
 
     def visit_WindowBoundary(self, op, *, value, preceding):
-        if not isinstance(op.value, ops.Literal):
-            raise com.OperationNotDefinedError(
-                "Expressions in window bounds are not supported by Snowflake"
-            )
         return super().visit_WindowBoundary(op, value=value, preceding=preceding)
 
     def visit_Correlation(self, op, *, left, right, how, where):

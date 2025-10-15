@@ -40,11 +40,6 @@ def test_01(lineitem):
     return q
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("h")
 def test_02(part, supplier, partsupp, nation, region):
     """Minimum Cost Supplier Query (Q2)"""
@@ -633,11 +628,6 @@ def test_19(lineitem, part):
     return q
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("h")
 def test_20(supplier, nation, partsupp, part, lineitem):
     """Potential Part Promotion Query (Q20)
@@ -728,11 +718,6 @@ def test_21(supplier, lineitem, orders, nation):
     return q.limit(100)
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("h")
 def test_22(customer, orders):
     """Global Sales Opportunity Query (Q22)

@@ -218,6 +218,8 @@ class Flink(Hive):
     REGEXP_EXTRACT_DEFAULT_GROUP = 0
 
     class Generator(Hive.Generator):
+        WITH_PROPERTIES_PREFIX = "WITH"
+
         UNNEST_WITH_ORDINALITY = False
 
         TYPE_MAPPING = Hive.Generator.TYPE_MAPPING.copy() | {

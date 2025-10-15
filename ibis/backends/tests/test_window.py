@@ -1125,7 +1125,7 @@ def test_first_last(backend):
     ["mysql"], raises=MySQLOperationalError, reason="not supported by MySQL"
 )
 @pytest.mark.notyet(
-    ["polars", "snowflake", "sqlite"],
+    ["polars", "sqlite"],
     raises=com.OperationNotDefinedError,
     reason="not support by the backend",
 )
