@@ -369,7 +369,7 @@ services:
       - oracle:/opt/oracle/data
 
   exasol:
-    image: exasol/docker-db:8.34.0
+    image: exasol/docker-db:2025.1.3
     privileged: true
     ports:
       - 8563:8563
@@ -379,7 +379,7 @@ services:
       timeout: 90s
       test:
         - CMD-SHELL
-        - /opt/exasol/db-8.*/bin/Console/exaplus -q -x -c 127.0.0.1:8563 -u sys -p exasol -jdbcparam validateservercertificate=0 -sql 'SELECT 1;'
+        - /opt/exasol/db-*/bin/Console/exaplus -q -x -c 127.0.0.1:8563 -u sys -p exasol -jdbcparam validateservercertificate=0 -sql 'SELECT 1;'
     networks:
       - exasol
     volumes:
