@@ -7,7 +7,6 @@ import inspect
 import json
 import os
 import re
-import sqlite3
 import string
 import subprocess
 import sys
@@ -26,12 +25,11 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
+from ibis.backends.tests.conftest import NO_MERGE_SUPPORT
 from ibis.backends.tests.errors import (
-    ClickHouseDatabaseError,
     DatabricksServerOperationError,
     ExaQueryError,
     ImpalaHiveServer2Error,
-    MySQLProgrammingError,
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPgUndefinedObject,
@@ -39,9 +37,7 @@ from ibis.backends.tests.errors import (
     PyAthenaDatabaseError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
-    PySparkUnsupportedOperationException,
     SnowflakeProgrammingError,
-    TrinoUserError,
 )
 from ibis.util import gen_name
 
@@ -659,49 +655,7 @@ def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
     assert len(con.table(employee_data_1_temp_table).execute()) == 3
 
 
-try:
-    import pyspark
-
-    pyspark_merge_exception = (
-        PySparkUnsupportedOperationException
-        if vparse(pyspark.__version__) >= vparse("3.5")
-        else Py4JJavaError
-    )
-except ImportError:
-    pyspark_merge_exception = None
-
-
-@pytest.mark.notyet(
-    ["clickhouse"], raises=ClickHouseDatabaseError, reason="MERGE INTO is not supported"
-)
-@pytest.mark.notyet(["datafusion"], reason="MERGE INTO is not supported")
-@pytest.mark.notyet(
-    ["impala"],
-    raises=ImpalaHiveServer2Error,
-    reason="target table must be an Iceberg table",
-)
-@pytest.mark.notyet(
-    ["mysql"], raises=MySQLProgrammingError, reason="MERGE INTO is not supported"
-)
-@pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
-@pytest.mark.notyet(
-    ["pyspark"],
-    raises=pyspark_merge_exception,
-    reason="MERGE INTO TABLE is not supported temporarily",
-)
-@pytest.mark.notyet(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="MERGE INTO is not supported",
-)
-@pytest.mark.notyet(
-    ["sqlite"], raises=sqlite3.OperationalError, reason="MERGE INTO is not supported"
-)
-@pytest.mark.notyet(
-    ["trino"],
-    raises=TrinoUserError,
-    reason="connector does not support modifying table rows",
-)
+@NO_MERGE_SUPPORT
 def test_upsert_from_dataframe(
     backend, con, employee_data_1_temp_table, test_employee_data_3
 ):
@@ -719,37 +673,7 @@ def test_upsert_from_dataframe(
     )
 
 
-@pytest.mark.notyet(
-    ["clickhouse"], raises=ClickHouseDatabaseError, reason="MERGE INTO is not supported"
-)
-@pytest.mark.notyet(["datafusion"], reason="MERGE INTO is not supported")
-@pytest.mark.notyet(
-    ["impala"],
-    raises=ImpalaHiveServer2Error,
-    reason="target table must be an Iceberg table",
-)
-@pytest.mark.notyet(
-    ["mysql"], raises=MySQLProgrammingError, reason="MERGE INTO is not supported"
-)
-@pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
-@pytest.mark.notyet(
-    ["pyspark"],
-    raises=pyspark_merge_exception,
-    reason="MERGE INTO TABLE is not supported temporarily",
-)
-@pytest.mark.notyet(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="MERGE INTO is not supported",
-)
-@pytest.mark.notyet(
-    ["sqlite"], raises=sqlite3.OperationalError, reason="MERGE INTO is not supported"
-)
-@pytest.mark.notyet(
-    ["trino"],
-    raises=TrinoUserError,
-    reason="connector does not support modifying table rows",
-)
+@NO_MERGE_SUPPORT
 @pytest.mark.parametrize("with_order_by", [True, False])
 def test_upsert_from_expr(
     backend, con, employee_data_1_temp_table, employee_data_3_temp_table, with_order_by
