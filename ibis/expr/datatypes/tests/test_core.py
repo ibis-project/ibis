@@ -74,7 +74,9 @@ def test_dtype(spec, expected):
             marks=pytest.mark.xfail(sys.version_info < (3, 10), reason="python 3.9"),
         ),
         (lambda: ("!int",), dt.Int64(nullable=False)),
-        (lambda: ("!int", True), dt.Int64(nullable=False)),  # "!" overrides `nullable`
+        (lambda: ("!int", None), dt.Int64(nullable=False)),
+        (lambda: ("!int", False), dt.Int64(nullable=False)),
+        (lambda: ("!int", True), dt.Int64(nullable=True)),
     ],
 )
 def test_nullable_dtype(args, expected):
@@ -105,8 +107,73 @@ def test_bogus_union():
         (dt.Time, dt.time),
     ],
 )
-def test_dtype_from_classes(klass, expected):
-    assert dt.dtype(klass) == expected
+@pytest.mark.parametrize(
+    ("nullable", "expected_nullable"),
+    [
+        (True, True),
+        (False, False),
+        (None, True),
+    ],
+)
+def test_dtype_from_classes(klass, expected, nullable, expected_nullable):
+    assert dt.dtype(klass, nullable=nullable) == expected.copy(
+        nullable=expected_nullable
+    )
+
+
+@pytest.mark.parametrize(
+    ("inp", "nullable", "expected"),
+    [
+        (dt.Null(nullable=True), True, dt.Null(nullable=True)),
+        (dt.Null(nullable=True), False, dt.Null(nullable=False)),
+        (dt.Null(nullable=True), None, dt.Null(nullable=True)),
+        (dt.Null(nullable=False), True, dt.Null(nullable=True)),
+        (dt.Null(nullable=False), False, dt.Null(nullable=False)),
+        (dt.Null(nullable=False), None, dt.Null(nullable=False)),
+        (dt.Int16(nullable=True), True, dt.Int16(nullable=True)),
+        (dt.Int16(nullable=True), False, dt.Int16(nullable=False)),
+        (dt.Int16(nullable=True), None, dt.Int16(nullable=True)),
+        (dt.Int16(nullable=False), True, dt.Int16(nullable=True)),
+        (dt.Int16(nullable=False), False, dt.Int16(nullable=False)),
+        (dt.Int16(nullable=False), None, dt.Int16(nullable=False)),
+        # The nullability of the element type is NEVER changed,
+        # only the outer nullability can be changed.
+        (
+            dt.Array(dt.Int16(nullable=True), nullable=True),
+            True,
+            dt.Array(dt.Int16(nullable=True), nullable=True),
+        ),
+        (
+            dt.Array(dt.Int16(nullable=True), nullable=True),
+            False,
+            dt.Array(dt.Int16(nullable=True), nullable=False),
+        ),
+        (
+            dt.Array(dt.Int16(nullable=True), nullable=True),
+            None,
+            dt.Array(dt.Int16(nullable=True), nullable=True),
+        ),
+        (
+            dt.Array(dt.Int16(nullable=False), nullable=True),
+            True,
+            dt.Array(dt.Int16(nullable=False), nullable=True),
+        ),
+        (
+            dt.Array(dt.Int16(nullable=False), nullable=True),
+            False,
+            dt.Array(dt.Int16(nullable=False), nullable=False),
+        ),
+        (
+            dt.Array(dt.Int16(nullable=False), nullable=True),
+            None,
+            dt.Array(dt.Int16(nullable=False), nullable=True),
+        ),
+    ],
+)
+def test_dtype_from_datatype_instance(
+    inp: dt.DataType, nullable: bool | None, expected: dt.DataType
+):
+    assert dt.dtype(inp, nullable=nullable) == expected
 
 
 @pytest.mark.parametrize(

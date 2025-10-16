@@ -38,7 +38,7 @@ class TypeMapper(Generic[T]):
         raise NotImplementedError
 
     @classmethod
-    def to_ibis(cls, typ: T, nullable: bool = True) -> DataType:
+    def to_ibis(cls, typ: T, nullable: bool | None = None) -> DataType:
         """Convert a format-specific type object to an Ibis DataType.
 
         Parameters
@@ -47,6 +47,8 @@ class TypeMapper(Generic[T]):
             The format-specific type object to convert.
         nullable
             Whether the Ibis DataType should be nullable.
+            If `None`, the nullability will be inferred from `typ` if possible.
+            If inference is not possible, we assume `nullable=True`.
 
         Returns
         -------
@@ -56,7 +58,7 @@ class TypeMapper(Generic[T]):
         raise NotImplementedError
 
     @classmethod
-    def from_string(cls, text: str, nullable: bool = True) -> DataType:
+    def from_string(cls, text: str, nullable: bool | None = None) -> DataType:
         """Convert a backend-specific string representation into an Ibis DataType.
 
         Parameters
@@ -65,6 +67,8 @@ class TypeMapper(Generic[T]):
             The backend-specific string representation to convert.
         nullable
             Whether the Ibis DataType should be nullable.
+            If `None`, the nullability will be inferred from `text` if possible,
+            eg if the string starts with '!' it is considered non-nullable.
 
         Returns
         -------

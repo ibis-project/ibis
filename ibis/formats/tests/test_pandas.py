@@ -48,6 +48,7 @@ def test_dtype_to_pandas(pandas_type, ibis_type):
     assert PandasType.from_ibis(ibis_type) == pandas_type
 
 
+@pytest.mark.parametrize("nullable", [True, False, None])
 @pytest.mark.parametrize(
     ("pandas_type", "ibis_type"),
     [
@@ -72,9 +73,11 @@ def test_dtype_to_pandas(pandas_type, ibis_type):
     ],
     ids=str,
 )
-def test_dtype_from_pandas_arrow_dtype(pandas_type, ibis_type):
+def test_dtype_from_pandas_arrow_dtype(pandas_type, ibis_type, nullable):
+    if nullable is False:
+        ibis_type = ibis_type.copy(nullable=False)
     series = pd.Series([], dtype=f"{pandas_type}[pyarrow]")
-    assert PandasType.to_ibis(series.dtype) == ibis_type
+    assert PandasType.to_ibis(series.dtype, nullable=nullable) == ibis_type
 
 
 def test_dtype_from_pandas_arrow_string_dtype():
