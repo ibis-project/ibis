@@ -67,8 +67,7 @@ class TypeMapper(Generic[T]):
             The backend-specific string representation to convert.
         nullable
             Whether the Ibis DataType should be nullable.
-            If `None`, the nullability will be inferred from `text` if possible,
-            eg if the string starts with '!' it is considered non-nullable.
+            If `None`, the specific type mapper will choose a default.
 
         Returns
         -------
