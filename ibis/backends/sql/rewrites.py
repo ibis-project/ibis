@@ -204,7 +204,8 @@ def first_to_firstvalue(_, **kwargs):
             "in a window function"
         )
     klass = FirstValue if isinstance(_.func, ops.First) else LastValue
-    return _.copy(func=klass(_.func.arg))
+    _kwargs = {k: v for k, v in (("order_by", _.func.order_by),) if v}
+    return _.copy(func=klass(_.func.arg), **_kwargs)
 
 
 @replace(p.Alias)
