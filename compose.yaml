@@ -379,7 +379,7 @@ services:
       timeout: 90s
       test:
         - CMD-SHELL
-        - /opt/exasol/db-8.*/bin/Console/exaplus -q -x -c 127.0.0.1:8563 -u sys -p exasol -jdbcparam validateservercertificate=0 -sql 'SELECT 1;'
+        - /opt/exasol/db-*/bin/Console/exaplus -q -x -c 127.0.0.1:8563 -u sys -p exasol -jdbcparam validateservercertificate=0 -sql 'SELECT 1;'
     networks:
       - exasol
     volumes:
