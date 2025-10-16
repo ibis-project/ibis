@@ -34,7 +34,13 @@ geospatial_supported = _find_spec("geopandas") is not None
 
 class PandasType(NumpyType):
     @classmethod
-    def to_ibis(cls, typ, nullable=True):
+    def to_ibis(cls, typ, nullable: bool | None = None) -> dt.DataType:
+        # pandas's type system doesn't keep track of nullability.
+        # We accept nullable=None to be compatible with the rest of TypeMapper.to_ibis()
+        # implementations, but we treat None as True, since we can't infer nullability
+        # from a pandas dtype.
+        if nullable is None:
+            nullable = True
         if pd.options.future.infer_string and isinstance(typ, pd.StringDtype):
             return dt.String(nullable=nullable)
         elif isinstance(typ, pdt.DatetimeTZDtype):
@@ -56,7 +62,7 @@ class PandasType(NumpyType):
             return super().to_ibis(typ, nullable=nullable)
 
     @classmethod
-    def from_ibis(cls, dtype) -> np.dtype | pd.Ex:
+    def from_ibis(cls, dtype: dt.DataType) -> np.dtype | ExtensionDtype:
         if pd.options.future.infer_string and dtype.is_string():
             return pd.StringDtype(na_value=np.nan)
         elif dtype.is_timestamp():
