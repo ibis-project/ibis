@@ -1172,7 +1172,7 @@ class Backend(
         on_exists: Literal["error", "ignore", "replace"] = "error",
         read_only: bool = False,
         type: Literal["duckdb", "sqlite", "postgres", "mysql"] | None = None,
-        more_options: Iterable[str] = [],
+        options: Mapping[str, Any] = {},
     ) -> None:
         """Attach a DuckDB, sqlite, postgres, or mysql database to the current DuckDB session.
 
@@ -1194,8 +1194,8 @@ class Backend(
             Whether to attach the database as read-only.
         type
             The type of the database to attach. If none, infers from the file extension.
-        more_options
-            Additional options, e.g. `["STORAGE_VERSION 'v1.2.0'", "block_size 262144"]`.
+        options
+            Additional options, e.g. `{"STORAGE_VERSION": "'v1.2.0'", "block_size": 262144}`.
 
         Returns
         -------
@@ -1211,7 +1211,7 @@ class Backend(
         else:
             raise ValueError(
                 f"Invalid value for `on_exists`: {on_exists!r}. "
-                "Must be one of 'error' or 'ignore'."
+                "Must be one of 'error', 'ignore', or 'replace'."
             )
 
         if name is None:
@@ -1219,26 +1219,24 @@ class Backend(
 
         as_name = f"AS {sg.to_identifier(name, self.compiler.quoted).sql(self.name)}"
 
-        options = [*more_options]
+        option_strings = [f"{k!s} {v!r}" for k, v in options.items()]
         if read_only:
-            options.append("READ_ONLY true")
+            option_strings.append("READ_ONLY true")
         else:
-            options.append("READ_ONLY false")
+            option_strings.append("READ_ONLY false")
         if type is not None:
-            options.append(f"TYPE {type.upper()}")
-        option_string = ", ".join(options)
+            option_strings.append(f"TYPE {type.upper()}")
+        option_string = ", ".join(option_strings)
 
         sql = f"ATTACH {on_exists_string} '{path_or_url}' {as_name} ({option_string})"
-        databases_before = set(self.list_catalogs())
-        self.con.execute(sql).fetchall()
-        if name in databases_before:
+        catalogs_before = set(self.list_catalogs())
+        if name in catalogs_before:
             if on_exists == "ignore":
                 return None
             if on_exists == "replace":
                 return name
-            raise AssertionError(
-                f"Database {name!r} already exists in the current catalog."
-            )
+            raise exc.CatalogExistsError(name)
+        self.con.execute(sql)
         return name
 
     def detach(
@@ -1269,7 +1267,12 @@ class Backend(
                 "Must be one of 'error' or 'ignore'."
             )
         name = sg.to_identifier(name).sql(self.name)
-        self.con.execute(f"DETACH DATABASE {if_exists} {name}").fetchall()
+        try:
+            self.con.execute(f"DETACH DATABASE {if_exists} {name}").fetchall()
+        except duckdb.BinderException as e:
+            if "database not found" not in str(e).lower():
+                raise e
+            raise exc.CatalogNotFoundError(name) from e
 
     def attach_sqlite(
         self,
@@ -1280,7 +1283,7 @@ class Backend(
         on_exists: Literal["error", "ignore", "replace"] = "error",
         read_only: bool = False,
         all_varchar: bool = False,
-        more_options: Iterable[str] = [],
+        options: Mapping[str, Any] = {},
     ) -> str | None:
         """Attach a SQLite database to the current DuckDB session.
 
@@ -1304,9 +1307,9 @@ class Backend(
         all_varchar
             Whether to read SQLite columns as `VARCHAR` to avoid type errors on ingestion.
             See https://duckdb.org/docs/stable/extensions/sqlite.html#data-types
-        more_options
+        options
             Additional options to pass to the `ATTACH` statement.
-            These are passed as a list of strings, e.g. `["STORAGE_VERSION 'v1.2.0'"]`.
+            These are passed as a dictionary, e.g. `{"STORAGE_VERSION": "v1.2.0"}`.
 
         Returns
         -------
@@ -1343,7 +1346,7 @@ class Backend(
             on_exists=on_exists,
             read_only=read_only,
             type="sqlite",
-            more_options=more_options,
+            options=options,
         )
 
     def register_filesystem(self, filesystem: AbstractFileSystem):
@@ -1921,18 +1924,3 @@ def _attach_name(path_or_url: str | Path) -> str:
             "Please provide a name explicitly using the `name` parameter."
         )
     return final
-
-
-for inp, expected in [
-    ("myddb", "myddb"),
-    ("myddb.duckdb", "myddb"),
-    ("myddb.temp.duckdb", "myddb.temp"),
-    ("myddb.temp.sqlite", "myddb.temp"),
-    (Path("myddb.duckdb"), "myddb"),
-    (Path("myddb"), "myddb"),
-    ("/root/myddb.duckdb", "myddb"),
-    ("myddb", "myddb"),
-    ("duckdb:///myddb.duckdb", "myddb"),
-    ("https://example.com/myddb.duckdb", "myddb"),
-]:
-    assert _attach_name(inp) == expected

@@ -26,6 +26,28 @@ class IbisError(Exception):
     """IbisError."""
 
 
+class CatalogExistsError(IbisError, RuntimeError):
+    """Raised when trying to create a catalog that already exists."""
+
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+
+    def __str__(self) -> str:
+        (name,) = self.args
+        return f"Catalog with name `{name}` already exists."
+
+
+class CatalogNotFoundError(IbisError, RuntimeError):
+    """Raised when trying to access a catalog that does not exist."""
+
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+
+    def __str__(self) -> str:
+        (name,) = self.args
+        return f"Catalog with name `{name}` does not exist."
+
+
 class InternalError(IbisError):
     """InternalError."""
 

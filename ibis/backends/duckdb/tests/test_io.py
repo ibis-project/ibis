@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from pathlib import Path
 
 import duckdb
 import numpy as np
@@ -14,6 +15,8 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.backends.duckdb import Backend, _attach_name
+from ibis.common import exceptions as com
 from ibis.conftest import LINUX, SANDBOXED
 from ibis.util import gen_name
 
@@ -239,12 +242,28 @@ def test_read_sqlite_no_table_name(con, tmp_path):
 def sqlite_path(tmp_path, data_dir):
     path = tmp_path / "test.db"
     scon = sqlite3.connect(str(path))
-    try:
-        with scon:
-            scon.executescript((data_dir.parent / "schema" / "sqlite.sql").read_text())
-        yield path
-    finally:
-        scon.close()
+    with scon:
+        scon.executescript((data_dir.parent / "schema" / "sqlite.sql").read_text())
+    yield path
+
+
+@pytest.mark.parametrize(
+    "inp,expected",
+    [
+        ("myddb", "myddb"),
+        ("myddb.duckdb", "myddb"),
+        ("myddb.temp.duckdb", "myddb.temp"),
+        ("myddb.temp.sqlite", "myddb.temp"),
+        (Path("myddb.duckdb"), "myddb"),
+        (Path("myddb"), "myddb"),
+        ("/root/myddb.duckdb", "myddb"),
+        ("myddb", "myddb"),
+        ("duckdb:///myddb.duckdb", "myddb"),
+        ("https://example.com/myddb.duckdb", "myddb"),
+    ],
+)
+def test_attach_name(inp, expected):
+    assert _attach_name(inp) == expected
 
 
 # Because we create a new connection and the test requires loading/installing a
@@ -257,9 +276,9 @@ def sqlite_path(tmp_path, data_dir):
 def test_attach_sqlite(sqlite_path):
     # Create a new connection here because we already have the `ibis_testing`
     # tables loaded in to the `con` fixture.
-    con = ibis.duckdb.connect()
+    con: Backend = ibis.duckdb.connect()
 
-    catalogs_before = con.list_catalogs()
+    catalogs_before = con.list_catalogs()  # eg 'memory', 'temp', 'system'
     assert con.list_tables() == []
     for i in range(2):
         name = con.attach_sqlite(sqlite_path, name="foo", on_exists="ignore")
@@ -281,7 +300,7 @@ def test_attach_sqlite(sqlite_path):
         assert any(not isinstance(t, dt.String) for t in types)
         assert any(isinstance(t, dt.String) for t in types)
 
-    with pytest.raises(duckdb.BinderException) as exc:
+    with pytest.raises(com.CatalogExistsError) as exc:
         con.attach_sqlite(sqlite_path, name="foo")
     assert "already" in str(exc.value)
 
@@ -290,6 +309,9 @@ def test_attach_sqlite(sqlite_path):
 
     con.detach("foo")
     assert con.list_catalogs() == catalogs_before
+    with pytest.raises(com.CatalogNotFoundError) as exc:
+        con.detach("foo")
+    con.detach("foo", on_missing="ignore")
 
     # Check for the name to be returned.
     # Check all_varchar=True.
