@@ -78,3 +78,10 @@ NO_JSON_SUPPORT_MARKS = [
     pytest.mark.notimpl(["datafusion", "exasol", "mssql", "druid", "oracle"]),
 ]
 NO_JSON_SUPPORT = combine_marks(NO_JSON_SUPPORT_MARKS)
+
+NAN_TREATED_AS_NULL_MARKS = [
+    pytest.mark.never(
+        ["sqlite", "mssql", "mysql"], reason="Treats NaN as NULL", raises=Exception
+    ),
+]
+NAN_TREATED_AS_NULL = combine_marks(NAN_TREATED_AS_NULL_MARKS)

@@ -5,13 +5,14 @@ import math
 import pytest
 
 import ibis
+from ibis.backends.tests.conftest import NAN_TREATED_AS_NULL
 
 pa = pytest.importorskip("pyarrow")
 
 
+@NAN_TREATED_AS_NULL
 @pytest.mark.notimpl(
-    "sqlite",
-    "During memtable registration, the pa.Table is converted to a pandas DataFrame, losing NaN info",
+    "exasol", reason="Exasol driver can't handle NaNs during memtable registration"
 )
 @pytest.mark.parametrize(
     "method",
@@ -30,9 +31,14 @@ pa = pytest.importorskip("pyarrow")
 def test_nans_roundtrip(con, method):
     inp = [1.0, float("nan"), None]
     t = ibis.memtable(method(pa.array(inp)))
+    assert t.schema()["f"] == ibis.dtype("float64")
 
     def make_comparable(vals):
         return {"nan" if (isinstance(v, float) and math.isnan(v)) else v for v in vals}
+
+    n_nan = con.execute(t.f.isnan().sum())
+    n_null = con.execute(t.f.isnull().sum())
+    assert (n_nan, n_null) == (1, 1)
 
     result = make_comparable(con.to_pyarrow(t.f).to_pylist())
     expected = make_comparable(inp)
