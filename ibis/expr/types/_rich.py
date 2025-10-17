@@ -403,19 +403,24 @@ def to_rich_table(
             if not next_flex_cols:
                 break
 
-    global need_to_show_row_count_help
-    if options.show_count:
-        # use underscore to be friendly to i18n and python REPL
-        nrows = f"{table.count().execute():_} rows"
+    if len(result) <= max_rows:
+        nrows_str = f"{len(result):_} rows"
     else:
-        nrows = "… rows"
-        if need_to_show_row_count_help:
-            nrows += " (set `ibis.options.repr.interactive.show_count=True` to show)"
-    need_to_show_row_count_help = False
+        global need_to_show_row_count_help
+        if options.show_count:
+            # use underscore to be friendly to i18n and python REPL
+            nrows_str = f"{table.count().execute():_} rows"
+        else:
+            nrows_str = "… rows"
+            if need_to_show_row_count_help:
+                nrows_str += (
+                    " (set `ibis.options.repr.interactive.show_count=True` to show)"
+                )
+        need_to_show_row_count_help = False
     if isinstance(tablish, ibis.Table):
-        dims = f"{orig_ncols:_} cols by {nrows}"
+        dims = f"{orig_ncols:_} cols by {nrows_str}"
     else:
-        dims = f"{nrows}"
+        dims = f"{nrows_str}"
     rich_table = rich.table.Table(
         title=dims, title_justify="left", padding=(0, 1, 0, 1)
     )
