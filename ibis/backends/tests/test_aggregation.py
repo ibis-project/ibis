@@ -667,6 +667,11 @@ def test_first_last_ordered(alltypes, method, filtered, include_null):
     ["polars"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="Feature is not yet implemented:",
+)
 @pytest.mark.parametrize("method", ["first", "last"])
 def test_first_last_ordered_in_mutate(alltypes, method):
     # a test of a last and first inside a mutate operation is required because mutate
