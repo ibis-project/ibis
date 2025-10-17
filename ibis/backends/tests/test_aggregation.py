@@ -685,12 +685,14 @@ def test_first_last_ordered(alltypes, method, filtered, include_null):
         ),
     ],
 )
-def test_first_last_ordered_in_mutate(con, method, expected):
+def test_first_last_ordered_in_mutate(alltypes, con, method, expected):
     # originally reported in https://github.com/ibis-project/ibis/issues/11656
-    t = ibis.memtable({"a": [1, 1, 2], "val": [4, 5, 6], "ob": [0, 2, 1]})
+    t = alltypes.select(
+        a=ibis._.tinyint_col, val=ibis._.int_col, ob=ibis._.bigint_col
+    ).filter(ibis._.val.isin((4, 5)))
     expr = t.mutate(new=method(t.val))
     actual = con.to_pyarrow(expr.new).to_pylist()
-    assert actual == [expected] * 3
+    assert actual == [expected] * len(actual)
 
 
 @pytest.mark.notimpl(
