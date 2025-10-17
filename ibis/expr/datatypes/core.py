@@ -988,7 +988,7 @@ class Struct(Parametric, MapSet):
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        return f"'{name}({list(self.items())}, nullable={self.nullable})"
+        return f"{name}({list(self.items())}, nullable={self.nullable})"
 
     @property
     def _pretty_piece(self) -> str:
