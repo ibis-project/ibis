@@ -347,7 +347,7 @@ def asof_join(op, **kw):
         raise NotImplementedError(f"Operator {operator} not supported for asof join")
 
     assert len(on) == 1
-    joined = left.join_asof(right, on=on[0], by=by, strategy=direction)
+    joined = left.join_asof(right, on=on[0], by=by if by else None, strategy=direction)
     joined = joined.drop(*on, *by)
     return joined
 
