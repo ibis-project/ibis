@@ -1722,13 +1722,14 @@ class Column(Value, FixedTextJupyterMixin):
         with body mass greater than 6200g, so heavy_gentoo is a table with
         exactly one row.
 
-        If we try to use `heavy_gentoo.island` directly in a filter,
-        ibis will raise an error because we are trying to compare two tables
+        If we try to use `t.island == heavy_gentoo.island` directly in a filter,
+        we will get an error because we are trying to compare columns from two tables
         to each other, which we don't know know to align without a specific join:
 
-        >>> from_that_island = t.filter(t.island == heavy_gentoo.island)
+        >>> t.filter(t.island == heavy_gentoo.island)  # quartodoc: +EXPECTED_FAILURE
         Traceback (most recent call last):
             ...
+        _duckdb.BinderException: Binder Error: Referenced table "t1" not found!
 
         Instead, we should use `as_scalar()` to tell ibis that we know
         `heavy_gentoo.island` contains exactly one value:
