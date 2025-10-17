@@ -660,6 +660,27 @@ def test_first_last_ordered(alltypes, method, filtered, include_null):
 
 
 @pytest.mark.notimpl(
+    ["databricks"],
+    raises=com.UnsupportedOperationError,
+)
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.parametrize("method", ["first", "last"])
+def test_first_last_ordered_in_mutate(alltypes, method):
+    # a test of a last and first inside a mutate operation is required because mutate
+    # calls rewrite_project_input which wraps reductions with a WindowFunction
+    # originally reported in issue #11656
+
+    sol = 0 if method == "last" else 9
+    expr = alltypes.mutate(
+        new=getattr(alltypes.int_col, method)(order_by=_.int_col.desc())
+    )
+    assert expr.execute()["new"].eq(sol).all()
+
+
+@pytest.mark.notimpl(
     [
         "druid",
         "exasol",
