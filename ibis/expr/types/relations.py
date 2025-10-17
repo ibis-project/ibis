@@ -708,13 +708,12 @@ class Table(Expr, FixedTextJupyterMixin):
         with body mass greater than 6200g, so heavy_gentoo is a table with
         exactly one row.
 
-        If we try to use `heavy_gentoo.select("island")` directly in a filter,
-        ibis will raise an error because we are trying to compare two tables
-        to each other, which we don't know know to align without a specific join:
+        Say we want to get all penguins from the same island as that
+        heavy Gentoo penguin.
 
-        >>> from_that_island = t.filter(t.island == heavy_gentoo.select("island"))
-        Traceback (most recent call last):
-            ...
+        If we try to use `t.island == heavy_gentoo.select("island")` directly in a filter,
+        we won't get the result we expect because that will evaluate to a literal
+        `False` (since of course an ibis.Column is never equal to an ibis.Table).
 
         Instead, we should use `as_scalar()` to tell ibis that we know
         `heavy_gentoo.select("island")` contains exactly one row:
