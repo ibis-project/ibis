@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import operator
 import sys
-from collections.abc import Mapping
 from functools import reduce
 from typing import TYPE_CHECKING, Any
 
@@ -24,7 +23,7 @@ from ibis.expr.rewrites import d, p, replace_parameter
 from ibis.expr.schema import Schema
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 x = var("x")
 y = var("y")
@@ -150,22 +149,13 @@ def drop_columns_to_select(_, **kwargs):
 @replace(p.FillNull)
 def fill_null_to_select(_, **kwargs):
     """Rewrite FillNull to a Select node."""
-    if isinstance(_.replacements, Mapping):
-        mapping = _.replacements
-    else:
-        mapping = {
-            name: _.replacements
-            for name, type in _.parent.schema.items()
-            if type.nullable
-        }
-
-    if not mapping:
+    if not _.replacements:
         return _.parent
 
     selections = {}
     for name in _.parent.schema.names:
         col = ops.Field(_.parent, name)
-        if (value := mapping.get(name)) is not None:
+        if (value := _.replacements.get(name)) is not None:
             col = ops.Coalesce((col, value))
         selections[name] = col
 

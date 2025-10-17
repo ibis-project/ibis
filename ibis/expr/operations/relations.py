@@ -471,7 +471,7 @@ class DummyTable(Relation):
 class FillNull(Simple):
     """Fill null values in the table."""
 
-    replacements: typing.Union[Value[dt.Numeric | dt.String], FrozenDict[str, Any]]
+    replacements: FrozenDict[str, Value]
 
 
 @public
