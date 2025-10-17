@@ -11,8 +11,7 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.common.annotations import annotated
 from ibis.common.temporal import IntervalUnit
-from ibis.expr.types.core import _binop
-from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.expr.types.generic import Column, Scalar, Value, _binop
 from ibis.util import deprecated
 
 if TYPE_CHECKING:

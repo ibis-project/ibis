@@ -8,8 +8,7 @@ from public import public
 
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.expr.types.core import _binop
-from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.expr.types.generic import Column, Scalar, Value, _binop
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
