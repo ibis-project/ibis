@@ -24,6 +24,8 @@ if TYPE_CHECKING:
     from ibis.config import Interactive
     from ibis.expr.types import Column, Scalar, Table
 
+need_to_show_row_count_help = True
+
 
 def _format_nested(
     values,
@@ -401,15 +403,19 @@ def to_rich_table(
             if not next_flex_cols:
                 break
 
+    global need_to_show_row_count_help
     if options.show_count:
         # use underscore to be friendly to i18n and python REPL
-        nrows = f"{table.count().execute():_}"
+        nrows = f"{table.count().execute():_} rows"
     else:
-        nrows = "…"
+        nrows = "… rows"
+        if need_to_show_row_count_help:
+            nrows += " (set `ibis.options.repr.interactive.show_count=True` to show)"
+    need_to_show_row_count_help = False
     if isinstance(tablish, ibis.Table):
-        dims = f"{orig_ncols:_} cols by {nrows} rows"
+        dims = f"{orig_ncols:_} cols by {nrows}"
     else:
-        dims = f"{nrows} rows"
+        dims = f"{nrows}"
     rich_table = rich.table.Table(
         title=dims, title_justify="left", padding=(0, 1, 0, 1)
     )
