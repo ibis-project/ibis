@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from public import public
 
+from ibis.expr import datatypes as dt
 from ibis.expr.types.generic import Column, Scalar, Value
 
 
 @public
 class MACADDRValue(Value):
-    pass
+    __dtype__ = dt.macaddr
 
 
 @public
@@ -22,7 +23,7 @@ class MACADDRColumn(Column, MACADDRValue):
 
 @public
 class INETValue(Value):
-    pass
+    __dtype__ = dt.inet
 
 
 @public

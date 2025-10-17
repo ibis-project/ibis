@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from public import public
 
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.types.core import _binop
@@ -16,6 +17,8 @@ if TYPE_CHECKING:
 
 @public
 class BooleanValue(NumericValue):
+    __dtype__ = dt.boolean
+
     def ifelse(self, true_expr: ir.Value, false_expr: ir.Value, /) -> ir.Value:
         """Construct a ternary conditional expression.
 

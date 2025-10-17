@@ -9,6 +9,7 @@ import sqlglot.expressions as sge
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Annotable
 from ibis.common.patterns import CoercedTo
@@ -602,3 +603,13 @@ def test_schema_from_sqlglot():
     )
 
     assert ibis_schema == expected
+
+
+def test_schema_from_Table_subclass():
+    class MyTable(ir.Table):
+        a: ir.StringValue
+        b: ir.IntegerValue["!int64"]
+
+    expected = sch.Schema({"a": dt.string, "b": dt.Int64(nullable=False)})
+    actual = sch.schema(MyTable)
+    assert actual == expected
