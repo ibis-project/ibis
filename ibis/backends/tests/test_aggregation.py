@@ -672,17 +672,25 @@ def test_first_last_ordered(alltypes, method, filtered, include_null):
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented:",
 )
-@pytest.mark.parametrize("method", ["first", "last"])
-def test_first_last_ordered_in_mutate(alltypes, method):
-    # a test of a last and first inside a mutate operation is required because mutate
-    # calls rewrite_project_input which wraps reductions with a WindowFunction
-    # originally reported in issue #11656
-
-    sol = 0 if method == "last" else 9
-    expr = alltypes.mutate(
-        new=getattr(alltypes.int_col, method)(order_by=_.int_col.desc())
-    )
-    assert expr.execute()["new"].eq(sol).all()
+@pytest.mark.parametrize(
+    "method,expected",
+    [
+        pytest.param(lambda col: col.first(order_by="ob"), 4, id="first_asc"),
+        pytest.param(lambda col: col.last(order_by="ob"), 5, id="last_asc"),
+        pytest.param(
+            lambda col: col.first(order_by=ibis._.ob.desc()), 5, id="first_desc"
+        ),
+        pytest.param(
+            lambda col: col.last(order_by=ibis._.ob.desc()), 4, id="last_desc"
+        ),
+    ],
+)
+def test_first_last_ordered_in_mutate(con, method, expected):
+    # originally reported in https://github.com/ibis-project/ibis/issues/11656
+    t = ibis.memtable({"a": [1, 1, 2], "val": [4, 5, 6], "ob": [0, 2, 1]})
+    expr = t.mutate(new=method(t.val))
+    actual = con.to_pyarrow(expr.new).to_pylist()
+    assert actual == [expected] * 3
 
 
 @pytest.mark.notimpl(
