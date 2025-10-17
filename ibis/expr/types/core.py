@@ -9,7 +9,6 @@ from public import public
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.common.patterns import Coercible, CoercionError
@@ -944,38 +943,3 @@ class Expr(Immutable, Coercible):
         raise NotImplementedError(
             f"{type(self)} expressions cannot be converted into scalars"
         )
-
-
-def _binop(op_class: type[ops.Binary], left: ir.Value, right: ir.Value) -> ir.Value:
-    """Try to construct a binary operation.
-
-    Parameters
-    ----------
-    op_class
-        The `ops.Binary` subclass for the operation
-    left
-        Left operand
-    right
-        Right operand
-
-    Returns
-    -------
-    ir.Value
-        A value expression
-
-    Examples
-    --------
-    >>> import ibis
-    >>> import ibis.expr.operations as ops
-    >>> expr = _binop(ops.TimeAdd, ibis.time("01:00"), ibis.interval(hours=1))
-    >>> expr
-    TimeAdd(datetime.time(1, 0), 1h): datetime.time(1, 0) + 1 h
-    >>> _binop(ops.TimeAdd, 1, ibis.interval(hours=1))
-    TimeAdd(datetime.time(0, 0, 1), 1h): datetime.time(0, 0, 1) + 1 h
-    """
-    try:
-        node = op_class(left, right)
-    except (ValidationError, NotImplementedError):
-        return NotImplemented
-    else:
-        return node.to_expr()
