@@ -689,10 +689,13 @@ def test_first_last_ordered_in_mutate(alltypes, con, method, expected):
     # originally reported in https://github.com/ibis-project/ibis/issues/11656
     t = alltypes.select(
         a=ibis._.tinyint_col, val=ibis._.int_col, ob=ibis._.bigint_col
-    ).filter(ibis._.val.isin((4, 5)))
-    expr = t.mutate(new=method(t.val))
+    ).filter(
+        ((ibis._.val == 4) & (ibis._.ob == 40))
+        | ((ibis._.val == 5) & (ibis._.ob == 50))
+    )
+    expr = t.mutate(new=method(t.val)).limit(10)
     actual = con.to_pyarrow(expr.new).to_pylist()
-    assert actual == [expected] * len(actual)
+    assert actual == [expected] * 10
 
 
 @pytest.mark.notimpl(
