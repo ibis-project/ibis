@@ -302,11 +302,13 @@ class Signature(inspect.Signature):
     Primarily used in the implementation of `ibis.common.grounds.Annotable`.
     """
 
-    __slots__ = ('_cached_params')
+    __slots__ = ('_patterns', '_dataclass')
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._cached_params = dict(self.parameters)  # avoids access via MappingProxyType which is slow compared to dict
+        # prebuild dict of patterns to avoid slow retrieval via property&MappingProxyType
+        self._patterns = {k: param.annotation.pattern for k, param in self.parameters.items() if hasattr(param.annotation, 'pattern')}
+        self._dataclass = self.to_dataclass()
 
     @classmethod
     def merge(cls, *signatures, **annotations):
@@ -514,27 +516,27 @@ class Signature(inspect.Signature):
 
         return this
 
-    def validate_nobind_using_dataclass(self, cls, *args, **kwargs):
+    def validate_fast(self, func, args, kwargs):
+        """Faster validation using internal dataclass to bind args/kwargs to names instead of Signature.bind."""
         try:
-            instance = cls.__dataclass__(*args, **kwargs)
+            instance = self._dataclass(*args, **kwargs)
         except TypeError as err:
             raise SignatureValidationError(
                 "{call} {cause}\n\nExpected signature: {sig}",
                 sig=self,
-                func=cls,
+                func=func,
                 args=args,
                 kwargs=kwargs,
             ) from err
 
-        return self.validate_nobind(cls, instance.__dict__)
+        return self.validate_nobind(func, instance.__dict__)
 
     def validate_nobind(self, func, kwargs):
         """Validate the arguments against the signature without binding."""
         this, errors = {}, []
-        for name, param in self._cached_params.items():
+        for name, pattern in self._patterns.items():
             value = kwargs[name]
 
-            pattern = param.annotation.pattern
             result = pattern.match(value, this)
             if result is NoMatch:
                 errors.append((name, value, pattern))
@@ -581,12 +583,12 @@ class Signature(inspect.Signature):
             )
 
         return result
-    
-    def to_dataclass(self, cls_name: str) -> type:
+
+    def to_dataclass(self, cls_name: str = 'SignatureDataclass') -> type:
         """Create a dataclass from this signature.
 
         Later, instantiating a dataclass from arg+kwargs and accessing the resulting __dict__
-        is much faster (~100x) than using Signature.bind
+        is much faster (~10-20x) than using Signature.bind
         """
         fields = []
         for k, v in self.parameters.items():

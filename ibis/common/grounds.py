@@ -81,9 +81,6 @@ class AnnotableMeta(AbstractMeta):
         signature = Signature.merge(*signatures, **arguments)
         argnames = tuple(signature.parameters.keys())
 
-        # convert the signature to a dataclass so it can be used later instead of Signature.bind
-        data_cls = signature.to_dataclass(f"{clsname}DataClass")
-
         namespace.update(
             __module__=module,
             __qualname__=qualname,
@@ -91,7 +88,6 @@ class AnnotableMeta(AbstractMeta):
             __attributes__=attributes,
             __match_args__=argnames,
             __signature__=signature,
-            __dataclass__=data_cls,
             __slots__=tuple(slots),
         )
         return super().__new__(metacls, clsname, bases, namespace, **kwargs)
@@ -99,6 +95,8 @@ class AnnotableMeta(AbstractMeta):
     def __or__(self, other):
         # required to support `dt.Numeric | dt.Floating` annotation for python<3.10
         return Union[self, other]
+    
+    __call__ = type.__call__
 
 
 @dataclass_transform()
@@ -107,9 +105,6 @@ class Annotable(Abstract, metaclass=AnnotableMeta):
 
     __signature__: ClassVar[Signature]
     """Signature of the class, containing the Argument annotations."""
-    
-    __dataclass__: ClassVar[type]
-    """Dataclass with identical signature to this class.  Used as a faster alternative to Signature.bind"""
 
     __attributes__: ClassVar[FrozenDict[str, Annotation]]
     """Mapping of the Attribute annotations."""
@@ -120,11 +115,11 @@ class Annotable(Abstract, metaclass=AnnotableMeta):
     __match_args__: ClassVar[tuple[str, ...]]
     """Names of the arguments to be used for pattern matching."""
 
-    @classmethod
-    def __create__(cls, *args: Any, **kwargs: Any) -> Self:
-        # construct the instance by passing only validated keyword arguments
-        validated_kwargs = cls.__signature__.validate_nobind_using_dataclass(cls, *args, **kwargs)
-        return super().__create__(**validated_kwargs)
+    #@classmethod
+    #def __create__(cls, *args: Any, **kwargs: Any) -> Self:
+    #    # construct the instance by passing only validated keyword arguments
+    #    validated_kwargs = cls.__signature__.validate_fast(cls, args, kwargs)
+    #    return super().__create__(**validated_kwargs)
 
     @classmethod
     def __recreate__(cls, kwargs: Any) -> Self:
@@ -132,9 +127,10 @@ class Annotable(Abstract, metaclass=AnnotableMeta):
         kwargs = cls.__signature__.validate_nobind(cls, kwargs)
         return super().__create__(**kwargs)
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, *args, **kwargs: Any) -> None:
+        validated_kwargs = self.__signature__.validate_fast(self.__class__, args, kwargs)
         # set the already validated arguments
-        for name, value in kwargs.items():
+        for name, value in validated_kwargs.items():
             object.__setattr__(self, name, value)
         # initialize the remaining attributes
         for name, field in self.__attributes__.items():
@@ -199,11 +195,12 @@ class Concrete(Immutable, Comparable, Annotable):
 
     __slots__ = ("__args__", "__precomputed_hash__")
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, *args, **kwargs: Any) -> None:
+        validated_kwargs = self.__signature__.validate_fast(self.__class__, args, kwargs)
         # collect and set the arguments in a single pass
         args = []
         for name in self.__argnames__:
-            value = kwargs[name]
+            value = validated_kwargs[name]
             args.append(value)
             object.__setattr__(self, name, value)
 
