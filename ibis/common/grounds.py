@@ -81,6 +81,9 @@ class AnnotableMeta(AbstractMeta):
         signature = Signature.merge(*signatures, **arguments)
         argnames = tuple(signature.parameters.keys())
 
+        # convert the signature to a dataclass so it can be used later instead of Signature.bind
+        data_cls = signature.to_dataclass(f"{clsname}DataClass")
+
         namespace.update(
             __module__=module,
             __qualname__=qualname,
@@ -88,6 +91,7 @@ class AnnotableMeta(AbstractMeta):
             __attributes__=attributes,
             __match_args__=argnames,
             __signature__=signature,
+            __dataclass__=data_cls,
             __slots__=tuple(slots),
         )
         return super().__new__(metacls, clsname, bases, namespace, **kwargs)
@@ -103,6 +107,9 @@ class Annotable(Abstract, metaclass=AnnotableMeta):
 
     __signature__: ClassVar[Signature]
     """Signature of the class, containing the Argument annotations."""
+    
+    __dataclass__: ClassVar[type]
+    """Dataclass with identical signature to this class.  Used as a faster alternative to Signature.bind"""
 
     __attributes__: ClassVar[FrozenDict[str, Annotation]]
     """Mapping of the Attribute annotations."""
@@ -116,8 +123,8 @@ class Annotable(Abstract, metaclass=AnnotableMeta):
     @classmethod
     def __create__(cls, *args: Any, **kwargs: Any) -> Self:
         # construct the instance by passing only validated keyword arguments
-        kwargs = cls.__signature__.validate(cls, args, kwargs)
-        return super().__create__(**kwargs)
+        validated_kwargs = cls.__signature__.validate_nobind_using_dataclass(cls, *args, **kwargs)
+        return super().__create__(**validated_kwargs)
 
     @classmethod
     def __recreate__(cls, kwargs: Any) -> Self:
