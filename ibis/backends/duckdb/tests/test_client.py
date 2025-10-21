@@ -473,7 +473,7 @@ def test_create_temp_table_in_nondefault_schema():
 
 
 @pytest.mark.parametrize("temp", [False, True])
-def test_create_table_from_data(temp):
+def test_create_table_from_in_memory_data(temp):
     con = ibis.duckdb.connect()
     con.create_table("foo", pd.DataFrame({"id": [1, 2, 3]}), temp=temp)
 
