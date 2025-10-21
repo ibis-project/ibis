@@ -180,9 +180,11 @@ class Backend(
             catalog = "temp"
             database = "main"
 
+        in_memory = False
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
+                in_memory = True
             else:
                 table = obj
 
@@ -232,6 +234,13 @@ class Backend(
                     query, into=initial_table, columns=columns
                 ).sql(dialect)
                 cur.execute(insert_stmt).fetchall()
+
+                if in_memory:
+                    cur.execute(
+                        sge.Drop(kind="VIEW", this=table.get_name(), exists=True).sql(
+                            dialect
+                        )
+                    )
 
             if overwrite:
                 cur.execute(
