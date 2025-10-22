@@ -457,7 +457,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
             short_version = "".join(map(str, sys.version_info[:3]))
             memtable_volume = (
                 f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
-        )
+            )
 
         new_backend._post_connect(memtable_volume=memtable_volume)
         return new_backend
@@ -506,12 +506,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         """Register memtable in the internal Polars backend."""
         self._polars_backend._register_in_memory_table(op)
 
-
     def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         if self._memtable_in_memory:
-            def polars_finalizer(name: str = name, backend: Backend = self._polars_backend) -> None:
+
+            def polars_finalizer(
+                name: str = name, backend: Backend = self._polars_backend
+            ) -> None:
                 """Finalizer for in-memory tables in Polars backend."""
                 backend.drop_table(name, force=True)
+
             return polars_finalizer
 
         path = f"{self._memtable_volume_path}/{name}.parquet"
