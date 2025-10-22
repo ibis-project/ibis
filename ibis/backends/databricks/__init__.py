@@ -415,8 +415,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
                     from ibis.backends.polars import Backend as PolarsBackend
                 except ImportError:
                     raise ImportError(
-                        "The Polars backend must be installed to use in-memory memtables. "
-                        "You can install it with `pip install 'ibis-framework[polars]'`."
+                        "The additional dependencies must be installed to use in-memory memtables. "
+                        "You can install them together with the databricks backend with "
+                        "`pip install 'ibis-framework[databricks-read-only]'`."
                     ) from None
                 self._polars_backend = PolarsBackend()
                 self._polars_backend.do_connect()
