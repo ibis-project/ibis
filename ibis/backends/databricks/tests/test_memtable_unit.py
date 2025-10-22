@@ -23,7 +23,7 @@ def test_allow_memtable_in_memory_initializes_polars_backend():
         con = ibis.databricks.connect(
             server_hostname="test.databricks.com",
             http_path="/sql/1.0/warehouses/test",
-            access_token="test_token",
+            access_token="test_token",  # noqa: S106
             allow_memtable_in_memory=True,
         )
 
@@ -45,16 +45,14 @@ def test_default_memtable_behavior_without_flag():
     with (
         patch("databricks.sql.connect") as mock_db_connect,
         patch.object(ibis.backends.databricks.Backend, "current_catalog", "test_cat"),
-        patch.object(
-            ibis.backends.databricks.Backend, "current_database", "test_db"
-        ),
+        patch.object(ibis.backends.databricks.Backend, "current_database", "test_db"),
     ):
         mock_db_connect.return_value = MagicMock()
 
         con = ibis.databricks.connect(
             server_hostname="test.databricks.com",
             http_path="/sql/1.0/warehouses/test",
-            access_token="test_token",
+            access_token="test_token",  # noqa: S106
         )
 
         # Verify in-memory flag is False
@@ -87,7 +85,7 @@ def test_import_error_when_polars_not_available():
             ibis.databricks.connect(
                 server_hostname="test.databricks.com",
                 http_path="/sql/1.0/warehouses/test",
-                access_token="test_token",
+                access_token="test_token",  # noqa: S106
                 allow_memtable_in_memory=True,
             )
 
@@ -105,7 +103,7 @@ def test_register_in_memory_table_delegates_to_polars():
         con = ibis.databricks.connect(
             server_hostname="test.databricks.com",
             http_path="/sql/1.0/warehouses/test",
-            access_token="test_token",
+            access_token="test_token",  # noqa: S106
             allow_memtable_in_memory=True,
         )
 
@@ -133,7 +131,7 @@ def test_memtable_finalizer_uses_polars_when_in_memory():
         con = ibis.databricks.connect(
             server_hostname="test.databricks.com",
             http_path="/sql/1.0/warehouses/test",
-            access_token="test_token",
+            access_token="test_token",  # noqa: S106
             allow_memtable_in_memory=True,
         )
 
@@ -154,16 +152,14 @@ def test_explicit_memtable_volume_overrides_in_memory_flag():
     with (
         patch("databricks.sql.connect") as mock_db_connect,
         patch.object(ibis.backends.databricks.Backend, "current_catalog", "test_cat"),
-        patch.object(
-            ibis.backends.databricks.Backend, "current_database", "test_db"
-        ),
+        patch.object(ibis.backends.databricks.Backend, "current_database", "test_db"),
     ):
         mock_db_connect.return_value = MagicMock()
 
         con = ibis.databricks.connect(
             server_hostname="test.databricks.com",
             http_path="/sql/1.0/warehouses/test",
-            access_token="test_token",
+            access_token="test_token",  # noqa: S106
             memtable_volume="my_custom_volume",
             allow_memtable_in_memory=True,  # This should be ignored
         )
