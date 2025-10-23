@@ -182,8 +182,8 @@ class SqlglotType(TypeMapper):
     def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
         if dtype := cls.unknown_type_strings.get(text.lower()):
             # Apply the nullable parameter to the type from unknown_type_strings
-            if nullable is not None:
-                return dtype.copy(nullable=nullable)
+            # if nullable is not None:
+            #     return dtype.copy(nullable=nullable)
             return dtype
 
         if nullable is None:
@@ -1642,6 +1642,36 @@ class SingleStoreDBType(MySQLType):
         # Handle binary types with length
         elif re.match(r"(BINARY|VARBINARY)\(\d+\)", type_string):
             return dt.Binary(nullable=nullable)
+
+        # Handle VECTOR types with dimension and element type
+        elif re.match(r"VECTOR\(\d+,\s*[A-Z0-9]+\)", type_string):
+            match = re.match(r"VECTOR\((\d+),\s*([A-Z0-9]+)\)", type_string)
+            if match:
+                dimension = int(match.group(1))
+                element_type = match.group(2).strip()
+
+                # Map SingleStore element types to Ibis types
+                element_type_mapping = {
+                    "F32": dt.Float32,
+                    "F64": dt.Float64,
+                    "I8": dt.Int8,
+                    "I16": dt.Int16,
+                    "I32": dt.Int32,
+                    "I64": dt.Int64,
+                }
+
+                ibis_element_type = element_type_mapping.get(element_type)
+                if ibis_element_type:
+                    return dt.Array(
+                        ibis_element_type(nullable=False),
+                        length=dimension,
+                        nullable=nullable,
+                    )
+                else:
+                    # Fallback to float32 for unknown element types
+                    return dt.Array(
+                        dt.Float32(nullable=False), length=dimension, nullable=nullable
+                    )
 
         # Handle other SingleStoreDB types
         elif type_string == "JSON":
