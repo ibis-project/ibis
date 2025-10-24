@@ -247,7 +247,8 @@ def uses_java_re(t):
             id="re_extract",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
@@ -260,7 +261,8 @@ def uses_java_re(t):
             id="re_extract_group",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
@@ -275,7 +277,8 @@ def uses_java_re(t):
             id="re_extract_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
                     ["druid"], reason="No posix support", raises=AssertionError
@@ -288,7 +291,8 @@ def uses_java_re(t):
             id="re_extract_whole_group",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
@@ -303,7 +307,8 @@ def uses_java_re(t):
             id="re_extract_group_1",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
@@ -318,7 +323,8 @@ def uses_java_re(t):
             id="re_extract_group_2",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
@@ -333,7 +339,8 @@ def uses_java_re(t):
             id="re_extract_group_3",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
@@ -346,7 +353,8 @@ def uses_java_re(t):
             id="re_extract_group_at_beginning",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
@@ -359,7 +367,8 @@ def uses_java_re(t):
             id="re_extract_group_at_end",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "exasol"], raises=com.OperationNotDefinedError
+                    ["mssql", "exasol"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
@@ -374,7 +383,7 @@ def uses_java_re(t):
             id="re_replace_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "exasol"],
+                    ["mysql", "singlestoredb", "mssql", "druid", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -385,7 +394,7 @@ def uses_java_re(t):
             id="re_replace",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "exasol"],
+                    ["mysql", "singlestoredb", "mssql", "druid", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -399,8 +408,8 @@ def uses_java_re(t):
             id="repeat_method",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=OracleDatabaseError,
-                reason="ORA-00904: REPEAT invalid identifier",
+                raises=(OracleDatabaseError, com.ExpressionError),
+                reason="REPEAT function not supported",
             ),
         ),
         param(
@@ -409,8 +418,8 @@ def uses_java_re(t):
             id="repeat_left",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=OracleDatabaseError,
-                reason="ORA-00904: REPEAT invalid identifier",
+                raises=(OracleDatabaseError, com.ExpressionError),
+                reason="REPEAT function not supported",
             ),
         ),
         param(
@@ -419,8 +428,8 @@ def uses_java_re(t):
             id="repeat_right",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=OracleDatabaseError,
-                reason="ORA-00904: REPEAT invalid identifier",
+                raises=(OracleDatabaseError, com.ExpressionError),
+                reason="REPEAT function not supported",
             ),
         ),
         param(
@@ -429,7 +438,8 @@ def uses_java_re(t):
             id="translate",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "polars", "druid"], raises=com.OperationNotDefinedError
+                    ["mysql", "singlestoredb", "polars", "druid"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
                     ["flink"],
@@ -593,6 +603,7 @@ def uses_java_re(t):
                 [
                     "impala",
                     "mysql",
+                    "singlestoredb",
                     "sqlite",
                     "mssql",
                     "druid",
@@ -708,7 +719,8 @@ def test_substring(backend, alltypes, df, result_func, expected_func):
 
 
 @pytest.mark.notimpl(
-    ["mysql", "mssql", "druid", "exasol"], raises=com.OperationNotDefinedError
+    ["mysql", "singlestoredb", "mssql", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
 )
 def test_re_replace_global(con):
     expr = ibis.literal("aba").re_replace("a", "c")
@@ -806,6 +818,7 @@ def test_substr_with_null_values(backend, alltypes, df):
         "exasol",
         "mssql",
         "mysql",
+        "singlestoredb",
         "polars",
         "postgres",
         "risingwave",
@@ -861,7 +874,16 @@ def test_capitalize(con, inp, expected):
 
 
 @pytest.mark.notyet(
-    ["exasol", "impala", "mssql", "mysql", "sqlite", "oracle", "flink"],
+    [
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "singlestoredb",
+        "sqlite",
+        "oracle",
+        "flink",
+    ],
     reason="Backend doesn't support arrays",
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
 )
@@ -876,7 +898,16 @@ def test_array_string_join(con):
 
 
 @pytest.mark.notyet(
-    ["exasol", "impala", "mssql", "mysql", "sqlite", "oracle", "flink"],
+    [
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "singlestoredb",
+        "sqlite",
+        "oracle",
+        "flink",
+    ],
     reason="Backend doesn't support arrays",
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
 )
@@ -893,7 +924,8 @@ def test_empty_array_string_join(con):
 
 
 @pytest.mark.notimpl(
-    ["mssql", "mysql", "druid", "exasol"], raises=com.OperationNotDefinedError
+    ["mssql", "mysql", "singlestoredb", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
 )
 def test_subs_with_re_replace(con):
     expr = ibis.literal("hi").re_replace("i", "a").substitute({"d": "b"}, else_="k")
@@ -915,6 +947,7 @@ def test_multiple_subs(con):
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "polars",
         "sqlite",
         "flink",
@@ -960,6 +993,7 @@ def test_non_match_regex_search_is_false(con):
     [
         "impala",
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "druid",
@@ -981,6 +1015,7 @@ def test_re_split(con):
     [
         "impala",
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "druid",
@@ -1002,6 +1037,7 @@ def test_re_split_column(alltypes):
     [
         "impala",
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "druid",
@@ -1260,6 +1296,7 @@ def string_temp_table(backend, con):
                         "datafusion",
                         "duckdb",
                         "mysql",
+                        "singlestoredb",
                         "postgres",
                         "risingwave",
                     ],

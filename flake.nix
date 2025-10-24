@@ -48,7 +48,9 @@
     {
       overlays.default = nixpkgs.lib.composeManyExtensions [
         gitignore.overlay
-        (import ./nix/overlay.nix { inherit uv2nix pyproject-nix pyproject-build-systems; })
+        (import ./nix/overlay.nix {
+          inherit uv2nix pyproject-nix pyproject-build-systems;
+        })
       ];
     }
     // flake-utils.lib.eachDefaultSystem (
