@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import json
+from functools import partial
 
 from ibis.formats.pandas import PandasData
 
@@ -359,27 +360,30 @@ class SingleStoreDBPandasData(PandasData):
 
         # SingleStoreDB-specific mappings
         singlestore_specific = {
-            "VECTOR": dt.binary,
+            "VECTOR": partial(dt.Array, dt.float32),  # Default to float32 array
             "BSON": dt.JSON,
             "GEOGRAPHY": dt.geometry,
             # Vector binary types
-            "FLOAT32_VECTOR": dt.binary,
-            "FLOAT64_VECTOR": dt.binary,
-            "INT8_VECTOR": dt.binary,
-            "INT16_VECTOR": dt.binary,
-            "INT32_VECTOR": dt.binary,
-            "INT64_VECTOR": dt.binary,
+            "FLOAT32_VECTOR": partial(dt.Array, dt.float32),
+            "FLOAT64_VECTOR": partial(dt.Array, dt.float64),
+            "INT8_VECTOR": partial(dt.Array, dt.int8),
+            "INT16_VECTOR": partial(dt.Array, dt.int16),
+            "INT32_VECTOR": partial(dt.Array, dt.int32),
+            "INT64_VECTOR": partial(dt.Array, dt.int64),
             # Vector JSON types
-            "FLOAT32_VECTOR_JSON": dt.JSON,
-            "FLOAT64_VECTOR_JSON": dt.JSON,
-            "INT8_VECTOR_JSON": dt.JSON,
-            "INT16_VECTOR_JSON": dt.JSON,
-            "INT32_VECTOR_JSON": dt.JSON,
-            "INT64_VECTOR_JSON": dt.JSON,
+            "FLOAT32_VECTOR_JSON": partial(dt.Array, dt.float32),
+            "FLOAT64_VECTOR_JSON": partial(dt.Array, dt.float64),
+            "INT8_VECTOR_JSON": partial(dt.Array, dt.int8),
+            "INT16_VECTOR_JSON": partial(dt.Array, dt.int16),
+            "INT32_VECTOR_JSON": partial(dt.Array, dt.int32),
+            "INT64_VECTOR_JSON": partial(dt.Array, dt.int64),
         }
 
         ibis_type = singlestore_specific.get(normalized_name)
         if ibis_type is not None:
+            # Handle partials (like VECTOR types)
+            if hasattr(ibis_type, "func"):
+                return ibis_type()  # Call the partial function
             return ibis_type
 
         # Default to string for unknown types

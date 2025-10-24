@@ -162,15 +162,6 @@ def _type_from_cursor_info(
     flags = _FieldFlags(flags)
     typename = _type_codes.get(type_code)
 
-    # Handle SingleStoreDB vector types that may not be in _type_codes
-    if type_code in (3001, 3002, 3003, 3004, 3005, 3006):  # Vector types
-        # SingleStoreDB VECTOR types - map to Binary for now
-        # Could be enhanced to Array[Float32] or other appropriate types in future
-        return dt.Binary(nullable=True)
-    elif type_code in (2001, 2002, 2003, 2004, 2005, 2006):  # Vector JSON types
-        # SingleStoreDB VECTOR_JSON types - map to JSON
-        return dt.JSON(nullable=True)
-
     if typename is None:
         raise NotImplementedError(
             f"SingleStoreDB type code {type_code:d} is not supported"
@@ -212,10 +203,6 @@ def _type_from_cursor_info(
         # making them indistinguishable from TINYINT. The DESCRIBE-based schema
         # detection (via to_ibis method) can properly distinguish these types.
         typ = dt.Boolean
-    elif typename == "VECTOR":
-        # SingleStoreDB VECTOR type - typically used for AI/ML workloads
-        # For now, map to Binary; could be enhanced to Array[Float32] in future
-        typ = dt.Binary
     elif flags.is_set:
         # Sets are limited to strings in SingleStoreDB
         typ = dt.Array(dt.string)
@@ -254,7 +241,12 @@ def _type_from_cursor_info(
         typ = dt.Geometry
     else:
         typ = _type_mapping[typename]
-        if issubclass(typ, dt.SignedInteger) and flags.is_unsigned:
+        # Only apply unsigned logic to actual type classes, not partials
+        if (
+            hasattr(typ, "__mro__")
+            and issubclass(typ, dt.SignedInteger)
+            and flags.is_unsigned
+        ):
             typ = getattr(dt, f"U{typ.__name__}")
 
     # Projection columns are always nullable
@@ -304,20 +296,20 @@ _type_mapping = {
     # SingleStoreDB-specific types
     "BSON": dt.JSON,
     # Vector types for machine learning and AI workloads
-    "VECTOR": dt.Binary,  # General vector type
-    "FLOAT32_VECTOR": dt.Binary,
-    "FLOAT64_VECTOR": dt.Binary,
-    "INT8_VECTOR": dt.Binary,
-    "INT16_VECTOR": dt.Binary,
-    "INT32_VECTOR": dt.Binary,
-    "INT64_VECTOR": dt.Binary,
+    "VECTOR": partial(dt.Array, dt.Float32),  # General vector type
+    "FLOAT32_VECTOR": partial(dt.Array, dt.Float32),
+    "FLOAT64_VECTOR": partial(dt.Array, dt.Float64),
+    "INT8_VECTOR": partial(dt.Array, dt.Int8),
+    "INT16_VECTOR": partial(dt.Array, dt.Int16),
+    "INT32_VECTOR": partial(dt.Array, dt.Int32),
+    "INT64_VECTOR": partial(dt.Array, dt.Int64),
     # Vector JSON types (stored as JSON with vector semantics)
-    "FLOAT32_VECTOR_JSON": dt.JSON,
-    "FLOAT64_VECTOR_JSON": dt.JSON,
-    "INT8_VECTOR_JSON": dt.JSON,
-    "INT16_VECTOR_JSON": dt.JSON,
-    "INT32_VECTOR_JSON": dt.JSON,
-    "INT64_VECTOR_JSON": dt.JSON,
+    "FLOAT32_VECTOR_JSON": partial(dt.Array, dt.Float32),
+    "FLOAT64_VECTOR_JSON": partial(dt.Array, dt.Float64),
+    "INT8_VECTOR_JSON": partial(dt.Array, dt.Int8),
+    "INT16_VECTOR_JSON": partial(dt.Array, dt.Int16),
+    "INT32_VECTOR_JSON": partial(dt.Array, dt.Int32),
+    "INT64_VECTOR_JSON": partial(dt.Array, dt.Int64),
     # Extended types (SingleStoreDB-specific extensions)
     "GEOGRAPHY": dt.Geometry,  # Enhanced geospatial support
 }
