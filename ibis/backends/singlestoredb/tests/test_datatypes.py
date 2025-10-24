@@ -54,7 +54,7 @@ class TestSingleStoreDBDataTypes:
             # Collection types
             "SET": partial(dt.Array, dt.String),
             # SingleStoreDB-specific types
-            "VECTOR": dt.Binary,
+            "VECTOR": partial(dt.Array, dt.Float32),
             "GEOGRAPHY": dt.Geometry,
         }
 
@@ -74,7 +74,10 @@ class TestSingleStoreDBDataTypes:
         """Test SingleStoreDB-specific type extensions."""
         # Test VECTOR type
         assert "VECTOR" in _type_mapping
-        assert _type_mapping["VECTOR"] == dt.Binary
+        expected_vector_type = partial(dt.Array, dt.Float32)
+        actual_vector_type = _type_mapping["VECTOR"]
+        assert actual_vector_type.func == expected_vector_type.func
+        assert actual_vector_type.args == expected_vector_type.args
 
         # Test GEOGRAPHY type
         assert "GEOGRAPHY" in _type_mapping
@@ -147,8 +150,9 @@ class TestSingleStoreDBDataTypes:
             scale=0,
             multi_byte_maximum_length=1,
         )
-        # Vector types are currently mapped to Binary
-        assert isinstance(result, dt.Binary)
+        # Vector types are mapped to Array[Float32]
+        assert isinstance(result, dt.Array)
+        assert isinstance(result.value_type, dt.Float32)
 
         # Test FLOAT64_VECTOR type too
         result2 = _type_from_cursor_info(
@@ -158,7 +162,8 @@ class TestSingleStoreDBDataTypes:
             scale=0,
             multi_byte_maximum_length=1,
         )
-        assert isinstance(result2, dt.Binary)
+        assert isinstance(result2, dt.Array)
+        assert isinstance(result2.value_type, dt.Float64)
 
     def test_timestamp_with_timezone(self):
         """Test TIMESTAMP type includes UTC timezone by default."""
@@ -472,12 +477,16 @@ class TestSingleStoreDBConverter:
         assert converter.convert_SingleStoreDB_type("GEOMETRY") == dt.geometry
 
         # Test SingleStoreDB-specific types
-        assert converter.convert_SingleStoreDB_type("VECTOR") == dt.binary
+        vector_result = converter.convert_SingleStoreDB_type("VECTOR")
+        assert isinstance(vector_result, dt.Array)
+        assert isinstance(vector_result.value_type, dt.Float32)
         assert converter.convert_SingleStoreDB_type("GEOGRAPHY") == dt.geometry
 
         # Test case insensitivity
         assert converter.convert_SingleStoreDB_type("varchar") == dt.string
-        assert converter.convert_SingleStoreDB_type("Vector") == dt.binary
+        vector_result_case = converter.convert_SingleStoreDB_type("Vector")
+        assert isinstance(vector_result_case, dt.Array)
+        assert isinstance(vector_result_case.value_type, dt.Float32)
 
         # Test unknown type defaults to string
         assert converter.convert_SingleStoreDB_type("UNKNOWN_TYPE") == dt.string
