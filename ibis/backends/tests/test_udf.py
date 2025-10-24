@@ -16,6 +16,7 @@ no_python_udfs = mark.notimpl(
         "druid",
         "exasol",
         "impala",
+        "materialize",
         "mssql",
         "mysql",
         "oracle",

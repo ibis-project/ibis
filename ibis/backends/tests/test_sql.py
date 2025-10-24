@@ -105,6 +105,11 @@ def test_isin_bug(con, snapshot):
 @pytest.mark.notyet(
     ["sqlite", "mysql", "druid", "impala", "mssql"], reason="no unnest support upstream"
 )
+@pytest.mark.notimpl(
+    ["materialize"],
+    raises=exc.OperationNotDefinedError,
+    reason="first/last/arbitrary not supported",
+)
 @pytest.mark.parametrize("backend_name", _get_backends_to_test())
 def test_union_aliasing(backend_name, snapshot):
     if backend_name == "snowflake":
@@ -164,17 +169,32 @@ def test_union_aliasing(backend_name, snapshot):
     [
         param(
             ibis.random(),
-            marks=pytest.mark.notimpl(
-                ["risingwave", "druid"], raises=exc.OperationNotDefinedError
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["risingwave", "druid"],
+                    raises=exc.OperationNotDefinedError,
+                ),
+                pytest.mark.never(
+                    ["materialize"],
+                    raises=exc.OperationNotDefinedError,
+                    reason="Materialize will never support random() - nondeterministic functions can't be used in materialized views",
+                ),
+            ],
             id="random",
         ),
         param(
             ibis.uuid(),
-            marks=pytest.mark.notimpl(
-                ["exasol", "risingwave", "druid", "oracle", "pyspark"],
-                raises=exc.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["exasol", "risingwave", "druid", "oracle", "pyspark"],
+                    raises=exc.OperationNotDefinedError,
+                ),
+                pytest.mark.never(
+                    ["materialize"],
+                    raises=exc.OperationNotDefinedError,
+                    reason="Materialize will never support UUID generation - nondeterministic functions can't be used in materialized views",
+                ),
+            ],
             id="uuid",
         ),
     ],
@@ -237,6 +257,11 @@ def test_mixed_qualified_and_unqualified_predicates(backend_name, snapshot):
     raises=exc.OperationNotDefinedError,
     reason="random not supported",
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=exc.OperationNotDefinedError,
+    reason="Materialize will never support random() - nondeterministic functions can't be used in materialized views",
+)
 def test_rewrite_context(snapshot, backend_name):
     table = ibis.table({"test": "int"}, name="test")
     expr = table.select(new_col=ibis.ntile(2).over(order_by=ibis.random())).limit(10)
@@ -253,6 +278,12 @@ def test_rewrite_context(snapshot, backend_name):
     reason="sample not supported",
 )
 def test_sample(backend_name, snapshot, subquery):
+    # Materialize will never support random() (nondeterministic functions can't be used in materialized views)
+    if backend_name == "materialize" and subquery:
+        pytest.skip(
+            "materialize will never support random() needed for subquery sampling"
+        )
+
     t = ibis.table({"x": "int64", "y": "int64"}, name="test")
     if subquery:
         t = t.filter(t.x > 10)
