@@ -4,4 +4,5 @@ r0 := UnboundTable: t
 
 FillNull[r0]
   replacements:
-    i: 3
+    i: r0.i
+    f: r0.i

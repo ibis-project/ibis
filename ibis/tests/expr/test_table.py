@@ -2119,9 +2119,9 @@ def test_table_dropna_depr_warn():
 
 # TODO: remove when fillna is fully deprecated
 def test_table_fillna_depr_warn():
-    t = ibis.table(schema={"a": "int", "b": "str"})
+    t = ibis.table(schema={"a": "int"})
     with pytest.warns(FutureWarning, match="v9.1"):
-        t.fillna({"b": "missing"})
+        t.fillna({"a": 5})
 
 
 def test_dummy_table_disallows_aliases():
