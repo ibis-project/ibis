@@ -166,7 +166,7 @@ class ScalarParameter(Scalar):
 
     shape = ds.scalar
 
-    def __init__(self, dtype, counter):
+    def __init__(self, dtype, counter=None):
         if counter is None:
             counter = next(self._counter)
         super().__init__(dtype=dtype, counter=counter)
