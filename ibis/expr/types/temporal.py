@@ -329,6 +329,8 @@ class _TimeComponentMixin:
 class TimeValue(_TimeComponentMixin, Value):
     """A time of day from 0:00:00 to 23:59:59.999999999."""
 
+    __dtype__ = dt.time
+
     def strftime(self, format_str: str, /) -> ir.StringValue:
         """Format a time according to `format_str`.
 
@@ -504,6 +506,8 @@ class TimeColumn(Column, TimeValue):
 @public
 class DateValue(Value, _DateComponentMixin):
     """A date (without time), eg 2024-12-31."""
+
+    __dtype__ = dt.date
 
     def strftime(self, format_str: str, /) -> ir.StringValue:
         """Format a date according to `format_str`.
@@ -784,6 +788,8 @@ class DateColumn(Column, DateValue):
 @public
 class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
     """A date and time, eg 2024-12-31 23:59:59.999999."""
+
+    __dtype__ = dt.timestamp
 
     def strftime(self, format_str: str, /) -> ir.StringValue:
         """Format a timestamp according to `format_str`.
@@ -1254,6 +1260,8 @@ class IntervalValue(Value):
     `ibis.timestamp("2020-01-01") + ibis.interval(days=1)`,
     which results in a new timestamp expression.
     """
+
+    __dtype__ = dt.Interval
 
     def as_unit(self, target_unit: str, /) -> IntervalValue:
         """Convert this interval to units of `target_unit`."""
