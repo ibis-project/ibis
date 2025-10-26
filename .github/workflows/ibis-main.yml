@@ -66,7 +66,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.1.1
+        uses: astral-sh/setup-uv@v7.1.2
 
       - name: install ${{ matrix.os }} system dependencies
         if: startsWith(matrix.os, 'ubuntu')
@@ -121,7 +121,7 @@ jobs:
           python-version: "3.9"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.1.1
+        uses: astral-sh/setup-uv@v7.1.2
 
       - name: install system dependencies
         run: |
@@ -146,7 +146,7 @@ jobs:
           python-version: "3.13"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.1.1
+        uses: astral-sh/setup-uv@v7.1.2
 
       - name: check duckdb doesn't import sqlite3
         run: uv run --extra duckdb python -c 'import sys, ibis; assert "sqlite3" not in sys.modules; ibis.duckdb.connect(); assert "sqlite3" not in sys.modules'
@@ -164,7 +164,7 @@ jobs:
           python-version: "3.13"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.1.1
+        uses: astral-sh/setup-uv@v7.1.2
 
       - name: check scrapy import
         run: uv run --with scrapy python -c 'import scrapy; import ibis'
@@ -196,7 +196,7 @@ jobs:
           python-version: "3.13"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.1.1
+        uses: astral-sh/setup-uv@v7.1.2
 
       - uses: extractions/setup-just@v3
         env:
