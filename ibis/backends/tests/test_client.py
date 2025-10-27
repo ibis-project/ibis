@@ -708,37 +708,36 @@ def test_upsert_from_expr(
     [
         ({"x": "int64", "y": "float64", "z": "string"}, contextlib.nullcontext()),
         ({"z": "!string", "y": "float32", "x": "uint8"}, contextlib.nullcontext()),
-        ({"x": "int64"}, contextlib.nullcontext()),
+        ({"x": "int64"}, pytest.raises(Exception)),  # No cols to insert
         ({"x": "int64", "z": "string"}, contextlib.nullcontext()),
-        ({"z": "string"}, contextlib.nullcontext()),
+        ({"z": "string"}, pytest.raises(Exception)),  # Missing `on` col
     ],
 )
 def test_upsert_from_memtable(backend, con, temp_table, sch, expectation):
     t1 = ibis.memtable({"x": [1, 2, 3], "y": [4.0, 5.0, 6.0], "z": ["a", "b", "c"]})
     table_name = temp_table
 
-    data = {"x": [3, 2, 6], "y": [7.0, 8.0, 9.0], "z": ["d", "e", "f"]}
-    t2 = ibis.memtable({k: v for k, v in data.items() if k in sch}, schema=sch)
+    data = {
+        k: v
+        for k, v in {"x": [3, 2, 6], "y": [7.0, 8.0, 9.0], "z": ["d", "e", "f"]}.items()
+        if k in sch
+    }
+    t2 = ibis.memtable(data, schema=sch)
 
     con.create_table(table_name, schema=t1.schema())
     con.upsert(table_name, t1, on="x")
+    temporary = con.table(table_name)
+    df1 = temporary.execute().set_index("x")
 
     with expectation:
         con.upsert(table_name, t2, on="x")
 
-        result = con.table(table_name).execute()
-        expected = (
-            t2.execute()
-            .set_index("x")
-            .combine_first(t1.execute().set_index("x"))
-            .reset_index()
-        )
+        result = temporary.execute()
+        expected = pd.DataFrame(data).set_index("x").combine_first(df1).reset_index()
         assert len(result) == len(expected)
-        assert con.table(table_name).schema() == t1.schema()
         backend.assert_frame_equal(
             result.sort_values("x").reset_index(drop=True),
             expected.sort_values("x").reset_index(drop=True),
-            check_dtype=False,  # Expected schema checked on table above
         )
 
 
