@@ -8,11 +8,15 @@ let
   # Create package overlay from workspace.
   workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ../.; };
 
-  envOverlay = workspace.mkPyprojectOverlay { sourcePreference = "wheel"; };
+  envOverlay = workspace.mkPyprojectOverlay {
+    sourcePreference = "wheel";
+  };
 
   # Create an overlay enabling editable mode for all local dependencies.
   # This is for usage with `nix develop`
-  editableOverlay = workspace.mkEditablePyprojectOverlay { root = "$REPO_ROOT"; };
+  editableOverlay = workspace.mkEditablePyprojectOverlay {
+    root = "$REPO_ROOT";
+  };
 
   # Build fixups overlay
   pyprojectOverrides = import ./pyproject-overrides.nix { inherit pkgs; };
@@ -70,12 +74,14 @@ let
               ++ lib.optionals (!editable) [ testOverlay ]
             )
           );
-      # Build virtual environment
     in
+    # Build virtual environment
     (pythonSet.mkVirtualEnv "ibis-${python.pythonVersion}" deps).overrideAttrs (_old: {
       # Add passthru.tests from ibis-framework to venv passthru.
       # This is used to build tests by CI.
-      passthru = { inherit (pythonSet.ibis-framework.passthru) tests; };
+      passthru = {
+        inherit (pythonSet.ibis-framework.passthru) tests;
+      };
     });
 
   mkEnv = mkEnv' {
