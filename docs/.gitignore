@@ -36,3 +36,5 @@ _inv
 objects.txt
 
 /.quarto/
+
+**/*.quarto_ipynb
