@@ -129,7 +129,6 @@ in
   );
 
   quarto = pkgs.callPackage ./quarto { };
-  uv = uv2nix.packages.${pkgs.system}.uv-bin;
 
   changelog = pkgs.writeShellApplication {
     name = "changelog";
