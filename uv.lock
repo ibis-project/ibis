@@ -2960,6 +2960,17 @@ databricks = [
     { name = "pyarrow-hotfix" },
     { name = "rich" },
 ]
+databricks-read-only = [
+    { name = "databricks-sql-connector-core" },
+    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "numpy", version = "2.3.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas" },
+    { name = "polars" },
+    { name = "pyarrow" },
+    { name = "pyarrow-hotfix" },
+    { name = "rich" },
+]
 datafusion = [
     { name = "datafusion" },
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -3241,6 +3252,7 @@ requires-dist = [
     { name = "google-cloud-bigquery", marker = "extra == 'bigquery'", specifier = ">=3" },
     { name = "google-cloud-bigquery-storage", marker = "extra == 'bigquery'", specifier = ">=2" },
     { name = "graphviz", marker = "extra == 'visualization'", specifier = ">=0.16" },
+    { name = "ibis-framework", extras = ["databricks", "polars"], marker = "extra == 'databricks-read-only'" },
     { name = "impyla", marker = "extra == 'impala'", specifier = ">=0.17" },
     { name = "mysqlclient", marker = "extra == 'mysql'", specifier = ">=2.2.4" },
     { name = "numpy", marker = "extra == 'athena'", specifier = ">=1.23.2,<3" },
@@ -3371,7 +3383,7 @@ requires-dist = [
     { name = "typing-extensions", specifier = ">=4.3.0" },
     { name = "tzdata", specifier = ">=2022.7" },
 ]
-provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
+provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "databricks-read-only", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
 
 [package.metadata.requires-dev]
 dev = [
