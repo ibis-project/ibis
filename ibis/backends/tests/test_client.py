@@ -703,11 +703,17 @@ def test_upsert_from_expr(
 
 
 @NO_MERGE_SUPPORT
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
+)
 @pytest.mark.parametrize(
     ("sch", "expectation"),
     [
         ({"x": "int64", "y": "float64", "z": "string"}, contextlib.nullcontext()),
-        ({"z": "!string", "y": "float32", "x": "uint8"}, contextlib.nullcontext()),
+        ({"z": "!string", "y": "float32", "x": "int8"}, contextlib.nullcontext()),
         ({"x": "int64"}, pytest.raises(Exception)),  # No cols to insert
         ({"x": "int64", "z": "string"}, contextlib.nullcontext()),
         ({"z": "string"}, pytest.raises(Exception)),  # Missing `on` col
