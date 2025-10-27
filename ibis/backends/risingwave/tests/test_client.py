@@ -116,8 +116,9 @@ def test_create_and_drop_table(con, temp_table):
 )
 def test_get_schema_from_query(con, pg_type, expected_type):
     name = sg.table(gen_name("risingwave_temp_table"), quoted=True)
+    query = f"CREATE TABLE {name} (x {pg_type}, y {pg_type}[])"
     with con.begin() as c:
-        c.execute(f"CREATE TABLE {name} (x {pg_type}, y {pg_type}[])")
+        c.execute(query)
     expected_schema = ibis.schema(dict(x=expected_type, y=dt.Array(expected_type)))
     result_schema = con._get_schema_using_query(f"SELECT x, y FROM {name}")
     assert result_schema == expected_schema

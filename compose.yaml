@@ -111,10 +111,9 @@ services:
       retries: 20
       test:
         - CMD-SHELL
-        - mc ready data && mc mb --ignore-existing data/trino data/risingwave
+        - mc ready data && mc mb --ignore-existing data/trino
     networks:
       - trino
-      - risingwave
     volumes:
       - $PWD/docker/minio/config.json:/.mc/config.json:ro
 
@@ -557,20 +556,10 @@ services:
       - impala
 
   risingwave:
-    image: ghcr.io/risingwavelabs/risingwave:v2.1.3
-    command: "standalone --meta-opts=\" \
-      --advertise-addr 0.0.0.0:5690 \
-      --backend mem \
-      --state-store hummock+minio://accesskey:secretkey@minio:9000/risingwave \
-      --data-directory hummock_001\" \
-      --compute-opts=\"--advertise-addr 0.0.0.0:5688 --role both\" \
-      --frontend-opts=\"--listen-addr 0.0.0.0:4566 --advertise-addr 0.0.0.0:4566\" \
-      --compactor-opts=\"--advertise-addr 0.0.0.0:6660\""
+    image: ghcr.io/risingwavelabs/risingwave:v2.5.1
+    command: single_node
     ports:
       - 4566:4566
-    depends_on:
-      minio:
-        condition: service_healthy
     volumes:
       - risingwave:/data
     environment:
