@@ -603,19 +603,7 @@ class Backend(
                 cur.execute(
                     sge.Drop(kind="TABLE", this=final_this, exists=True).sql(dialect)
                 )
-                # Use ALTER TABLE ... RENAME TO syntax supported by SingleStoreDB
-                # Extract just the table name (removing catalog/database prefixes and quotes)
-                temp_table_name = temp_name
-                if quoted:
-                    temp_table_name = f"`{temp_name}`"
-                final_table_name = name
-                if quoted:
-                    final_table_name = f"`{name}`"
-
-                rename_sql = (
-                    f"ALTER TABLE {temp_table_name} RENAME TO {final_table_name}"
-                )
-                cur.execute(rename_sql)
+                self.rename_table(temp_name, name)
 
         if schema is None:
             return self.table(name, database=database if not temp else None)
