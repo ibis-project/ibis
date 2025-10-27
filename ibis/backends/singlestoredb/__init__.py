@@ -410,8 +410,8 @@ class Backend(
         handles transaction lifecycle including rollback on exceptions
         and proper cleanup.
 
-        Yields
-        ------
+        Returns
+        -------
         Cursor
             SingleStoreDB cursor for executing SQL commands
 
