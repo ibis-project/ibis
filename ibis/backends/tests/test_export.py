@@ -510,7 +510,10 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     dt = ibis.read_delta(path)
     result = dt.to_pandas()
 
-    backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(
+        result.sort_values(["id"]).reset_index(drop=True),
+        expected.sort_values(["id"]).reset_index(drop=True),
+    )
 
 
 @pytest.mark.notimpl(
