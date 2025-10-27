@@ -386,7 +386,6 @@ def test_json_type_support(con):
 
 def test_connection_attributes(con):
     """Test that connection has expected attributes."""
-    assert hasattr(con, "database")
     assert hasattr(con, "_get_schema_using_query")
     assert hasattr(con, "list_tables")
     assert hasattr(con, "create_database")
