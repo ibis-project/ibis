@@ -2,142 +2,53 @@ from __future__ import annotations
 
 import inspect
 from functools import partial
-from typing import TYPE_CHECKING
+
+from singlestoredb.mysql.constants import FIELD_TYPE, FLAG
 
 import ibis.expr.datatypes as dt
 
-if TYPE_CHECKING:
-    try:
-        from singlestoredb.mysql.constants import FIELD_TYPE, FLAG
-    except ImportError:
-        FIELD_TYPE = None
-        FLAG = None
+TEXT_TYPES = (
+    FIELD_TYPE.BIT,
+    FIELD_TYPE.BLOB,
+    FIELD_TYPE.LONG_BLOB,
+    FIELD_TYPE.MEDIUM_BLOB,
+    FIELD_TYPE.STRING,
+    FIELD_TYPE.TINY_BLOB,
+    FIELD_TYPE.VAR_STRING,
+    FIELD_TYPE.VARCHAR,
+    FIELD_TYPE.GEOMETRY,
+)
 
-try:
-    from singlestoredb.mysql.constants import FIELD_TYPE, FLAG
+_type_codes = {v: k for k, v in inspect.getmembers(FIELD_TYPE) if not k.startswith("_")}
 
-    TEXT_TYPES = (
-        FIELD_TYPE.BIT,
-        FIELD_TYPE.BLOB,
-        FIELD_TYPE.LONG_BLOB,
-        FIELD_TYPE.MEDIUM_BLOB,
-        FIELD_TYPE.STRING,
-        FIELD_TYPE.TINY_BLOB,
-        FIELD_TYPE.VAR_STRING,
-        FIELD_TYPE.VARCHAR,
-        FIELD_TYPE.GEOMETRY,
-    )
 
-    _type_codes = {
-        v: k for k, v in inspect.getmembers(FIELD_TYPE) if not k.startswith("_")
-    }
+class _FieldFlags:
+    """Flags used to disambiguate field types for SingleStoreDB."""
 
-    class _FieldFlags:
-        """Flags used to disambiguate field types for SingleStoreDB."""
+    __slots__ = ("value",)
 
-        __slots__ = ("value",)
+    def __init__(self, value: int) -> None:
+        self.value = value
 
-        def __init__(self, value: int) -> None:
-            self.value = value
+    @property
+    def is_unsigned(self) -> bool:
+        return (FLAG.UNSIGNED & self.value) != 0
 
-        @property
-        def is_unsigned(self) -> bool:
-            return (FLAG.UNSIGNED & self.value) != 0
+    @property
+    def is_timestamp(self) -> bool:
+        return (FLAG.TIMESTAMP & self.value) != 0
 
-        @property
-        def is_timestamp(self) -> bool:
-            return (FLAG.TIMESTAMP & self.value) != 0
+    @property
+    def is_set(self) -> bool:
+        return (FLAG.SET & self.value) != 0
 
-        @property
-        def is_set(self) -> bool:
-            return (FLAG.SET & self.value) != 0
+    @property
+    def is_num(self) -> bool:
+        return (FLAG.NUM & self.value) != 0
 
-        @property
-        def is_num(self) -> bool:
-            return (FLAG.NUM & self.value) != 0
-
-        @property
-        def is_binary(self) -> bool:
-            return (FLAG.BINARY & self.value) != 0
-
-except ImportError:
-    TEXT_TYPES = (0, 249, 250, 251, 252, 253, 254, 255)  # Basic type codes
-    _type_codes = {
-        0: "DECIMAL",
-        1: "TINY",
-        2: "SHORT",
-        3: "LONG",
-        4: "FLOAT",
-        5: "DOUBLE",
-        6: "NULL",
-        7: "TIMESTAMP",
-        8: "LONGLONG",
-        9: "INT24",
-        10: "DATE",
-        11: "TIME",
-        12: "DATETIME",
-        13: "YEAR",
-        15: "VARCHAR",
-        16: "BIT",
-        245: "JSON",
-        246: "NEWDECIMAL",
-        247: "ENUM",
-        248: "SET",
-        249: "TINY_BLOB",
-        250: "MEDIUM_BLOB",
-        251: "LONG_BLOB",
-        252: "BLOB",
-        253: "VAR_STRING",
-        254: "STRING",
-        255: "GEOMETRY",
-        # SingleStoreDB-specific type codes
-        1001: "BSON",
-        # Vector JSON types
-        2001: "FLOAT32_VECTOR_JSON",
-        2002: "FLOAT64_VECTOR_JSON",
-        2003: "INT8_VECTOR_JSON",
-        2004: "INT16_VECTOR_JSON",
-        2005: "INT32_VECTOR_JSON",
-        2006: "INT64_VECTOR_JSON",
-        # Vector binary types
-        3001: "FLOAT32_VECTOR",
-        3002: "FLOAT64_VECTOR",
-        3003: "INT8_VECTOR",
-        3004: "INT16_VECTOR",
-        3005: "INT32_VECTOR",
-        3006: "INT64_VECTOR",
-        # Legacy fallback types
-        256: "VECTOR",  # General vector type
-        257: "GEOGRAPHY",  # Extended geospatial support
-    }
-
-    class _FieldFlags:
-        """Fallback field flags implementation."""
-
-        __slots__ = ("value",)
-
-        def __init__(self, value: int) -> None:
-            self.value = value
-
-        @property
-        def is_unsigned(self) -> bool:
-            return (32 & self.value) != 0  # UNSIGNED_FLAG = 32
-
-        @property
-        def is_timestamp(self) -> bool:
-            return (1024 & self.value) != 0  # TIMESTAMP_FLAG = 1024
-
-        @property
-        def is_set(self) -> bool:
-            return (2048 & self.value) != 0  # SET_FLAG = 2048
-
-        @property
-        def is_num(self) -> bool:
-            return (32768 & self.value) != 0  # NUM_FLAG = 32768
-
-        @property
-        def is_binary(self) -> bool:
-            return (128 & self.value) != 0  # BINARY_FLAG = 128
+    @property
+    def is_binary(self) -> bool:
+        return (FLAG.BINARY & self.value) != 0
 
 
 def _type_from_cursor_info(

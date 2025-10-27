@@ -450,7 +450,7 @@ class SQLBackend(BaseBackend):
             target=name, source=obj, db=db, catalog=catalog
         )
 
-        with self._safe_raw_sql(query.sql(self.dialect)):
+        with self._safe_raw_sql(query):
             pass
 
     def _get_columns_to_insert(

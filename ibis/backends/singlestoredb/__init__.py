@@ -183,57 +183,12 @@ class Backend(
                 warnings.warn(f"Unable to set session timezone to UTC: {e}")
 
     @property
-    def show(self) -> Any:
-        """Access to SHOW commands on the server."""
-        return self.con.show
-
-    @property
-    def globals(self) -> Any:
-        """Accessor for global variables in the server."""
-        return self.con.globals
-
-    @property
-    def locals(self) -> Any:
-        """Accessor for local variables in the server."""
-        return self.con.locals
-
-    @property
-    def cluster_globals(self) -> Any:
-        """Accessor for cluster global variables in the server."""
-        return self.con.cluster_globals
-
-    @property
-    def cluster_locals(self) -> Any:
-        """Accessor for cluster local variables in the server."""
-        return self.con.cluster_locals
-
-    @property
-    def vars(self) -> Any:
-        """Accessor for variables in the server."""
-        return self.con.vars
-
-    @property
-    def cluster_vars(self) -> Any:
-        """Accessor for cluster variables in the server."""
-        return self.con.cluster_vars
-
-    @property
     def current_database(self) -> str:
         """Return the current database name."""
         with self.begin() as cur:
             cur.execute("SELECT DATABASE()")
             (database,) = cur.fetchone()
         return database
-
-    @property
-    def database(self) -> str:
-        """Return the current database name (alias for current_database)."""
-        return self.current_database
-
-    @property
-    def dialect(self) -> str:
-        """Return the SQLGlot dialect name."""
-        return "singlestore"
 
     @classmethod
     def _from_url(cls, url: ParseResult, **kwargs) -> Backend:
@@ -336,7 +291,8 @@ class Backend(
             Use '%' as wildcard, e.g., 'user_%' for tables starting with 'user_'
         database
             Database to list tables from. If None, uses current database.
-            Can be a string database name or tuple (catalog, database)
+            Tuples are used to specify (catalog, database), but catalogs are
+            not supported in SingleStoreDB, so this is for compatibility only.
 
         Returns
         -------
@@ -874,14 +830,14 @@ class Backend(
             names.append(name)
 
             # Use the detailed cursor info for type conversion
-            if len(col_info) >= 6:
+            if (len_col_info := len(col_info)) >= 6:
                 # Cursor description has precision and scale info (HTTP protocol support)
                 # SingleStoreDB uses 4-byte character encoding by default
                 ibis_type = _type_from_cursor_info(
-                    flags=col_info[7] if len(col_info) > 7 else 0,
+                    flags=col_info[7] if len_col_info > 7 else 0,
                     type_code=col_info[1],
-                    field_length=col_info[3] if len(col_info) > 3 else None,
-                    scale=col_info[5] if len(col_info) > 5 else None,
+                    field_length=col_info[3] if len_col_info > 3 else None,
+                    scale=col_info[5] if len_col_info > 5 else None,
                     multi_byte_maximum_length=4,  # Use 4 for SingleStoreDB's UTF8MB4 encoding
                     precision=col_info[4]
                     if len(col_info) > 4
@@ -989,8 +945,6 @@ class Backend(
         new_name = self._quote_table_name(new_name)
         with self.begin() as cur:
             cur.execute(f"ALTER TABLE {old_name} RENAME TO {new_name}")
-
-    # Method removed - SingleStoreDB doesn't support catalogs
 
     def _quote_table_name(self, name: str) -> str:
         """Quote a table name for safe SQL usage.
