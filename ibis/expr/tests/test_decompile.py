@@ -86,3 +86,16 @@ def test_view():
 def test_distinct():
     expr = ibis.table({"x": "int"}, name="t").distinct()
     assert "t.distinct()" in decompile(expr)
+
+
+@pytest.mark.parametrize(
+    ("method", "override"),
+    [
+        (ibis._.x.upper(), ".upper()"),
+        (ibis._.x.lower(), ".lower()"),
+        (ibis._.y.minute(), ".minute()"),
+    ],
+)
+def test_method_overrides(method, override):
+    expr = ibis.table({"x": "string", "y": "timestamp"}, name="t").select(method)
+    assert override in decompile(expr)

@@ -24,7 +24,6 @@ _method_overrides = {
     ops.ExtractMicrosecond: "microsecond",
     ops.ExtractMillisecond: "millisecond",
     ops.ExtractMinute: "minute",
-    ops.ExtractMinute: "minute",
     ops.ExtractMonth: "month",
     ops.ExtractQuarter: "quarter",
     ops.ExtractSecond: "second",
@@ -38,6 +37,7 @@ _method_overrides = {
     ops.StringContains: "contains",
     ops.StringSQLILike: "ilike",
     ops.StringSQLLike: "like",
+    ops.Uppercase: "upper",
 }
 
 
