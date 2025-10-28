@@ -166,6 +166,21 @@ wheels = [
 ]
 
 [[package]]
+name = "alembic"
+version = "1.16.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mako" },
+    { name = "sqlalchemy" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/83/52/72e791b75c6b1efa803e491f7cbab78e963695e76d4ada05385252927e76/alembic-1.16.4.tar.gz", hash = "sha256:efab6ada0dd0fae2c92060800e0bf5c1dc26af15a10e02fb4babff164b4725e2", size = 1968161, upload-time = "2025-07-10T16:17:20.192Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c2/62/96b5217b742805236614f05904541000f55422a6060a90d7fd4ce26c172d/alembic-1.16.4-py3-none-any.whl", hash = "sha256:b05e51e8e82efc1abd14ba2af6392897e145930c3e0a2faf2b0da2f7f7fd660d", size = 247026, upload-time = "2025-07-10T16:17:21.845Z" },
+]
+
+[[package]]
 name = "altair"
 version = "5.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -210,9 +225,9 @@ name = "anywidget"
 version = "0.9.18"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ipywidgets", marker = "python_full_version >= '3.10'" },
-    { name = "psygnal", marker = "python_full_version >= '3.10'" },
-    { name = "typing-extensions", marker = "python_full_version >= '3.10'" },
+    { name = "ipywidgets" },
+    { name = "psygnal" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ed/69/20423d6abd2a57d767d20a9dcf3f816bd4cbbe4813ac7c7158ba16e44c3f/anywidget-0.9.18.tar.gz", hash = "sha256:262cf459b517a7d044d6fbc84b953e9c83f026790b2dd3ce90f21a7f8eded00f", size = 9808509, upload-time = "2025-03-23T20:01:22.358Z" }
 wheels = [
@@ -322,7 +337,7 @@ name = "arro3-compute"
 version = "0.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "arro3-core", marker = "python_full_version >= '3.10'" },
+    { name = "arro3-core" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/91/de/51426baa601aff4ccb6f1c50cbb46071706a3b227817b361fdde2149cc93/arro3_compute-0.5.1-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:c2a0cb36846db0a622b99d6586028bf2322356e23116eaa46153690bffcbfcbd", size = 2583645, upload-time = "2025-05-31T23:17:52.203Z" },
@@ -496,7 +511,7 @@ name = "arro3-io"
 version = "0.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "arro3-core", marker = "python_full_version >= '3.10'" },
+    { name = "arro3-core" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/08/c9/36896feaf4ad5695cb5f54c58af47cd869a0bfad72cc818b3e3ef598dc81/arro3_io-0.5.1-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:e56bb17fb0f4eb04e359949af9fb5a0f703e96dc881e33e38a0a727d9db3f287", size = 7476868, upload-time = "2025-05-31T23:17:56.466Z" },
@@ -1650,24 +1665,23 @@ wheels = [
 ]
 
 [[package]]
-name = "databricks-sql-connector"
-version = "4.1.4"
+name = "databricks-sql-connector-core"
+version = "4.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "alembic" },
     { name = "lz4" },
     { name = "oauthlib" },
     { name = "openpyxl" },
     { name = "pandas" },
-    { name = "pyjwt" },
-    { name = "python-dateutil" },
     { name = "requests" },
     { name = "thrift" },
     { name = "urllib3", version = "1.26.20", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "urllib3", version = "2.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/96/dd/ab26e4b045cbd9e473e196480dc31cc9bc4f4c68dac8d0da9ccef88a26ca/databricks_sql_connector-4.1.4.tar.gz", hash = "sha256:803428c3a7d63b0fbb3bbf3f7ab9bf96f062f6a989f7df7a92529d7b0bbc8a14", size = 178362, upload-time = "2025-10-15T17:45:34.259Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/97/b5/71761c9baa913ecea180f3f16a6836087011e2cae73c013e009e2af4c2a2/databricks_sql_connector_core-4.0.1.tar.gz", hash = "sha256:98b41686afb683d8f0771cb755a63b6e9061fb7396feca6528f7d9253c40d5f1", size = 303315, upload-time = "2024-10-10T11:15:17.283Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c6/15/a674e16ebbe36190cf79cbf2c25e5dc3b5f0203b471d9e9e98b7c8e70381/databricks_sql_connector-4.1.4-py3-none-any.whl", hash = "sha256:cabe1640412c240b328291d7155c280570892961ce56d0529593f354e9958727", size = 202303, upload-time = "2025-10-15T17:45:33.078Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/5e/506bf3a397f0c08eeb0311352f98719307eb66c32f73242e1fb06d0d26cf/databricks_sql_connector_core-4.0.1-py3-none-any.whl", hash = "sha256:d989dc902b1bc6ec453dfa894c29ada3f58c674323fdd9121e7caa3da1507be3", size = 311445, upload-time = "2024-10-10T11:15:14.707Z" },
 ]
 
 [[package]]
@@ -2122,58 +2136,6 @@ wheels = [
 ]
 
 [[package]]
-name = "geoarrow-rust-core"
-version = "0.6.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "arro3-core", marker = "python_full_version >= '3.10'" },
-    { name = "pyproj", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
-    { name = "pyproj", version = "3.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/4f/5f1578c7b0c46ffe5203adfc6acb7f83e4d13ef641fa9e161d32d5cf3989/geoarrow_rust_core-0.6.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:37c4df678408247cc8a889358d4c1f8504b8fa578e9576a76c96e95474475663", size = 3247301, upload-time = "2025-10-16T21:15:53.156Z" },
-    { url = "https://files.pythonhosted.org/packages/99/9c/5269da66c492ccbe4764d4e077f6fa2961ae1d393d699f9023b976b1fede/geoarrow_rust_core-0.6.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4389a6a4ebe89d27267de3b18069475ea286dfc1722241ba92ba842e93da1120", size = 3702557, upload-time = "2025-10-16T21:14:04.653Z" },
-    { url = "https://files.pythonhosted.org/packages/11/f7/e15092c8d523a3cb8b5479dd657597cd4aec2d3a64da9b2ae74e98ea34f2/geoarrow_rust_core-0.6.0-cp310-cp310-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:f689f0637d658c16ce33e0bf56f0596e6d20a47558fe9ee331a479a3669a91ca", size = 3991076, upload-time = "2025-10-16T21:14:15.905Z" },
-    { url = "https://files.pythonhosted.org/packages/18/9d/19ced5c9b4ff3b268422e0bd987612e416caad6d72c962b94ff28c8e0f0e/geoarrow_rust_core-0.6.0-cp310-cp310-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:ecf24189ac75a8530b12a8ca0474b6d6f4b601fdb1801668bc97fef2feba925b", size = 5037710, upload-time = "2025-10-16T21:14:27.674Z" },
-    { url = "https://files.pythonhosted.org/packages/21/a7/ea4cf30715a9135d6d42e1a499c2d262851f28aa70f41aa3f2c29763ef4d/geoarrow_rust_core-0.6.0-cp310-cp310-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:4dd1ecc604e34083bb86e7777d4c3073d0961194610c44b6ef535e139f45868b", size = 4041081, upload-time = "2025-10-16T21:15:01.162Z" },
-    { url = "https://files.pythonhosted.org/packages/c8/a5/1066dd517309d75984a1e4f2f200d308c9fea41a6bfb795a5758bb3cf6d9/geoarrow_rust_core-0.6.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3f2ae605b08358b00b8b19d803b5dc2baf38dec6b782ab82357672535e814530", size = 3835217, upload-time = "2025-10-16T21:15:42.218Z" },
-    { url = "https://files.pythonhosted.org/packages/34/10/5ca84c90fdb7e21b92844f040509e155dbed92e1036194ffdfe3e06f628c/geoarrow_rust_core-0.6.0-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:092cff5217f704d20fc71642024b2fc44409d0960b9e642f79a54f36331b543e", size = 4277337, upload-time = "2025-10-16T21:15:29.453Z" },
-    { url = "https://files.pythonhosted.org/packages/60/5d/01dfaf71033a9d857c82c8ef9f3d8192913e010b887281a8fd6fb2207bb4/geoarrow_rust_core-0.6.0-cp310-cp310-win_amd64.whl", hash = "sha256:c65fa4e25a303e81d4484a5230d6a081ef16e0740188626998dccb6ed71ddd30", size = 3189729, upload-time = "2025-10-16T21:16:19.206Z" },
-    { url = "https://files.pythonhosted.org/packages/df/b6/f4bc1d4ac8cdecfa2408e7cbf0eb9b02267ba53cb5f97a37cca14646288b/geoarrow_rust_core-0.6.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:ef17ee1c669917dff56ae44a8560159b825f400528ec13b01c502a0b347d2690", size = 3247215, upload-time = "2025-10-16T21:15:54.378Z" },
-    { url = "https://files.pythonhosted.org/packages/d1/3b/54f39f502a3933e3d44b7f68e169b46b9161803b7426087cb31b6a42286a/geoarrow_rust_core-0.6.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:eba4f9a0545ea05a397d68e61df0b3b5c284434872f8ddd15b4f2bc30de9c314", size = 3701713, upload-time = "2025-10-16T21:14:06.071Z" },
-    { url = "https://files.pythonhosted.org/packages/e0/9d/4ad2ccd75c6a0b80c874a5e4cea6bd811710bdda29f4a5fc0e415fe1e369/geoarrow_rust_core-0.6.0-cp311-cp311-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:32d3441e22a4cd69bff831c86f9a00869f0641a4e8b304bd047cecd02448a72e", size = 3991568, upload-time = "2025-10-16T21:14:17.348Z" },
-    { url = "https://files.pythonhosted.org/packages/1f/21/789f702a2eac82b133d6bc9d67ad33c1e1acb1ad663bd5b12e4c02525148/geoarrow_rust_core-0.6.0-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:16c662155eacd62a46ac87a61332587c571a3cbd87591ac38998c3b166f6dfbf", size = 5040393, upload-time = "2025-10-16T21:14:29.008Z" },
-    { url = "https://files.pythonhosted.org/packages/aa/70/bd29d899e847f81dcbb823765ee66fcd0752c88a269e869f550889a1d95b/geoarrow_rust_core-0.6.0-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:6b23218efcaad597a3bb0f924639d698c69d2eea886c6d17f8f5e0c74d6b8043", size = 4032490, upload-time = "2025-10-16T21:15:02.587Z" },
-    { url = "https://files.pythonhosted.org/packages/de/6c/54ab249f2de2c2b42f8b1ce858b0cb6c196e9c879ec85a538b5b2ac79838/geoarrow_rust_core-0.6.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d0bba672c73671d242fa7484435cbad6049c18e3bcd19502e59cee3884423544", size = 3838342, upload-time = "2025-10-16T21:15:43.674Z" },
-    { url = "https://files.pythonhosted.org/packages/33/fb/eb5b991a3848afae8bff1a28a1af6d3472d1d3933f415ac1ebf70933dddd/geoarrow_rust_core-0.6.0-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:c5c1592b5421f28b0e85698c2c3a134ef380aa2ac2a75b497adf4ef2b9f4783a", size = 4277871, upload-time = "2025-10-16T21:15:30.743Z" },
-    { url = "https://files.pythonhosted.org/packages/b5/9e/747a59615cd5b7343f7c8f4e25609a099280eda415acf67973f171e2a095/geoarrow_rust_core-0.6.0-cp311-cp311-win_amd64.whl", hash = "sha256:aa6595a917c4b47fae9c1e8be7ebcdef6f63c3e44d2823940b8e1fec7a1f6929", size = 3189338, upload-time = "2025-10-16T21:16:21.121Z" },
-    { url = "https://files.pythonhosted.org/packages/34/e0/35a80484e3a4a75b9c263e37221eb4b7caece60204f79a0c0fc984b6ab4b/geoarrow_rust_core-0.6.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:a029ca98dae842d9658e42dc5a386cbdc9470216b7885ee986b529df844d0ce4", size = 3240208, upload-time = "2025-10-16T21:15:55.614Z" },
-    { url = "https://files.pythonhosted.org/packages/fe/1b/89d15a5baf1b564a43ccb97858818a3d857d3da0b051427b8ba125393d11/geoarrow_rust_core-0.6.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:513a528584f4b54e8a7c99b2b995f64edfd17e9c1786ff1f073fa6e099f48967", size = 3703994, upload-time = "2025-10-16T21:14:07.72Z" },
-    { url = "https://files.pythonhosted.org/packages/64/51/7a772a844364452382f311e142226a67436c6463c3bc7c2d147cafa7a2d6/geoarrow_rust_core-0.6.0-cp312-cp312-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:45284c17d9add3a829328b432c875ff4a2e82fabb06860361da5aaa765ba800b", size = 3982412, upload-time = "2025-10-16T21:14:18.671Z" },
-    { url = "https://files.pythonhosted.org/packages/db/95/4ec4d02e65ad41e35a8fa78a61025e23530c205e0d8c934ff1b100483007/geoarrow_rust_core-0.6.0-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:adc974bdecc60471e3426b8f4331732402d7123b5fabc4384a13ddfbf9311dd7", size = 5040324, upload-time = "2025-10-16T21:14:30.326Z" },
-    { url = "https://files.pythonhosted.org/packages/e8/b1/51b7b27d00be772c7ab63406d94eddbc0c191771030801a91c22efd89bf7/geoarrow_rust_core-0.6.0-cp312-cp312-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:6eb1bb683a178d51765d6c85659ff8929da9aef69e73ae6de0fb9b1b3bd72cb7", size = 4048391, upload-time = "2025-10-16T21:15:03.89Z" },
-    { url = "https://files.pythonhosted.org/packages/1d/40/e6c7be1f16c73200c386cb2011148cefe5a369ae64b128e8ad5f12280ce1/geoarrow_rust_core-0.6.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b81046ea882afbca7c9b6e48a9a964e7c453b8aaa3868e38ff955c5a155538ec", size = 3836995, upload-time = "2025-10-16T21:15:45.209Z" },
-    { url = "https://files.pythonhosted.org/packages/fd/74/513e78e7192be340ae185ecf43de3cb833af40c32cc25d2ecd775a2b34af/geoarrow_rust_core-0.6.0-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:f23ac122a3cdf8b1e96d3548afa594499efd0a3301c5f4513c56eed203799460", size = 4264207, upload-time = "2025-10-16T21:15:32.426Z" },
-    { url = "https://files.pythonhosted.org/packages/24/81/63b3e7c8b9ff063c1e1bd8b1a611722ca8b9ec2e455ffdbea48c3522133c/geoarrow_rust_core-0.6.0-cp312-cp312-win_amd64.whl", hash = "sha256:5af955c1c80fe047bdb345aca8030b86ccd64e8163dd276dc1a15515348f6497", size = 3186460, upload-time = "2025-10-16T21:16:22.479Z" },
-    { url = "https://files.pythonhosted.org/packages/4e/46/797530c1fd7312522d7a446f5591ad76833cba870332f1fd60f4ffed3d84/geoarrow_rust_core-0.6.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:28131290a6ffed2be7761c2d26f1435e6a4c46968a2181d9c466de088bc228dc", size = 3240786, upload-time = "2025-10-16T21:15:56.864Z" },
-    { url = "https://files.pythonhosted.org/packages/2d/b4/b7bfe566eb4af3e524d6fbe0c3a0b1cbd819ceea3c5f3e8c30bdca3f612c/geoarrow_rust_core-0.6.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c2029ad18b0b5cac8e2cff7957a5737075b19a96b88a0536d1cae384209d087e", size = 3704397, upload-time = "2025-10-16T21:14:09.005Z" },
-    { url = "https://files.pythonhosted.org/packages/fb/f4/76e12e430dd19d753bccce9ff434096fd4acb66d1e14ccbcbf77a4398397/geoarrow_rust_core-0.6.0-cp313-cp313-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:bd70910193f1a656f5a91a69fd2a989913ca25c38cbdb212a92d67ecb69b1657", size = 3983039, upload-time = "2025-10-16T21:14:20.137Z" },
-    { url = "https://files.pythonhosted.org/packages/17/00/1a715b1f88b2780a371615c3b7e75695152a92acac9026922d064e5e9f7f/geoarrow_rust_core-0.6.0-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:4f8e73df234ec9ed93ef02f5616f9a88732e74625367053b63865f6fc5775579", size = 5040581, upload-time = "2025-10-16T21:14:31.96Z" },
-    { url = "https://files.pythonhosted.org/packages/0f/8f/5bf00c76fe9bbbf1a5c88411a125ed5b8a2bdfec0051024bc7816fde5eeb/geoarrow_rust_core-0.6.0-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:e21d97f7996654ad4d1baaf02e3fb48153c28b0335048886408d5cf020f4930b", size = 4038721, upload-time = "2025-10-16T21:15:06.168Z" },
-    { url = "https://files.pythonhosted.org/packages/0a/2f/82b12527cc80391889c3236aa8b26239cb043e98e82bfe0c0a089b60e135/geoarrow_rust_core-0.6.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0eb5bf1393f3c53997c5dab2cdc26807680ef23237b2836dc27d1ef9b849a056", size = 3836588, upload-time = "2025-10-16T21:15:46.778Z" },
-    { url = "https://files.pythonhosted.org/packages/f4/2e/86bfec919df2f83867aa0a986fa5fbaf7e0bff7dabbf83713c60e949217e/geoarrow_rust_core-0.6.0-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:5503e1a1b9b8812d0c9f879a74fc0872e8f1919e75e669c8aea455025c2a6084", size = 4264668, upload-time = "2025-10-16T21:15:33.781Z" },
-    { url = "https://files.pythonhosted.org/packages/40/05/e40d4c2679fe6c5be7d339a46a880b63522c214bf05657a349227ff000a3/geoarrow_rust_core-0.6.0-cp313-cp313-win_amd64.whl", hash = "sha256:ba0561a24a9799b5f9c596a4e46e80dfe8dda118efe8662f18e40ca704ab4bb2", size = 3186614, upload-time = "2025-10-16T21:16:23.672Z" },
-    { url = "https://files.pythonhosted.org/packages/13/65/9c8ab1340ac63cda8b09e98707eac1612e379f7f0996fb1b52716d37b18a/geoarrow_rust_core-0.6.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:a2a8f23ee459aed466ca71c4eda84d776e4890cd1309fc07329c1197e1820af3", size = 3252161, upload-time = "2025-10-16T21:15:58.327Z" },
-    { url = "https://files.pythonhosted.org/packages/e7/36/695d9c952934f127712ddf32dbd7dcd02af88375358c5b7075a2ac8587b7/geoarrow_rust_core-0.6.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5287696c2b7b8bf062a8b126084051a9e97007536799c293b445cec3f8dfa605", size = 3703894, upload-time = "2025-10-16T21:14:10.296Z" },
-    { url = "https://files.pythonhosted.org/packages/f7/a9/d390b4620463825bf96d872429d75b991794131a15950796ffda9179c252/geoarrow_rust_core-0.6.0-cp39-cp39-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:05ee453b45f656cac0b577fe503bd18db71664639d61e8bdf1dae848df45b038", size = 3994530, upload-time = "2025-10-16T21:14:21.848Z" },
-    { url = "https://files.pythonhosted.org/packages/ec/fa/8bfa99b2e84a2c614f96d8e612fa9a009a317b130757e6c8162e072bf6da/geoarrow_rust_core-0.6.0-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:5b44dff6b5a01e7316b01aa3c268686e3fe2cbe407359284ea68a5a4591a4eff", size = 5040224, upload-time = "2025-10-16T21:14:33.286Z" },
-    { url = "https://files.pythonhosted.org/packages/65/ef/c40d8902c9aab039da55eeb22ac28a59274c95ab812235804427590a1427/geoarrow_rust_core-0.6.0-cp39-cp39-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:1ee489cca4e5e4d3f0b18d58e940ae0e02dc840ec0f0e23e1618c2d762b6cb14", size = 4043778, upload-time = "2025-10-16T21:15:07.824Z" },
-    { url = "https://files.pythonhosted.org/packages/70/30/474b69cfabe8350619c6f4f18e4e6145a32193ffed9f64108c361ba25273/geoarrow_rust_core-0.6.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4235a6d2ebc1fa30204c9a85c5b37144311026e5d5f27673e33a50547c7d8839", size = 3838379, upload-time = "2025-10-16T21:15:48.35Z" },
-    { url = "https://files.pythonhosted.org/packages/56/a8/592deaccb557618ecf5a18d74c441d1349d56c9058a8d77d06e33247326e/geoarrow_rust_core-0.6.0-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:e3259b3318fcaf9a1f04a700349406b20f17577dc2143c6edf63107fdd2becf7", size = 4279357, upload-time = "2025-10-16T21:15:35.09Z" },
-    { url = "https://files.pythonhosted.org/packages/74/5d/43466d5121b4409f5d1f3c462a7c85a795f97ee9f92e7cdf98fe4500ae5a/geoarrow_rust_core-0.6.0-cp39-cp39-win_amd64.whl", hash = "sha256:01dd8da24571c95f30dd33cc0891cd1a16db43e4eaab6c93a382706107a6f32f", size = 3191780, upload-time = "2025-10-16T21:16:39.994Z" },
-]
-
-[[package]]
 name = "geoarrow-types"
 version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2621,7 +2583,7 @@ wheels = [
 
 [[package]]
 name = "ibis-framework"
-version = "11.0.0"
+version = "10.8.0"
 source = { editable = "." }
 dependencies = [
     { name = "atpublic" },
@@ -2639,6 +2601,7 @@ athena = [
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "packaging" },
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "pyarrow-hotfix" },
@@ -2670,22 +2633,11 @@ clickhouse = [
     { name = "rich" },
 ]
 databricks = [
-    { name = "databricks-sql-connector" },
+    { name = "databricks-sql-connector-core" },
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
-    { name = "pyarrow" },
-    { name = "pyarrow-hotfix" },
-    { name = "rich" },
-]
-databricks-read-only = [
-    { name = "databricks-sql-connector" },
-    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
-    { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pandas" },
-    { name = "polars" },
     { name = "pyarrow" },
     { name = "pyarrow-hotfix" },
     { name = "rich" },
@@ -2695,7 +2647,6 @@ datafusion = [
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "packaging" },
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "pyarrow-hotfix" },
@@ -2795,6 +2746,7 @@ oracle = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "oracledb" },
+    { name = "packaging" },
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "pyarrow-hotfix" },
@@ -2804,6 +2756,7 @@ polars = [
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "packaging" },
     { name = "pandas" },
     { name = "polars" },
     { name = "pyarrow" },
@@ -2855,7 +2808,6 @@ sqlite = [
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "packaging" },
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "pyarrow-hotfix" },
@@ -2901,7 +2853,7 @@ docs = [
     { name = "jupyterlab-night" },
     { name = "jupyterlite-core" },
     { name = "jupyterlite-pyodide-kernel" },
-    { name = "lonboard", marker = "python_full_version >= '3.10'" },
+    { name = "lonboard" },
     { name = "nbclient" },
     { name = "plotly" },
     { name = "plotnine", version = "0.13.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -2940,7 +2892,7 @@ requires-dist = [
     { name = "atpublic", specifier = ">=2.3" },
     { name = "black", marker = "extra == 'decompiler'", specifier = ">=22.1.0" },
     { name = "clickhouse-connect", extras = ["arrow", "pandas", "numpy"], marker = "extra == 'clickhouse'", specifier = ">=0.5.23" },
-    { name = "databricks-sql-connector", marker = "extra == 'databricks'", specifier = ">=4" },
+    { name = "databricks-sql-connector-core", marker = "extra == 'databricks'", specifier = ">=4" },
     { name = "datafusion", marker = "extra == 'datafusion'", specifier = ">=0.6" },
     { name = "db-dtypes", marker = "extra == 'bigquery'", specifier = ">=0.3" },
     { name = "deltalake", marker = "extra == 'deltalake'", specifier = ">=0.9.0" },
@@ -2951,7 +2903,6 @@ requires-dist = [
     { name = "google-cloud-bigquery", marker = "extra == 'bigquery'", specifier = ">=3" },
     { name = "google-cloud-bigquery-storage", marker = "extra == 'bigquery'", specifier = ">=2" },
     { name = "graphviz", marker = "extra == 'visualization'", specifier = ">=0.16" },
-    { name = "ibis-framework", extras = ["databricks", "polars"], marker = "extra == 'databricks-read-only'" },
     { name = "impyla", marker = "extra == 'impala'", specifier = ">=0.17" },
     { name = "mysqlclient", marker = "extra == 'mysql'", specifier = ">=2.2.4" },
     { name = "numpy", marker = "extra == 'athena'", specifier = ">=1.23.2,<3" },
@@ -2975,10 +2926,11 @@ requires-dist = [
     { name = "numpy", marker = "extra == 'sqlite'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'trino'", specifier = ">=1.23.2,<3" },
     { name = "oracledb", marker = "extra == 'oracle'", specifier = ">=1.3.1" },
-    { name = "packaging", marker = "extra == 'datafusion'", specifier = ">=21.3" },
+    { name = "packaging", marker = "extra == 'athena'", specifier = ">=21.3" },
     { name = "packaging", marker = "extra == 'duckdb'", specifier = ">=21.3" },
+    { name = "packaging", marker = "extra == 'oracle'", specifier = ">=21.3" },
+    { name = "packaging", marker = "extra == 'polars'", specifier = ">=21.3" },
     { name = "packaging", marker = "extra == 'pyspark'", specifier = ">=21.3" },
-    { name = "packaging", marker = "extra == 'sqlite'", specifier = ">=21.3" },
     { name = "pandas", marker = "extra == 'athena'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'bigquery'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'clickhouse'", specifier = ">=1.5.3,<3" },
@@ -3082,7 +3034,7 @@ requires-dist = [
     { name = "typing-extensions", specifier = ">=4.3.0" },
     { name = "tzdata", specifier = ">=2022.7" },
 ]
-provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "databricks-read-only", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
+provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3100,14 +3052,14 @@ dev = [
 docs = [
     { name = "altair", specifier = ">=5.0.1,<6" },
     { name = "griffe", specifier = ">=1.7.3" },
-    { name = "ipykernel", specifier = ">=6.25.1,<8" },
-    { name = "itables", specifier = ">=1.6.3,<2.6" },
+    { name = "ipykernel", specifier = ">=6.25.1,<7" },
+    { name = "itables", specifier = ">=1.6.3,<2.5" },
     { name = "jupyter-cache", specifier = ">=1.0.0,<2" },
     { name = "jupyterlab", specifier = ">=4.2.5,<5" },
     { name = "jupyterlab-night", specifier = ">=0.4.6,<1" },
     { name = "jupyterlite-core", specifier = ">=0.6,<0.7" },
     { name = "jupyterlite-pyodide-kernel", specifier = ">=0.6,<0.7" },
-    { name = "lonboard", marker = "python_full_version >= '3.10'", specifier = "==0.12.1" },
+    { name = "lonboard", specifier = "==0.11.1" },
     { name = "nbclient", specifier = ">=0.8.0,<1" },
     { name = "plotly", specifier = ">=5.16.1" },
     { name = "plotnine", specifier = ">=0.12.2,<1" },
@@ -3123,14 +3075,14 @@ tests = [
     { name = "filelock", specifier = ">=3.7.0,<4" },
     { name = "fsspec", extras = ["s3"] },
     { name = "hypothesis", specifier = ">=6.58.0,<7" },
-    { name = "packaging", specifier = ">=21.3" },
+    { name = "packaging", specifier = ">=21.3,<26" },
     { name = "pytest", specifier = ">=8.2.0,<8.4.0" },
     { name = "pytest-benchmark", specifier = ">=3.4.1,<6" },
     { name = "pytest-clarity", specifier = ">=1.0.1,<2" },
-    { name = "pytest-cov", specifier = ">=5,<8" },
+    { name = "pytest-cov", specifier = ">=5,<7" },
     { name = "pytest-deadfixtures", specifier = ">=2.2.1,<3" },
     { name = "pytest-mock", specifier = ">=3.6.1,<4" },
-    { name = "pytest-randomly", specifier = ">=3.10.1,<5" },
+    { name = "pytest-randomly", specifier = ">=3.10.1,<4" },
     { name = "pytest-repeat", specifier = ">=0.9.1,<0.10" },
     { name = "pytest-snapshot", specifier = ">=0.9.0,<1" },
     { name = "pytest-timeout", specifier = ">=2.3.1,<3" },
@@ -3326,12 +3278,13 @@ name = "ipywidgets"
 version = "8.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "comm", marker = "python_full_version >= '3.10'" },
+    { name = "comm" },
+    { name = "ipython", version = "8.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "ipython", version = "8.37.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "ipython", version = "9.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "jupyterlab-widgets", marker = "python_full_version >= '3.10'" },
-    { name = "traitlets", marker = "python_full_version >= '3.10'" },
-    { name = "widgetsnbextension", marker = "python_full_version >= '3.10'" },
+    { name = "jupyterlab-widgets" },
+    { name = "traitlets" },
+    { name = "widgetsnbextension" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3e/48/d3dbac45c2814cb73812f98dd6b38bbcc957a4e7bb31d6ea9c03bf94ed87/ipywidgets-8.1.7.tar.gz", hash = "sha256:15f1ac050b9ccbefd45dccfbb2ef6bed0029d8278682d569d71b8dd96bee0376", size = 116721, upload-time = "2025-05-05T12:42:03.489Z" }
 wheels = [
@@ -3922,25 +3875,26 @@ wheels = [
 
 [[package]]
 name = "lonboard"
-version = "0.12.1"
+version = "0.11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "anywidget", marker = "python_full_version >= '3.10'" },
-    { name = "arro3-compute", marker = "python_full_version >= '3.10'" },
-    { name = "arro3-core", marker = "python_full_version >= '3.10'" },
-    { name = "arro3-io", marker = "python_full_version >= '3.10'" },
-    { name = "geoarrow-rust-core", marker = "python_full_version >= '3.10'" },
-    { name = "ipywidgets", marker = "python_full_version >= '3.10'" },
+    { name = "anywidget" },
+    { name = "arro3-compute" },
+    { name = "arro3-core" },
+    { name = "arro3-io" },
+    { name = "ipywidgets" },
+    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pyproj", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "pyproj", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "pyproj", version = "3.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "traitlets", marker = "python_full_version >= '3.10'" },
-    { name = "typing-extensions", marker = "python_full_version >= '3.10' and python_full_version < '3.12'" },
+    { name = "traitlets" },
+    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/3a/01603feb03b7cd3179d15fc63f02f5e5121e2bac8d68058e0feb08085fae/lonboard-0.12.1.tar.gz", hash = "sha256:2a4c07b38c0da6cd348df8133c3694815540f00fbf192104c6a4cecb3a6a5ea1", size = 907517, upload-time = "2025-09-18T19:45:10.287Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/23/fa/24042cdb954de67fc37d8ebaaafa6e9ad9fab4aef1f927e828def557fd90/lonboard-0.11.1.tar.gz", hash = "sha256:e298b18797b870f0b000df5978f152dad21a6bf459e50fcb509da71c316d1e3c", size = 905120, upload-time = "2025-06-18T15:17:56.788Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/86/30142987e19a0f9bb464ada0dad647fc39b81bac5eacefdcdfff0d14c41e/lonboard-0.12.1-py3-none-any.whl", hash = "sha256:74fd1a904443d38018aa142214367d183a89fc41d16a36f5b3cde17b2e293773", size = 928199, upload-time = "2025-09-18T19:45:08.457Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/23/c2b78986f806e7489a09ab22f8dd47e944feda43b3efd466c8440053c856/lonboard-0.11.1-py3-none-any.whl", hash = "sha256:e708921a2b9e4dd87f8736aa7b2edf89b631c94a282381b37468fc86fd5d428e", size = 924457, upload-time = "2025-06-18T15:17:55.02Z" },
 ]
 
 [[package]]
@@ -3989,6 +3943,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/9e/1781ecb72300aed4d74484dff9a16a585e82c5de47c52930bb6e5a415c40/lz4-4.4.4-cp39-cp39-win32.whl", hash = "sha256:585b42eb37ab16a278c3a917ec23b2beef175aa669f4120142b97aebf90ef775", size = 88266, upload-time = "2025-04-01T22:55:55.988Z" },
     { url = "https://files.pythonhosted.org/packages/f8/2d/2426270bc39cd39a49773559137415b5a1bb43d3be75a44807806f5cb503/lz4-4.4.4-cp39-cp39-win_amd64.whl", hash = "sha256:4ab1537bd3b3bfbafd3c8847e06827129794488304f21945fc2f5b669649d94f", size = 99915, upload-time = "2025-04-01T22:55:56.849Z" },
     { url = "https://files.pythonhosted.org/packages/66/ea/cadcd430073925e1acd7c509333101cc1b922593af6779355bf6cc064c73/lz4-4.4.4-cp39-cp39-win_arm64.whl", hash = "sha256:38730927ad51beb42ab8dbc5555270bfbe86167ba734265f88bbd799fced1004", size = 89747, upload-time = "2025-04-01T22:55:57.749Z" },
+]
+
+[[package]]
+name = "mako"
+version = "1.3.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markupsafe" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9e/38/bd5b78a920a64d708fe6bc8e0a2c075e1389d53bef8413725c63ba041535/mako-1.3.10.tar.gz", hash = "sha256:99579a6f39583fa7e5630a28c3c1f440e4e97a414b80372649c0ce338da2ea28", size = 392474, upload-time = "2025-04-10T12:44:31.16Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/87/fb/99f81ac72ae23375f22b7afdb7642aba97c00a713c217124420147681a2f/mako-1.3.10-py3-none-any.whl", hash = "sha256:baef24a52fc4fc514a0887ac600f9f1cff3d82c61d4d700a1fa84d597b88db59", size = 78509, upload-time = "2025-04-10T12:50:53.297Z" },
 ]
 
 [[package]]
