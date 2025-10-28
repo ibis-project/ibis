@@ -291,8 +291,7 @@ send2trash==1.8.3
 setuptools==80.9.0
 shapely==2.0.7 ; python_full_version < '3.10'
 shapely==2.1.2 ; python_full_version >= '3.10'
-singlestoredb==1.12.4 ; python_full_version < '3.11'
-singlestoredb==1.16.0 ; python_full_version >= '3.11'
+singlestoredb==1.16.0
 six==1.17.0
 sniffio==1.3.1
 snowflake-connector-python==4.0.0
