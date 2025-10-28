@@ -2851,7 +2851,11 @@ class Table(Expr, FixedTextJupyterMixin):
 
     def filter(
         self,
-        *predicates: ir.BooleanValue | Sequence[ir.BooleanValue] | IfAnyAll | Deferred,
+        *predicates: ir.BooleanValue
+        | bool
+        | Sequence[ir.BooleanValue | bool]
+        | IfAnyAll
+        | Deferred,
     ) -> Table:
         """Select rows from `table` based on `predicates`.
 
