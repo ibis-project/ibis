@@ -48,6 +48,7 @@ jobs:
             title: Databricks
             extras:
               - --extra databricks
+              - --extra polars
           - name: athena
             title: Amazon Athena
             extras:

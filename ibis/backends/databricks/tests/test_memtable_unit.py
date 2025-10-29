@@ -9,6 +9,8 @@ import pytest
 
 import ibis
 
+pytestmark = pytest.mark.databricks
+
 
 def test_allow_memtable_in_memory_initializes_polars_backend():
     """Test that allow_memtable_in_memory=True initializes Polars backend."""
