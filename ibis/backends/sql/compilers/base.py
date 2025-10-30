@@ -792,6 +792,8 @@ class SQLGlotCompiler(abc.ABC):
             )
         elif dtype.is_boolean():
             return sge.Boolean(this=bool(value))
+        elif dtype.is_json():
+            return sge.JSON(this=sge.convert(str(value)))
         elif dtype.is_string():
             return sge.convert(value)
         elif dtype.is_inet() or dtype.is_macaddr():
