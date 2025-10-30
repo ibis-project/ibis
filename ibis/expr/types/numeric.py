@@ -8,8 +8,7 @@ from public import public
 import ibis
 import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisTypeError
-from ibis.expr.types.core import _binop
-from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.expr.types.generic import Column, Scalar, Value, _binop
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
