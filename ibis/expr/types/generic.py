@@ -120,6 +120,10 @@ class Value(Expr):
         """
         return self.op().dtype
 
+    @property
+    def dtype(self) -> dt.DataType:
+        return self.type()
+
     def hash(self) -> ir.IntegerValue:
         """Compute an integer hash value.
 
