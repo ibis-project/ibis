@@ -159,6 +159,11 @@ def test_value_cases_null(con):
         ),
     ],
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize parser bug: rejects bare string literals in simple CASE expressions. Bug reported to Materialize SQL team.",
+)
 def test_ibis_case_still_works(con, example, expected):
     # test that the soft-deprecated .case() method still works
     # https://github.com/ibis-project/ibis/pull/9096
