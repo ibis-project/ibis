@@ -66,7 +66,7 @@ def test_json_getitem_array(json_t):
 
 @pytest.mark.notimpl(["polars"])
 @pytest.mark.notyet(
-    ["sqlite", "mysql", "risingwave"],
+    ["sqlite", "mysql", "pyspark"],
     reason="Syntax error near 'AS'",
 )
 @pytest.mark.notyet(
