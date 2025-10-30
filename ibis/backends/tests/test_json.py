@@ -72,9 +72,6 @@ def test_json_getitem_array(json_t):
 @pytest.mark.notyet(
     ["flink"], reason="Expecting alias, found character literal",
 )
-@pytest.mark.notyet(
-    ["spark"], reason="Literals of type 'JSON' are currently not supported.",
-)
 def test_json_literal(con):
     expr = ibis.literal('{"scale": 100}', dt.json).name("some_literal")
     result = con.execute(expr)
