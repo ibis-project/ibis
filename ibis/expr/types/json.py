@@ -86,6 +86,8 @@ class JSONValue(Value):
     └─────────────────────┘
     """
 
+    __dtype__ = dt.json
+
     def __getitem__(
         self, key: str | int | ir.StringValue | ir.IntegerValue
     ) -> JSONValue:

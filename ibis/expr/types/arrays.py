@@ -41,6 +41,8 @@ class ArrayValue(Value):
     └──────────────────────┘
     """
 
+    __dtype_supertype__ = dt.Array
+
     def length(self) -> ir.IntegerValue:
         """Compute the length of an array.
 

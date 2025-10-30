@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Literal
 from public import public
 
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.core import _binop
@@ -1468,6 +1469,9 @@ class NumericColumn(Column, NumericValue):
 
 @public
 class IntegerValue(NumericValue):
+    __dtype__ = dt.int64
+    __dtype_supertype__ = dt.Integer
+
     def as_timestamp(self, unit: Literal["s", "ms", "us"], /) -> ir.TimestampValue:
         """Convert an integral UNIX timestamp to a timestamp expression.
 
@@ -1693,6 +1697,9 @@ class IntegerColumn(NumericColumn, IntegerValue):
 
 @public
 class FloatingValue(NumericValue):
+    __dtype__ = dt.float64
+    __dtype_supertype__ = dt.Floating
+
     def isnan(self) -> ir.BooleanValue:
         """Return whether the value is NaN. Does NOT detect `NULL` and `inf` values.
 
@@ -1772,7 +1779,8 @@ class FloatingColumn(NumericColumn, FloatingValue):
 
 @public
 class DecimalValue(NumericValue):
-    pass
+    __dtype_supertype__ = dt.Decimal
+    __dtype__ = dt.Decimal(38, 10)
 
 
 @public

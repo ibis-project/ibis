@@ -175,3 +175,8 @@ def test_deferred(table):
     deferred = ibis.literal(expr, type=dtype)
     result = deferred.resolve(table)
     assert result.op().value == "g"
+
+
+def test_literal_from_expr_for_type():
+    expr = ibis.literal(1, ibis.ir.IntegerValue["!int32"])
+    assert expr.type() == dt.Int32(nullable=False)
