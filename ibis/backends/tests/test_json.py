@@ -70,7 +70,8 @@ def test_json_getitem_array(json_t):
     reason="Syntax error near 'AS'",
 )
 @pytest.mark.notyet(
-    ["flink"], reason="Expecting alias, found character literal",
+    ["flink"],
+    reason="Expecting alias, found character literal",
 )
 def test_json_literal(con):
     expr = ibis.literal('{"scale": 100}', dt.json).name("some_literal")
