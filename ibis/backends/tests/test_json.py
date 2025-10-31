@@ -7,6 +7,8 @@ import sqlite3
 import pytest
 from packaging.version import parse as vparse
 
+import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.tests.conftest import NO_JSON_SUPPORT_MARKS
 from ibis.backends.tests.errors import PySparkPythonException
@@ -60,6 +62,21 @@ def test_json_getitem_array(json_t):
     expr = expr_fn(json_t)
     result = frozenset(expr.execute().replace({np.nan: None}))
     assert result == expected
+
+
+@pytest.mark.notimpl(["polars"])
+@pytest.mark.notyet(
+    ["sqlite", "mysql", "pyspark"],
+    reason="Syntax error near 'AS'",
+)
+@pytest.mark.notyet(
+    ["flink"],
+    reason="Expecting alias, found character literal",
+)
+def test_json_literal(con):
+    expr = ibis.literal('{"scale": 100}', dt.json).name("some_literal")
+    result = con.execute(expr)
+    assert result == {"scale": 100}
 
 
 @pytest.mark.notimpl(["mysql", "risingwave"])
