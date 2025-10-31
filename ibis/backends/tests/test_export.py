@@ -24,6 +24,7 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkArithmeticException,
     PySparkParseException,
+    SingleStoreDBOperationalError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -296,6 +297,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "oracle",
         "polars",
         "postgres",
@@ -387,6 +389,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "oracle",
         "polars",
         "postgres",
@@ -447,6 +450,9 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notyet(
+                    ["singlestoredb"], raises=SingleStoreDBOperationalError
+                ),
+                pytest.mark.notyet(
                     ["pyspark"],
                     raises=(PySparkParseException, PySparkArithmeticException),
                     reason="precision is out of range",
@@ -478,6 +484,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "flink",
         "impala",
         "mysql",
+        "singlestoredb",
         "oracle",
         "postgres",
         "risingwave",
@@ -693,6 +700,7 @@ mark_notyet_nulls = pytest.mark.notyet(
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "oracle",
         "postgres",
         "risingwave",

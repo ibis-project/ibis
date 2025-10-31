@@ -3,7 +3,11 @@ from __future__ import annotations
 import pytest
 
 import ibis.common.exceptions as com
-from ibis.backends.tests.errors import MySQLOperationalError
+from ibis.backends.tests.errors import (
+    MySQLOperationalError,
+    SingleStoreDBOperationalError,
+    SingleStoreDBProgrammingError,
+)
 
 
 def combine_marks(marks: list) -> callable:
@@ -29,12 +33,15 @@ NO_ARRAY_SUPPORT_MARKS = [
         ),
     ),
     pytest.mark.never(
-        ["mysql"],
+        ["mysql", "singlestoredb"],
         reason="No array support",
         raises=(
             com.UnsupportedBackendType,
             com.OperationNotDefinedError,
             MySQLOperationalError,
+            SingleStoreDBOperationalError,
+            SingleStoreDBProgrammingError,
+            com.TableNotFound,
         ),
     ),
     pytest.mark.notyet(
@@ -52,7 +59,9 @@ NO_ARRAY_SUPPORT = combine_marks(NO_ARRAY_SUPPORT_MARKS)
 
 
 NO_STRUCT_SUPPORT_MARKS = [
-    pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
+    pytest.mark.never(
+        ["mysql", "singlestoredb", "sqlite", "mssql"], reason="No struct support"
+    ),
     pytest.mark.notyet(["impala"]),
     pytest.mark.notimpl(["druid", "oracle", "exasol"]),
 ]
@@ -60,7 +69,8 @@ NO_STRUCT_SUPPORT = combine_marks(NO_STRUCT_SUPPORT_MARKS)
 
 NO_MAP_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["sqlite", "mysql", "mssql"], reason="Unlikely to ever add map support"
+        ["sqlite", "mysql", "singlestoredb", "mssql"],
+        reason="Unlikely to ever add map support",
     ),
     pytest.mark.notyet(
         ["bigquery", "impala"], reason="Backend doesn't yet implement map types"
