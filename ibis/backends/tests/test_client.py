@@ -494,8 +494,6 @@ def employee_data_1_temp_table(backend, con, test_employee_schema):
 
 @pytest.fixture
 def test_employee_data_2():
-    import pandas as pd
-
     df2 = pd.DataFrame(
         {
             "first_name": ["X", "Y", "Z"],
@@ -522,8 +520,6 @@ def employee_data_2_temp_table(
 
 @pytest.fixture
 def test_employee_data_3():
-    import pandas as pd
-
     df3 = pd.DataFrame(
         {
             "first_name": ["B", "Y", "Z"],
