@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Union, overload
 
 from public import public
 
@@ -10,6 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.bases import AbstractMeta
 from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
@@ -37,9 +38,45 @@ if TYPE_CHECKING:
 _SENTINEL = object()
 
 
+class ValueMeta(AbstractMeta):
+    def __new__(
+        metacls: type,
+        clsname: str,
+        bases: tuple[type, ...],
+        dct: dict[str, Any],
+        **kwargs: Any,
+    ) -> type:
+        def __class_getitem__(cls: Value, item: type | str) -> type:
+            dtype_supertype = None
+            if cls.__dtype__ is not None:
+                dtype_supertype = cls.__dtype__.__class__
+            if cls.__dtype_supertype__ is not None:
+                dtype_supertype = cls.__dtype_supertype__
+            if dtype_supertype is None:
+                raise TypeError(f"{cls.__name__} does not support type parameters")
+            dtype_obj = dt.dtype(item)
+            if not isinstance(dtype_obj, dtype_supertype):
+                raise TypeError(
+                    f"invalid type parameter {item!r} for {cls.__name__}, "
+                    f"expected a subtype of {dtype_supertype.__name__}"
+                )
+
+            class ParameterizedValue(cls):
+                __dtype__ = dtype_obj
+
+            return ParameterizedValue
+
+        new_dct = {**dct, "__class_getitem__": classmethod(__class_getitem__)}
+        new_type = super().__new__(metacls, clsname, bases, new_dct, **kwargs)
+        return new_type
+
+
 @public
-class Value(Expr):
+class Value(Expr, metaclass=ValueMeta):
     """Base class for a data generating expression having a known type."""
+
+    __dtype__: ClassVar[Union[dt.DataType, None]] = None
+    __dtype_supertype__: ClassVar[Union[type[dt.DataType], None]] = None
 
     def name(self, name: str, /) -> Value:
         """Rename an expression to `name`.
@@ -2964,7 +3001,7 @@ class Column(Value, FixedTextJupyterMixin):
 
 @public
 class UnknownValue(Value):
-    pass
+    __dtype__ = dt.unknown
 
 
 @public
@@ -2979,7 +3016,7 @@ class UnknownColumn(Column):
 
 @public
 class NullValue(Value):
-    pass
+    __dtype__ = dt.null
 
 
 @public

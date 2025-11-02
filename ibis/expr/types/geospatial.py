@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from public import public
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.types.numeric import NumericColumn, NumericScalar, NumericValue
 
@@ -13,6 +14,8 @@ if TYPE_CHECKING:
 
 @public
 class GeoSpatialValue(NumericValue):
+    __dtype__ = dt.geometry
+
     def area(self) -> ir.FloatingValue:
         """Compute the area of a geospatial value.
 
@@ -1666,7 +1669,7 @@ class GeoSpatialColumn(NumericColumn, GeoSpatialValue):
 
 @public
 class PointValue(GeoSpatialValue):
-    pass
+    __dtype__ = dt.point
 
 
 @public
@@ -1681,7 +1684,7 @@ class PointColumn(GeoSpatialColumn, PointValue):
 
 @public
 class LineStringValue(GeoSpatialValue):
-    pass
+    __dtype__ = dt.linestring
 
 
 @public
@@ -1696,7 +1699,7 @@ class LineStringColumn(GeoSpatialColumn, LineStringValue):
 
 @public
 class PolygonValue(GeoSpatialValue):
-    pass
+    __dtype__ = dt.polygon
 
 
 @public
@@ -1711,7 +1714,7 @@ class PolygonColumn(GeoSpatialColumn, PolygonValue):
 
 @public
 class MultiLineStringValue(GeoSpatialValue):
-    pass
+    __dtype__ = dt.multilinestring
 
 
 @public
@@ -1726,7 +1729,7 @@ class MultiLineStringColumn(GeoSpatialColumn, MultiLineStringValue):
 
 @public
 class MultiPointValue(GeoSpatialValue):
-    pass
+    __dtype__ = dt.multipoint
 
 
 @public
@@ -1741,7 +1744,7 @@ class MultiPointColumn(GeoSpatialColumn, MultiPointValue):
 
 @public
 class MultiPolygonValue(GeoSpatialValue):
-    pass
+    __dtype__ = dt.multipolygon
 
 
 @public
