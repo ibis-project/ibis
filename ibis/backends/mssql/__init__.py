@@ -424,6 +424,12 @@ class Backend(
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
 
+        # Although the semicolon isn't required for most statements, the
+        # T-SQL docs state that it will be required in a future version.
+        # https://learn.microsoft.com/en-us/sql/t-sql/language-elements/transact-sql-syntax-conventions-transact-sql?view=sql-server-ver17&tabs=code
+        if not query.rstrip().endswith(";"):
+            query = f"{query};"
+
         with self.begin() as cur:
             cur.execute(query, *args, **kwargs)
             yield cur
