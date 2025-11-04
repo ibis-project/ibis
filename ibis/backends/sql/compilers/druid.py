@@ -185,8 +185,10 @@ class DruidCompiler(SQLGlotCompiler):
         raise exc.UnsupportedArgumentError(f"Druid doesn't support {unit} units")
 
     def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds
+        self, op, *, year, month, day, hours, minutes, seconds, dtype: dt.Timestamp
     ):
+        if dtype.timezone is not None:
+            raise NotImplementedError()
         return self.f.time_parse(
             self.f.concat(
                 self.f.lpad(self.cast(year, dt.string), 4, "0"),
