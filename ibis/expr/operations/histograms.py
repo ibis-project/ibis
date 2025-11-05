@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import numbers  # noqa: TC003
+from numbers import Real
 from typing import Literal
 
 from public import public
@@ -19,7 +19,7 @@ class Bucket(Value):
     """Compute the bucket number of a numeric column."""
 
     arg: Column[dt.Numeric | dt.Boolean]
-    buckets: VarTuple[numbers.Real]
+    buckets: VarTuple[Real]
     closed: Literal["left", "right"] = "left"
     close_extreme: bool = True
     include_under: bool = False

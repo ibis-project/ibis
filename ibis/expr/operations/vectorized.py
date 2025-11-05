@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from types import FunctionType, LambdaType  # noqa: TC003
+from types import FunctionType, LambdaType
 from typing import Union
 
 from public import public

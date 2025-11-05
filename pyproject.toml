@@ -1,7 +1,7 @@
 [project]
 name = "ibis-framework"
 version = "11.0.0"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 description = "The portable Python dataframe library"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -454,6 +454,8 @@ filterwarnings = [
   "ignore:The 'shapely\\.geos' module is deprecated, and will be removed in a future version:DeprecationWarning",
   # snowflake vendors pyopenssl, because why not, and pyopenssl raises a warning on snowflake's use of it
   "ignore:Attempting to mutate a Context after a Connection was created\\. In the future, this will raise an exception:DeprecationWarning",
+  # Google is warning a year in advance about Python 3.10 deprecation
+  "ignore:You are using a Python version:FutureWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
@@ -588,6 +590,7 @@ ignore = [
   "UP045",   # Using X | None breaks Python 3.9
   "S101",    # ignore "Use of `assert` detected"
   "PLC0415", # allow imports to not be at the top of a file
+  "TC003",   # python 3.10 can't eval annotations at import time if under TYPE_CHECKING
 ]
 # none of these codes will be automatically fixed by ruff
 unfixable = [

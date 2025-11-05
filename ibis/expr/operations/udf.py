@@ -9,7 +9,8 @@ import functools
 import inspect
 import itertools
 import typing
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, overload
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, overload
 
 from public import public
 
