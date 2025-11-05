@@ -73,7 +73,7 @@
           # duckdb
           duckdb
           # mysql
-          mariadb-client
+          mariadb.client
           # pyodbc setup debugging
           # in particular: odbcinst -j
           unixODBC
@@ -123,7 +123,7 @@
             shellcheck
             shfmt
             statix
-            taplo-cli
+            taplo
           ];
 
         mkDevShell =
