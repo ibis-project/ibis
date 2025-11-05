@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 import collections
 import collections.abc
-import contextlib
 import functools
 import importlib.metadata
 import itertools
@@ -18,8 +17,9 @@ import textwrap
 import types
 import uuid
 import warnings
+from collections.abc import Callable
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from uuid import uuid4
 
 import toolz
@@ -405,12 +405,7 @@ def experimental(func):
 @functools.cache
 def backend_entry_points() -> list[importlib.metadata.EntryPoint]:
     """Get the list of installed `ibis.backend` entrypoints."""
-
-    if sys.version_info < (3, 10):
-        eps = importlib.metadata.entry_points()["ibis.backends"]
-    else:
-        eps = importlib.metadata.entry_points(group="ibis.backends")
-    return sorted(eps)
+    return sorted(importlib.metadata.entry_points(group="ibis.backends"))
 
 
 _common_package_aliases = {
@@ -710,20 +705,8 @@ def get_subclasses(obj: type[T]) -> Iterator[type[S]]:
         yield from get_subclasses(child_class)
 
 
-if sys.version_info[:2] < (3, 10):
-
-    @contextlib.contextmanager
-    def mktempd():
-        tmpdir = tempfile.TemporaryDirectory()
-        try:
-            yield tmpdir.name
-        finally:
-            with contextlib.suppress(Exception):
-                tmpdir.cleanup()
-else:
-
-    def mktempd():
-        return tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+def mktempd():
+    return tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 
 
 def version(package: str) -> str:

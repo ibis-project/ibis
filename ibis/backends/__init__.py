@@ -12,8 +12,9 @@ import sys
 import urllib.parse
 import weakref
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, NamedTuple, overload
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, overload
 
 import ibis
 import ibis.common.exceptions as exc
@@ -1662,12 +1663,8 @@ def _get_backend_names(*, exclude: tuple[str] = ()) -> frozenset[str]:
     are visible to every caller of this function.
 
     """
-
-    if sys.version_info < (3, 10):
-        entrypoints = importlib.metadata.entry_points()["ibis.backends"]
-    else:
-        entrypoints = importlib.metadata.entry_points(group="ibis.backends")
-    return frozenset(ep.name for ep in entrypoints).difference(exclude)
+    entry_points = importlib.metadata.entry_points(group="ibis.backends")
+    return frozenset(ep.name for ep in entry_points).difference(exclude)
 
 
 def connect(resource: Path | str, /, **kwargs: Any) -> BaseBackend:

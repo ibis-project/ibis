@@ -7,8 +7,9 @@ DO NOT USE DIRECTLY.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from inspect import Parameter, Signature, signature
-from typing import Any, Callable
+from typing import Any
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt

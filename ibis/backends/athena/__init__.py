@@ -7,8 +7,9 @@ import getpass
 import os
 import re
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import fsspec
 import pyarrow_hotfix  # noqa: F401

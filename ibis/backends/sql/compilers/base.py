@@ -6,8 +6,9 @@ import itertools
 import math
 import operator
 import string
+from collections.abc import Callable
 from functools import partial, reduce
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Literal
+from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 import sqlglot as sg
 import sqlglot.expressions as sge

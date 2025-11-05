@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import abc
+from collections.abc import Callable
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
