@@ -111,11 +111,6 @@ def test_03(customer, orders, lineitem):
     return q
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("h")
 def test_04(orders, lineitem):
     """Order Priority Checking Query (Q4)"""
@@ -410,7 +405,6 @@ def test_12(orders, lineitem):
 
 
 @tpc_test("h")
-@pytest.mark.notyet(["clickhouse"], raises=AssertionError, reason="off by one")
 def test_13(customer, orders):
     """Customer Distribution Query (Q13)
 
@@ -667,11 +661,6 @@ def test_20(supplier, nation, partsupp, part, lineitem):
     return q1.order_by(q1.s_name)
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("h")
 def test_21(supplier, lineitem, orders, nation):
     """Suppliers Who Kept Orders Waiting Query (Q21)
