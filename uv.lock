@@ -2871,7 +2871,7 @@ tests = [
     { name = "pytest-benchmark", specifier = ">=3.4.1,<6" },
     { name = "pytest-clarity", specifier = ">=1.0.1,<2" },
     { name = "pytest-cov", specifier = ">=5,<8" },
-    { name = "pytest-deadfixtures", specifier = ">=2.2.1,<3" },
+    { name = "pytest-deadfixtures", specifier = ">=3" },
     { name = "pytest-mock", specifier = ">=3.6.1,<4" },
     { name = "pytest-randomly", specifier = ">=3.10.1,<5" },
     { name = "pytest-repeat", specifier = ">=0.9.1,<0.10" },
@@ -5749,14 +5749,14 @@ wheels = [
 
 [[package]]
 name = "pytest-deadfixtures"
-version = "2.2.1"
+version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c5/d5/0472e7dd4c5794cd720f8add3ba59b35e45c1bb7482e04b6d6e60ff4eed0/pytest-deadfixtures-2.2.1.tar.gz", hash = "sha256:ca15938a4e8330993ccec9c6c847383d88b3cd574729530647dc6b492daa9c1e", size = 6616, upload-time = "2020-07-23T11:58:09.465Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/20/3ee37e176c6f5c7ec3b9f63ac51898480ce2cb734fbfe5f5b833aab4ebb8/pytest_deadfixtures-3.0.0.tar.gz", hash = "sha256:08704a1301ee4c631d33f70af4c48ac5904ee4d48656161fa66e6eca07491492", size = 8683, upload-time = "2025-11-08T14:21:42.411Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/c7/d8c3fa6d2de6814c92161fcce984a7d38a63186590a66238e7b749f7fe37/pytest_deadfixtures-2.2.1-py2.py3-none-any.whl", hash = "sha256:db71533f2d9456227084e00a1231e732973e299ccb7c37ab92e95032ab6c083e", size = 5059, upload-time = "2020-07-23T11:58:11.538Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/0e/e919fae3cb5530d2331391443f4f20342ef79e9e5b71fc4be563c6573ffd/pytest_deadfixtures-3.0.0-py2.py3-none-any.whl", hash = "sha256:f4b1484faec373b1f3b2be698d99a7c85be55f6473edcb6a110ff5217cf8753c", size = 6578, upload-time = "2025-11-08T14:21:41.003Z" },
 ]
 
 [[package]]
