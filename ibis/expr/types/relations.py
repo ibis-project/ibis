@@ -671,7 +671,7 @@ class Table(Expr, FixedTextJupyterMixin):
         dm = DerefMap.from_targets(self.op())
 
         bound = self._fast_bind(*args, **kwargs)
-        return (
+        return tuple(
             derefed.to_expr().name(name) if original is not derefed else original
             for name, original, derefed in zip(
                 (expr.get_name() for expr in bound),
