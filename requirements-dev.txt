@@ -220,7 +220,7 @@ pytest==8.3.5
 pytest-benchmark==5.2.3
 pytest-clarity==1.0.1
 pytest-cov==7.0.0
-pytest-deadfixtures==2.2.1
+pytest-deadfixtures==3.0.0
 pytest-mock==3.15.1
 pytest-pystack==1.0.2 ; sys_platform == 'linux'
 pytest-randomly==4.0.1
