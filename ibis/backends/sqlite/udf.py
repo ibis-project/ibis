@@ -5,8 +5,9 @@ import inspect
 import math
 import operator
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import date
-from typing import Any, Callable, NamedTuple
+from typing import Any, NamedTuple
 from urllib.parse import parse_qs, urlsplit
 from uuid import uuid4
 

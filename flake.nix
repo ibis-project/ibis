@@ -73,7 +73,7 @@
           # duckdb
           duckdb
           # mysql
-          mariadb-client
+          mariadb.client
           # pyodbc setup debugging
           # in particular: odbcinst -j
           unixODBC
@@ -123,7 +123,7 @@
             shellcheck
             shfmt
             statix
-            taplo-cli
+            taplo
           ];
 
         mkDevShell =
@@ -201,6 +201,7 @@
           ibis311 = mkDevShell pkgs.ibisDevEnv311;
           ibis312 = mkDevShell pkgs.ibisDevEnv312;
           ibis313 = mkDevShell pkgs.ibisDevEnv313;
+          ibis314 = mkDevShell pkgs.ibisDevEnv314;
 
           default = ibis313;
 

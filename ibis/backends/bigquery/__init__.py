@@ -8,9 +8,10 @@ import copy
 import glob
 import os
 import re
+from collections.abc import Callable
 from decimal import Decimal
 from functools import partial
-from typing import IO, TYPE_CHECKING, Any, Callable, Optional
+from typing import IO, TYPE_CHECKING, Any, Optional
 
 import google.api_core.exceptions
 import google.auth.credentials

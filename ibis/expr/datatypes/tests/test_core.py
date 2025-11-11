@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import datetime  # noqa: TC003
-import decimal  # noqa: TC003
+import datetime
+import decimal
 import sys
-import uuid  # noqa: TC003
+import uuid
 from dataclasses import dataclass
 from typing import Annotated, NamedTuple, Optional, Union
 

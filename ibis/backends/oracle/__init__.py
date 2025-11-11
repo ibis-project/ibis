@@ -5,9 +5,10 @@ from __future__ import annotations
 import contextlib
 import re
 import warnings
+from collections.abc import Callable
 from functools import cached_property
 from operator import itemgetter
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
 import oracledb

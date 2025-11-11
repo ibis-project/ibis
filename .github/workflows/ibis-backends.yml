@@ -52,7 +52,7 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.9"
+          - "3.10"
           - "3.13"
     steps:
       - name: checkout
@@ -92,7 +92,7 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.9"
+          - "3.10"
           - "3.13"
         backend:
           - name: duckdb
@@ -557,7 +557,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python-version: "3.9"
+          - python-version: "3.10"
             pyspark-minor-version: "3.3"
             tag: local
             deps:

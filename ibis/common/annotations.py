@@ -3,7 +3,8 @@ from __future__ import annotations
 import functools
 import inspect
 import types
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 from typing import Any as AnyType
 
 from typing_extensions import Self
