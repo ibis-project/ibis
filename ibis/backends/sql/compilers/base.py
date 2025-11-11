@@ -1547,19 +1547,19 @@ class SQLGlotCompiler(abc.ABC):
     def visit_CTE(self, op, *, parent):
         return sg.table(parent.alias_or_name, quoted=self.quoted)
 
-    def visit_View(self, op, *, child, name: str):
-        if isinstance(child, sge.Table):
-            child = sg.select(STAR, copy=False).from_(child, copy=False)
+    def visit_View(self, op, *, parent, name: str):
+        if isinstance(parent, sge.Table):
+            parent = sg.select(STAR, copy=False).from_(parent, copy=False)
         else:
-            child = child.copy()
+            parent = parent.copy()
 
-        if isinstance(child, sge.Subquery):
-            return child.as_(name, quoted=self.quoted)
+        if isinstance(parent, sge.Subquery):
+            return parent.as_(name, quoted=self.quoted)
         else:
             try:
-                return child.subquery(name, copy=False)
+                return parent.subquery(name, copy=False)
             except AttributeError:
-                return child.as_(name, quoted=self.quoted)
+                return parent.as_(name, quoted=self.quoted)
 
     def visit_SQLStringView(self, op, *, query: str, child, schema):
         return sg.parse_one(query, read=self.dialect)
