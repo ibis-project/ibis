@@ -5166,7 +5166,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def window_by(self, time_col: str | ir.Value, /) -> WindowedTable:
         from ibis.expr.types.temporal_windows import WindowedTable
 
-        time_col = next(self.bind(time_col))
+        (time_col,) = self.bind(time_col)
 
         # validate time_col is a timestamp column
         if not isinstance(time_col, TimestampColumn):
