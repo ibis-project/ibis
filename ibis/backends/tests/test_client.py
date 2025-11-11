@@ -880,6 +880,22 @@ def test_in_memory_table(backend, con, arg, lambda_, expected, monkeypatch):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.parametrize(
+    "size",
+    [
+        100,
+        1_000,
+        10_000,
+    ],
+)
+def test_large_memory_table(con, monkeypatch, size):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    expr = ibis.memtable({"a": range(size)}).count()
+    result = con.execute(expr)
+    assert result == size
+
+
 def test_filter_memory_table(backend, con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
