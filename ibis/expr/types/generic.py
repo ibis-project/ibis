@@ -451,6 +451,7 @@ class Value(Expr):
         [`Value.isnull()`](./expression-generic.qmd#ibis.expr.types.generic.Value.isnull)
         [`FloatingValue.isnan()`](./expression-numeric.qmd#ibis.expr.types.numeric.FloatingValue.isnan)
         [`FloatingValue.isinf()`](./expression-numeric.qmd#ibis.expr.types.numeric.FloatingValue.isinf)
+        [`Table.fill_null()`](./expression-tables.qmd#ibis.expr.types.relations.Table.fill_null)
 
         Examples
         --------

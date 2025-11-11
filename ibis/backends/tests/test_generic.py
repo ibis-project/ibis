@@ -16,6 +16,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
+from ibis.backends.tests.conftest import NAN_TREATED_AS_NULL
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     ExaQueryError,
@@ -450,28 +451,61 @@ def test_table_fill_null_invalid(alltypes):
         com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
     ):
         alltypes.fill_null({"invalid_col": 0.0})
-
     with pytest.raises(
         com.IbisTypeError, match=r"Cannot fill_null on column 'string_col' of type.*"
     ):
-        alltypes[["int_col", "string_col"]].fill_null(0)
-
+        alltypes.select("int_col", "string_col").fill_null(0)
+    with pytest.raises(AttributeError, match=r"'Table' object has no attribute 'oops'"):
+        alltypes.fill_null(_.oops)
+    with pytest.raises(AttributeError, match=r"'Table' object has no attribute 'oops'"):
+        alltypes.fill_null({"int_col": _.oops})
+    with pytest.raises(com.IbisTypeError, match=r"Column 'oops' is not found in table"):
+        alltypes.fill_null("oops")
+    with pytest.raises(com.IbisTypeError, match=r"Column 'oops' is not found in table"):
+        alltypes.fill_null({"int_col": "oops"})
     with pytest.raises(
         com.IbisTypeError, match=r"Cannot fill_null on column 'int_col' of type.*"
     ):
-        alltypes.fill_null({"int_col": "oops"})
+        alltypes.fill_null({"int_col": ibis.literal("oops")})
 
 
 @pytest.mark.parametrize(
-    "replacements",
+    ("ibis_replacements", "pd_replacements"),
     [
-        param({"int_col": 20}, id="int"),
-        param({"double_col": -1, "string_col": "missing"}, id="double-int-str"),
-        param({"double_col": -1.5, "string_col": "missing"}, id="double-str"),
-        param({}, id="empty"),
+        param(
+            lambda _t: {"int_col": 20},
+            lambda _t: {"int_col": 20},
+            id="int",
+        ),
+        param(
+            lambda _t: {"double_col": -1, "string_col": ibis.literal("missing")},
+            lambda _t: {"double_col": -1, "string_col": "missing"},
+            id="double-int-str",
+        ),
+        param(
+            lambda _t: {"double_col": -1.5, "string_col": ibis.literal("missing")},
+            lambda _t: {"double_col": -1.5, "string_col": "missing"},
+            id="double-str",
+        ),
+        param(
+            lambda _t: {"double_col": "int_col"},
+            lambda t: {"double_col": t["int_col"]},
+            id="column-name",
+        ),
+        param(
+            lambda _t: {"double_col": ibis._.int_col},
+            lambda t: {"double_col": t["int_col"]},
+            id="column",
+        ),
+        param(
+            lambda t: {"double_col": t.int_col},
+            lambda t: {"double_col": t["int_col"]},
+            id="deferred",
+        ),
+        param(lambda _t: {}, lambda _t: {}, id="empty"),
     ],
 )
-def test_table_fill_null_mapping(backend, alltypes, replacements):
+def test_table_fill_null_mapping(backend, alltypes, ibis_replacements, pd_replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
         double_col=alltypes.double_col.nullif(3.0),
@@ -479,8 +513,8 @@ def test_table_fill_null_mapping(backend, alltypes, replacements):
     ).select("id", "int_col", "double_col", "string_col")
     pd_table = table.execute()
 
-    result = table.fill_null(replacements).execute().reset_index(drop=True)
-    expected = pd_table.fillna(replacements).reset_index(drop=True)
+    result = table.fill_null(ibis_replacements(table)).execute().reset_index(drop=True)
+    expected = pd_table.fillna(pd_replacements(pd_table)).reset_index(drop=True)
 
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
@@ -493,13 +527,54 @@ def test_table_fill_null_scalar(backend, alltypes):
     ).select("id", "int_col", "double_col", "string_col")
     pd_table = table.execute()
 
-    res = table[["int_col", "double_col"]].fill_null(0).execute().reset_index(drop=True)
+    res = (
+        table.select("int_col", "double_col")
+        .fill_null(0)
+        .execute()
+        .reset_index(drop=True)
+    )
     sol = pd_table[["int_col", "double_col"]].fillna(0).reset_index(drop=True)
     backend.assert_frame_equal(res, sol, check_dtype=False)
 
-    res = table[["string_col"]].fill_null("missing").execute().reset_index(drop=True)
+    res = (
+        table.select("string_col")
+        .fill_null(ibis.literal("missing"))
+        .execute()
+        .reset_index(drop=True)
+    )
     sol = pd_table[["string_col"]].fillna("missing").reset_index(drop=True)
     backend.assert_frame_equal(res, sol, check_dtype=False)
+
+    t = table.select("int_col", "double_col")
+    sol = (
+        pd_table[["int_col", "double_col"]]
+        .fillna(pd_table.int_col)
+        .reset_index(drop=True)
+    )
+    res = t.fill_null(t.int_col).execute().reset_index(drop=True)
+    backend.assert_frame_equal(res, sol, check_dtype=False)
+    res = t.fill_null(ibis._.int_col).execute().reset_index(drop=True)
+    backend.assert_frame_equal(res, sol, check_dtype=False)
+    res = t.fill_null("int_col").execute().reset_index(drop=True)
+    backend.assert_frame_equal(res, sol, check_dtype=False)
+
+
+@NAN_TREATED_AS_NULL
+def test_table_fill_null_nans_are_untouched(con):
+    # Test that NaNs are not filled when using fill_null
+
+    def make_comparable(vals):
+        return {"nan" if (isinstance(x, float) and np.isnan(x)) else x for x in vals}
+
+    pa_table = pa.table({"f": pa.array([1.0, float("nan"), None])})
+
+    before = ibis.memtable(pa_table)
+    actual_before = make_comparable(con.to_pyarrow(before.f).to_pylist())
+    assert actual_before == {1.0, "nan", None}
+
+    after = before.fill_null(0.0)
+    actual_after = make_comparable(con.to_pyarrow(after.f).to_pylist())
+    assert actual_after == {1.0, "nan", 0.0}
 
 
 def test_mutate_rename(alltypes):
