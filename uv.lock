@@ -220,16 +220,16 @@ wheels = [
 
 [[package]]
 name = "anywidget"
-version = "0.9.18"
+version = "0.9.19"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipywidgets" },
     { name = "psygnal" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ed/69/20423d6abd2a57d767d20a9dcf3f816bd4cbbe4813ac7c7158ba16e44c3f/anywidget-0.9.18.tar.gz", hash = "sha256:262cf459b517a7d044d6fbc84b953e9c83f026790b2dd3ce90f21a7f8eded00f", size = 9808509, upload-time = "2025-03-23T20:01:22.358Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/96/3e/c15178c70554955be437c236f0539e66a0e846b1e908f6c141468fac74ed/anywidget-0.9.19.tar.gz", hash = "sha256:a868b3c92f9b083737628fc43dca53cceca6eac327c489282b9ceca445aa6037", size = 358669, upload-time = "2025-11-10T20:58:29.885Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2b/f0/09a30ca0551af20c7cefa7464b7ccb6f5407a550b83c4dcb15c410814849/anywidget-0.9.18-py3-none-any.whl", hash = "sha256:944b82ef1dd17b8ff0fb6d1f199f613caf9111338e6e2857da478f6e73770cb8", size = 220671, upload-time = "2025-03-23T20:01:21.057Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/80/c1084779795b64755b750102f41564ff6150ca8bd15efe01ff6b1afcb9d8/anywidget-0.9.19-py3-none-any.whl", hash = "sha256:72d3fc458aceeea3144e9951d9ab770d1b31fdf477d7191004dffe8b128a7f0c", size = 189717, upload-time = "2025-11-10T20:58:26.549Z" },
 ]
 
 [[package]]
@@ -2256,14 +2256,14 @@ wheels = [
 
 [[package]]
 name = "griffe"
-version = "1.14.0"
+version = "1.15.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ec/d7/6c09dd7ce4c7837e4cdb11dce980cb45ae3cd87677298dc3b781b6bce7d3/griffe-1.14.0.tar.gz", hash = "sha256:9d2a15c1eca966d68e00517de5d69dd1bc5c9f2335ef6c1775362ba5b8651a13", size = 424684, upload-time = "2025-09-05T15:02:29.167Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0d/0c/3a471b6e31951dce2360477420d0a8d1e00dea6cf33b70f3e8c3ab6e28e1/griffe-1.15.0.tar.gz", hash = "sha256:7726e3afd6f298fbc3696e67958803e7ac843c1cfe59734b6251a40cdbfb5eea", size = 424112, upload-time = "2025-11-10T15:03:15.52Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/b1/9ff6578d789a89812ff21e4e0f80ffae20a65d5dd84e7a17873fe3b365be/griffe-1.14.0-py3-none-any.whl", hash = "sha256:0e9d52832cccf0f7188cfe585ba962d2674b241c01916d780925df34873bceb0", size = 144439, upload-time = "2025-09-05T15:02:27.511Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/83/3b1d03d36f224edded98e9affd0467630fc09d766c0e56fb1498cbb04a9b/griffe-1.15.0-py3-none-any.whl", hash = "sha256:6f6762661949411031f5fcda9593f586e6ce8340f0ba88921a0f2ef7a81eb9a3", size = 150705, upload-time = "2025-11-10T15:03:13.549Z" },
 ]
 
 [[package]]
@@ -2647,7 +2647,7 @@ docs = [
     { name = "jupyterlab-night" },
     { name = "jupyterlite-core" },
     { name = "jupyterlite-pyodide-kernel" },
-    { name = "lonboard" },
+    { name = "lonboard", marker = "python_full_version < '3.14'" },
     { name = "nbclient" },
     { name = "plotly" },
     { name = "plotnine" },
@@ -2850,7 +2850,7 @@ docs = [
     { name = "jupyterlab-night", specifier = ">=0.4.6,<1" },
     { name = "jupyterlite-core", specifier = ">=0.6,<0.7" },
     { name = "jupyterlite-pyodide-kernel", specifier = ">=0.6,<0.7" },
-    { name = "lonboard", marker = "python_full_version >= '3.10'", specifier = "==0.12.1" },
+    { name = "lonboard", marker = "python_full_version >= '3.10' and python_full_version < '3.14'", specifier = "==0.12.1" },
     { name = "nbclient", specifier = ">=0.8.0,<1" },
     { name = "plotly", specifier = ">=5.16.1" },
     { name = "plotnine", specifier = ">=0.12.2,<1" },
@@ -3978,11 +3978,11 @@ wheels = [
 
 [[package]]
 name = "narwhals"
-version = "2.10.2"
+version = "2.11.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c5/dc/8db74daf8c2690ec696c1d772a33cc01511559ee8a9e92d7ed85a18e3c22/narwhals-2.10.2.tar.gz", hash = "sha256:ff738a08bc993cbb792266bec15346c1d85cc68fdfe82a23283c3713f78bd354", size = 584954, upload-time = "2025-11-04T16:36:42.281Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/a2/25208347aa4c2d82a265cf4bc0873aaf5069f525c0438146821e7fc19ef5/narwhals-2.11.0.tar.gz", hash = "sha256:d23f3ea7efc6b4d0355444a72de6b8fa3011175585246c3400c894a7583964af", size = 589233, upload-time = "2025-11-10T16:28:35.675Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/a9/9e02fa97e421a355fc5e818e9c488080fce04a8e0eebb3ed75a84f041c4a/narwhals-2.10.2-py3-none-any.whl", hash = "sha256:059cd5c6751161b97baedcaf17a514c972af6a70f36a89af17de1a0caf519c43", size = 419573, upload-time = "2025-11-04T16:36:40.574Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/a1/4d21933898e23b011ae0528151b57a9230a62960d0919bf2ee48c7f5c20a/narwhals-2.11.0-py3-none-any.whl", hash = "sha256:a9795e1e44aa94e5ba6406ef1c5ee4c172414ced4f1aea4a79e5894f0c7378d4", size = 423069, upload-time = "2025-11-10T16:28:33.522Z" },
 ]
 
 [[package]]
