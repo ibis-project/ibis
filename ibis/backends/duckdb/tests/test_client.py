@@ -518,3 +518,16 @@ def test_basic_enum_schema_inference(con, converter):
     t = con.table(name)
     assert t.e.type() == dt.string
     assert set(converter(t.e)) == {"a", "b"}
+
+
+@pytest.mark.parametrize(
+    "line", ["", """ibis.duckdb.connect()"""], ids=["none", "duckdb"]
+)
+def test_duckdb_doesnt_import_sqlite(line):
+    code = f"""\
+import sys
+import ibis
+
+{line}
+assert "sqlite3" not in sys.modules"""
+    subprocess.run([sys.executable, "-c", code], check=True)
