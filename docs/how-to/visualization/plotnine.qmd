@@ -1,3 +1,6 @@
+---
+engine: jupyter
+---
 # plotnine + Ibis
 
 If you don't have data to visualize, you can load an example table:
