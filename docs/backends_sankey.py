@@ -38,6 +38,7 @@ backend_categories = {
         "PostgreSQL",
         "PySpark",
         "RisingWave",
+        "SingleStoreDB",
         "Snowflake",
         "SQLite",
         "Theseus",

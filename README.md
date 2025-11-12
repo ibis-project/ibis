@@ -135,7 +135,7 @@ This allows you to combine the flexibility of Python with the scale and performa
 
 ## Backends
 
-Ibis supports nearly 20 backends:
+Ibis supports 20 backends:
 
 - [Apache DataFusion](https://ibis-project.org/backends/datafusion/)
 - [Apache Druid](https://ibis-project.org/backends/druid/)
@@ -151,6 +151,7 @@ Ibis supports nearly 20 backends:
 - [Polars](https://ibis-project.org/backends/polars/)
 - [PostgreSQL](https://ibis-project.org/backends/postgresql/)
 - [RisingWave](https://ibis-project.org/backends/risingwave/)
+- [SingleStoreDB](https://ibis-project.org/backends/singlestoredb/)
 - [SQL Server](https://ibis-project.org/backends/mssql/)
 - [SQLite](https://ibis-project.org/backends/sqlite/)
 - [Snowflake](https://ibis-project.org/backends/snowflake)

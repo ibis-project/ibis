@@ -21,7 +21,7 @@ sg = pytest.importorskip("sqlglot")
             ibis.array([432]),
             marks=[
                 pytest.mark.never(
-                    ["mysql", "mssql", "oracle", "impala", "sqlite"],
+                    ["mysql", "singlestoredb", "mssql", "oracle", "impala", "sqlite"],
                     raises=(exc.OperationNotDefinedError, exc.UnsupportedBackendType),
                     reason="arrays not supported in the backend",
                 ),
@@ -32,7 +32,7 @@ sg = pytest.importorskip("sqlglot")
             ibis.struct(dict(abc=432)),
             marks=[
                 pytest.mark.never(
-                    ["impala", "mysql", "sqlite", "mssql", "exasol"],
+                    ["impala", "mysql", "singlestoredb", "sqlite", "mssql", "exasol"],
                     raises=(NotImplementedError, exc.UnsupportedBackendType),
                     reason="structs not supported in the backend",
                 ),
@@ -103,7 +103,8 @@ def test_isin_bug(con, snapshot):
     ["risingwave"], reason="no arbitrary support", raises=exc.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["sqlite", "mysql", "druid", "impala", "mssql"], reason="no unnest support upstream"
+    ["sqlite", "mysql", "singlestoredb", "druid", "impala", "mssql"],
+    reason="no unnest support upstream",
 )
 @pytest.mark.parametrize("backend_name", _get_backends_to_test())
 def test_union_aliasing(backend_name, snapshot):
