@@ -82,27 +82,21 @@ class TestConf(ServiceBackendTest):
         for csv_file in self.test_files:
             table_name = csv_file.stem
             if table_name in self.connection.list_tables() and csv_file.exists():
-                try:
-                    # Get column list from schema
-                    schema = self.connection.get_schema(table_name)
-                    columns = list(schema.keys())
-                    col_list = ", ".join(f'"{c}"' for c in columns)
+                # Get column list from schema
+                schema = self.connection.get_schema(table_name)
+                columns = list(schema.keys())
+                col_list = ", ".join(f'"{c}"' for c in columns)
 
-                    # Use COPY FROM STDIN with CSV format (psycopg3 API)
-                    copy_sql = f'COPY "{table_name}" ({col_list}) FROM STDIN WITH (FORMAT CSV, HEADER true)'
+                # Use COPY FROM STDIN with CSV format (psycopg3 API)
+                copy_sql = f'COPY "{table_name}" ({col_list}) FROM STDIN WITH (FORMAT CSV, HEADER true)'
 
-                    with con.cursor() as cur:
-                        # Open CSV file and use copy() context manager for psycopg3
-                        with open(csv_file) as f:
-                            with cur.copy(copy_sql) as copy:
-                                while data := f.read(8192):
-                                    copy.write(data)
-                    con.commit()
-                except Exception as e:  # noqa: BLE001
-                    # Log but don't fail - some tables might be pre-populated
-                    import warnings
-
-                    warnings.warn(f"Could not load {table_name}: {e}")
+                with con.cursor() as cur:
+                    # Open CSV file and use copy() context manager for psycopg3
+                    with open(csv_file) as f:
+                        with cur.copy(copy_sql) as copy:
+                            while data := f.read(8192):
+                                copy.write(data)
+                con.commit()
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
