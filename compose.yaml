@@ -595,6 +595,8 @@ services:
       test:
         - CMD-SHELL
         - bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1/6875; exit $$?;'
+        - bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1:6876; exit $$?;'
+        - bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1:6874; exit $$?;'
       interval: 2s
       retries: 30
       timeout: 5s

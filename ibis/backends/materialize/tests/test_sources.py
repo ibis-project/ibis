@@ -21,6 +21,7 @@ class TestLoadGenerators:
         import time
 
         source_name = util.gen_name("counter_src")
+        source_created = False
 
         try:
             # Create counter source
@@ -29,6 +30,7 @@ class TestLoadGenerators:
                 connector="COUNTER",
                 properties={"TICK INTERVAL": "100ms"},
             )
+            source_created = True
 
             # Verify it exists
             assert source_name in con.list_sources()
@@ -43,13 +45,15 @@ class TestLoadGenerators:
             # Counter should have sequential values
             assert result["counter"].min() >= 1
         finally:
-            con.drop_source(source_name, force=True)
+            if source_created:
+                con.drop_source(source_name, force=True)
 
     def test_create_auction_source_with_all_tables(self, con):
         """Test creating AUCTION source with FOR ALL TABLES."""
         import time
 
         source_name = util.gen_name("auction_src")
+        source_created = False
 
         try:
             # Create auction source
@@ -59,6 +63,7 @@ class TestLoadGenerators:
                 properties={"TICK INTERVAL": "100ms"},
                 for_all_tables=True,
             )
+            source_created = True
 
             # Verify it exists
             assert source_name in con.list_sources()
@@ -84,11 +89,13 @@ class TestLoadGenerators:
             assert "id" in auction_result.columns
         finally:
             # Clean up - CASCADE will drop dependent subsources
-            con.drop_source(source_name, force=True, cascade=True)
+            if source_created:
+                con.drop_source(source_name, force=True, cascade=True)
 
     def test_list_sources(self, con):
         """Test listing sources."""
         source_names = [util.gen_name("list_src") for _ in range(2)]
+        created_sources = []
 
         try:
             # Create multiple sources
@@ -98,6 +105,7 @@ class TestLoadGenerators:
                     connector="COUNTER",
                     properties={"TICK INTERVAL": "1s"},
                 )
+                created_sources.append(name)
 
             # List sources
             all_sources = con.list_sources()
@@ -107,7 +115,7 @@ class TestLoadGenerators:
                 assert name in all_sources, f"{name} not found in {all_sources}"
         finally:
             # Cleanup
-            for name in source_names:
+            for name in created_sources:
                 con.drop_source(name, force=True)
 
     def test_list_sources_with_like(self, con):
@@ -115,6 +123,7 @@ class TestLoadGenerators:
         prefix = util.gen_name("like_src_test")
         source_names = [f"{prefix}_{i}" for i in range(2)]
         other_name = util.gen_name("other_src")
+        created_sources = []
 
         try:
             # Create sources with specific prefix
@@ -124,6 +133,7 @@ class TestLoadGenerators:
                     connector="COUNTER",
                     properties={"TICK INTERVAL": "1s"},
                 )
+                created_sources.append(name)
 
             # Create one with different prefix
             con.create_source(
@@ -131,6 +141,7 @@ class TestLoadGenerators:
                 connector="COUNTER",
                 properties={"TICK INTERVAL": "1s"},
             )
+            created_sources.append(other_name)
 
             # List with LIKE pattern
             filtered_sources = con.list_sources(like=f"{prefix}%")
@@ -141,7 +152,7 @@ class TestLoadGenerators:
             assert other_name not in filtered_sources
         finally:
             # Cleanup
-            for name in source_names + [other_name]:
+            for name in created_sources:
                 con.drop_source(name, force=True)
 
     def test_drop_nonexistent_source_with_force(self, con):
@@ -165,6 +176,8 @@ class TestLoadGenerators:
 
         source_name = util.gen_name("mv_counter_src")
         mv_name = util.gen_name("counter_mv")
+        source_created = False
+        mv_created = False
 
         try:
             # Create counter source
@@ -173,10 +186,12 @@ class TestLoadGenerators:
                 connector="COUNTER",
                 properties={"TICK INTERVAL": "100ms"},
             )
+            source_created = True
 
             # Create MV over the source
             expr = counter.limit(100)
             mv = con.create_materialized_view(mv_name, expr)
+            mv_created = True
 
             # Wait for some data
             time.sleep(0.5)
@@ -187,14 +202,17 @@ class TestLoadGenerators:
             assert "counter" in result.columns
         finally:
             # Cleanup - drop MV first, then source
-            con.drop_materialized_view(mv_name, force=True)
-            con.drop_source(source_name, force=True)
+            if mv_created:
+                con.drop_materialized_view(mv_name, force=True)
+            if source_created:
+                con.drop_source(source_name, force=True)
 
     def test_counter_source_generates_sequential_data(self, con):
         """Test that COUNTER generates sequential numbers."""
         import time
 
         source_name = util.gen_name("seq_counter")
+        source_created = False
 
         try:
             counter = con.create_source(
@@ -202,6 +220,7 @@ class TestLoadGenerators:
                 connector="COUNTER",
                 properties={"TICK INTERVAL": "50ms"},
             )
+            source_created = True
 
             # Wait for multiple ticks
             time.sleep(0.3)
@@ -219,11 +238,13 @@ class TestLoadGenerators:
                 # Check that values are increasing
                 assert counters[-1] > counters[0]
         finally:
-            con.drop_source(source_name, force=True)
+            if source_created:
+                con.drop_source(source_name, force=True)
 
     def test_source_appears_in_catalog(self, con):
         """Test that created source appears in mz_sources catalog."""
         source_name = util.gen_name("catalog_src")
+        source_created = False
 
         try:
             # Create a source
@@ -232,6 +253,7 @@ class TestLoadGenerators:
                 connector="COUNTER",
                 properties={"TICK INTERVAL": "1s"},
             )
+            source_created = True
 
             # Query catalog to find it
             result = con.sql(f"""
@@ -244,7 +266,8 @@ class TestLoadGenerators:
             assert result["name"].iloc[0] == source_name
             assert result["type"].iloc[0] == "load-generator"
         finally:
-            con.drop_source(source_name, force=True)
+            if source_created:
+                con.drop_source(source_name, force=True)
 
 
 class TestSourceAPI:
@@ -259,6 +282,7 @@ class TestSourceAPI:
         import time
 
         source_name = util.gen_name("new_api_counter")
+        source_created = False
 
         try:
             # Use RisingWave-style API with connector and properties
@@ -267,13 +291,15 @@ class TestSourceAPI:
                 connector="COUNTER",
                 properties={"TICK INTERVAL": "100ms"},
             )
+            source_created = True
 
             time.sleep(0.3)
             result = counter.limit(5).execute()
             assert len(result) > 0
             assert "counter" in result.columns
         finally:
-            con.drop_source(source_name, force=True)
+            if source_created:
+                con.drop_source(source_name, force=True)
 
     def test_kafka_source_api_documented(self):
         """Document Kafka source API.
