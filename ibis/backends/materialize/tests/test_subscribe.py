@@ -27,21 +27,21 @@ class TestSubscribe:
         source_name = gen_name("counter_source")
         mv_name = gen_name("counter_sum")
 
+        # Create COUNTER source (simple incrementing counter)
+        con.create_source(
+            source_name,
+            connector="COUNTER",
+        )
+
+        # Create a materialized view that computes over the source
+        # Get the max counter value
+        counter_table = con.table(source_name)
+        max_counter_expr = counter_table.aggregate(
+            max_value=counter_table["counter"].max()
+        )
+        con.create_materialized_view(mv_name, max_counter_expr)
+
         try:
-            # Create COUNTER source (simple incrementing counter)
-            con.create_source(
-                source_name,
-                connector="COUNTER",
-            )
-
-            # Create a materialized view that computes over the source
-            # Get the max counter value
-            counter_table = con.table(source_name)
-            max_counter_expr = counter_table.aggregate(
-                max_value=counter_table["counter"].max()
-            )
-            con.create_materialized_view(mv_name, max_counter_expr)
-
             # Subscribe to the materialized view
             # Get the first batch (snapshot showing current max value)
             batch_count = 0
@@ -79,17 +79,17 @@ class TestSubscribe:
         source_name = gen_name("counter_source")
         mv_name = gen_name("counter_sum")
 
+        # Create COUNTER source
+        con.create_source(source_name, connector="COUNTER")
+
+        # Create materialized view
+        counter_table = con.table(source_name)
+        max_counter_expr = counter_table.aggregate(
+            max_value=counter_table["counter"].max()
+        )
+        con.create_materialized_view(mv_name, max_counter_expr)
+
         try:
-            # Create COUNTER source
-            con.create_source(source_name, connector="COUNTER")
-
-            # Create materialized view
-            counter_table = con.table(source_name)
-            max_counter_expr = counter_table.aggregate(
-                max_value=counter_table["counter"].max()
-            )
-            con.create_materialized_view(mv_name, max_counter_expr)
-
             # Subscribe with Arrow format
             batch_count = 0
             total_rows = 0
@@ -129,17 +129,17 @@ class TestSubscribe:
         source_name = gen_name("counter_source")
         mv_name = gen_name("counter_sum")
 
+        # Create COUNTER source
+        con.create_source(source_name, connector="COUNTER")
+
+        # Create materialized view
+        counter_table = con.table(source_name)
+        max_counter_expr = counter_table.aggregate(
+            max_value=counter_table["counter"].max()
+        )
+        con.create_materialized_view(mv_name, max_counter_expr)
+
         try:
-            # Create COUNTER source
-            con.create_source(source_name, connector="COUNTER")
-
-            # Create materialized view
-            counter_table = con.table(source_name)
-            max_counter_expr = counter_table.aggregate(
-                max_value=counter_table["counter"].max()
-            )
-            con.create_materialized_view(mv_name, max_counter_expr)
-
             # Subscribe with Polars format
             batch_count = 0
             total_rows = 0

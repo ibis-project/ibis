@@ -266,7 +266,7 @@ def test_coalesce(con, expr, expected):
         assert result == pytest.approx(expected)
 
 
-@pytest.mark.notimpl(["clickhouse", "druid", "exasol"])
+@pytest.mark.notimpl(["druid", "exasol"])
 @pytest.mark.notyet(
     ["materialize"],
     raises=AssertionError,
