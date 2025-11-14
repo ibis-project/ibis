@@ -10,10 +10,11 @@ import ibis.common.exceptions as com
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.annotations import ValidationError
 from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
-from ibis.expr.types.core import Expr, _binop
+from ibis.expr.types.core import Expr
 from ibis.expr.types.rich import FixedTextJupyterMixin, to_rich
 from ibis.util import deprecated, experimental, promote_list
 
@@ -3117,6 +3118,57 @@ def _is_null_literal(value: Any) -> bool:
         and isinstance(op := value.op(), ops.Literal)
         and op.value is None
     )
+
+
+def _binop(op_class: type[ops.Value], left: Value | Any, right: Value | Any) -> Value:
+    """Try to construct a binary operation between two Values.
+
+    Parameters
+    ----------
+    op_class
+        An ops.Value that accepts two Value positional operands.
+        Not necessarily a ops.Binary subclass,
+        eg this works with ops.Repeat for string repetition.
+    left
+        Left operand. Can be a Value, or something coercible to a Value.
+    right
+        Right operand. Can be a Value, or something coercible to a Value.
+
+    Returns
+    -------
+    ir.Value
+        A value expression
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.expr.operations as ops
+    >>> _binop(ops.TimeAdd, ibis.time("01:00"), ibis.interval(hours=1))
+    TimeAdd(datetime.time(1, 0), 1h): datetime.time(1, 0) + 1 h
+    >>> _binop(ops.TimeAdd, 1, ibis.interval(hours=1))
+    TimeAdd(datetime.time(0, 0, 1), 1h): datetime.time(0, 0, 1) + 1 h
+    >>> _binop(ops.Equals, 5, 2)
+    Equals(5, 2): 5 == 2
+
+    This raises if the operation is known to be invalid between the two operands:
+
+    >>> _binop(ops.Equals, ibis.literal("foo"), 2)  # quartodoc: +EXPECTED_FAILURE
+    Traceback (most recent call last):
+      ...
+    IbisTypeError: Arguments Literal(foo):string and Literal(2):int8 are not comparable
+
+    But returns NotImplemented if we aren't sure:
+
+    >>> _binop(ops.Equals, 5, ibis.table({"a": "int"}))
+    NotImplemented
+    """
+    assert issubclass(op_class, ops.Value)
+    try:
+        node = op_class(left, right)
+    except (ValidationError, NotImplementedError):
+        return NotImplemented
+    else:
+        return node.to_expr()
 
 
 public(

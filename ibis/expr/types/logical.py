@@ -7,7 +7,7 @@ from public import public
 import ibis
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.expr.types.core import _binop
+from ibis.expr.types.generic import _binop
 from ibis.expr.types.numeric import NumericColumn, NumericScalar, NumericValue
 
 if TYPE_CHECKING:

@@ -256,7 +256,7 @@ def test_coalesce(con, expr, expected):
         assert result == pytest.approx(expected)
 
 
-@pytest.mark.notimpl(["clickhouse", "druid", "exasol"])
+@pytest.mark.notimpl(["druid", "exasol"])
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     df = sorted_df
