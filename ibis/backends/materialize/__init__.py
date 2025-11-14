@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import sqlglot as sg
+from psycopg.errors import InternalError_, ProgrammingError, UndefinedFunction
 from sqlglot import expressions as sge
 
 import ibis
@@ -141,8 +142,13 @@ class Backend(PostgresBackend):
                         else version_str
                     )
                 return "unknown"
-        except Exception:  # noqa: BLE001
-            # Fallback to server_version if mz_version() doesn't work
+        except (
+            UndefinedFunction,
+            InternalError_,
+            ProgrammingError,
+        ):
+            # Fallback to server_version if mz_version() doesn't exist or fails
+            # Note: Materialize returns InternalError_ for undefined functions
             return super().version
 
     @property
@@ -1242,14 +1248,13 @@ ORDER BY a.attnum ASC"""  # noqa: S608
             while True:
                 # Fetch a batch of rows
                 cursor.execute(f"FETCH {batch_size} {cursor_name}")
-                rows = cursor.fetchall()
 
                 # Get columns from first fetch
                 if columns is None and cursor.description:
                     columns = [desc[0] for desc in cursor.description]
 
                 # If no rows and up_to was specified, we're done
-                if not rows:
+                if not (rows := cursor.fetchall()):
                     if up_to is not None:
                         break
                     # Otherwise wait a bit and try again
@@ -1939,7 +1944,7 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         - For SSH key rotation, update bastion server keys manually after rotation
 
         """
-        if not any([set_options, reset_options, rotate_keys]):
+        if not (set_options or reset_options or rotate_keys):
             raise ValueError(
                 "Must specify at least one of: set_options, reset_options, rotate_keys"
             )

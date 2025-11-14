@@ -5,17 +5,17 @@ Materialize supports unsigned integers with byte-count-based naming:
 - uint4 (4 bytes, 32 bits) for UInt32
 - uint8 (8 bytes, 64 bits) for UInt64
 
-NOTE: Materialize does NOT support 1-byte (8-bit) unsigned integers.
+NOTE: Materialize does NOT have a native 1-byte (8-bit) unsigned integer type.
+Ibis silently converts UInt8 to uint2 (UInt16), following the same pattern as
+other backends (e.g., Trino, BigQuery) which upgrade unsupported types to the
+next available size that can safely hold all values.
 
 Ref: https://materialize.com/docs/sql/types/uint/
 """
 
 from __future__ import annotations
 
-import pytest
-
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 
 
@@ -73,21 +73,47 @@ class TestUnsignedIntegerTypes:
             # Clean up
             con.drop_table(table_name, force=True)
 
-    def test_uint8_not_supported(self, con):
-        """Test that uint8 (1-byte unsigned int) raises appropriate error."""
+    def test_uint8_converts_to_uint2(self, con):
+        """Test that uint8 (1-byte unsigned int) silently converts to uint2.
+
+        Like other Ibis backends (Trino, BigQuery, etc.), Materialize silently
+        converts UInt8 to the next available unsigned integer type (uint2/UInt16)
+        rather than raising an error. This ensures compatibility and safe value storage.
+        """
         table_name = ibis.util.gen_name("test_uint8_table")
 
-        # Attempting to create a table with uint8 should fail
+        # UInt8 should silently convert to uint2 (the smallest supported unsigned type)
         schema = ibis.schema({"id": "int32", "u8": "uint8"})
 
-        with pytest.raises(
-            com.UnsupportedBackendType,
-            match="Materialize doesn't support 1-byte unsigned integers",
-        ):
-            con.create_table(table_name, schema=schema, overwrite=True)
+        con.create_table(table_name, schema=schema, overwrite=True)
 
-        # Ensure table was not created
-        assert table_name not in con.list_tables()
+        try:
+            # Verify table was created
+            assert table_name in con.list_tables()
+
+            # Verify the type was converted to UInt16 (which maps to uint2)
+            table = con.table(table_name)
+            result_schema = table.schema()
+            assert result_schema["id"] == dt.Int32()
+            assert result_schema["u8"] == dt.UInt16()  # Converted from UInt8 to UInt16
+
+            # Verify we can insert and retrieve uint8 range values using raw SQL
+            con.raw_sql(
+                f"""
+                INSERT INTO {table_name} (id, u8)
+                VALUES (1, 0),
+                       (2, 127),
+                       (3, 255)
+                """
+            )
+
+            # Query back and verify uint8 range values work correctly
+            result = table.execute()
+            assert len(result) == 3
+            assert result["u8"].tolist() == [0, 127, 255]
+
+        finally:
+            con.drop_table(table_name, force=True)
 
     def test_unsigned_type_sql_generation(self):
         """Test that correct SQL type names are generated."""
