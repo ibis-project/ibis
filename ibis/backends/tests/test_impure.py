@@ -18,7 +18,13 @@ pytestmark = pytest.mark.xdist_group("impure")
 
 no_randoms = [
     pytest.mark.notimpl(
-        ["polars", "druid", "risingwave"], raises=com.OperationNotDefinedError
+        ["polars", "druid", "risingwave"],
+        raises=com.OperationNotDefinedError,
+    ),
+    pytest.mark.never(
+        ["materialize"],
+        raises=com.OperationNotDefinedError,
+        reason="Materialize will never support random() - nondeterministic functions can't be used in materialized views",
     ),
 ]
 
@@ -33,6 +39,7 @@ no_udfs = [
             "druid",
             "exasol",
             "impala",
+            "materialize",
             "mssql",
             "mysql",
             "oracle",
@@ -50,8 +57,20 @@ no_udfs = [
 
 no_uuids = [
     pytest.mark.notimpl(
-        ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave"],
+        [
+            "druid",
+            "exasol",
+            "oracle",
+            "polars",
+            "pyspark",
+            "risingwave",
+        ],
         raises=com.OperationNotDefinedError,
+    ),
+    pytest.mark.never(
+        ["materialize"],
+        raises=com.OperationNotDefinedError,
+        reason="Materialize will never support UUID generation - nondeterministic functions can't be used in materialized views",
     ),
     pytest.mark.notyet("mssql", reason="Unrelated bug: Incorrect syntax near '('"),
 ]
@@ -213,8 +232,21 @@ def test_impure_uncorrelated_same_id(alltypes, impure):
     strict=False,
 )
 @pytest.mark.notimpl(
-    ["polars", "risingwave", "druid", "exasol", "oracle", "pyspark"],
+    [
+        "polars",
+        "risingwave",
+        "druid",
+        "exasol",
+        "oracle",
+        "pyspark",
+    ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize will never support UUID generation - nondeterministic functions can't be used in materialized views",
+    # Ref: https://materialize.com/docs/sql/functions/#unmaterializable-functions
 )
 def test_self_join_with_generated_keys(con):
     # Even with CTEs in the generated SQL, the backends still
