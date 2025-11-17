@@ -73,6 +73,7 @@ class FirstValue(ops.Analytic):
     """Retrieve the first element."""
 
     arg: ops.Column[dt.Any]
+    include_null: bool = False
 
     @attribute
     def dtype(self):
@@ -84,6 +85,7 @@ class LastValue(ops.Analytic):
     """Retrieve the last element."""
 
     arg: ops.Column[dt.Any]
+    include_null: bool = False
 
     @attribute
     def dtype(self):
@@ -204,7 +206,7 @@ def first_to_firstvalue(_, **kwargs):
             "in a window function"
         )
     klass = FirstValue if isinstance(_.func, ops.First) else LastValue
-    return _.copy(func=klass(_.func.arg))
+    return _.copy(func=klass(_.func.arg, include_null=_.func.include_null))
 
 
 @replace(p.Alias)
