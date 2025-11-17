@@ -18,8 +18,6 @@ import ibis.common.patterns as pats
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.rewrites import (
-    FirstValue,
-    LastValue,
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
     empty_in_values_right_side,
@@ -337,13 +335,11 @@ class SQLGlotCompiler(abc.ABC):
         ops.Degrees: "degrees",
         ops.DenseRank: "dense_rank",
         ops.Exp: "exp",
-        FirstValue: "first_value",
         ops.GroupConcat: "group_concat",
         ops.IfElse: "if",
         ops.IsInf: "isinf",
         ops.IsNan: "isnan",
         ops.JSONGetItem: "json_extract",
-        LastValue: "last_value",
         ops.Levenshtein: "levenshtein",
         ops.Ln: "ln",
         ops.Log10: "log",
@@ -1243,6 +1239,12 @@ class SQLGlotCompiler(abc.ABC):
         return sg.column(
             op.name, table=table.alias_or_name, quoted=self.quoted, copy=False
         )
+
+    def visit_FirstLastValue(self, op, *, arg, include_null):
+        fun_name = "first_value" if type(op).__name__ == "FirstValue" else "last_value"
+        return self.f[fun_name](arg)
+
+    visit_FirstValue = visit_LastValue = visit_FirstLastValue
 
     # TODO(kszucs): this should be renamed to something UDF related
     def __sql_name__(self, op: ops.ScalarUDF | ops.AggUDF) -> str:
