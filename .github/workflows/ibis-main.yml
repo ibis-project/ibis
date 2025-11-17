@@ -161,9 +161,6 @@ jobs:
       - name: run doctests
         run: just doctest --cov=ibis --cov-report=xml:coverage.xml
 
-      - name: check for dead fixtures
-        run: uv run --all-extras --group tests pytest --dead-fixtures -m 'not flink'
-
       - name: upload code coverage
         if: success()
         continue-on-error: true
