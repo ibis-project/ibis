@@ -29,6 +29,7 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkAnalysisException,
     PySparkPythonException,
+    SingleStoreDBOperationalError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -75,7 +76,7 @@ aggregate_test_params = [
                 raises=com.OperationNotDefinedError,
             ),
             pytest.mark.never(
-                ["sqlite", "mysql"],
+                ["sqlite", "mysql", "singlestoredb"],
                 reason="no udf support",
                 raises=com.OperationNotDefinedError,
             ),
@@ -102,6 +103,7 @@ aggregate_test_params = [
                     "datafusion",
                     "impala",
                     "mysql",
+                    "singlestoredb",
                     "mssql",
                     "pyspark",
                     "trino",
@@ -130,6 +132,7 @@ aggregate_test_params = [
 argidx_not_grouped_marks = [
     "impala",
     "mysql",
+    "singlestoredb",
     "mssql",
     "druid",
     "oracle",
@@ -331,6 +334,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                         "datafusion",
                         "impala",
                         "mysql",
+                        "singlestoredb",
                         "pyspark",
                         "mssql",
                         "trino",
@@ -353,6 +357,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     [
                         "impala",
                         "mysql",
+                        "singlestoredb",
                         "mssql",
                         "druid",
                         "oracle",
@@ -372,6 +377,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     [
                         "impala",
                         "mysql",
+                        "singlestoredb",
                         "mssql",
                         "druid",
                         "oracle",
@@ -399,6 +405,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                         "impala",
                         "mssql",
                         "mysql",
+                        "singlestoredb",
                         "oracle",
                         "postgres",
                         "pyspark",
@@ -541,7 +548,7 @@ def test_reduction_ops(
 
 
 @pytest.mark.notimpl(
-    ["druid", "impala", "mssql", "mysql", "oracle"],
+    ["druid", "impala", "mssql", "mysql", "singlestoredb", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -612,7 +619,7 @@ def test_first_last(alltypes, method, filtered, include_null):
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.notimpl(
-    ["druid", "impala", "mssql", "mysql", "oracle"],
+    ["druid", "impala", "mssql", "mysql", "singlestoredb", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize("method", ["first", "last"])
@@ -667,6 +674,7 @@ def test_first_last_ordered(alltypes, method, filtered, include_null):
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "oracle",
     ],
     raises=com.OperationNotDefinedError,
@@ -696,6 +704,7 @@ def test_argmin_argmax(alltypes, method, filtered, null_result):
     [
         "impala",
         "mysql",
+        "singlestoredb",
         "mssql",
         "druid",
         "oracle",
@@ -734,7 +743,7 @@ def test_arbitrary(alltypes, filtered):
             id="cond",
             marks=[
                 pytest.mark.notyet(
-                    ["mysql"],
+                    ["mysql", "singlestoredb"],
                     raises=com.UnsupportedOperationError,
                     reason="backend does not support filtered count distinct with more than one column",
                 ),
@@ -780,6 +789,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "impala",
                         "mssql",
                         "mysql",
+                        "singlestoredb",
                         "sqlite",
                         "druid",
                     ],
@@ -813,7 +823,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "mssql", "impala", "exasol", "sqlite"],
+                    ["mysql", "singlestoredb", "mssql", "impala", "exasol", "sqlite"],
                     raises=com.UnsupportedBackendType,
                 ),
                 pytest.mark.notyet(
@@ -877,7 +887,7 @@ def test_quantile(
                     reason="multi-quantile not yet implemented",
                 ),
                 pytest.mark.notyet(
-                    ["mssql", "exasol"],
+                    ["mssql", "singlestoredb", "exasol"],
                     raises=com.UnsupportedBackendType,
                     reason="array types not supported",
                 ),
@@ -886,7 +896,7 @@ def test_quantile(
     ],
 )
 @pytest.mark.notyet(
-    ["druid", "flink", "impala", "mysql", "sqlite"],
+    ["druid", "flink", "impala", "mysql", "singlestoredb", "sqlite"],
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
     reason="quantiles (approximate or otherwise) not supported",
 )
@@ -921,7 +931,7 @@ def test_approx_quantile(con, filtered, multi):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala", "sqlite", "flink"],
+                    ["mysql", "singlestoredb", "impala", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
@@ -941,7 +951,7 @@ def test_approx_quantile(con, filtered, multi):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala", "sqlite", "flink"],
+                    ["mysql", "singlestoredb", "impala", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
@@ -958,7 +968,7 @@ def test_approx_quantile(con, filtered, multi):
             marks=[
                 pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
                 pytest.mark.notyet(
-                    ["impala", "mysql", "sqlite", "flink"],
+                    ["impala", "mysql", "singlestoredb", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -988,7 +998,7 @@ def test_approx_quantile(con, filtered, multi):
                     reason="backend only implements population correlation coefficient",
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql", "sqlite", "flink"],
+                    ["impala", "mysql", "singlestoredb", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1020,7 +1030,7 @@ def test_approx_quantile(con, filtered, multi):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala", "sqlite", "flink"],
+                    ["mysql", "singlestoredb", "impala", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
@@ -1041,7 +1051,7 @@ def test_approx_quantile(con, filtered, multi):
             marks=[
                 pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
                 pytest.mark.notyet(
-                    ["impala", "mysql", "sqlite", "flink"],
+                    ["impala", "mysql", "singlestoredb", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1097,7 +1107,7 @@ def test_corr_cov(
 
 
 @pytest.mark.notimpl(
-    ["mysql", "sqlite", "mssql", "druid"],
+    ["mysql", "singlestoredb", "sqlite", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError)
@@ -1111,7 +1121,7 @@ def test_approx_median(alltypes):
     ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mysql", "mssql", "druid", "trino", "athena"],
+    ["impala", "mysql", "singlestoredb", "mssql", "druid", "trino", "athena"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.never(
@@ -1130,7 +1140,7 @@ def test_median(alltypes, df):
     ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mysql", "mssql", "trino", "flink", "athena"],
+    ["impala", "mysql", "singlestoredb", "mssql", "trino", "flink", "athena"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1185,7 +1195,7 @@ def test_string_quantile(alltypes, func):
     ["bigquery", "sqlite", "druid"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mysql", "mssql", "trino", "exasol", "flink", "athena"],
+    ["impala", "mysql", "singlestoredb", "mssql", "trino", "exasol", "flink", "athena"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1227,7 +1237,9 @@ def test_date_quantile(alltypes):
             "::",
             id="expr",
             marks=[
-                pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["mysql", "singlestoredb"], raises=com.UnsupportedOperationError
+                ),
                 pytest.mark.notyet(
                     ["bigquery"],
                     raises=GoogleBadRequest,
@@ -1358,7 +1370,16 @@ def gen_test_collect_marks(distinct, filtered, ordered, include_null):
 
 
 @pytest.mark.notimpl(
-    ["druid", "exasol", "impala", "mssql", "mysql", "oracle", "sqlite"],
+    [
+        "druid",
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "singlestoredb",
+        "oracle",
+        "sqlite",
+    ],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize(
@@ -1463,6 +1484,7 @@ def agg_to_ndarray(s: pd.Series) -> np.ndarray:
         "duckdb",
         "impala",
         "mysql",
+        "singlestoredb",
         "postgres",
         "risingwave",
         "sqlite",
@@ -1512,6 +1534,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "duckdb",
         "impala",
         "mysql",
+        "singlestoredb",
         "postgres",
         "risingwave",
         "sqlite",
@@ -1638,6 +1661,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
 @pytest.mark.notyet(["mysql"], raises=MySQLNotSupportedError)
+@pytest.mark.notyet(["singlestoredb"], raises=SingleStoreDBOperationalError)
 @pytest.mark.notyet(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
