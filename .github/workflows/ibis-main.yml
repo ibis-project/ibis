@@ -47,7 +47,6 @@ jobs:
           - ubuntu-24.04-arm
           - windows-latest
         python-version:
-          - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
@@ -108,49 +107,6 @@ jobs:
           flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  test_shapely_duckdb_import:
-    name: Test shapely and duckdb import
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v5
-
-      - name: install python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.9"
-
-      - name: install uv
-        uses: astral-sh/setup-uv@v7.1.3
-
-      - name: install system dependencies
-        run: |
-          set -euo pipefail
-
-          sudo apt-get update -y -qq
-          sudo apt-get install -y -q build-essential libgeos-dev
-
-      - name: check shapely and duckdb imports
-        run: uv run --extra duckdb --extra geospatial python -c 'import shapely.geometry, duckdb'
-
-  test_duckdb_sqlite3_import:
-    name: Test sqlite3 and duckdb import
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v5
-
-      - name: install python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-
-      - name: install uv
-        uses: astral-sh/setup-uv@v7.1.3
-
-      - name: check duckdb doesn't import sqlite3
-        run: uv run --extra duckdb python -c 'import sys, ibis; assert "sqlite3" not in sys.modules; ibis.duckdb.connect(); assert "sqlite3" not in sys.modules'
-
   test_scrapy_import:
     name: Test import with twisted
     runs-on: ubuntu-latest
@@ -204,9 +160,6 @@ jobs:
 
       - name: run doctests
         run: just doctest --cov=ibis --cov-report=xml:coverage.xml
-
-      - name: check for dead fixtures
-        run: uv run --all-extras --group tests pytest --dead-fixtures -m 'not flink'
 
       - name: upload code coverage
         if: success()

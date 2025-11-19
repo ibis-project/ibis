@@ -4,7 +4,8 @@ import contextlib
 import datetime
 import re
 import ssl
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
 import pyexasol
