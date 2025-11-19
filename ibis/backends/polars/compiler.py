@@ -4,7 +4,6 @@ import calendar
 import datetime
 import math
 import operator
-from collections.abc import Mapping
 from functools import partial, reduce, singledispatch
 from math import isnan
 
@@ -378,36 +377,11 @@ def fill_null(op, **kw):
     table = translate(op.parent, **kw)
 
     columns = []
-
-    repls = op.replacements
-
-    if isinstance(repls, Mapping):
-
-        def get_replacement(name):
-            repl = repls.get(name)
-            if repl is not None:
-                return repl.value
-            else:
-                return None
-
-    else:
-        value = repls.value
-
-        def get_replacement(_):
-            return value
-
     for name, dtype in op.parent.schema.items():
         column = pl.col(name)
-        if isinstance(op.replacements, Mapping):
-            value = op.replacements.get(name)
-        else:
-            value = _literal_value(op.replacements)
-
-        if value is not None:
-            if dtype.is_floating():
-                column = column.fill_nan(value)
+        if (repl := op.replacements.get(name)) is not None:
+            value = translate(repl, **kw)
             column = column.fill_null(value)
-
         # requires special treatment if the fill value has different datatype
         if dtype.is_timestamp():
             column = column.cast(pl.Datetime)

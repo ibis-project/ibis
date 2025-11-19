@@ -3079,8 +3079,13 @@ class Table(Expr, FixedTextJupyterMixin):
             subset = tuple(self.bind(subset))
         return ops.DropNull(self, how, subset).to_expr()
 
-    def fill_null(self, replacements: ir.Scalar | Mapping[str, ir.Scalar], /) -> Table:
+    def fill_null(
+        self, replacements: ir.Value | Any | Mapping[str, ir.Value | Any], /
+    ) -> Table:
         """Fill null values in a table expression.
+
+        This only replaces genuine `NULL` values, it does NOT affect
+        `NaN` and `inf` values for floating point types.
 
         ::: {.callout-note}
         ## There is potential lack of type stability with the `fill_null` API
@@ -3092,9 +3097,10 @@ class Table(Expr, FixedTextJupyterMixin):
         Parameters
         ----------
         replacements
-            Value with which to fill nulls. If `replacements` is a mapping, the
-            keys are column names that map to their replacement value. If
-            passed as a scalar all columns are filled with that value.
+            Value with which to fill nulls.
+            If `replacements` is a mapping, the keys are column names that map to their replacement value.
+            Otherwise, all columns are filled with this single value.
+            Values are interpreted similar to in [`Table.select()`](#ibis.expr.types.relations.Table.select).
 
         Returns
         -------
@@ -3105,76 +3111,88 @@ class Table(Expr, FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch()
-        >>> t.sex
-        ┏━━━━━━━━┓
-        ┃ sex    ┃
-        ┡━━━━━━━━┩
-        │ string │
-        ├────────┤
-        │ male   │
-        │ female │
-        │ female │
-        │ NULL   │
-        │ female │
-        │ male   │
-        │ female │
-        │ male   │
-        │ NULL   │
-        │ NULL   │
-        │ …      │
-        └────────┘
-        >>> t.fill_null({"sex": "unrecorded"}).sex
-        ┏━━━━━━━━━━━━┓
-        ┃ sex        ┃
-        ┡━━━━━━━━━━━━┩
-        │ string     │
-        ├────────────┤
-        │ male       │
-        │ female     │
-        │ female     │
-        │ unrecorded │
-        │ female     │
-        │ male       │
-        │ female     │
-        │ male       │
-        │ unrecorded │
-        │ unrecorded │
-        │ …          │
-        └────────────┘
+        >>> t = ibis.examples.penguins.fetch().select("sex", "species").head()
+        >>> t
+        ┏━━━━━━━━┳━━━━━━━━━┓
+        ┃ sex    ┃ species ┃
+        ┡━━━━━━━━╇━━━━━━━━━┩
+        │ string │ string  │
+        ├────────┼─────────┤
+        │ male   │ Adelie  │
+        │ female │ Adelie  │
+        │ female │ Adelie  │
+        │ NULL   │ Adelie  │
+        │ female │ Adelie  │
+        └────────┴─────────┘
+        >>> t.fill_null(ibis.literal("unrecorded"))
+        ┏━━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ sex        ┃ species ┃
+        ┡━━━━━━━━━━━━╇━━━━━━━━━┩
+        │ string     │ string  │
+        ├────────────┼─────────┤
+        │ male       │ Adelie  │
+        │ female     │ Adelie  │
+        │ female     │ Adelie  │
+        │ unrecorded │ Adelie  │
+        │ female     │ Adelie  │
+        └────────────┴─────────┘
+        >>> t.fill_null({"sex": "species"})
+        ┏━━━━━━━━┳━━━━━━━━━┓
+        ┃ sex    ┃ species ┃
+        ┡━━━━━━━━╇━━━━━━━━━┩
+        │ string │ string  │
+        ├────────┼─────────┤
+        │ male   │ Adelie  │
+        │ female │ Adelie  │
+        │ female │ Adelie  │
+        │ Adelie │ Adelie  │
+        │ female │ Adelie  │
+        └────────┴─────────┘
+
+        See Also
+        --------
+        [`Value.fill_null()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fill_null)
         """
         schema = self.schema()
+        errors = []
+        bound_replacements = {}
 
-        if isinstance(replacements, Mapping):
-            for col, val in replacements.items():
-                if col not in schema:
-                    columns_formatted = ", ".join(map(repr, schema.names))
-                    raise com.IbisTypeError(
-                        f"Column {col!r} is not found in table. "
-                        f"Existing columns: {columns_formatted}."
-                    ) from None
-
-                col_type = schema[col]
-                val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
-                if not val_type.castable(col_type):
-                    raise com.IbisTypeError(
+        def check_castable(col: str, val_type: dt.DataType) -> None:
+            col_type = schema[col]
+            if not val_type.castable(col_type):
+                errors.append(
+                    com.IbisTypeError(
                         f"Cannot fill_null on column {col!r} of type {col_type} with a "
                         f"value of type {val_type}"
                     )
-        else:
-            val_type = (
-                replacements.type()
-                if isinstance(replacements, Expr)
-                else dt.infer(replacements)
-            )
-            for col, col_type in schema.items():
-                if col_type.nullable and not val_type.castable(col_type):
-                    raise com.IbisTypeError(
-                        f"Cannot fill_null on column {col!r} of type {col_type} with a "
-                        f"value of type {val_type} - pass in an explicit mapping "
-                        f"of fill values to `fill_null` instead."
+                )
+
+        if isinstance(replacements, Mapping):
+            for col, val in replacements.items():
+                (bound_val,) = self.bind(val)
+                if col not in schema:
+                    columns_formatted = ", ".join(map(repr, schema.names))
+                    errors.append(
+                        com.IbisTypeError(
+                            f"Column {col!r} is not found in table. "
+                            f"Existing columns: {columns_formatted}."
+                        )
                     )
-        return ops.FillNull(self, replacements).to_expr()
+                    continue
+                check_castable(col, bound_val.type())
+                bound_replacements[col] = bound_val
+        else:
+            (bound_val,) = self.bind(replacements)
+            for col, col_type in schema.items():
+                if not col_type.nullable:
+                    continue
+                check_castable(col, bound_val.type())
+                bound_replacements[col] = bound_val
+        if errors:
+            raise com.IbisTypeError(
+                "Invalid fill_null replacements:\n" + "\n".join(str(e) for e in errors)
+            )
+        return ops.FillNull(self, bound_replacements).to_expr()
 
     @deprecated(as_of="9.1", instead="use drop_null instead")
     def dropna(
