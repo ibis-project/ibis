@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, overload
 
 from public import public
 
@@ -11,12 +11,19 @@ from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.generic import Column, Scalar, Value, _binop
 
 if TYPE_CHECKING:
+    from decimal import Decimal
+    from typing import Union
+
+    from typing_extensions import Self
+
     import ibis.expr.types as ir
+
+    Number = Union[int, float, Decimal]
 
 
 @public
 class NumericValue(Value):
-    def negate(self) -> NumericValue:
+    def negate(self) -> Self:
         """Negate a numeric expression.
 
         Returns
@@ -42,7 +49,7 @@ class NumericValue(Value):
         """
         return ops.Negate(self).to_expr()
 
-    def __neg__(self) -> NumericValue:
+    def __neg__(self) -> Self:
         """Negate `self`.
 
         Returns
@@ -52,6 +59,12 @@ class NumericValue(Value):
         """
         return self.negate()
 
+    @overload
+    def round(self: NumericScalar, digits: int | IntegerScalar, /) -> NumericScalar: ...
+    @overload
+    def round(self: NumericScalar, digits: IntegerColumn, /) -> NumericColumn: ...
+    @overload
+    def round(self: NumericColumn, digits: int | IntegerValue, /) -> NumericColumn: ...
     def round(self, digits: int | IntegerValue = 0, /) -> NumericValue:
         """Round values to an indicated number of decimal places.
 
@@ -114,7 +127,17 @@ class NumericValue(Value):
         """
         return ops.Round(self, digits).to_expr()
 
-    def log(self, base: NumericValue | None = None, /) -> NumericValue:
+    @overload
+    def log(
+        self: NumericScalar, base: Number | NumericScalar | None, /
+    ) -> FloatingScalar: ...
+    @overload
+    def log(self: NumericScalar, base: NumericColumn, /) -> FloatingColumn: ...
+    @overload
+    def log(
+        self: NumericColumn, base: Number | NumericValue | None, /
+    ) -> FloatingColumn: ...
+    def log(self, base: Number | NumericValue | None = None, /) -> NumericValue:
         r"""Compute $\log_{\texttt{base}}\left(\texttt{self}\right)$.
 
         Parameters
@@ -163,9 +186,9 @@ class NumericValue(Value):
 
     def clip(
         self,
-        lower: NumericValue | None = None,
-        upper: NumericValue | None = None,
-    ) -> NumericValue:
+        lower: Number | NumericValue | None = None,
+        upper: Number | NumericValue | None = None,
+    ) -> Self:
         """Trim values outside of `lower` and `upper` bounds.
 
         `NULL` values are preserved and are not replaced with bounds.
@@ -211,7 +234,7 @@ class NumericValue(Value):
 
         return ops.Clip(self, lower, upper).to_expr()
 
-    def abs(self) -> NumericValue:
+    def abs(self) -> Self:
         """Return the absolute value of `self`.
 
         Examples
@@ -233,6 +256,14 @@ class NumericValue(Value):
         """
         return ops.Abs(self).to_expr()
 
+    @overload
+    def ceil(self: DecimalScalar) -> DecimalScalar: ...
+    @overload
+    def ceil(self: DecimalColumn) -> DecimalColumn: ...
+    @overload
+    def ceil(self: NumericScalar) -> IntegerScalar: ...
+    @overload
+    def ceil(self: NumericColumn) -> IntegerColumn: ...
     def ceil(self) -> DecimalValue | IntegerValue:
         """Return the ceiling of `self`.
 
@@ -256,6 +287,14 @@ class NumericValue(Value):
         """
         return ops.Ceil(self).to_expr()
 
+    @overload
+    def degrees(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def degrees(self: NumericColumn) -> FloatingColumn: ...
+    @overload
+    def degrees(self: DecimalScalar) -> DecimalScalar: ...
+    @overload
+    def degrees(self: DecimalColumn) -> DecimalColumn: ...
     def degrees(self) -> NumericValue:
         """Compute the degrees of `self` radians.
 
@@ -282,7 +321,15 @@ class NumericValue(Value):
 
     rad2deg = degrees
 
-    def exp(self) -> NumericValue:
+    @overload
+    def exp(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def exp(self: NumericColumn) -> FloatingColumn: ...
+    @overload
+    def exp(self: DecimalScalar) -> DecimalScalar: ...
+    @overload
+    def exp(self: DecimalColumn) -> DecimalColumn: ...
+    def exp(self) -> FloatingValue:
         r"""Compute $e^\texttt{self}$.
 
         Returns
@@ -309,6 +356,14 @@ class NumericValue(Value):
         """
         return ops.Exp(self).to_expr()
 
+    @overload
+    def floor(self: DecimalScalar) -> DecimalScalar: ...
+    @overload
+    def floor(self: DecimalColumn) -> DecimalColumn: ...
+    @overload
+    def floor(self: NumericScalar) -> IntegerScalar: ...
+    @overload
+    def floor(self: NumericColumn) -> IntegerColumn: ...
     def floor(self) -> DecimalValue | IntegerValue:
         """Return the floor of an expression.
 
@@ -333,7 +388,11 @@ class NumericValue(Value):
         """
         return ops.Floor(self).to_expr()
 
-    def log2(self) -> NumericValue:
+    @overload
+    def log2(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def log2(self: NumericColumn) -> FloatingColumn: ...
+    def log2(self) -> FloatingValue:
         r"""Compute $\log_{2}\left(\texttt{self}\right)$.
 
         Examples
@@ -355,7 +414,11 @@ class NumericValue(Value):
         """
         return ops.Log2(self).to_expr()
 
-    def log10(self) -> NumericValue:
+    @overload
+    def log10(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def log10(self: NumericColumn) -> FloatingColumn: ...
+    def log10(self) -> FloatingValue:
         r"""Compute $\log_{10}\left(\texttt{self}\right)$.
 
         Examples
@@ -376,7 +439,11 @@ class NumericValue(Value):
         """
         return ops.Log10(self).to_expr()
 
-    def ln(self) -> NumericValue:
+    @overload
+    def ln(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def ln(self: NumericColumn) -> FloatingColumn: ...
+    def ln(self) -> FloatingValue:
         r"""Compute $\ln\left(\texttt{self}\right)$.
 
         Examples
@@ -397,7 +464,11 @@ class NumericValue(Value):
         """
         return ops.Ln(self).to_expr()
 
-    def radians(self) -> NumericValue:
+    @overload
+    def radians(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def radians(self: NumericColumn) -> FloatingColumn: ...
+    def radians(self) -> FloatingValue:
         """Compute radians from `self` degrees.
 
         Examples
@@ -422,7 +493,7 @@ class NumericValue(Value):
 
     deg2rad = radians
 
-    def sign(self) -> NumericValue:
+    def sign(self) -> Self:
         """Return the sign of the input.
 
         Examples
@@ -444,7 +515,11 @@ class NumericValue(Value):
         """
         return ops.Sign(self).to_expr()
 
-    def sqrt(self) -> NumericValue:
+    @overload
+    def sqrt(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def sqrt(self: NumericColumn) -> FloatingColumn: ...
+    def sqrt(self) -> FloatingValue:
         """Compute the square root of `self`.
 
         Examples
@@ -466,7 +541,11 @@ class NumericValue(Value):
         """
         return ops.Sqrt(self).to_expr()
 
-    def acos(self) -> NumericValue:
+    @overload
+    def acos(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def acos(self: NumericColumn) -> FloatingColumn: ...
+    def acos(self) -> FloatingValue:
         """Compute the arc cosine of `self`.
 
         Examples
@@ -488,7 +567,11 @@ class NumericValue(Value):
         """
         return ops.Acos(self).to_expr()
 
-    def asin(self) -> NumericValue:
+    @overload
+    def asin(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def asin(self: NumericColumn) -> FloatingColumn: ...
+    def asin(self) -> FloatingValue:
         """Compute the arc sine of `self`.
 
         Examples
@@ -509,7 +592,11 @@ class NumericValue(Value):
         """
         return ops.Asin(self).to_expr()
 
-    def atan(self) -> NumericValue:
+    @overload
+    def atan(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def atan(self: NumericColumn) -> FloatingColumn: ...
+    def atan(self) -> FloatingValue:
         """Compute the arc tangent of `self`.
 
         Examples
@@ -530,7 +617,17 @@ class NumericValue(Value):
         """
         return ops.Atan(self).to_expr()
 
-    def atan2(self, other: NumericValue, /) -> NumericValue:
+    @overload
+    def atan2(
+        self: NumericScalar, other: Number | NumericScalar, /
+    ) -> FloatingScalar: ...
+    @overload
+    def atan2(self: NumericScalar, other: NumericColumn, /) -> FloatingColumn: ...
+    @overload
+    def atan2(
+        self: NumericColumn, other: Number | NumericValue, /
+    ) -> FloatingColumn: ...
+    def atan2(self, other: NumericValue, /) -> FloatingValue:
         """Compute the two-argument version of arc tangent.
 
         Examples
@@ -551,7 +648,11 @@ class NumericValue(Value):
         """
         return ops.Atan2(self, other).to_expr()
 
-    def cos(self) -> NumericValue:
+    @overload
+    def cos(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def cos(self: NumericColumn) -> FloatingColumn: ...
+    def cos(self) -> FloatingValue:
         """Compute the cosine of `self`.
 
         Examples
@@ -572,7 +673,11 @@ class NumericValue(Value):
         """
         return ops.Cos(self).to_expr()
 
-    def cot(self) -> NumericValue:
+    @overload
+    def cot(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def cot(self: NumericColumn) -> FloatingColumn: ...
+    def cot(self) -> FloatingValue:
         """Compute the cotangent of `self`.
 
         Examples
@@ -593,7 +698,11 @@ class NumericValue(Value):
         """
         return ops.Cot(self).to_expr()
 
-    def sin(self) -> NumericValue:
+    @overload
+    def sin(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def sin(self: NumericColumn) -> FloatingColumn: ...
+    def sin(self) -> FloatingValue:
         """Compute the sine of `self`.
 
         Examples
@@ -614,7 +723,11 @@ class NumericValue(Value):
         """
         return ops.Sin(self).to_expr()
 
-    def tan(self) -> NumericValue:
+    @overload
+    def tan(self: NumericScalar) -> FloatingScalar: ...
+    @overload
+    def tan(self: NumericColumn) -> FloatingColumn: ...
+    def tan(self) -> FloatingValue:
         """Compute the tangent of `self`.
 
         Examples
@@ -635,51 +748,112 @@ class NumericValue(Value):
         """
         return ops.Tan(self).to_expr()
 
-    def __add__(self, other: NumericValue) -> NumericValue:
+    @overload
+    def __add__(
+        self: NumericScalar, other: Number | NumericScalar
+    ) -> NumericScalar: ...
+    @overload
+    def __add__(self: NumericScalar, other: NumericColumn) -> NumericColumn: ...
+    @overload
+    def __add__(self, other: Number | NumericValue) -> NumericColumn: ...
+    def __add__(self, other: Number | NumericValue) -> NumericValue:
         """Add `self` with `other`."""
         return _binop(ops.Add, self, other)
 
     add = radd = __radd__ = __add__
 
-    def __sub__(self, other: NumericValue) -> NumericValue:
+    @overload
+    def __sub__(
+        self: NumericScalar, other: Number | NumericScalar
+    ) -> NumericScalar: ...
+    @overload
+    def __sub__(self: NumericScalar, other: NumericColumn) -> NumericColumn: ...
+    @overload
+    def __sub__(self, other: Number | NumericValue) -> NumericColumn: ...
+    def __sub__(self, other: Number | NumericValue) -> NumericValue:
         """Subtract `other` from `self`."""
         return _binop(ops.Subtract, self, other)
 
     sub = __sub__
 
-    def __rsub__(self, other: NumericValue) -> NumericValue:
+    @overload
+    def __rsub__(
+        self: NumericScalar, other: Number | NumericScalar
+    ) -> NumericScalar: ...
+    @overload
+    def __rsub__(self: NumericScalar, other: NumericColumn) -> NumericColumn: ...
+    @overload
+    def __rsub__(self, other: Number | NumericValue) -> NumericColumn: ...
+    def __rsub__(self, other: Number | NumericValue) -> NumericValue:
         """Subtract `self` from `other`."""
         return _binop(ops.Subtract, other, self)
 
     rsub = __rsub__
 
-    def __mul__(self, other: NumericValue) -> NumericValue:
+    @overload
+    def __mul__(
+        self: NumericScalar, other: Number | NumericScalar
+    ) -> NumericScalar: ...
+    @overload
+    def __mul__(self: NumericScalar, other: NumericColumn) -> NumericColumn: ...
+    @overload
+    def __mul__(self, other: Number | NumericValue) -> NumericColumn: ...
+    def __mul__(self, other: Number | NumericValue) -> NumericValue:
         """Multiply `self` and `other`."""
         return _binop(ops.Multiply, self, other)
 
     mul = rmul = __rmul__ = __mul__
 
-    def __truediv__(self, other):
+    @overload
+    def __truediv__(
+        self: NumericScalar, other: Number | NumericScalar
+    ) -> FloatingScalar: ...
+    @overload
+    def __truediv__(self: NumericScalar, other: NumericColumn) -> FloatingColumn: ...
+    @overload
+    def __truediv__(self, other: Number | NumericValue) -> FloatingColumn: ...
+    def __truediv__(self, other: Number | NumericValue) -> FloatingValue:
         """Divide `self` by `other`."""
         return _binop(ops.Divide, self, other)
 
     div = __div__ = __truediv__
 
-    def __rtruediv__(self, other: NumericValue) -> NumericValue:
+    @overload
+    def __rtruediv__(
+        self: NumericScalar, other: Number | NumericScalar
+    ) -> FloatingScalar: ...
+    @overload
+    def __rtruediv__(self: NumericScalar, other: NumericColumn) -> FloatingColumn: ...
+    @overload
+    def __rtruediv__(self, other: Number | NumericValue) -> FloatingColumn: ...
+    def __rtruediv__(self, other: Number | NumericValue) -> NumericValue:
         """Divide `other` by `self`."""
         return _binop(ops.Divide, other, self)
 
     rdiv = __rdiv__ = __rtruediv__
 
+    @overload
     def __floordiv__(
-        self,
-        other: NumericValue,
-    ) -> NumericValue:
+        self: NumericScalar, other: Number | NumericScalar
+    ) -> IntegerScalar: ...
+    @overload
+    def __floordiv__(self: NumericScalar, other: NumericColumn) -> IntegerColumn: ...
+    @overload
+    def __floordiv__(self, other: Number | NumericValue) -> IntegerColumn: ...
+    def __floordiv__(self, other: Number | NumericValue) -> IntegerValue:
         """Floor divide `self` by `other`."""
         return _binop(ops.FloorDivide, self, other)
 
     floordiv = __floordiv__
 
+    @overload
+    def __rfloordiv__(
+        self: NumericScalar, other: Number | NumericScalar
+    ) -> IntegerScalar: ...
+    @overload
+    def __rfloordiv__(self: NumericScalar, other: NumericColumn) -> IntegerColumn: ...
+    @overload
+    def __rfloordiv__(self, other: Number | NumericValue) -> IntegerColumn: ...
     def __rfloordiv__(
         self,
         other: NumericValue,
@@ -714,7 +888,17 @@ class NumericValue(Value):
 
     rmod = __rmod__
 
-    def point(self, right: int | float | NumericValue, /) -> ir.PointValue:
+    @overload
+    def point(
+        self: NumericScalar, right: Number | NumericScalar, /
+    ) -> ir.PointScalar: ...
+    @overload
+    def point(self: NumericScalar, right: NumericColumn, /) -> ir.PointColumn: ...
+    @overload
+    def point(
+        self: NumericColumn, right: Number | NumericValue, /
+    ) -> ir.PointColumn: ...
+    def point(self, right: Number | NumericValue, /) -> ir.PointValue:
         """Return a point constructed from the coordinate values.
 
         Constant coordinates result in construction of a `POINT` literal or
@@ -764,12 +948,26 @@ class NumericScalar(Scalar, NumericValue):
 
 @public
 class NumericColumn(Column, NumericValue):
+    @overload
+    def kurtosis(
+        self: DecimalColumn,
+        *,
+        where: ir.BooleanValue | None = None,
+        how: Literal["sample", "pop"] = "sample",
+    ) -> DecimalScalar: ...
+    @overload
+    def kurtosis(
+        self: NumericColumn,
+        *,
+        where: ir.BooleanValue | None = None,
+        how: Literal["sample", "pop"] = "sample",
+    ) -> FloatingScalar: ...
     def kurtosis(
         self,
         *,
         where: ir.BooleanValue | None = None,
         how: Literal["sample", "pop"] = "sample",
-    ) -> NumericScalar:
+    ) -> FloatingScalar | DecimalScalar:
         """Return the kurtosis of a numeric column.
 
         Parameters
@@ -813,12 +1011,26 @@ class NumericColumn(Column, NumericValue):
             self, how=how, where=self._bind_to_parent_table(where)
         ).to_expr()
 
+    @overload
+    def std(
+        self: DecimalColumn,
+        *,
+        where: ir.BooleanValue | None = None,
+        how: Literal["sample", "pop"] = "sample",
+    ) -> DecimalScalar: ...
+    @overload
+    def std(
+        self: NumericColumn,
+        *,
+        where: ir.BooleanValue | None = None,
+        how: Literal["sample", "pop"] = "sample",
+    ) -> FloatingScalar: ...
     def std(
         self,
         *,
         where: ir.BooleanValue | None = None,
         how: Literal["sample", "pop"] = "sample",
-    ) -> NumericScalar:
+    ) -> FloatingScalar | DecimalScalar:
         """Return the standard deviation of a numeric column.
 
         Parameters
@@ -864,12 +1076,26 @@ class NumericColumn(Column, NumericValue):
             self, how=how, where=self._bind_to_parent_table(where)
         ).to_expr()
 
+    @overload
+    def var(
+        self: DecimalColumn,
+        *,
+        where: ir.BooleanValue | None = None,
+        how: Literal["sample", "pop"] = "sample",
+    ) -> DecimalScalar: ...
+    @overload
+    def var(
+        self: NumericColumn,
+        *,
+        where: ir.BooleanValue | None = None,
+        how: Literal["sample", "pop"] = "sample",
+    ) -> FloatingScalar: ...
     def var(
         self,
         *,
         where: ir.BooleanValue | None = None,
         how: Literal["sample", "pop"] = "sample",
-    ) -> NumericScalar:
+    ) -> FloatingScalar | DecimalScalar:
         """Return the variance of a numeric column.
 
         Parameters
@@ -922,7 +1148,7 @@ class NumericColumn(Column, NumericValue):
         *,
         where: ir.BooleanValue | None = None,
         how: Literal["sample", "pop"] = "sample",
-    ) -> NumericScalar:
+    ) -> FloatingScalar:
         """Return the correlation of two numeric columns.
 
         Parameters
@@ -981,7 +1207,7 @@ class NumericColumn(Column, NumericValue):
         *,
         where: ir.BooleanValue | None = None,
         how: Literal["sample", "pop"] = "sample",
-    ) -> NumericScalar:
+    ) -> FloatingScalar:
         """Return the covariance of two numeric columns.
 
         Parameters
@@ -1037,7 +1263,7 @@ class NumericColumn(Column, NumericValue):
             where=self._bind_to_parent_table(where),
         ).to_expr()
 
-    def mean(self, *, where: ir.BooleanValue | None = None) -> NumericScalar:
+    def mean(self, *, where: ir.BooleanValue | None = None) -> FloatingScalar:
         """Return the mean of a numeric column.
 
         Parameters
@@ -1093,7 +1319,7 @@ class NumericColumn(Column, NumericValue):
         # of default name generated by ops.Value operations
         return ops.Mean(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def cummean(self, *, where=None, group_by=None, order_by=None) -> NumericColumn:
+    def cummean(self, *, where=None, group_by=None, order_by=None) -> FloatingColumn:
         """Return the cumulative mean of the input.
 
         Examples
@@ -1322,7 +1548,7 @@ class NumericColumn(Column, NumericValue):
         binwidth: float | None = None,
         base: float | None = None,
         eps: float = 1e-13,
-    ):
+    ) -> IntegerColumn:
         """Compute a histogram with fixed width bins.
 
         Parameters
@@ -1467,6 +1693,14 @@ class NumericColumn(Column, NumericValue):
 
 @public
 class IntegerValue(NumericValue):
+    @overload
+    def as_timestamp(
+        self: IntegerScalar, unit: Literal["s", "ms", "us"], /
+    ) -> ir.TimestampScalar: ...
+    @overload
+    def as_timestamp(
+        self: IntegerColumn, unit: Literal["s", "ms", "us"], /
+    ) -> ir.TimestampColumn: ...
     def as_timestamp(self, unit: Literal["s", "ms", "us"], /) -> ir.TimestampValue:
         """Convert an integral UNIX timestamp to a timestamp expression.
 
@@ -1498,6 +1732,18 @@ class IntegerValue(NumericValue):
         """
         return ops.TimestampFromUNIX(self, unit).to_expr()
 
+    @overload
+    def as_interval(
+        self: IntegerScalar,
+        unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
+        /,
+    ) -> ir.IntervalScalar: ...
+    @overload
+    def as_interval(
+        self: IntegerColumn,
+        unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
+        /,
+    ) -> ir.IntervalColumn: ...
     def as_interval(
         self,
         unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
@@ -1554,11 +1800,36 @@ class IntegerValue(NumericValue):
         """
         return ops.IntervalFromInteger(self, unit).to_expr()
 
+    @overload
+    def convert_base(
+        self: IntegerScalar,
+        from_base: int | IntegerScalar,
+        to_base: int | IntegerScalar,
+    ) -> ir.StringScalar: ...
+
+    @overload
+    def convert_base(
+        self: IntegerScalar,
+        from_base: IntegerColumn,
+        to_base: int | IntegerScalar,
+    ) -> ir.StringColumn: ...
+    @overload
+    def convert_base(
+        self: IntegerScalar,
+        from_base: int | IntegerScalar,
+        to_base: IntegerColumn,
+    ) -> ir.StringColumn: ...
+    @overload
+    def convert_base(
+        self: IntegerColumn,
+        from_base: int | IntegerValue,
+        to_base: int | IntegerValue,
+    ) -> ir.StringColumn: ...
     def convert_base(
         self,
-        from_base: IntegerValue,
-        to_base: IntegerValue,
-    ) -> IntegerValue:
+        from_base: int | IntegerValue,
+        to_base: int | IntegerValue,
+    ) -> ir.StringColumn:
         """Convert an integer from one base to another.
 
         Parameters
@@ -1570,7 +1841,7 @@ class IntegerValue(NumericValue):
 
         Returns
         -------
-        IntegerValue
+        StringValue
             Converted expression
         """
         return ops.BaseConvert(self, from_base, to_base).to_expr()
@@ -1609,7 +1880,7 @@ class IntegerValue(NumericValue):
         """Bitwise right shift `self` with `other`."""
         return _binop(ops.BitwiseRightShift, other, self)
 
-    def __invert__(self) -> IntegerValue:
+    def __invert__(self) -> Self:
         """Bitwise not of `self`.
 
         Returns
@@ -1692,6 +1963,10 @@ class IntegerColumn(NumericColumn, IntegerValue):
 
 @public
 class FloatingValue(NumericValue):
+    @overload
+    def isnan(self: FloatingScalar) -> ir.BooleanScalar: ...
+    @overload
+    def isnan(self: FloatingColumn) -> ir.BooleanColumn: ...
     def isnan(self) -> ir.BooleanValue:
         """Return whether the value is NaN. Does NOT detect `NULL` and `inf` values.
 
@@ -1725,6 +2000,10 @@ class FloatingValue(NumericValue):
         """
         return ops.IsNan(self).to_expr()
 
+    @overload
+    def isinf(self: FloatingScalar) -> ir.BooleanScalar: ...
+    @overload
+    def isinf(self: FloatingColumn) -> ir.BooleanColumn: ...
     def isinf(self) -> ir.BooleanValue:
         """Return whether the value is +/-inf. Does NOT detect `NULL` and `inf` values.
 

@@ -42,7 +42,7 @@ _SENTINEL = object()
 class Value(Expr):
     """Base class for a data generating expression having a known type."""
 
-    def name(self, name: str, /) -> Value:
+    def name(self, name: str, /) -> Self:
         """Rename an expression to `name`.
 
         Parameters
@@ -121,6 +121,10 @@ class Value(Expr):
         """
         return self.op().dtype
 
+    @overload
+    def hash(self: Scalar) -> ir.IntegerScalar: ...
+    @overload
+    def hash(self: Column) -> ir.IntegerColumn: ...
     def hash(self) -> ir.IntegerValue:
         """Compute an integer hash value.
 
@@ -297,6 +301,10 @@ class Value(Expr):
 
         return op.to_expr()
 
+    @overload
+    def try_cast(self: Scalar, target_type: Any, /) -> Scalar: ...
+    @overload
+    def try_cast(self: Column, target_type: Any, /) -> Column: ...
     def try_cast(self, target_type: Any, /) -> Value:
         """Try cast expression to indicated data type.
 
@@ -383,6 +391,10 @@ class Value(Expr):
         """
         return ops.Coalesce((self, *args)).to_expr()
 
+    @overload
+    def typeof(self: Scalar) -> ir.StringScalar: ...
+    @overload
+    def typeof(self: Column) -> ir.StringColumn: ...
     def typeof(self) -> ir.StringValue:
         """Return the string name of the datatype of self.
 
@@ -923,6 +935,10 @@ class Value(Expr):
         except com.IbisInputError:
             return bind(_)
 
+    @overload
+    def isnull(self: Scalar) -> ir.BooleanScalar: ...
+    @overload
+    def isnull(self: Column) -> ir.BooleanColumn: ...
     def isnull(self) -> ir.BooleanValue:
         """Whether this expression is `NULL`. Does NOT detect `NaN` and `inf` values.
 
@@ -960,6 +976,10 @@ class Value(Expr):
         """
         return ops.IsNull(self).to_expr()
 
+    @overload
+    def notnull(self: Scalar) -> ir.BooleanScalar: ...
+    @overload
+    def notnull(self: Column) -> ir.BooleanColumn: ...
     def notnull(self) -> ir.BooleanValue:
         """Return whether this expression is not NULL.
 
@@ -1291,6 +1311,14 @@ class Value(Expr):
     def __hash__(self) -> int:
         return super().__hash__()
 
+    @overload
+    def __eq__(self: Scalar, other: Scalar) -> ir.BooleanScalar: ...
+    @overload
+    def __eq__(self: Scalar, other: Column) -> ir.BooleanColumn: ...
+    @overload
+    def __eq__(self: Column, other: Scalar) -> ir.BooleanColumn: ...
+    @overload
+    def __eq__(self: Column, other: Column) -> ir.BooleanColumn: ...
     def __eq__(self, other: Value) -> ir.BooleanValue:
         if _is_null_literal(other):
             return self.isnull()
@@ -1298,6 +1326,14 @@ class Value(Expr):
             return other.isnull()
         return _binop(ops.Equals, self, other)
 
+    @overload
+    def __ne__(self: Scalar, other: Scalar) -> ir.BooleanScalar: ...
+    @overload
+    def __ne__(self: Scalar, other: Column) -> ir.BooleanColumn: ...
+    @overload
+    def __ne__(self: Column, other: Scalar) -> ir.BooleanColumn: ...
+    @overload
+    def __ne__(self: Column, other: Column) -> ir.BooleanColumn: ...
     def __ne__(self, other: Value) -> ir.BooleanValue:
         if _is_null_literal(other):
             return self.notnull()
@@ -1305,15 +1341,47 @@ class Value(Expr):
             return other.notnull()
         return _binop(ops.NotEquals, self, other)
 
+    @overload
+    def __ge__(self: Scalar, other: Scalar) -> ir.BooleanScalar: ...
+    @overload
+    def __ge__(self: Scalar, other: Column) -> ir.BooleanColumn: ...
+    @overload
+    def __ge__(self: Column, other: Scalar) -> ir.BooleanColumn: ...
+    @overload
+    def __ge__(self: Column, other: Column) -> ir.BooleanColumn: ...
     def __ge__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.GreaterEqual, self, other)
 
+    @overload
+    def __gt__(self: Scalar, other: Scalar) -> ir.BooleanScalar: ...
+    @overload
+    def __gt__(self: Scalar, other: Column) -> ir.BooleanColumn: ...
+    @overload
+    def __gt__(self: Column, other: Scalar) -> ir.BooleanColumn: ...
+    @overload
+    def __gt__(self: Column, other: Column) -> ir.BooleanColumn: ...
     def __gt__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.Greater, self, other)
 
+    @overload
+    def __le__(self: Scalar, other: Scalar) -> ir.BooleanScalar: ...
+    @overload
+    def __le__(self: Scalar, other: Column) -> ir.BooleanColumn: ...
+    @overload
+    def __le__(self: Column, other: Scalar) -> ir.BooleanColumn: ...
+    @overload
+    def __le__(self: Column, other: Column) -> ir.BooleanColumn: ...
     def __le__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.LessEqual, self, other)
 
+    @overload
+    def __lt__(self: Scalar, other: Scalar) -> ir.BooleanScalar: ...
+    @overload
+    def __lt__(self: Scalar, other: Column) -> ir.BooleanColumn: ...
+    @overload
+    def __lt__(self: Column, other: Scalar) -> ir.BooleanColumn: ...
+    @overload
+    def __lt__(self: Column, other: Column) -> ir.BooleanColumn: ...
     def __lt__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.Less, self, other)
 
@@ -1484,7 +1552,7 @@ class Scalar(Value):
 
         return PolarsData.convert_scalar(df, self.type())
 
-    def as_scalar(self):
+    def as_scalar(self) -> Self:
         """Inform ibis that the expression should be treated as a scalar.
 
         If the expression is a literal, it will be returned as is. If it depends
@@ -2461,7 +2529,7 @@ class Column(Value, FixedTextJupyterMixin):
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
-    ) -> Value:
+    ) -> Scalar:
         """Return the first value of a column.
 
         Parameters
@@ -2515,7 +2583,7 @@ class Column(Value, FixedTextJupyterMixin):
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
-    ) -> Value:
+    ) -> Scalar:
         """Return the last value of a column.
 
         Parameters
@@ -2627,7 +2695,7 @@ class Column(Value, FixedTextJupyterMixin):
         """
         return ibis.dense_rank().over(order_by=self)
 
-    def percent_rank(self) -> Column:
+    def percent_rank(self) -> ir.IntegerColumn:
         """Return the relative rank of the values in the column.
 
         Examples
@@ -2651,7 +2719,7 @@ class Column(Value, FixedTextJupyterMixin):
         """
         return ibis.percent_rank().over(order_by=self)
 
-    def cume_dist(self) -> Column:
+    def cume_dist(self) -> ir.FloatingColumn:
         """Return the cumulative distribution over a window.
 
         Examples
@@ -2995,7 +3063,7 @@ class NullColumn(Column, NullValue):
 
 @public
 @deferrable
-def null(type: dt.DataType | str | None = None, /) -> Value:
+def null(type: dt.DataType | str | None = None, /) -> Scalar:
     """Create a NULL scalar.
 
     `NULL`s with an unspecified type are castable and comparable to values,
