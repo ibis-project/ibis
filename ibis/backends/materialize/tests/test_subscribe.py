@@ -5,7 +5,48 @@ Tests cover streaming query functionality via SUBSCRIBE command.
 
 from __future__ import annotations
 
+import contextlib
+
 import pytest
+
+
+@pytest.fixture(scope="module")
+def auction_source(con):
+    """Module-level AUCTION source for subscribe tests.
+
+    AUCTION creates subsources with fixed names (bids, auctions, accounts, etc.),
+    so we create one source for all tests in this module to avoid conflicts.
+    """
+    import time
+
+    source_name = "test_subscribe_auction"
+
+    # Drop any existing auction subsources (they're created as sources)
+    for subsource in ["accounts", "auctions", "bids", "organizations", "users"]:
+        with contextlib.suppress(Exception):
+            con.raw_sql(f"DROP SOURCE IF EXISTS {subsource} CASCADE")
+
+    # Drop the main source if it exists
+    with contextlib.suppress(Exception):
+        con.drop_source(source_name, cascade=True, force=True)
+
+    # Create the source
+    con.create_source(
+        source_name, connector="AUCTION", properties={"TICK INTERVAL": "100ms"}
+    )
+
+    # Wait for initial data
+    time.sleep(2.0)
+
+    yield source_name
+
+    # Cleanup after all tests - drop subsources first
+    for subsource in ["accounts", "auctions", "bids", "organizations", "users"]:
+        with contextlib.suppress(Exception):
+            con.raw_sql(f"DROP SOURCE IF EXISTS {subsource} CASCADE")
+
+    with contextlib.suppress(Exception):
+        con.drop_source(source_name, cascade=True, force=True)
 
 
 class TestSubscribe:
@@ -14,32 +55,24 @@ class TestSubscribe:
     Based on the Materialize quickstart guide.
     """
 
-    def test_subscribe_quickstart_workflow(self, con):
+    def test_subscribe_quickstart_workflow(self, con, auction_source):
         """Test SUBSCRIBE with load generator (simplified quickstart example).
 
         This test demonstrates the Materialize streaming workflow:
-        1. Create a COUNTER source (generates sequential data)
+        1. Use an AUCTION source (generates auction data)
         2. Create a materialized view over the source
         3. Subscribe to see real-time updates
         """
         from ibis.util import gen_name
 
-        source_name = gen_name("counter_source")
-        mv_name = gen_name("counter_sum")
+        _ = auction_source  # Fixture needed to create auction source
+        mv_name = gen_name("auction_sum")
 
-        # Create COUNTER source (simple incrementing counter)
-        con.create_source(
-            source_name,
-            connector="COUNTER",
-        )
-
-        # Create a materialized view that computes over the source
-        # Get the max counter value
-        counter_table = con.table(source_name)
-        max_counter_expr = counter_table.aggregate(
-            max_value=counter_table["counter"].max()
-        )
-        con.create_materialized_view(mv_name, max_counter_expr)
+        # Create a materialized view that computes over the bids subsource
+        # Get the max bid amount
+        bids_table = con.table("bids")
+        max_bid_expr = bids_table.aggregate(max_value=bids_table["amount"].max())
+        con.create_materialized_view(mv_name, max_bid_expr)
 
         try:
             # Subscribe to the materialized view
@@ -68,26 +101,20 @@ class TestSubscribe:
 
         finally:
             con.drop_materialized_view(mv_name, force=True)
-            con.drop_source(source_name, force=True)
 
-    def test_subscribe_arrow_format(self, con):
+    def test_subscribe_arrow_format(self, con, auction_source):
         """Test SUBSCRIBE with Arrow format output."""
         import pyarrow as pa
 
         from ibis.util import gen_name
 
-        source_name = gen_name("counter_source")
-        mv_name = gen_name("counter_sum")
-
-        # Create COUNTER source
-        con.create_source(source_name, connector="COUNTER")
+        _ = auction_source  # Fixture needed to create auction source
+        mv_name = gen_name("auction_sum")
 
         # Create materialized view
-        counter_table = con.table(source_name)
-        max_counter_expr = counter_table.aggregate(
-            max_value=counter_table["counter"].max()
-        )
-        con.create_materialized_view(mv_name, max_counter_expr)
+        bids_table = con.table("bids")
+        max_bid_expr = bids_table.aggregate(max_value=bids_table["amount"].max())
+        con.create_materialized_view(mv_name, max_bid_expr)
 
         try:
             # Subscribe with Arrow format
@@ -118,26 +145,20 @@ class TestSubscribe:
 
         finally:
             con.drop_materialized_view(mv_name, force=True)
-            con.drop_source(source_name, force=True)
 
-    def test_subscribe_polars_format(self, con):
+    def test_subscribe_polars_format(self, con, auction_source):
         """Test SUBSCRIBE with Polars format output."""
         pl = pytest.importorskip("polars")
 
         from ibis.util import gen_name
 
-        source_name = gen_name("counter_source")
-        mv_name = gen_name("counter_sum")
-
-        # Create COUNTER source
-        con.create_source(source_name, connector="COUNTER")
+        _ = auction_source  # Fixture needed to create auction source
+        mv_name = gen_name("auction_sum")
 
         # Create materialized view
-        counter_table = con.table(source_name)
-        max_counter_expr = counter_table.aggregate(
-            max_value=counter_table["counter"].max()
-        )
-        con.create_materialized_view(mv_name, max_counter_expr)
+        bids_table = con.table("bids")
+        max_bid_expr = bids_table.aggregate(max_value=bids_table["amount"].max())
+        con.create_materialized_view(mv_name, max_bid_expr)
 
         try:
             # Subscribe with Polars format
@@ -172,4 +193,3 @@ class TestSubscribe:
 
         finally:
             con.drop_materialized_view(mv_name, force=True)
-            con.drop_source(source_name, force=True)
