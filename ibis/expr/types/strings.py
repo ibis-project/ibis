@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import operator
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 from public import public
 
@@ -13,12 +13,20 @@ from ibis.expr.types.generic import Column, Scalar, Value, _binop
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
+    from typing_extensions import Self
+
     import ibis.expr.types as ir
 
 
 @public
 class StringValue(Value):
-    def __getitem__(self, key: slice | int | ir.IntegerScalar) -> StringValue:
+    @overload
+    def __getitem__(
+        self: ir.StringScalar, key: slice | int | ir.IntegerScalar
+    ) -> ir.StringScalar: ...
+    @overload
+    def __getitem__(self, key: slice | int | ir.IntegerValue) -> ir.StringColumn: ...
+    def __getitem__(self, key: slice | int | ir.IntegerValue) -> StringValue:
         """Index or slice a string expression.
 
         Parameters
@@ -109,6 +117,10 @@ class StringValue(Value):
             return self.substr(key, 1)
         raise NotImplementedError(f"string __getitem__[{key.__class__.__name__}]")
 
+    @overload
+    def length(self: ir.StringScalar) -> ir.IntegerScalar: ...
+    @overload
+    def length(self: ir.StringColumn) -> ir.IntegerColumn: ...
     def length(self) -> ir.IntegerValue:
         """Compute the length of a string.
 
@@ -135,7 +147,7 @@ class StringValue(Value):
         """
         return ops.StringLength(self).to_expr()
 
-    def lower(self) -> StringValue:
+    def lower(self) -> Self:
         """Convert string to all lowercase.
 
         Returns
@@ -171,7 +183,7 @@ class StringValue(Value):
         """
         return ops.Lowercase(self).to_expr()
 
-    def upper(self) -> StringValue:
+    def upper(self) -> Self:
         """Convert string to all uppercase.
 
         Returns
@@ -207,7 +219,7 @@ class StringValue(Value):
         """
         return ops.Uppercase(self).to_expr()
 
-    def reverse(self) -> StringValue:
+    def reverse(self) -> Self:
         """Reverse the characters of a string.
 
         Returns
@@ -243,6 +255,10 @@ class StringValue(Value):
         """
         return ops.Reverse(self).to_expr()
 
+    @overload
+    def ascii_str(self: ir.StringScalar) -> ir.IntegerScalar: ...
+    @overload
+    def ascii_str(self: ir.StringColumn) -> ir.IntegerColumn: ...
     def ascii_str(self) -> ir.IntegerValue:
         """Return the numeric ASCII code of the first character of a string.
 
@@ -269,7 +285,7 @@ class StringValue(Value):
         """
         return ops.StringAscii(self).to_expr()
 
-    def strip(self) -> StringValue:
+    def strip(self) -> Self:
         r"""Remove whitespace from left and right sides of a string.
 
         Returns
@@ -305,7 +321,7 @@ class StringValue(Value):
         """
         return ops.Strip(self).to_expr()
 
-    def lstrip(self) -> StringValue:
+    def lstrip(self) -> Self:
         r"""Remove whitespace from the left side of string.
 
         Returns
@@ -341,7 +357,7 @@ class StringValue(Value):
         """
         return ops.LStrip(self).to_expr()
 
-    def rstrip(self) -> StringValue:
+    def rstrip(self) -> Self:
         r"""Remove whitespace from the right side of string.
 
         Returns
@@ -377,7 +393,7 @@ class StringValue(Value):
         """
         return ops.RStrip(self).to_expr()
 
-    def capitalize(self) -> StringValue:
+    def capitalize(self) -> Self:
         """Uppercase the first letter, lowercase the rest.
 
         This API matches the semantics of the Python [](`str.capitalize`)
@@ -410,6 +426,14 @@ class StringValue(Value):
     def __contains__(self, *_: Any) -> bool:
         raise TypeError("Use string_expr.contains(arg)")
 
+    @overload
+    def contains(
+        self: StringScalar, substr: str | StringScalar
+    ) -> ir.BooleanScalar: ...
+    @overload
+    def contains(self: StringScalar, substr: StringColumn) -> ir.BooleanColumn: ...
+    @overload
+    def contains(self: StringColumn, substr: str | StringValue) -> ir.BooleanColumn: ...
     def contains(self, substr: str | StringValue, /) -> ir.BooleanValue:
         """Return whether the expression contains `substr`.
 
@@ -441,6 +465,18 @@ class StringValue(Value):
         """
         return ops.StringContains(self, substr).to_expr()
 
+    @overload
+    def hashbytes(
+        self: StringScalar,
+        how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256",
+        /,
+    ) -> ir.BinaryScalar: ...
+    @overload
+    def hashbytes(
+        self: StringColumn,
+        how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256",
+        /,
+    ) -> ir.BinaryColumn: ...
     def hashbytes(
         self, how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256", /
     ) -> ir.BinaryValue:
@@ -466,7 +502,7 @@ class StringValue(Value):
 
     def hexdigest(
         self, how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256", /
-    ) -> ir.StringValue:
+    ) -> Self:
         """Return the hash digest of the input as a hex encoded string.
 
         Parameters
@@ -497,6 +533,18 @@ class StringValue(Value):
         """
         return ops.HexDigest(self, how.lower()).to_expr()
 
+    @overload
+    def substr(
+        self: StringScalar,
+        start: int | ir.IntegerScalar,
+        length: int | ir.IntegerScalar | None = None,
+    ) -> StringScalar: ...
+    @overload
+    def substr(
+        self,
+        start: int | ir.IntegerValue,
+        length: int | ir.IntegerValue | None = None,
+    ) -> StringColumn: ...
     def substr(
         self, start: int | ir.IntegerValue, length: int | ir.IntegerValue | None = None
     ) -> StringValue:
@@ -533,6 +581,12 @@ class StringValue(Value):
         """
         return ops.Substring(self, start, length).to_expr()
 
+    @overload
+    def left(self: StringScalar, nchars: int | ir.IntegerScalar, /) -> StringScalar: ...
+    @overload
+    def left(self: StringScalar, nchars: ir.IntegerColumn, /) -> StringColumn: ...
+    @overload
+    def left(self: StringColumn, nchars: int | ir.IntegerValue, /) -> StringColumn: ...
     def left(self, nchars: int | ir.IntegerValue, /) -> StringValue:
         """Return the `nchars` left-most characters.
 
@@ -564,6 +618,14 @@ class StringValue(Value):
         """
         return self.substr(0, length=nchars)
 
+    @overload
+    def right(
+        self: StringScalar, nchars: int | ir.IntegerScalar, /
+    ) -> StringScalar: ...
+    @overload
+    def right(self: StringScalar, nchars: ir.IntegerColumn, /) -> StringColumn: ...
+    @overload
+    def right(self: StringColumn, nchars: int | ir.IntegerValue, /) -> StringColumn: ...
     def right(self, nchars: int | ir.IntegerValue, /) -> StringValue:
         """Return up to `nchars` from the end of each string.
 
@@ -595,6 +657,12 @@ class StringValue(Value):
         """
         return ops.StrRight(self, nchars).to_expr()
 
+    @overload
+    def repeat(self: StringScalar, n: int | ir.IntegerScalar, /) -> StringScalar: ...
+    @overload
+    def repeat(self: StringScalar, n: ir.IntegerColumn, /) -> StringColumn: ...
+    @overload
+    def repeat(self: StringColumn, n: int | ir.IntegerValue, /) -> StringColumn: ...
     def repeat(self, n: int | ir.IntegerValue, /) -> StringValue:
         """Repeat a string `n` times.
 
@@ -626,7 +694,17 @@ class StringValue(Value):
         """
         return ops.Repeat(self, n).to_expr()
 
-    def translate(self, from_str: StringValue, to_str: StringValue) -> StringValue:
+    @overload
+    def translate(
+        self: StringScalar, from_str: str | StringScalar, to_str: str | StringScalar
+    ) -> StringScalar: ...
+    @overload
+    def translate(
+        self, from_str: str | StringValue, to_str: str | StringValue
+    ) -> StringColumn: ...
+    def translate(
+        self, from_str: str | StringValue, to_str: str | StringValue
+    ) -> StringValue:
         """Replace `from_str` characters in `self` characters in `to_str`.
 
         To avoid unexpected behavior, `from_str` should be shorter than
@@ -857,6 +935,12 @@ class StringValue(Value):
             cls = ops.StringJoin
         return cls(strings, sep=self).to_expr()
 
+    @overload
+    def startswith(
+        self: StringScalar, start: str | StringScalar, /
+    ) -> ir.BooleanScalar: ...
+    @overload
+    def startswith(self, start: str | StringValue, /) -> ir.BooleanColumn: ...
     def startswith(self, start: str | StringValue, /) -> ir.BooleanValue:
         """Determine whether `self` starts with `start`.
 
@@ -887,6 +971,12 @@ class StringValue(Value):
         """
         return ops.StartsWith(self, start).to_expr()
 
+    @overload
+    def endswith(
+        self: StringScalar, end: str | StringScalar, /
+    ) -> ir.BooleanScalar: ...
+    @overload
+    def endswith(self, end: str | StringValue, /) -> ir.BooleanColumn: ...
     def endswith(self, end: str | StringValue, /) -> ir.BooleanValue:
         """Determine if `self` ends with `end`.
 
@@ -1259,6 +1349,10 @@ class StringValue(Value):
         """
         return ops.StringReplace(self, pattern, replacement).to_expr()
 
+    @overload
+    def as_timestamp(self: StringScalar, format_str: str, /) -> ir.TimestampScalar: ...
+    @overload
+    def as_timestamp(self: StringColumn, format_str: str, /) -> ir.TimestampColumn: ...
     def as_timestamp(self, format_str: str, /) -> ir.TimestampValue:
         """Parse a string and return a timestamp.
 
@@ -1288,6 +1382,10 @@ class StringValue(Value):
         """
         return ops.StringToTimestamp(self, format_str).to_expr()
 
+    @overload
+    def as_date(self: StringScalar, format_str: str, /) -> ir.DateScalar: ...
+    @overload
+    def as_date(self: StringColumn, format_str: str, /) -> ir.DateColumn: ...
     def as_date(self, format_str: str, /) -> ir.DateValue:
         """Parse a string and return a date.
 
@@ -1317,6 +1415,10 @@ class StringValue(Value):
         """
         return ops.StringToDate(self, format_str).to_expr()
 
+    @overload
+    def as_time(self: StringScalar, format_str: str, /) -> ir.TimeScalar: ...
+    @overload
+    def as_time(self: StringColumn, format_str: str, /) -> ir.TimeColumn: ...
     def as_time(self, format_str: str, /) -> ir.TimeValue:
         """Parse a string and return a time.
 
@@ -1346,7 +1448,7 @@ class StringValue(Value):
         """
         return ops.StringToTime(self, format_str).to_expr()
 
-    def protocol(self):
+    def protocol(self) -> Self:
         """Parse a URL and extract protocol.
 
         Examples
@@ -1362,7 +1464,7 @@ class StringValue(Value):
         """
         return ops.ExtractProtocol(self).to_expr()
 
-    def authority(self):
+    def authority(self) -> Self:
         """Parse a URL and extract authority.
 
         Examples
@@ -1378,7 +1480,7 @@ class StringValue(Value):
         """
         return ops.ExtractAuthority(self).to_expr()
 
-    def userinfo(self):
+    def userinfo(self) -> Self:
         """Parse a URL and extract user info.
 
         Examples
@@ -1394,7 +1496,7 @@ class StringValue(Value):
         """
         return ops.ExtractUserInfo(self).to_expr()
 
-    def host(self):
+    def host(self) -> Self:
         """Parse a URL and extract host.
 
         Examples
@@ -1410,7 +1512,7 @@ class StringValue(Value):
         """
         return ops.ExtractHost(self).to_expr()
 
-    def file(self):
+    def file(self) -> Self:
         """Parse a URL and extract file.
 
         Examples
@@ -1428,7 +1530,7 @@ class StringValue(Value):
         """
         return ops.ExtractFile(self).to_expr()
 
-    def path(self):
+    def path(self) -> Self:
         """Parse a URL and extract path.
 
         Examples
@@ -1446,6 +1548,12 @@ class StringValue(Value):
         """
         return ops.ExtractPath(self).to_expr()
 
+    @overload
+    def query(self: StringScalar, key: str | StringScalar, /) -> StringScalar: ...
+    @overload
+    def query(self, key: None, /) -> Self: ...
+    @overload
+    def query(self, key: str | StringValue, /) -> StringColumn: ...
     def query(self, key: str | StringValue | None = None, /):
         """Parse a URL and returns query string or query string parameter.
 
@@ -1473,7 +1581,7 @@ class StringValue(Value):
         """
         return ops.ExtractQuery(self, key).to_expr()
 
-    def fragment(self):
+    def fragment(self) -> Self:
         """Parse a URL and extract fragment identifier.
 
         Examples
@@ -1579,6 +1687,10 @@ class StringValue(Value):
         """
         return ops.StringConcat((self, other, *args)).to_expr()
 
+    @overload
+    def __add__(self: StringScalar, other: str | StringScalar) -> StringScalar: ...
+    @overload
+    def __add__(self, other: str | StringValue) -> StringColumn: ...
     def __add__(self, other: str | StringValue) -> StringValue:
         """Concatenate strings.
 
@@ -1630,6 +1742,10 @@ class StringValue(Value):
         """
         return self.concat(other)
 
+    @overload
+    def __radd__(self: StringScalar, other: str | StringScalar) -> StringScalar: ...
+    @overload
+    def __radd__(self, other: str | StringValue) -> StringColumn: ...
     def __radd__(self, other: str | StringValue) -> StringValue:
         """Concatenate strings.
 
@@ -1690,12 +1806,22 @@ class StringValue(Value):
         """
         return ops.BaseConvert(self, from_base, to_base).to_expr()
 
+    @overload
+    def __mul__(self: StringScalar, n: int | ir.IntegerScalar) -> StringScalar: ...
+    @overload
+    def __mul__(self, n: int | ir.IntegerValue) -> StringColumn: ...
     def __mul__(self, n: int | ir.IntegerValue) -> StringValue:
         return _binop(ops.Repeat, self, n)
 
     __rmul__ = __mul__
 
-    def levenshtein(self, other: StringValue, /) -> ir.IntegerValue:
+    @overload
+    def levenshtein(
+        self: StringScalar, other: str | StringScalar, /
+    ) -> ir.IntegerScalar: ...
+    @overload
+    def levenshtein(self, other: str | StringValue, /) -> ir.IntegerColumn: ...
+    def levenshtein(self, other: str | StringValue, /) -> ir.IntegerValue:
         """Return the Levenshtein distance between two strings.
 
         Parameters
@@ -1728,5 +1854,5 @@ class StringScalar(Scalar, StringValue):
 
 @public
 class StringColumn(Column, StringValue):
-    def __getitem__(self, key: slice | int | ir.IntegerScalar) -> StringColumn:
+    def __getitem__(self, key: slice | int | ir.IntegerValue) -> StringColumn:
         return StringValue.__getitem__(self, key)
