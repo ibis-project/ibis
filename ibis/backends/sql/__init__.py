@@ -118,7 +118,17 @@ class SQLBackend(BaseBackend):
             Compiled expression
         """
         query = self.compiler.to_sqlglot(expr, limit=limit, params=params)
-        sql = query.sql(dialect=self.dialect, pretty=pretty, copy=False)
+        try:
+            sql = query.sql(
+                dialect=self.dialect,
+                pretty=pretty,
+                copy=False,
+                unsupported_level=sg.ErrorLevel.RAISE,
+            )
+        except sg.UnsupportedError as e:
+            raise exc.UnsupportedOperationError(
+                f"Operation not supported in {self.name} backend: {e}"
+            ) from e
         self._log(sql)
         return sql
 

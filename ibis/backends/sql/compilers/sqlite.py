@@ -249,20 +249,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         func = "_ibis_last_include_null" if include_null else "_ibis_last"
         return self.agg[func](arg, where=where, order_by=order_by)
 
-    def visit_FirstValue(self, op, *, arg, include_null):
-        if not include_null:
-            raise com.UnsupportedOperationError(
-                "SQLite does not support `include_null=False` for FirstValue"
-            )
-        return self.f.first_value(arg)
-
-    def visit_LastValue(self, op, *, arg, include_null):
-        if not include_null:
-            raise com.UnsupportedOperationError(
-                "SQLite does not support `include_null=False` for LastValue"
-            )
-        return self.f.last_value(arg)
-
     def visit_Variance(self, op, *, arg, how, where):
         return self.agg[f"_ibis_var_{op.how}"](arg, where=where)
 

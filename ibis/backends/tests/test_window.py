@@ -1294,7 +1294,12 @@ mark_sqlite_no_collect = pytest.mark.never(
     reason="sqlite doesn't have array types",
 )
 mark_no_ignore_nulls = pytest.mark.never(
-    ["mysql", "postgres", "sqlite"],
+    [
+        "mysql",
+        "postgres",
+        "sqlite",
+    ],
+    raises=com.UnsupportedOperationError,
     reason="don't support the `IGNORE NULLS` option for first_value() and last_value()",
 )
 
