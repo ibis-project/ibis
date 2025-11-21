@@ -670,19 +670,26 @@ def test_upsert_from_dataframe(
 
 
 @NO_MERGE_SUPPORT
-@pytest.mark.parametrize("with_order_by", [True, False])
+@pytest.mark.parametrize(
+    "with_order_by",
+    [
+        pytest.param(
+            True,
+            marks=pytest.mark.notyet(
+                ["mssql"],
+                "MSSQL doesn't allow ORDER BY in subqueries, unless "
+                "TOP, OFFSET or FOR XML is also specified",
+            ),
+        ),
+        False,
+    ],
+)
 def test_upsert_from_expr(
     backend, con, employee_data_1_temp_table, employee_data_3_temp_table, with_order_by
 ):
     temporary = con.table(employee_data_1_temp_table)
     from_table = con.table(employee_data_3_temp_table)
     if with_order_by:
-        if backend.name() == "mssql":
-            pytest.xfail(
-                "MSSQL doesn't allow ORDER BY in subqueries, unless "
-                "TOP, OFFSET or FOR XML is also specified"
-            )
-
         from_table = from_table.filter(ibis._.salary > 0).order_by("first_name")
 
     df1 = temporary.execute().set_index("first_name")
