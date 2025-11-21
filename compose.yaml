@@ -565,7 +565,7 @@ services:
     environment:
       MZ_LOG: info
       MZ_TELEMETRY: "false"
-      MZ_SYSTEM_PARAMETER_DEFAULT: "max_tables=1000;enable_load_generator_counter=true;enable_create_table_from_source=true"
+      MZ_SYSTEM_PARAMETER_DEFAULT: "max_tables=1000"
     healthcheck:
       test: ["CMD", "curl", "-f", "localhost:6878/api/readyz"]
       interval: 1s

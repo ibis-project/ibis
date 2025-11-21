@@ -731,7 +731,7 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         """Create a source in Materialize.
 
         This method supports creating sources from various systems including:
-        - Load generators (AUCTION, TPCH, MARKETING, KEY VALUE, DATUMS)
+        - Load generators (AUCTION, TPCH, MARKETING)
         - Kafka/Redpanda message brokers
         - PostgreSQL, MySQL, SQL Server (CDC)
         - Webhooks
