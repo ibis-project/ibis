@@ -644,18 +644,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
             If `False`, an exception is raised if the view does not exist.
         cascade
             If `True`, also drop dependent objects (views, indexes, etc.).
-
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.drop_materialized_view("daily_orders")  # doctest: +SKIP
-        >>> con.drop_materialized_view(
-        ...     "old_view", force=True
-        ... )  # Won't error if missing  # doctest: +SKIP
-        >>> con.drop_materialized_view(
-        ...     "old_view", force=True, cascade=True
-        ... )  # Drop with dependents  # doctest: +SKIP
         """
         # Note: sqlglot's 'catalog' parameter maps to Materialize's database
         # and sqlglot's 'db' parameter maps to Materialize's schema
@@ -964,12 +952,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         cascade
             If `True`, also drops dependent objects (views, materialized views).
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.drop_source("my_counter")  # doctest: +SKIP
-        >>> con.drop_source("old_source", force=True, cascade=True)  # doctest: +SKIP
         """
         drop_stmt_parts = ["DROP SOURCE"]
 
@@ -1107,76 +1089,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
 
             **Important**: Row updates appear as a *delete* (-1) followed by an
             *insert* (+1). Filter for `mz_diff == 1` to see only current/new rows.
-
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-
-        **Simplest example** - Stream all changes:
-
-        >>> for batch in con.subscribe("orders"):  # doctest: +SKIP
-        ...     print(f"Received {len(batch)} changes")
-        ...     print(batch)
-
-        **Filter for inserts only** (ignore deletes and old update versions):
-
-        >>> for batch in con.subscribe("orders"):  # doctest: +SKIP
-        ...     new_rows = batch[batch["mz_diff"] == 1]
-        ...     for _, row in new_rows.iterrows():
-        ...         print(f"New order: {row['order_id']}")
-
-        **Subscribe to a live query** (not just a table name):
-
-        >>> high_value = con.table("orders").filter(_.amount > 10000)  # doctest: +SKIP
-        >>> for batch in con.subscribe(high_value):  # doctest: +SKIP
-        ...     send_alert(batch)
-
-        **Stream only new changes** (skip initial snapshot):
-
-        >>> for batch in con.subscribe("events", snapshot=False):  # doctest: +SKIP
-        ...     # Only see changes after subscription starts
-        ...     process_new_events(batch)
-
-        **Time-bounded streaming** (useful for testing):
-
-        >>> for batch in con.subscribe("sensors", up_to=end_timestamp):  # doctest: +SKIP
-        ...     analyze_batch(batch)
-
-        **Using UPSERT envelope** (for syncing to databases):
-
-        >>> for batch in con.subscribe("customers", envelope="UPSERT"):  # doctest: +SKIP
-        ...     # batch has 'before' and 'after' columns
-        ...     sync_to_warehouse(batch)
-
-        **Using Arrow format** (efficient, lower memory overhead):
-
-        >>> for batch in con.subscribe("events", format="arrow"):  # doctest: +SKIP
-        ...     # batch is pyarrow.RecordBatch
-        ...     # Better for high-throughput or memory-constrained scenarios
-        ...     process_arrow_batch(batch)
-
-        **Using Polars format** (fast, modern DataFrame):
-
-        >>> for batch in con.subscribe("logs", format="polars"):  # doctest: +SKIP
-        ...     # batch is polars.DataFrame
-        ...     # Fast filtering: batch.filter(pl.col("mz_diff") == 1)
-        ...     analyze_with_polars(batch)
-
-        Notes
-        -----
-        - The stream runs indefinitely unless `up_to` is specified
-        - Use Ctrl+C or `break` to stop streaming
-        - SUBSCRIBE keeps a connection open; use it in a try/finally block
-        - Changes are ordered by mz_timestamp within each batch
-        - Requires SELECT privilege on the relation
-        - See Materialize SUBSCRIBE docs for more details on envelopes and
-          progress messages
-
-        See Also
-        --------
-        create_materialized_view : Create views that update incrementally
-        create_source : Ingest streaming data from external systems
 
         """
         # Validate format parameter
@@ -1341,34 +1253,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         schema
             Name of the schema where the source exists.
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-
-        Add subsources with default names:
-
-        >>> con.alter_source("pg_source", add_subsources=["orders", "customers"])  # doctest: +SKIP
-
-        Add subsources with custom names:
-
-        >>> con.alter_source(
-        ...     "pg_source", add_subsources=[("orders", "orders_subsource")]
-        ... )  # doctest: +SKIP
-
-        Add multiple subsources with mixed naming:
-
-        >>> con.alter_source(
-        ...     "mysql_source", add_subsources=["table_a", ("table_b", "b")]
-        ... )  # doctest: +SKIP
-
-        Notes
-        -----
-        - Only works with PostgreSQL and MySQL sources.
-        - Cannot drop subsources (except the progress subsource).
-        - Tables must exist in the upstream database.
-        - Requires ownership of the source.
-
         """
         if not add_subsources:
             raise ValueError("Must specify add_subsources")
@@ -1446,35 +1330,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         schema
             Name of the schema where the sink will be created.
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-
-        >>> # Create sink from materialized view
-        >>> con.create_sink(  # doctest: +SKIP
-        ...     "kafka_sink",
-        ...     sink_from="my_materialized_view",
-        ...     connector="KAFKA",
-        ...     connection="kafka_conn",
-        ...     properties={"TOPIC": "events"},
-        ...     format_spec={"FORMAT": "JSON"},
-        ...     envelope="UPSERT",
-        ...     key=["id"],
-        ... )
-
-        >>> # Create sink from expression (RisingWave style)
-        >>> expr = con.table("orders").filter(orders.status == "complete")  # doctest: +SKIP
-        >>> con.create_sink(  # doctest: +SKIP
-        ...     "completed_orders_sink",
-        ...     obj=expr,
-        ...     connector="KAFKA",
-        ...     connection="kafka_conn",
-        ...     properties={"TOPIC": "completed_orders"},
-        ...     format_spec={"FORMAT": "JSON"},
-        ...     envelope="UPSERT",
-        ...     key=["order_id"],
-        ... )
         """
         # Validate parameters
         if sink_from is None and obj is None:
@@ -1560,11 +1415,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         force
             If `False`, an exception is raised if the sink does not exist.
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.drop_sink("my_sink", force=True)  # doctest: +SKIP
         """
         quoted = self.compiler.quoted
         # Note: sqlglot's 'catalog' parameter maps to Materialize's database
@@ -1601,14 +1451,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         list[str]
             List of sink names
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.list_sinks()  # doctest: +SKIP
-        ['kafka_sink', 'orders_sink']
-        >>> con.list_sinks(like="kafka%")  # doctest: +SKIP
-        ['kafka_sink']
         """
         query = """
         SELECT s.name
@@ -1656,29 +1498,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
             Name of the database (catalog) where the sink exists.
         schema
             Name of the schema where the sink exists.
-
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-
-        Cut over to a new materialized view:
-
-        >>> con.alter_sink("orders_sink", set_from="orders_v2")  # doctest: +SKIP
-
-        Cut over to a new table:
-
-        >>> con.alter_sink("avro_sink", set_from="matview_new")  # doctest: +SKIP
-
-        Notes
-        -----
-        - The new relation must have a compatible schema
-        - For Avro sinks, the schema must be compatible with previously published
-          schema
-        - Materialize only emits updates occurring after the cutover timestamp
-        - Requires SELECT privileges on the new relation
-        - Consider potential issues with missing keys or stale values during
-          cutover
 
         """
         quoted = self.compiler.quoted
@@ -1729,46 +1548,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
             Whether to validate the connection (default: True).
             Set to False to create without validation.
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-
-        >>> # Kafka connection with SASL authentication
-        >>> con.create_connection(  # doctest: +SKIP
-        ...     "kafka_conn",
-        ...     connection_type="KAFKA",
-        ...     properties={
-        ...         "BROKER": "localhost:9092",
-        ...         "SASL MECHANISMS": "PLAIN",
-        ...         "SASL USERNAME": "user",
-        ...         "SASL PASSWORD": SECRET("kafka_password"),
-        ...     },
-        ... )
-
-        >>> # PostgreSQL CDC connection
-        >>> con.create_connection(  # doctest: +SKIP
-        ...     "pg_conn",
-        ...     connection_type="POSTGRES",
-        ...     properties={
-        ...         "HOST": "localhost",
-        ...         "PORT": "5432",
-        ...         "DATABASE": "mydb",
-        ...         "USER": "postgres",
-        ...         "PASSWORD": SECRET("pg_password"),
-        ...     },
-        ... )
-
-        >>> # AWS connection for S3 sources
-        >>> con.create_connection(  # doctest: +SKIP
-        ...     "aws_conn",
-        ...     connection_type="AWS",
-        ...     properties={
-        ...         "REGION": "us-east-1",
-        ...         "ACCESS KEY ID": SECRET("aws_key"),
-        ...         "SECRET ACCESS KEY": SECRET("aws_secret"),
-        ...     },
-        ... )
         """
         quoted = self.compiler.quoted
         # Note: sqlglot's 'catalog' parameter maps to Materialize's database
@@ -1833,12 +1612,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         cascade
             If `True`, drop dependent objects (sources, sinks) as well.
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.drop_connection("kafka_conn", force=True)  # doctest: +SKIP
-        >>> con.drop_connection("pg_conn", cascade=True)  # doctest: +SKIP
         """
         quoted = self.compiler.quoted
         # Note: sqlglot's 'catalog' parameter maps to Materialize's database
@@ -1876,14 +1649,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         list[str]
             List of connection names
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.list_connections()  # doctest: +SKIP
-        ['kafka_conn', 'pg_conn', 'aws_conn']
-        >>> con.list_connections(like="kafka%")  # doctest: +SKIP
-        ['kafka_conn']
         """
         query = """
         SELECT c.name
@@ -1940,31 +1705,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
             Name of the database (catalog) where the connection exists.
         schema
             Name of the schema where the connection exists.
-
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-
-        Update connection broker:
-
-        >>> con.alter_connection(
-        ...     "kafka_conn", set_options={"BROKER": "new-broker:9092"}
-        ... )  # doctest: +SKIP
-
-        Reset connection port to default:
-
-        >>> con.alter_connection("pg_conn", reset_options=["PORT"])  # doctest: +SKIP
-
-        Rotate SSH tunnel keys:
-
-        >>> con.alter_connection("ssh_conn", rotate_keys=True)  # doctest: +SKIP
-
-        Notes
-        -----
-        - Changes are applied atomically
-        - Cannot modify the same parameter via both SET and RESET
-        - For SSH key rotation, update bastion server keys manually after rotation
 
         """
         if not (set_options or reset_options or rotate_keys):
@@ -2031,12 +1771,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         schema
             Name of the schema where the secret will be created.
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.create_secret("kafka_password", "my_secret_password")  # doctest: +SKIP
-        >>> con.create_secret("pg_password", "postgres_pwd")  # doctest: +SKIP
         """
         quoted = self.compiler.quoted
         # Note: sqlglot's 'catalog' parameter maps to Materialize's database
@@ -2072,11 +1806,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         force
             If `False`, an exception is raised if the secret does not exist.
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.drop_secret("kafka_password", force=True)  # doctest: +SKIP
         """
         quoted = self.compiler.quoted
         # Note: sqlglot's 'catalog' parameter maps to Materialize's database
@@ -2113,14 +1842,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         list[str]
             List of secret names
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.list_secrets()  # doctest: +SKIP
-        ['kafka_password', 'pg_password', 'aws_secret']
-        >>> con.list_secrets(like="kafka%")  # doctest: +SKIP
-        ['kafka_password']
         """
         query = """
         SELECT s.name
@@ -2166,26 +1887,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
             Name of the database (catalog) where the secret exists.
         schema
             Name of the schema where the secret exists.
-
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-
-        Update a secret value:
-
-        >>> con.alter_secret("kafka_password", "new_password123")  # doctest: +SKIP
-
-        Update with base64-encoded value:
-
-        >>> con.alter_secret("ssl_cert", "decode('c2VjcmV0Cg==', 'base64')")  # doctest: +SKIP
-
-        Notes
-        -----
-        - Existing sources/sinks may cache the old value for several weeks
-        - To force immediate refresh, restart cluster replicas:
-          - Managed: ALTER CLUSTER SET (REPLICATION FACTOR = 0) then back to 1
-          - Unmanaged: DROP and recreate replicas
 
         """
         quoted = self.compiler.quoted
@@ -2244,29 +1945,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
             Whether to create a managed cluster (default: True).
             Unmanaged clusters require manual replica management.
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-
-        >>> # Basic cluster
-        >>> con.create_cluster("my_cluster", size="100cc")  # doctest: +SKIP
-
-        >>> # Cluster with high availability
-        >>> con.create_cluster("ha_cluster", size="400cc", replication_factor=2)  # doctest: +SKIP
-
-        >>> # Cluster with disk storage
-        >>> con.create_cluster("disk_cluster", size="200cc", disk=True)  # doctest: +SKIP
-
-        >>> # Cluster with introspection disabled
-        >>> con.create_cluster(
-        ...     "fast_cluster", size="100cc", introspection_interval="0"
-        ... )  # doctest: +SKIP
-
-        >>> # Empty cluster (no replicas)
-        >>> con.create_cluster(
-        ...     "paused_cluster", size="100cc", replication_factor=0
-        ... )  # doctest: +SKIP
         """
         if managed and size is None:
             raise ValueError("size is required for managed clusters")
@@ -2328,12 +2006,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         cascade
             If `True`, drop dependent objects (indexes, materialized views) as well.
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.drop_cluster("my_cluster", force=True)  # doctest: +SKIP
-        >>> con.drop_cluster("old_cluster", cascade=True)  # doctest: +SKIP
         """
         quoted = self.compiler.quoted
         cluster_id = sg.to_identifier(name, quoted=quoted)
@@ -2379,39 +2051,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
             - 'INTROSPECTION INTERVAL'
             - 'INTROSPECTION DEBUGGING'
             - 'SCHEDULE'
-
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-
-        Rename a cluster:
-
-        >>> con.alter_cluster("old_name", rename_to="new_name")  # doctest: +SKIP
-
-        Resize a cluster:
-
-        >>> con.alter_cluster("my_cluster", set_options={"SIZE": "200cc"})  # doctest: +SKIP
-
-        Change replication factor:
-
-        >>> con.alter_cluster("my_cluster", set_options={"REPLICATION FACTOR": 2})  # doctest: +SKIP
-
-        Disable introspection:
-
-        >>> con.alter_cluster(
-        ...     "my_cluster", set_options={"INTROSPECTION INTERVAL": "0"}
-        ... )  # doctest: +SKIP
-
-        Reset options to defaults:
-
-        >>> con.alter_cluster("my_cluster", reset_options=["REPLICATION FACTOR"])  # doctest: +SKIP
-
-        Notes
-        -----
-        - Cannot modify the same parameter via both SET and RESET
-        - Changes are applied atomically
-        - Cluster resizing may take time depending on workload
 
         """
         if not any([rename_to, set_options, reset_options]):
@@ -2476,14 +2115,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         list[str]
             List of cluster names
 
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> con.list_clusters()  # doctest: +SKIP
-        ['quickstart', 'my_cluster', 'ha_cluster']
-        >>> con.list_clusters(like="my%")  # doctest: +SKIP
-        ['my_cluster']
         """
         query = """
         SELECT name
@@ -2509,20 +2140,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         -------
         list[str]
             List of available cluster size names (e.g., '25cc', '50cc', '100cc')
-
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-        >>> sizes = con.list_cluster_sizes()  # doctest: +SKIP
-        >>> sizes  # doctest: +SKIP
-        ['25cc', '50cc', '100cc', '200cc', '300cc', ...]
-
-        Notes
-        -----
-        - Available sizes may vary between Materialize deployments
-        - The values in this catalog may change
-        - Use this method to discover sizes rather than hardcoding them
 
         """
         query = """
@@ -2671,19 +2288,6 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         force
             If True, does not raise an error if the index does not exist
             (uses IF EXISTS)
-
-        Examples
-        --------
-        >>> import ibis  # doctest: +SKIP
-        >>> con = ibis.materialize.connect()  # doctest: +SKIP
-
-        Drop an index:
-
-        >>> con.drop_index("orders_idx")  # doctest: +SKIP
-
-        Drop an index only if it exists:
-
-        >>> con.drop_index("old_index", force=True)  # doctest: +SKIP
 
         """
         quoted = self.compiler.quoted
