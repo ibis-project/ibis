@@ -100,17 +100,17 @@ jobs:
 
     steps:
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         if: github.event.label.name != 'ci-run-cloud'
 
       - name: checkout
         if: github.event.label.name == 'ci-run-cloud'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: actions/create-github-app-token@v2.1.4
+      - uses: actions/create-github-app-token@v2.2.0
         id: generate_token
         with:
           app-id: ${{ secrets.DOCS_BOT_APP_ID }}

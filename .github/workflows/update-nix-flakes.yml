@@ -12,12 +12,12 @@ jobs:
   lockfile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: install nix
         uses: DeterminateSystems/nix-installer-action@v21
 
-      - uses: actions/create-github-app-token@v2.1.4
+      - uses: actions/create-github-app-token@v2.2.0
         id: generate-token
         with:
           app-id: ${{ secrets.SQUAWK_BOT_APP_ID }}
