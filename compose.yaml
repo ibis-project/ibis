@@ -31,7 +31,7 @@ services:
         - CMD
         - mariadb-admin
         - ping
-    image: mariadb:12.0.2
+    image: mariadb:12.1.2
     ports:
       - 3306:3306
     networks:
