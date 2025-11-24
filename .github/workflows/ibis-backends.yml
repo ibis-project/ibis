@@ -175,7 +175,6 @@ jobs:
               - libpq5
           - name: materialize
             title: Materialize
-            serial: true
             services:
               - materialize
             extras:
@@ -359,7 +358,6 @@ jobs:
             backend:
               name: materialize
               title: Materialize
-              serial: true
               services:
                 - materialize
               extras:
