@@ -1149,6 +1149,7 @@ _unary = {
     ops.Cos: operator.methodcaller("cos"),
     ops.Cot: lambda arg: 1.0 / arg.tan(),
     ops.DayOfWeekIndex: lambda arg: arg.dt.weekday() - 1,
+    ops.IsoDayOfWeekIndex: (lambda arg: arg.dt.weekday().cast(pl.Int16)),
     ops.Exp: operator.methodcaller("exp"),
     ops.Floor: lambda arg: arg.floor().cast(pl.Int64),
     ops.IsInf: operator.methodcaller("is_infinite"),
