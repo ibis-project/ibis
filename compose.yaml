@@ -557,7 +557,7 @@ services:
       - impala
 
   materialize:
-    image: materialize/materialized:v0.160.0
+    image: materialize/materialized:v26.0.0
     ports:
       - 6875:6875 # SQL port
       - 6876:6876 # HTTP port
@@ -565,16 +565,11 @@ services:
     environment:
       MZ_LOG: info
       MZ_TELEMETRY: "false"
-      MZ_SYSTEM_PARAMETER_DEFAULT: "max_tables=1000" # Increase from default 200 for testing
+      MZ_SYSTEM_PARAMETER_DEFAULT: "max_tables=1000"
     healthcheck:
-      test:
-        - CMD-SHELL
-        - bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1/6875; exit $$?;'
-        - bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1:6876; exit $$?;'
-        - bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1:6874; exit $$?;'
-      interval: 2s
-      retries: 30
-      timeout: 5s
+      test: ["CMD", "curl", "-f", "localhost:6878/api/readyz"]
+      interval: 1s
+      start_period: 60s
     volumes:
       - materialize:/data
     networks:
