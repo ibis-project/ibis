@@ -4,6 +4,7 @@ import os
 import sqlite3
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from pytest import param
 
@@ -101,3 +102,11 @@ def test_list_temp_tables_by_default(con):
     con.create_table(name, schema={"a": "int"}, temp=True)
     assert name in con.list_tables(database="temp")
     assert name in con.list_tables()
+
+
+@pytest.mark.parametrize("temp", [False, True])
+def test_create_table_from_in_memory_data(temp):
+    con = ibis.sqlite.connect()
+    con.create_table("foo", pd.DataFrame({"id": [1, 2, 3]}), temp=temp)
+
+    assert con.list_tables() == ["foo"]
