@@ -25,6 +25,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
+from ibis.backends.tests.conftest import NO_MERGE_SUPPORT
 from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
     ExaQueryError,
@@ -493,8 +494,6 @@ def employee_data_1_temp_table(backend, con, test_employee_schema):
 
 @pytest.fixture
 def test_employee_data_2():
-    import pandas as pd
-
     df2 = pd.DataFrame(
         {
             "first_name": ["X", "Y", "Z"],
@@ -514,6 +513,32 @@ def employee_data_2_temp_table(
     temp_table_name = gen_name("temp_employee_data_2")
     _create_temp_table_with_schema(
         backend, con, temp_table_name, test_employee_schema, data=test_employee_data_2
+    )
+    yield temp_table_name
+    con.drop_table(temp_table_name, force=True)
+
+
+@pytest.fixture
+def test_employee_data_3():
+    df3 = pd.DataFrame(
+        {
+            "first_name": ["B", "Y", "Z"],
+            "last_name": ["A", "B", "C"],
+            "department_name": ["XX", "YY", "ZZ"],
+            "salary": [400.0, 500.0, 600.0],
+        }
+    )
+
+    return df3
+
+
+@pytest.fixture
+def employee_data_3_temp_table(
+    backend, con, test_employee_schema, test_employee_data_3
+):
+    temp_table_name = gen_name("temp_employee_data_3")
+    _create_temp_table_with_schema(
+        backend, con, temp_table_name, test_employee_schema, data=test_employee_data_3
     )
     yield temp_table_name
     con.drop_table(temp_table_name, force=True)
@@ -624,6 +649,105 @@ def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
     )
 
     assert len(con.table(employee_data_1_temp_table).execute()) == 3
+
+
+@NO_MERGE_SUPPORT
+def test_upsert_from_dataframe(
+    backend, con, employee_data_1_temp_table, test_employee_data_3
+):
+    temporary = con.table(employee_data_1_temp_table)
+    df1 = temporary.execute().set_index("first_name")
+
+    con.upsert(employee_data_1_temp_table, obj=test_employee_data_3, on="first_name")
+    result = temporary.execute()
+    df2 = test_employee_data_3.set_index("first_name")
+    expected = pd.concat([df1[~df1.index.isin(df2.index)], df2]).reset_index()
+    assert len(result) == len(expected)
+    backend.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        expected.sort_values("first_name").reset_index(drop=True),
+    )
+
+
+@NO_MERGE_SUPPORT
+@pytest.mark.parametrize(
+    "with_order_by",
+    [
+        pytest.param(
+            True,
+            marks=pytest.mark.notyet(
+                ["mssql"],
+                "MSSQL doesn't allow ORDER BY in subqueries, unless "
+                "TOP, OFFSET or FOR XML is also specified",
+            ),
+        ),
+        False,
+    ],
+)
+def test_upsert_from_expr(
+    backend, con, employee_data_1_temp_table, employee_data_3_temp_table, with_order_by
+):
+    temporary = con.table(employee_data_1_temp_table)
+    from_table = con.table(employee_data_3_temp_table)
+    if with_order_by:
+        from_table = from_table.filter(ibis._.salary > 0).order_by("first_name")
+
+    df1 = temporary.execute().set_index("first_name")
+
+    con.upsert(employee_data_1_temp_table, obj=from_table, on="first_name")
+    result = temporary.execute()
+    df2 = from_table.execute().set_index("first_name")
+    expected = pd.concat([df1[~df1.index.isin(df2.index)], df2]).reset_index()
+    assert len(result) == len(expected)
+    backend.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        expected.sort_values("first_name").reset_index(drop=True),
+    )
+
+
+@NO_MERGE_SUPPORT
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.IbisError,
+    reason="`tbl_properties` is required when creating table with schema",
+)
+@pytest.mark.parametrize(
+    ("sch", "expectation"),
+    [
+        ({"x": "int64", "y": "float64", "z": "string"}, contextlib.nullcontext()),
+        ({"z": "!string", "y": "float32", "x": "int8"}, contextlib.nullcontext()),
+        ({"x": "int64"}, pytest.raises(Exception)),  # No cols to insert
+        ({"x": "int64", "z": "string"}, contextlib.nullcontext()),
+        ({"z": "string"}, pytest.raises(Exception)),  # Missing `on` col
+    ],
+)
+def test_upsert_from_memtable(backend, con, temp_table, sch, expectation):
+    t1 = ibis.memtable({"x": [1, 2, 3], "y": [4.0, 5.0, 6.0], "z": ["a", "b", "c"]})
+    table_name = temp_table
+
+    data = {
+        k: v
+        for k, v in {"x": [3, 2, 6], "y": [7.0, 8.0, 9.0], "z": ["d", "e", "f"]}.items()
+        if k in sch
+    }
+    t2 = ibis.memtable(data, schema=sch)
+
+    con.create_table(table_name, schema=t1.schema())
+    con.upsert(table_name, t1, on="x")
+    temporary = con.table(table_name)
+    df1 = temporary.execute().set_index("x")
+
+    with expectation:
+        con.upsert(table_name, t2, on="x")
+
+        result = temporary.execute()
+        expected = pd.DataFrame(data).set_index("x").combine_first(df1).reset_index()
+        assert len(result) == len(expected)
+        backend.assert_frame_equal(
+            result.sort_values("x").reset_index(drop=True),
+            expected.sort_values("x").reset_index(drop=True),
+        )
 
 
 @pytest.mark.notimpl(
