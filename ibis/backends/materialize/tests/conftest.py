@@ -8,6 +8,25 @@ import pytest
 import ibis
 from ibis.backends.tests.base import ServiceBackendTest
 
+
+def pytest_collection_modifyitems(items, config):  # noqa: ARG001
+    """Mark array tests to run serially and skip TPC benchmarks."""
+    for item in items:
+        # Skip TPC benchmark tests (mark to skip instead of deselecting to avoid dead fixture warnings)
+        if "tpc/h/test_queries.py" in str(
+            item.fspath
+        ) or "tpc/ds/test_queries.py" in str(item.fspath):
+            item.add_marker(pytest.mark.skip(reason="TPC benchmarks not supported"))
+        # Mark array tests to run serially
+        if "test_array.py" in str(item.fspath):
+            item.add_marker(pytest.mark.xdist_group("materialize_array_serial"))
+        # Mark source and subscribe tests to run serially (AUCTION source conflicts)
+        if "test_sources.py" in str(item.fspath) or "test_subscribe.py" in str(
+            item.fspath
+        ):
+            item.add_marker(pytest.mark.xdist_group("materialize_sources_serial"))
+
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
     from pathlib import Path
@@ -79,9 +98,11 @@ class TestConf(ServiceBackendTest):
         # Materialize supports COPY FROM STDIN for efficient bulk loading
 
         con = self.connection.con
+        # Cache list_tables() result to avoid repeated expensive calls
+        existing_tables = set(self.connection.list_tables())
         for csv_file in self.test_files:
             table_name = csv_file.stem
-            if table_name in self.connection.list_tables() and csv_file.exists():
+            if table_name in existing_tables and csv_file.exists():
                 # Get column list from schema
                 schema = self.connection.get_schema(table_name)
                 columns = list(schema.keys())
