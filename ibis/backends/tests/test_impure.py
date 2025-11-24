@@ -7,7 +7,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 from ibis import _
-from ibis.backends.tests.errors import Py4JJavaError
+from ibis.backends.tests.errors import Py4JJavaError, SingleStoreDBOperationalError
 
 tm = pytest.importorskip("pandas.testing")
 
@@ -35,6 +35,7 @@ no_udfs = [
             "impala",
             "mssql",
             "mysql",
+            "singlestoredb",
             "oracle",
             "trino",
             "risingwave",
@@ -144,7 +145,7 @@ impure_params_uncorrelated = pytest.mark.parametrize(
             marks=[
                 *no_uuids,
                 pytest.mark.notyet(
-                    ["mysql"],
+                    ["mysql", "singlestoredb"],
                     reason="instances are correlated; but sometimes this passes and it's not clear why",
                     strict=False,
                 ),
@@ -196,6 +197,7 @@ def test_impure_uncorrelated_same_id(alltypes, impure):
         "clickhouse",
         "datafusion",
         "mysql",
+        "singlestoredb",
         "impala",
         "mssql",
         "trino",
@@ -215,6 +217,11 @@ def test_impure_uncorrelated_same_id(alltypes, impure):
 @pytest.mark.notimpl(
     ["polars", "risingwave", "druid", "exasol", "oracle", "pyspark"],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=SingleStoreDBOperationalError,
+    reason="SingleStoreDB doesn't allow temporary tables in CTEs",
 )
 def test_self_join_with_generated_keys(con):
     # Even with CTEs in the generated SQL, the backends still
