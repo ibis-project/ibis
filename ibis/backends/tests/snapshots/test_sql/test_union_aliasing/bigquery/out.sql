@@ -15,12 +15,12 @@ WITH `t5` AS (
         `t2`.`field_of_study`,
         `t2`.`years`,
         `t2`.`degrees`,
-        FIRST_VALUE(`t2`.`degrees`) OVER (
+        FIRST_VALUE(`t2`.`degrees` IGNORE NULLS) OVER (
           PARTITION BY `t2`.`field_of_study`
           ORDER BY `t2`.`years` ASC
           ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
         ) AS `earliest_degrees`,
-        LAST_VALUE(`t2`.`degrees`) OVER (
+        LAST_VALUE(`t2`.`degrees` IGNORE NULLS) OVER (
           PARTITION BY `t2`.`field_of_study`
           ORDER BY `t2`.`years` ASC
           ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING

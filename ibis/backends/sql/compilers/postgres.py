@@ -438,6 +438,22 @@ $$""".format(
             )
         return self.agg.last(arg, where=where, order_by=order_by)
 
+    def visit_FirstValue(self, op, *, arg, include_null):
+        if include_null:
+            return sge.RespectNulls(this=self.f.first(arg))
+        else:
+            raise com.UnsupportedOperationError(
+                "Postgres does not support `include_null=False` for FirstValue"
+            )
+
+    def visit_LastValue(self, op, *, arg, include_null):
+        if include_null:
+            return sge.RespectNulls(this=self.f.last(arg))
+        else:
+            raise com.UnsupportedOperationError(
+                "Postgres does not support `include_null=False` for LastValue"
+            )
+
     def visit_Log2(self, op, *, arg):
         return self.cast(
             self.f.log(
