@@ -219,6 +219,7 @@ def test_keyed_asof_join(
 @pytest.mark.parametrize(
     ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
 )
+@pytest.mark.parametrize("right_column_key", [None, "on_right_time"])
 @pytest.mark.notimpl(
     ["clickhouse"], raises=AssertionError, reason="`time` is truncated to seconds"
 )
@@ -251,8 +252,15 @@ def test_keyed_asof_join_with_tolerance(
     time_keyed_df2,
     direction,
     op,
+    right_column_key,
 ):
-    on = op(time_keyed_left["time"], time_keyed_right["time"])
+    left_key = right_key = "time"
+    if right_column_key:
+        right_key = right_column_key
+        time_keyed_right = time_keyed_right.rename({right_column_key: "time"})
+        assert left_key != right_key
+
+    on = op(time_keyed_left[left_key], time_keyed_right[right_key])
     expr = time_keyed_left.asof_join(
         time_keyed_right, on, "key", tolerance=ibis.interval(days=2)
     )
