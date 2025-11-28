@@ -1652,9 +1652,7 @@ def test_zip_unnest_lift(con):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["datafusion", "polars", "flink"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["polars", "flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     "colspec",
     ["y", lambda t: t.y, ibis._.y],
@@ -1672,9 +1670,7 @@ def test_table_unnest(backend, colspec):
     assert set(result["y"].values) == set(t[["y"]].execute().explode("y")["y"].values)
 
 
-@pytest.mark.notimpl(
-    ["datafusion", "polars", "flink"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["polars", "flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["athena"],
     raises=com.TableNotFound,
@@ -1702,9 +1698,7 @@ def test_table_unnest_with_offset(backend):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["datafusion", "polars", "flink"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["polars", "flink"], raises=com.OperationNotDefinedError)
 def test_table_unnest_with_keep_empty(con):
     t = ibis.memtable(pd.DataFrame({"y": [[], None, ["a"]]}))
     expr = t.unnest("y", keep_empty=True)["y"]
@@ -1731,7 +1725,7 @@ def test_table_unnest_column_expr(backend):
     assert set(result.values) == set(expected.replace({np.nan: None}).values)
 
 
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["trino"], raises=TrinoUserError)
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
