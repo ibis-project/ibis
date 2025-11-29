@@ -547,7 +547,7 @@ def test_variadic_argument_reordering():
         c = is_int
         args = varargs(is_int)
 
-    with pytest.raises(ValidationError, match="missing a required argument: 'c'"):
+    with pytest.raises(ValidationError, match="missing 1 required positional argument: 'c'"):
         Test2(1, 2)
 
     a = Test2(1, 2, 3)
@@ -579,7 +579,7 @@ def test_variadic_keyword_argument_reordering():
         c = is_int
         options = varkwargs(is_int)
 
-    with pytest.raises(ValidationError, match="missing a required argument: 'c'"):
+    with pytest.raises(ValidationError, match="missing 1 required positional argument: 'c'"):
         Test2(1, 2)
 
     a = Test2(1, 2, c=3)
@@ -859,7 +859,7 @@ def test_annotable_with_dict_slot():
 
 
 def test_annotable_attribute():
-    with pytest.raises(ValidationError, match="too many positional arguments"):
+    with pytest.raises(ValidationError, match="takes 1 positional argument but 2 were given"):
         BaseValue(1, 2)
 
     v = BaseValue(1)
