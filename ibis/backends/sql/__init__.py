@@ -458,21 +458,23 @@ class SQLBackend(BaseBackend):
     ):
         compiler = self.compiler
         quoted = compiler.quoted
-        # Compare the columns between the target table and the object to be inserted
-        # If source is a subset of target, use source columns for insert list
-        # Otherwise, assume auto-generated column names and use positional ordering.
-        target_cols = self.get_schema(target, catalog=catalog, database=db).keys()
 
-        columns = (
-            source_cols
-            if (source_cols := source.schema().keys()) <= target_cols
-            else target_cols
-        )
+        target_col_names = self.get_schema(target, catalog=catalog, database=db).keys()
+        source_col_names = source.schema().keys()
+        # Error on unknown columns.
+        # We DO allow missing columns (they will be filled with NULLs or defaults)
+        unknown_cols = set(source_col_names) - set(target_col_names)
+        if unknown_cols:
+            raise exc.IbisTypeError(
+                f"Cannot insert into table {target} because the following "
+                f"columns are not present in the target table: "
+                f"{', '.join(sorted(unknown_cols))}"
+            )
 
         query = sge.insert(
             expression=self.compile(source),
             into=sg.table(target, db=db, catalog=catalog, quoted=quoted),
-            columns=[sg.to_identifier(col, quoted=quoted) for col in columns],
+            columns=[sg.to_identifier(col, quoted=quoted) for col in source_col_names],
             dialect=compiler.dialect,
         )
         return query
