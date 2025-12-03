@@ -1,9 +1,21 @@
 from __future__ import annotations
 
+import sqlite3
+
 import pytest
+from packaging.version import parse as vparse
 
 import ibis.common.exceptions as com
-from ibis.backends.tests.errors import MySQLOperationalError
+from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
+    ImpalaHiveServer2Error,
+    MySQLOperationalError,
+    MySQLProgrammingError,
+    PsycoPg2InternalError,
+    Py4JJavaError,
+    PySparkUnsupportedOperationException,
+    TrinoUserError,
+)
 
 
 def combine_marks(marks: list) -> callable:
@@ -50,7 +62,6 @@ NO_ARRAY_SUPPORT_MARKS = [
 ]
 NO_ARRAY_SUPPORT = combine_marks(NO_ARRAY_SUPPORT_MARKS)
 
-
 NO_STRUCT_SUPPORT_MARKS = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
@@ -78,3 +89,53 @@ NO_JSON_SUPPORT_MARKS = [
     pytest.mark.notimpl(["datafusion", "exasol", "mssql", "druid", "oracle"]),
 ]
 NO_JSON_SUPPORT = combine_marks(NO_JSON_SUPPORT_MARKS)
+
+try:
+    import pyspark
+
+    pyspark_merge_exception = (
+        PySparkUnsupportedOperationException
+        if vparse(pyspark.__version__) >= vparse("3.5")
+        else Py4JJavaError
+    )
+except ImportError:
+    pyspark_merge_exception = None
+
+NO_MERGE_SUPPORT_MARKS = [
+    pytest.mark.notyet(
+        ["clickhouse"],
+        raises=ClickHouseDatabaseError,
+        reason="MERGE INTO is not supported",
+    ),
+    pytest.mark.notyet(["datafusion"], reason="MERGE INTO is not supported"),
+    pytest.mark.notyet(
+        ["impala"],
+        raises=ImpalaHiveServer2Error,
+        reason="target table must be an Iceberg table",
+    ),
+    pytest.mark.notyet(
+        ["mysql"], raises=MySQLProgrammingError, reason="MERGE INTO is not supported"
+    ),
+    pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented"),
+    pytest.mark.notyet(
+        ["pyspark"],
+        raises=pyspark_merge_exception,
+        reason="MERGE INTO TABLE is not supported temporarily",
+    ),
+    pytest.mark.notyet(
+        ["risingwave"],
+        raises=PsycoPg2InternalError,
+        reason="MERGE INTO is not supported",
+    ),
+    pytest.mark.notyet(
+        ["sqlite"],
+        raises=sqlite3.OperationalError,
+        reason="MERGE INTO is not supported",
+    ),
+    pytest.mark.notyet(
+        ["trino"],
+        raises=TrinoUserError,
+        reason="connector does not support modifying table rows",
+    ),
+]
+NO_MERGE_SUPPORT = combine_marks(NO_MERGE_SUPPORT_MARKS)
