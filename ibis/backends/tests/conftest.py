@@ -12,6 +12,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     MySQLProgrammingError,
     PsycoPg2InternalError,
+    PsycoPgSyntaxError,
     Py4JJavaError,
     PySparkUnsupportedOperationException,
     TrinoUserError,
@@ -120,6 +121,11 @@ NO_MERGE_SUPPORT_MARKS = [
         ["impala"],
         raises=ImpalaHiveServer2Error,
         reason="target table must be an Iceberg table",
+    ),
+    pytest.mark.notyet(
+        ["materialize"],
+        raises=PsycoPgSyntaxError,
+        reason="MERGE INTO is not supported",
     ),
     pytest.mark.notyet(
         ["mysql"], raises=MySQLProgrammingError, reason="MERGE INTO is not supported"
