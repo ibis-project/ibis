@@ -14,8 +14,8 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     Py4JJavaError,
     PySparkUnsupportedOperationException,
-    SingleStoreDBProgrammingError,
     SingleStoreDBOperationalError,
+    SingleStoreDBProgrammingError,
     TrinoUserError,
 )
 
