@@ -95,7 +95,7 @@ class SQLBackend(BaseBackend):
         expr: ir.Expr,
         /,
         *,
-        limit: str | int | None = None,
+        limit: int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         pretty: bool = False,
     ) -> str:
@@ -492,7 +492,7 @@ class SQLBackend(BaseBackend):
         schema: sch.Schema,
         catalog: str | None = None,
         columns: bool = False,
-        placeholder: str | Iterable[str] = "?",
+        placeholder: str = "?",
     ) -> str:
         """Builds an INSERT INTO table VALUES query string with placeholders.
 
@@ -644,7 +644,9 @@ class SQLBackend(BaseBackend):
         )
         return query
 
-    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
+    def truncate_table(
+        self, name: str, /, *, database: str | tuple[str, str] | None = None
+    ) -> None:
         """Delete all rows from a table.
 
         ::: {.callout-note}
@@ -709,13 +711,13 @@ class SQLBackend(BaseBackend):
 
         return sg_cat, sg_db
 
-    def _to_sqlglot_table(self, database):
+    def _to_sqlglot_table(self, database: None | str | tuple[str, str]) -> sge.Table:
         quoted = self.compiler.quoted
         dialect = self.dialect
 
         if database is None:
             # Create "table" with empty catalog and db
-            database = sge.Table(catalog=None, db=None)
+            sgt = sge.Table(catalog=None, db=None)
         elif isinstance(database, (list, tuple)):
             if len(database) > 2:
                 raise ValueError(
@@ -734,7 +736,7 @@ class SQLBackend(BaseBackend):
                     '\n("catalog", "database")'
                     '\n("database",)'
                 )
-            database = sge.Table(
+            sgt = sge.Table(
                 catalog=sg.to_identifier(catalog, quoted=quoted),
                 db=sg.to_identifier(database, quoted=quoted),
             )
@@ -744,7 +746,7 @@ class SQLBackend(BaseBackend):
             # sqlglot parsing of the string will assume that it's a Table
             # so we unpack the arguments into a new sqlglot object, switching
             # table (this) -> database (db) and database (db) -> catalog
-            table = sg.parse_one(
+            sgt = sg.parse_one(
                 ".".join(
                     sg.to_identifier(part, quoted=quoted).sql(dialect)
                     for part in database.split(".")
@@ -752,20 +754,20 @@ class SQLBackend(BaseBackend):
                 into=sge.Table,
                 dialect=dialect,
             )
-            if table.args["catalog"] is not None:
+            if sgt.args["catalog"] is not None:
                 raise exc.IbisInputError(
-                    f"Overspecified table hierarchy provided: `{table.sql(dialect)}`"
+                    f"Overspecified table hierarchy provided: `{sgt.sql(dialect)}`"
                 )
-            catalog = table.args["db"]
-            db = table.args["this"]
-            database = sge.Table(catalog=catalog, db=db)
+            catalog = sgt.args["db"]
+            db = sgt.args["this"]
+            sgt = sge.Table(catalog=catalog, db=db)
         else:
             raise ValueError(
                 """Invalid database hierarchy format.  Please use either dotted
                 strings ('catalog.database') or tuples ('catalog', 'database')."""
             )
 
-        return database
+        return sgt
 
     def _register_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
         """No-op."""

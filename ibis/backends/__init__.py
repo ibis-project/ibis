@@ -1303,7 +1303,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         expr: ir.Expr,
         /,
         *,
-        limit: str | int | None = None,
+        limit: int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         **kwargs: Any,
     ) -> str | pl.LazyFrame:
