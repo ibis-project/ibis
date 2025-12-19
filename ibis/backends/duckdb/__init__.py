@@ -274,7 +274,9 @@ class Backend(
 
         return self.table(name, database=(catalog, database))
 
-    def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
+    def table(
+        self, name: str, /, *, database: str | tuple[str, str] | None = None
+    ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
 
         # TODO: set these to better defaults

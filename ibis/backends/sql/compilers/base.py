@@ -579,7 +579,7 @@ class SQLGlotCompiler(abc.ABC):
         self,
         expr: ir.Expr,
         *,
-        limit: str | None = None,
+        limit: Literal["default"] | int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
     ):
         import ibis
