@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import urllib
+import urllib.parse
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -37,7 +38,7 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, MutableMapping, Sequence
+    from collections.abc import Generator, Iterable, Mapping, MutableMapping, Sequence
 
     import pandas as pd
     import polars as pl
@@ -344,7 +345,9 @@ class Backend(
         )
 
     @contextlib.contextmanager
-    def _safe_raw_sql(self, *args, **kwargs):
+    def _safe_raw_sql(
+        self, *args, **kwargs
+    ) -> Generator[duckdb.DuckDBPyConnection, None, None]:
         yield self.raw_sql(*args, **kwargs)
 
     def list_catalogs(self, *, like: str | None = None) -> list[str]:
@@ -1172,57 +1175,157 @@ class Backend(
         self.con.execute(copy_cmd).fetchall()
 
     def attach(
-        self, path: str | Path, name: str | None = None, read_only: bool = False
+        self,
+        path_or_url: str | Path,
+        /,
+        *,
+        name: str | None = None,
+        on_exists: Literal["error", "ignore", "replace"] = "error",
+        read_only: bool = False,
+        type: Literal["duckdb", "sqlite", "postgres", "mysql"] | None = None,
+        options: Mapping[str, Any] = {},
     ) -> None:
-        """Attach another DuckDB database to the current DuckDB session.
+        """Attach a DuckDB, sqlite, postgres, or mysql database to the current DuckDB session.
+
+        See [DuckDB documentation](https://duckdb.org/docs/stable/sql/statements/attach.html)
+        for more information.
 
         Parameters
         ----------
-        path
-            Path to the database to attach.
+        path_or_url
+            Path or url to the database to attach.
         name
             Name to attach the database as. Defaults to the basename of `path`.
+        on_exists
+            What to do if the database already exists.
+            If set to `"error"`, raise an error if the database already exists.
+            If set to `"ignore"`, do nothing if the database already exists.
+            If set to `"replace"`, detach the existing database and attach the new one.
         read_only
             Whether to attach the database as read-only.
+        type
+            The type of the database to attach. If none, infers from the file extension.
+        options
+            Additional options, e.g. `{"STORAGE_VERSION": "'v1.2.0'", "block_size": 262144}`.
 
+        Returns
+        -------
+        None | str
+            The name of the attached database, or `None` if the database already exists.
         """
-        code = f"ATTACH '{path}'"
+        if on_exists == "ignore":
+            on_exists_string = "IF NOT EXISTS"
+        elif on_exists == "replace":
+            on_exists_string = "OR REPLACE"
+        elif on_exists == "error":
+            on_exists_string = ""
+        else:
+            raise ValueError(
+                f"Invalid value for `on_exists`: {on_exists!r}. "
+                "Must be one of 'error', 'ignore', or 'replace'."
+            )
 
-        if name is not None:
-            name = sg.to_identifier(name).sql(self.name)
-            code += f" AS {name}"
+        if name is None:
+            name = _attach_name(path_or_url)
 
+        as_name = f"AS {sg.to_identifier(name, self.compiler.quoted).sql(self.name)}"
+
+        option_strings = [f"{k!s} {v!r}" for k, v in options.items()]
         if read_only:
-            code += " (READ_ONLY)"
+            option_strings.append("READ_ONLY true")
+        else:
+            option_strings.append("READ_ONLY false")
+        if type is not None:
+            option_strings.append(f"TYPE {type.upper()}")
+        option_string = ", ".join(option_strings)
 
-        self.con.execute(code).fetchall()
+        sql = f"ATTACH {on_exists_string} '{path_or_url}' {as_name} ({option_string})"
+        catalogs_before = set(self.list_catalogs())
+        if name in catalogs_before:
+            if on_exists == "ignore":
+                return None
+            if on_exists == "replace":
+                return name
+            raise exc.CatalogExistsError(name)
+        self.con.execute(sql)
+        return name
 
-    def detach(self, name: str) -> None:
+    def detach(
+        self, name: str, /, *, on_missing: Literal["error", "ignore"] = "error"
+    ) -> None:
         """Detach a database from the current DuckDB session.
+
+        See [DuckDB documentation](https://duckdb.org/docs/stable/sql/statements/attach.html)
+        for more information.
 
         Parameters
         ----------
         name
             The name of the database to detach.
+        on_missing
+            What to do if the database does not exist.
+            If set to `"error"`, raise an error if the database does not exist.
+            If set to `"ignore"`, do nothing if the database does not exist.
 
         """
+        if on_missing == "ignore":
+            if_exists = "IF EXISTS"
+        elif on_missing == "error":
+            if_exists = ""
+        else:
+            raise ValueError(
+                f"Invalid value for `on_missing`: {on_missing!r}. "
+                "Must be one of 'error' or 'ignore'."
+            )
         name = sg.to_identifier(name).sql(self.name)
-        self.con.execute(f"DETACH {name}").fetchall()
+        try:
+            self.con.execute(f"DETACH DATABASE {if_exists} {name}").fetchall()
+        except duckdb.BinderException as e:
+            if "database not found" not in str(e).lower():
+                raise e
+            raise exc.CatalogNotFoundError(name) from e
 
     def attach_sqlite(
-        self, path: str | Path, overwrite: bool = False, all_varchar: bool = False
-    ) -> None:
+        self,
+        path: str | Path,
+        /,
+        *,
+        name: str | None = None,
+        on_exists: Literal["error", "ignore", "replace"] = "error",
+        read_only: bool = False,
+        all_varchar: bool = False,
+        options: Mapping[str, Any] = {},
+    ) -> str | None:
         """Attach a SQLite database to the current DuckDB session.
+
+        See https://duckdb.org/docs/stable/sql/statements/attach.html
+        for more information.
 
         Parameters
         ----------
         path
             The path to the SQLite database.
-        overwrite
-            Allow overwriting any tables or views that already exist in your current
-            session with the contents of the SQLite database.
+        name
+            The name to attach the database as.
+            If `None`, use the default behavior of DuckDB
+            (as of duckdb==1.2.0 this is the basename of the path).
+        on_exists
+            What to do if the database already exists.
+            If set to `"error"`, raise an error if the database already exists.
+            If set to `"ignore"`, do nothing if the database already exists.
+        read_only
+            Whether to attach the database as read-only.
         all_varchar
-            Set all SQLite columns to type `VARCHAR` to avoid type errors on ingestion.
+            Whether to read SQLite columns as `VARCHAR` to avoid type errors on ingestion.
+            See https://duckdb.org/docs/stable/extensions/sqlite.html#data-types
+        options
+            Additional options to pass to the `ATTACH` statement.
+            These are passed as a dictionary, e.g. `{"STORAGE_VERSION": "v1.2.0"}`.
+
+        Returns
+        -------
+        str | None
+            The name of the attached database, or `None` if the database already exists.
 
         Examples
         --------
@@ -1240,16 +1343,22 @@ class Backend(
         >>> con = ibis.connect("duckdb://")
         >>> con.list_tables()
         []
-        >>> con.attach_sqlite("/tmp/attach_sqlite.db")
-        >>> con.list_tables()
+        >>> name = con.attach_sqlite("/tmp/attach_sqlite.db")
+        >>> name
+        'attach_sqlite'
+        >>> con.list_tables(database=(name, "main"))
         ['t']
-
         """
         self.load_extension("sqlite")
-        with self._safe_raw_sql(f"SET GLOBAL sqlite_all_varchar={all_varchar}") as cur:
-            cur.execute(
-                f"CALL sqlite_attach('{path}', overwrite={overwrite})"
-            ).fetchall()
+        self.raw_sql(f"SET GLOBAL sqlite_all_varchar={all_varchar}")
+        return self.attach(
+            path,
+            name=name,
+            on_exists=on_exists,
+            read_only=read_only,
+            type="sqlite",
+            options=options,
+        )
 
     def register_filesystem(self, filesystem: AbstractFileSystem):
         """Register an `fsspec` filesystem object with DuckDB.
@@ -1814,3 +1923,15 @@ def _pyarrow_rbr(source, table_name, _conn, **_: Any):
     # Ensure the reader isn't marked as started, in case the name is
     # being overwritten.
     _conn._record_batch_readers_consumed[table_name] = False
+
+
+def _attach_name(path_or_url: str | Path) -> str:
+    """Return the name to use when attaching a database."""
+    url = urllib.parse.urlparse(str(path_or_url))
+    final = Path(url.path).stem
+    if not final:
+        raise ValueError(
+            f"Could not determine a name for the database from {path_or_url!r}. "
+            "Please provide a name explicitly using the `name` parameter."
+        )
+    return final
