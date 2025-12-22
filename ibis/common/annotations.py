@@ -223,7 +223,7 @@ class Argument(Annotation):
         )
 
 
-def attribute(pattern=_any, default=EMPTY):
+def attribute(pattern=_any, default=EMPTY) -> Attribute:
     """Annotation to mark a field in a class."""
     if default is EMPTY and isinstance(pattern, (types.FunctionType, types.MethodType)):
         return Attribute(default=pattern)
@@ -231,12 +231,12 @@ def attribute(pattern=_any, default=EMPTY):
         return Attribute(pattern, default=default)
 
 
-def argument(pattern=_any, default=EMPTY, typehint=None):
+def argument(pattern=_any, default=EMPTY, typehint=None) -> Argument:
     """Annotation type for all fields which should be passed as arguments."""
     return Argument(pattern, default=default, typehint=typehint)
 
 
-def optional(pattern=_any, default=None, typehint=None):
+def optional(pattern=_any, default=None, typehint=None) -> Argument:
     """Annotation to allow and treat `None` values as missing arguments."""
     if pattern is None:
         pattern = Option(Any(), default=default)
