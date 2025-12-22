@@ -304,7 +304,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         elif dtype.is_numeric():
             if not math.isfinite(value):
                 return sge.Literal.number(str(value))
-            return sge.convert(value)
+            return self.cast(value, dtype)
         elif dtype.is_interval():
             if dtype.unit.short in ("ms", "us", "ns"):
                 raise com.UnsupportedOperationError(
