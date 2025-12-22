@@ -554,6 +554,11 @@ class FlinkCompiler(SQLGlotCompiler):
     def visit_EndsWith(self, op, *, arg, end):
         return self.f.right(arg, self.f.char_length(end)).eq(end)
 
+    def visit_RegexReplace(self, op, *, arg, pattern, replacement):
+        # flink doesn't support a position argument (eg "g" for global), it always
+        # does a global replace. That is fine, that is the semantics of ops.RegexReplace.
+        return self.f.regexp_replace(arg, pattern, replacement)
+
     def visit_ExtractUrlField(self, op, *, arg):
         return self.f.parse_url(arg, type(op).__name__[len("Extract") :].upper())
 
