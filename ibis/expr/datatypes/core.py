@@ -610,7 +610,7 @@ class Bounds(NamedTuple):
     lower: int
     upper: int
 
-    def __contains__(self, value: int) -> bool:
+    def __contains__(self, value: Any) -> bool:
         return self.lower <= value <= self.upper
 
 
