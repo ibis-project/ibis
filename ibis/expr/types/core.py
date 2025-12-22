@@ -933,13 +933,56 @@ class Expr(Immutable, Coercible):
         return self.op().replace(rule).to_expr()
 
     def as_table(self) -> ir.Table:
-        """Convert an expression to a table."""
+        """Convert a Scalar, Column, or Table to a [Table](./expression-tables.qmd#ibis.expr.types.Table).
+
+        - Calling this on a Table is a no-op.
+        - Calling this on a Column will return a single-column table.
+        - Calling this on a Scalar will return a single-row, single-column table.
+
+        Returns
+        -------
+        Table
+            A table expression
+        """
         raise NotImplementedError(
             f"{type(self)} expressions cannot be converted into tables"
         )
 
     def as_scalar(self) -> ir.Scalar:
-        """Convert an expression to a scalar."""
+        """Tell ibis to treat the expression as a scalar.
+
+        Ibis cannot know until execution time whether a Column or Table expression
+        contains only one row or many rows,
+
+        This method is a way to explicitly tell ibis to trust you that
+        this expression will only contain one row at execution time.
+        This allows you to use this expression with other tables.
+
+        If the expression is a literal, it will be returned as is. If it depends
+        on a table, it will be turned to a scalar subquery.
+
+        Returns
+        -------
+        Scalar
+            A scalar subquery or a literal
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> max_gentoo_weight = t.filter(t.species == "Gentoo").body_mass_g.max()
+        >>> light_penguins = t.filter(t.body_mass_g < max_gentoo_weight / 2)
+        >>> light_penguins.species.value_counts().order_by("species")
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+        ┃ species   ┃ species_count ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+        │ string    │ int64         │
+        ├───────────┼───────────────┤
+        │ Adelie    │            15 │
+        │ Chinstrap │             2 │
+        └───────────┴───────────────┘
+        """
         raise NotImplementedError(
             f"{type(self)} expressions cannot be converted into scalars"
         )
