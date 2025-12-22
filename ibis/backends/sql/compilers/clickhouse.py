@@ -429,7 +429,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         )
 
     def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds, **_
+        self, op, *, year, month, day, hours, minutes, seconds, dtype: dt.Timestamp, **_
     ):
         to_datetime = self.f.toDateTime(
             self.f.concat(
@@ -446,7 +446,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
                 self.f.leftPad(self.f.toString(seconds), 2, "0"),
             )
         )
-        if timezone := op.dtype.timezone:
+        if timezone := dtype.timezone:
             return self.f.toTimeZone(to_datetime, timezone)
         return to_datetime
 
