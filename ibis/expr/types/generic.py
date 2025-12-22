@@ -20,6 +20,9 @@ from ibis.util import deprecated, experimental, promote_list
 
 if TYPE_CHECKING:
     import datetime
+    import decimal
+    import enum
+    import ipaddress
     import uuid
     from collections.abc import Mapping
 
@@ -3021,6 +3024,76 @@ def null(type: dt.DataType | str | None = None, /) -> Value:
     if type is None:
         type = dt.null
     return ops.Literal(None, type).to_expr()
+
+
+@overload
+def literal(
+    value: bool, type: dt.Boolean | Literal["bool"] | type[bool] | None = None
+) -> ir.BooleanScalar: ...
+@overload
+def literal(
+    value: bytes, type: dt.Binary | Literal["binary"] | type[bytes] | None = None
+) -> ir.BinaryScalar: ...
+@overload
+def literal(
+    value: decimal.Decimal,
+    type: dt.Decimal | Literal["decimal"] | type[decimal.Decimal] | None = None,
+) -> ir.DecimalScalar: ...
+@overload
+def literal(
+    value: float, type: dt.Floating | Literal["floating"] | type[float] | None = None
+) -> ir.FloatingScalar: ...
+@overload
+def literal(
+    value: int, type: dt.Integer | Literal["int"] | type[int] | None = None
+) -> ir.IntegerScalar: ...
+@overload
+def literal(
+    value: str, type: dt.String | Literal["string"] | type[str] | None = None
+) -> ir.StringScalar: ...
+@overload
+def literal(
+    value: enum.Enum, type: dt.String | Literal["string"] | type[str] | None = None
+) -> ir.StringScalar: ...
+@overload
+def literal(
+    value: datetime.datetime, type: dt.Timestamp | Literal["timestamp"] | None = None
+) -> ir.TimestampScalar: ...
+@overload
+def literal(
+    value: datetime.date, type: dt.Date | Literal["date"] | None = None
+) -> ir.DateScalar: ...
+@overload
+def literal(
+    value: datetime.time, type: dt.Time | Literal["time"] | None = None
+) -> ir.TimeScalar: ...
+@overload
+def literal(
+    value: datetime.timedelta, type: dt.Interval | Literal["interval"] | None = None
+) -> ir.IntervalScalar: ...
+@overload
+def literal(
+    value: None, type: dt.Null | Literal["null"] | None = None
+) -> ir.NullScalar: ...
+@overload
+def literal(
+    value: uuid.UUID, type: dt.UUID | Literal["uuid"] | type[uuid.UUID] | None = None
+) -> ir.UUIDScalar: ...
+@overload
+def literal(
+    value: ipaddress.IPv4Address | ipaddress.IPv6Address,
+    type: dt.INET | Literal["inet"] | None = None,
+) -> ir.INETScalar: ...
+@overload
+def literal(
+    value: list | tuple | set | frozenset,
+    type: dt.Array | Literal["array"] | None = None,
+) -> ir.ArrayScalar: ...
+@overload
+def literal(
+    value: Mapping,
+    type: dt.Struct | None = None,
+) -> ir.StructScalar: ...
 
 
 @public
