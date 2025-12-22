@@ -678,6 +678,45 @@ def test_first_last_ordered(alltypes, method, filtered, include_null):
 
 
 @pytest.mark.notimpl(
+    ["databricks"],
+    raises=com.UnsupportedOperationError,
+)
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="Feature is not yet implemented:",
+)
+@pytest.mark.parametrize(
+    "method,expected",
+    [
+        pytest.param(lambda col: col.first(order_by="ob"), 4, id="first_asc"),
+        pytest.param(lambda col: col.last(order_by="ob"), 5, id="last_asc"),
+        pytest.param(
+            lambda col: col.first(order_by=ibis._.ob.desc()), 5, id="first_desc"
+        ),
+        pytest.param(
+            lambda col: col.last(order_by=ibis._.ob.desc()), 4, id="last_desc"
+        ),
+    ],
+)
+def test_first_last_ordered_in_mutate(alltypes, con, method, expected):
+    # originally reported in https://github.com/ibis-project/ibis/issues/11656
+    t = alltypes.select(
+        a=ibis._.tinyint_col, val=ibis._.int_col, ob=ibis._.bigint_col
+    ).filter(
+        ((ibis._.val == 4) & (ibis._.ob == 40))
+        | ((ibis._.val == 5) & (ibis._.ob == 50))
+    )
+    expr = t.mutate(new=method(t.val)).limit(10)
+    actual = con.to_pyarrow(expr.new).to_pylist()
+    assert actual == [expected] * 10
+
+
+@pytest.mark.notimpl(
     [
         "druid",
         "exasol",
