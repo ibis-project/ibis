@@ -173,6 +173,8 @@ jobs:
               - risingwave
             extras:
               - --extra risingwave
+            args:
+              - --randomly-seed=1522371829
           - name: impala
             title: Impala
             serial: true
@@ -344,6 +346,8 @@ jobs:
                 - risingwave
               extras:
                 - --extra risingwave
+              args:
+                - --randomly-seed=1522371829
           - os: windows-latest
             backend:
               name: postgres
@@ -507,7 +511,7 @@ jobs:
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
         timeout-minutes: 60
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup -vv ${{ join(matrix.backend.args, ' ') }}
         env:
           IBIS_TEST_IMPALA_HOST: localhost
           IBIS_TEST_IMPALA_PORT: 21050
@@ -516,7 +520,7 @@ jobs:
       - name: "run serial tests: ${{ matrix.backend.name }}"
         if: matrix.backend.serial
         timeout-minutes: 60
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }}
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -vv ${{ join(matrix.backend.args, ' ') }}
         env:
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"
