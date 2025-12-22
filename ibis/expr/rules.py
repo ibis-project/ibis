@@ -1,26 +1,31 @@
 from __future__ import annotations
 
 from itertools import product, starmap
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.common.annotations import attribute
+from ibis.common.annotations import Attribute, attribute
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import CoercionError, NoMatch, Pattern
 from ibis.common.temporal import IntervalUnit
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from ibis.expr import datashape as ds
+
 
 @public
-def highest_precedence_shape(nodes):
+def highest_precedence_shape(nodes: Iterable[ops.Value]):
     return max(node.shape for node in nodes)
 
 
 @public
-def highest_precedence_dtype(nodes):
+def highest_precedence_dtype(nodes: Iterable[ops.Value]):
     """Return the highest precedence type from the passed expressions.
 
     Also verifies that there are valid implicit casts between any of the types
@@ -42,7 +47,7 @@ def highest_precedence_dtype(nodes):
 
 
 @public
-def castable(source, target):
+def castable(source: ops.Value, target: ops.Value) -> bool:
     """Return whether source ir type is implicitly castable to target.
 
     Based on the underlying datatypes and the value in case of Literals
@@ -52,7 +57,7 @@ def castable(source, target):
 
 
 @public
-def comparable(left, right):
+def comparable(left: ops.Value, right: ops.Value) -> bool:
     return castable(left, right) or castable(right, left)
 
 
@@ -61,9 +66,9 @@ def comparable(left, right):
 
 
 @public
-def dtype_like(name):
+def dtype_like(name: str) -> Attribute:
     @attribute
-    def dtype(self):
+    def dtype(self) -> dt.DataType:
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
         return highest_precedence_dtype(args)
@@ -72,9 +77,9 @@ def dtype_like(name):
 
 
 @public
-def shape_like(name):
+def shape_like(name: str) -> Attribute:
     @attribute
-    def shape(self):
+    def shape(self) -> ds.DataShape:
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
         args = [a for a in args if a is not None]
@@ -108,9 +113,9 @@ def _promote_integral_binop(exprs, op):
 
 
 @public
-def numeric_like(name, op):
+def numeric_like(name: str, op) -> Attribute:
     @attribute
-    def dtype(self):
+    def dtype(self) -> dt.DataType:
         args = getattr(self, name)
         dtypes = [arg.dtype for arg in args]
         if util.all_of(dtypes, dt.Integer):
