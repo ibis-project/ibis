@@ -71,6 +71,7 @@ aggregate_test_params = [
                     "exasol",
                     "databricks",
                     "athena",
+                    "materialize",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -110,6 +111,7 @@ aggregate_test_params = [
                     "risingwave",
                     "exasol",
                     "athena",
+                    "materialize",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -339,6 +341,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                         "flink",
                         "risingwave",
                         "athena",
+                        "materialize",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -404,6 +407,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                         "pyspark",
                         "risingwave",
                         "sqlite",
+                        "materialize",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -463,7 +467,8 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                 ),
                 pytest.mark.notimpl(["druid"], strict=False, raises=AssertionError),
                 pytest.mark.notyet(
-                    ["impala", "pyspark", "flink"], raises=com.OperationNotDefinedError
+                    ["impala", "pyspark", "flink", "materialize"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
         ),
@@ -477,7 +482,8 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["impala", "pyspark", "flink"], raises=com.OperationNotDefinedError
+                    ["impala", "pyspark", "flink", "materialize"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
         ),
@@ -491,7 +497,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["impala", "pyspark", "flink", "athena"],
+                    ["impala", "pyspark", "flink", "athena", "materialize"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -543,6 +549,12 @@ def test_reduction_ops(
 @pytest.mark.notimpl(
     ["druid", "impala", "mssql", "mysql", "oracle"],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=(com.UnsupportedOperationError, com.OperationNotDefinedError),
+    reason="Materialize doesn't have built-in first()/last() aggregates. Use MIN/MAX window functions instead.",
+    # Ref: https://materialize.com/docs/transform-data/idiomatic-materialize-sql/last-value/
 )
 @pytest.mark.notimpl(
     ["risingwave"],
@@ -614,6 +626,12 @@ def test_first_last(alltypes, method, filtered, include_null):
 @pytest.mark.notimpl(
     ["druid", "impala", "mssql", "mysql", "oracle"],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=(com.UnsupportedOperationError, com.OperationNotDefinedError),
+    reason="Materialize doesn't have built-in first()/last() aggregates. Use MIN/MAX window functions instead.",
+    # Ref: https://materialize.com/docs/transform-data/idiomatic-materialize-sql/last-value/
 )
 @pytest.mark.parametrize("method", ["first", "last"])
 @pytest.mark.parametrize("filtered", [False, True], ids=["not-filtered", "filtered"])
@@ -743,6 +761,12 @@ def test_argmin_argmax(alltypes, method, filtered, null_result):
         "risingwave",
     ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize doesn't have an arbitrary() aggregate function. Consider using ANY_VALUE or custom logic.",
+    # Ref: https://materialize.com/docs/sql/functions/#aggregate-functions
 )
 @pytest.mark.parametrize("filtered", [False, True])
 def test_arbitrary(alltypes, filtered):
@@ -883,10 +907,18 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
             lambda t: t.string_col.isin(["1", "7"]),
             id="is_in",
             marks=[
-                pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+                pytest.mark.notimpl(
+                    ["datafusion", "materialize"], raises=com.OperationNotDefinedError
+                )
             ],
         ),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    reason="Materialize has no native percentile/quantile functions. Must calculate manually using histogram patterns.",
+    # Ref: https://materialize.com/docs/transform-data/patterns/percentiles/
+    raises=com.OperationNotDefinedError,
 )
 def test_quantile(
     alltypes,
@@ -925,7 +957,7 @@ def test_quantile(
     ],
 )
 @pytest.mark.notyet(
-    ["druid", "flink", "impala", "mysql", "sqlite"],
+    ["druid", "flink", "impala", "mysql", "sqlite", "materialize"],
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
     reason="quantiles (approximate or otherwise) not supported",
 )
@@ -1109,6 +1141,12 @@ def test_approx_quantile(con, filtered, multi):
     ],
 )
 @pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize doesn't support correlation (CORR) and covariance (COVAR_POP/COVAR_SAMP) functions.",
+    # Ref: https://materialize.com/docs/sql/functions/#aggregate-functions
+)
 def test_corr_cov(
     con,
     batting,
@@ -1140,6 +1178,12 @@ def test_corr_cov(
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.never(
+    ["materialize"],
+    reason="Materialize has no native percentile/quantile functions. Must calculate manually using histogram patterns.",
+    # Ref: https://materialize.com/docs/transform-data/patterns/percentiles/
+    raises=com.OperationNotDefinedError,
+)
 def test_approx_median(alltypes):
     expr = alltypes.double_col.approx_median()
     result = expr.execute()
@@ -1154,8 +1198,9 @@ def test_approx_median(alltypes):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.never(
-    ["flink"],
-    reason="backend doesn't implement approximate quantiles yet",
+    ["flink", "materialize"],
+    reason="Materialize has no native percentile/quantile/median functions (see percentile pattern docs).",
+    # Ref: https://materialize.com/docs/transform-data/patterns/percentiles/
     raises=com.OperationNotDefinedError,
 )
 def test_median(alltypes, df):
@@ -1197,6 +1242,12 @@ def test_median(alltypes, df):
 )
 @pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
+@pytest.mark.never(
+    ["materialize"],
+    reason="Materialize has no native percentile/quantile functions. Must calculate manually using histogram patterns.",
+    # Ref: https://materialize.com/docs/transform-data/patterns/percentiles/
+    raises=com.OperationNotDefinedError,
+)
 @pytest.mark.parametrize(
     "func",
     [
@@ -1250,6 +1301,12 @@ def test_string_quantile(alltypes, func):
     ["databricks"],
     raises=DatabricksServerOperationError,
     reason="percentile of string is not allowed",
+)
+@pytest.mark.never(
+    ["materialize"],
+    reason="Materialize has no native percentile/quantile functions. Must calculate manually using histogram patterns.",
+    # Ref: https://materialize.com/docs/transform-data/patterns/percentiles/
+    raises=com.OperationNotDefinedError,
 )
 def test_date_quantile(alltypes):
     expr = alltypes.timestamp_col.date().quantile(0.5)
@@ -1519,6 +1576,12 @@ def agg_to_ndarray(s: pd.Series) -> np.ndarray:
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize doesn't support Python UDAFs. SQL UDFs exist but not UDAFs.",
+    # Ref: https://materialize.com/docs/sql/create-function/
+)
+@pytest.mark.notyet(
     ["pyspark"],
     condition=IS_SPARK_REMOTE,
     raises=PySparkPythonException,
@@ -1567,6 +1630,12 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "athena",
     ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize doesn't support Python UDAFs. SQL UDFs exist but not UDAFs.",
+    # Ref: https://materialize.com/docs/sql/create-function/
 )
 @pytest.mark.notyet(
     ["pyspark"],

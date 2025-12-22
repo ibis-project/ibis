@@ -22,6 +22,7 @@ UUID_BACKEND_TYPE = {
     "impala": "STRING",
     "mssql": "uniqueidentifier",
     "postgres": "uuid",
+    "materialize": "uuid",
     "risingwave": "character varying",
     "snowflake": "VARCHAR",
     "sqlite": "text",
@@ -62,6 +63,12 @@ def test_uuid_literal(con, backend, value):
     ["druid", "exasol", "oracle", "polars", "risingwave", "pyspark"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize will never support UUID generation - nondeterministic functions can't be used in materialized views (their core feature)",
+    # Ref: https://materialize.com/docs/sql/functions/#unmaterializable-functions
+)
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.never(
     ["mysql"], raises=AssertionError, reason="MySQL generates version 1 UUIDs"
@@ -75,6 +82,12 @@ def test_uuid_function(con):
 @pytest.mark.notimpl(
     ["druid", "exasol", "oracle", "polars", "risingwave", "pyspark"],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize will never support UUID generation - nondeterministic functions can't be used in materialized views (their core feature)",
+    # Ref: https://materialize.com/docs/sql/functions/#unmaterializable-functions
 )
 def test_uuid_unique_each_row(con):
     expr = (
