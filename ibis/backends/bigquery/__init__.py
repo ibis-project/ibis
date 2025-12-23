@@ -863,6 +863,17 @@ class Backend(
     ) -> None:
         """Insert data into a table.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         name
@@ -883,6 +894,53 @@ class Backend(
             db = self.current_database
 
         return super().insert(name, obj, database=(catalog, db), overwrite=overwrite)
+
+    def upsert(
+        self,
+        name: str,
+        /,
+        obj: pd.DataFrame | ir.Table | list | dict,
+        on: str,
+        *,
+        database: str | None = None,
+    ) -> None:
+        """Upsert data into a table.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        name
+            The name of the table to which data will be upserted
+        obj
+            The source data or expression to upsert
+        on
+            Column name to join on
+        database
+            Name of the attached database that the table is located in.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
+        """
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        if catalog is None:
+            catalog = self.current_catalog
+        if db is None:
+            db = self.current_database
+
+        return super().upsert(name, obj, on, database=(catalog, db))
 
     def _to_query(
         self,
