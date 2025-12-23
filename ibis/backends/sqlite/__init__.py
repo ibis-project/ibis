@@ -485,9 +485,11 @@ class Backend(
         if schema is not None:
             schema = ibis.schema(schema)
 
+        in_memory = False
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 obj = ibis.memtable(obj)
+                in_memory = True
 
             self._run_pre_execute_hooks(obj)
 
@@ -503,35 +505,41 @@ class Backend(
             else:
                 database = "temp"
 
+        quoted = self.compiler.quoted
+        dialect = self.dialect
+
         if overwrite:
             created_table = sg.table(
                 util.gen_name(f"{self.name}_table"),
                 catalog=database,
-                quoted=self.compiler.quoted,
+                quoted=quoted,
             )
-            table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+            table = sg.table(name, catalog=database, quoted=quoted)
         else:
-            created_table = table = sg.table(
-                name, catalog=database, quoted=self.compiler.quoted
-            )
+            created_table = table = sg.table(name, catalog=database, quoted=quoted)
 
         create_stmt = self._generate_create_table(
             created_table, schema=(schema or obj.schema())
-        ).sql(self.name)
+        ).sql(dialect)
 
         with self.begin() as cur:
             cur.execute(create_stmt)
 
             if insert_query is not None:
                 cur.execute(
-                    sge.Insert(this=created_table, expression=insert_query).sql(
-                        self.name
-                    )
+                    sge.Insert(this=created_table, expression=insert_query).sql(dialect)
                 )
+
+                if in_memory:
+                    cur.execute(
+                        sge.Drop(kind="TABLE", this=obj.get_name(), exists=True).sql(
+                            dialect
+                        )
+                    )
 
             if overwrite:
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=table, exists=True).sql(self.name)
+                    sge.Drop(kind="TABLE", this=table, exists=True).sql(dialect)
                 )
                 # SQLite's ALTER TABLE statement doesn't support using a
                 # fully-qualified table reference after RENAME TO. Since we
@@ -539,7 +547,7 @@ class Backend(
                 # here.
                 quoted_name = _quote(name)
                 cur.execute(
-                    f"ALTER TABLE {created_table.sql(self.name)} RENAME TO {quoted_name}"
+                    f"ALTER TABLE {created_table.sql(dialect)} RENAME TO {quoted_name}"
                 )
 
         if schema is None:
