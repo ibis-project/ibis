@@ -141,6 +141,13 @@ jobs:
             sys-deps:
               - libgeos-dev
               - default-libmysqlclient-dev
+          - name: singlestoredb
+            title: SingleStoreDB
+            serial: true
+            services:
+              - singlestoredb
+            extras:
+              - --extra singlestoredb
           - name: postgres
             title: PostgreSQL
             serial: true
@@ -313,6 +320,15 @@ jobs:
               sys-deps:
                 - libgeos-dev
                 - default-libmysqlclient-dev
+          - os: windows-latest
+            backend:
+              name: singlestoredb
+              title: SingleStoreDB
+              serial: true
+              extras:
+                - --extra singlestoredb
+              services:
+                - singlestoredb
           - os: windows-latest
             backend:
               name: clickhouse
