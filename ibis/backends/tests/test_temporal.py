@@ -1041,9 +1041,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["datafusion", "druid", "exasol"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["druid", "exasol"], raises=com.OperationNotDefinedError)
 def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     expr = expr_fn(alltypes)
     expected = df.timestamp_col.dt.strftime(pandas_pattern).rename("formatted")
