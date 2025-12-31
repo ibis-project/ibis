@@ -305,7 +305,7 @@ docs = [
   "jupyterlab>=4.2.5,<5",
   "jupyterlab-night>=0.4.6,<1",
   "jupyterlite-core>=0.6,<0.8",
-  "jupyterlite-pyodide-kernel>=0.6,<0.7",
+  "jupyterlite-pyodide-kernel>=0.6,<0.8",
 ]
 
 [project.entry-points."ibis.backends"]
