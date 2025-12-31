@@ -288,7 +288,7 @@ tests = [
   "tomli>=2.0.1,<3",
 ]
 docs = [
-  "altair>=5.0.1,<6",
+  "altair>=5.0.1,<7",
   "griffe>=1.7.3",
   "ipykernel>=6.25.1,<8",
   "itables>=1.6.3,<2.6",
