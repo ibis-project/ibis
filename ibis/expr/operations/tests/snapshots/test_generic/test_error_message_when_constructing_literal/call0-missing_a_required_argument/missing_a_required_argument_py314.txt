@@ -1,0 +1,3 @@
+Literal(1) missing a required argument: 'dtype'
+
+Expected signature: Literal(value: Argument(default=<class 'inspect._empty'>, pattern=AllOf(patterns=(Any(), Not(pattern=InstanceOf(type=<class 'ibis.common.deferred.Deferred'>)))), kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>, typehint=typing.Annotated[typing.Any, Not(pattern=InstanceOf(type=<class 'ibis.common.deferred.Deferred'>))]), dtype: Argument(default=<class 'inspect._empty'>, pattern=CoercedTo(func=<bound method DataType.__coerce__ of <class 'ibis.expr.datatypes.core.DataType'>>, type=<class 'ibis.expr.datatypes.core.DataType'>), kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>, typehint=+T))

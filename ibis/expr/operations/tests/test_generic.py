@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from functools import partial
 from typing import Union
 
@@ -120,7 +121,11 @@ def test_coerced_to_interval_value():
 def test_error_message_when_constructing_literal(call, error, snapshot):
     with pytest.raises(ValidationError) as exc:
         call()
-    snapshot.assert_match(str(exc.value), f"{error}.txt")
+    if sys.version_info >= (3, 14):
+        target = f"{error}_py314.txt"
+    else:
+        target = f"{error}.txt"
+    snapshot.assert_match(str(exc.value), target)
 
 
 def test_implicit_coercion_of_null_literal():

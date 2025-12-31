@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import pickle
+import sys
 from typing import Annotated, Union
 
 import pytest
@@ -255,7 +256,11 @@ def test_signature_from_callable_with_keyword_only_arguments(snapshot):
 
     with pytest.raises(ValidationError) as excinfo:
         sig.validate(test, args=(2, 3, 4), kwargs={})
-    snapshot.assert_match(str(excinfo.value), "too_many_positional_arguments.txt")
+    if sys.version_info >= (3, 14):
+        target = "too_many_positional_arguments_py314.txt"
+    else:
+        target = "too_many_positional_arguments.txt"
+    snapshot.assert_match(str(excinfo.value), target)
 
     args, kwargs = sig.unbind(sig.validate(test, args=(2, 3), kwargs=dict(c=4.0)))
     assert args == (2, 3)
@@ -439,7 +444,11 @@ def test_annotated_function_without_decoration(snapshot):
     func = annotated(test)
     with pytest.raises(ValidationError) as excinfo:
         func(1, 2)
-    snapshot.assert_match(str(excinfo.value), "error.txt")
+    if sys.version_info >= (3, 14):
+        target = "error_py314.txt"
+    else:
+        target = "error.txt"
+    snapshot.assert_match(str(excinfo.value), target)
 
     assert func(1, 2, c=3) == 6
 

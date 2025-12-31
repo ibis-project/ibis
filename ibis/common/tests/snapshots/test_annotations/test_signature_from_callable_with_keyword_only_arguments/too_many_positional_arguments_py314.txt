@@ -1,0 +1,3 @@
+test(2, 3, 4) too many positional arguments
+
+Expected signature: test(a: Argument(default=<class 'inspect._empty'>, pattern=InstanceOf(type=<class 'int'>), kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>, typehint=<class 'int'>), b: Argument(default=<class 'inspect._empty'>, pattern=InstanceOf(type=<class 'int'>), kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>, typehint=<class 'int'>), *, c: Argument(default=<class 'inspect._empty'>, pattern=InstanceOf(type=<class 'float'>), kind=<_ParameterKind.KEYWORD_ONLY: 3>, typehint=<class 'float'>), d: Argument(default=0.0, pattern=InstanceOf(type=<class 'float'>), kind=<_ParameterKind.KEYWORD_ONLY: 3>, typehint=<class 'float'>) = 0.0)

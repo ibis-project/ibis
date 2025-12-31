@@ -1124,7 +1124,9 @@ def test_error_message(snapshot):
 
     # assert "Failed" in str(exc_info.value)
 
-    if sys.version_info >= (3, 11):
+    if sys.version_info >= (3, 14):
+        target = "error_message_py314.txt"
+    elif sys.version_info >= (3, 11):
         target = "error_message_py311.txt"
     else:
         target = "error_message.txt"

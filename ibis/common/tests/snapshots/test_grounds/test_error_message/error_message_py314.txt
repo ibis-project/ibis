@@ -1,0 +1,8 @@
+Example('1', '2', '3', '4', '5', []) has failed due to the following errors:
+  `a`: '1' of type <class 'str'> is not an int
+  `b`: '2' of type <class 'str'> is not an int
+  `d`: '4' of type <class 'str'> is not either None or a float
+  `e`: '5' of type <class 'str'> is not a tuple of ints
+  `f`: [] of type <class 'list'> is not coercible to an int
+
+Expected signature: Example(a: Argument(default=<class 'inspect._empty'>, pattern=InstanceOf(type=<class 'int'>), kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>, typehint=<class 'int'>), b: Argument(default=0, pattern=InstanceOf(type=<class 'int'>), kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>, typehint=<class 'int'>) = 0, c: Argument(default='foo', pattern=InstanceOf(type=<class 'str'>), kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>, typehint=<class 'str'>) = 'foo', d: Argument(default=None, pattern=Option(default=None, pattern=InstanceOf(type=<class 'float'>)), kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>, typehint=float | None) = None, e: Argument(default=(1, 2, 3), pattern=SequenceOf(item=InstanceOf(type=<class 'int'>), type=<class 'tuple'>), kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>, typehint=tuple[int, ...]) = (1, 2, 3), f: Argument(default=1, pattern=CoercedTo(func=<class 'int'>, type=<class 'int'>), kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>, typehint=ibis.common.patterns.CoercedTo[int]) = 1)
