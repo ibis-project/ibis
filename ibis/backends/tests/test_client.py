@@ -35,6 +35,7 @@ from ibis.backends.tests.errors import (
     PsycoPgUndefinedObject,
     Py4JJavaError,
     PyAthenaDatabaseError,
+    PyAthenaOperationalError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
     SnowflakeProgrammingError,
@@ -742,6 +743,11 @@ def test_upsert_from_expr(
 
 
 @NO_MERGE_SUPPORT
+@pytest.mark.notyet(
+    ["athena"],
+    raises=PyAthenaOperationalError,
+    reason="Modifying Hive table rows is only supported for transactional tables",
+)
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
 @pytest.mark.notimpl(
     ["flink"],
