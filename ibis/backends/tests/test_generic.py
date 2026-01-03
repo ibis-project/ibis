@@ -2562,7 +2562,11 @@ def test_table_describe_with_multiple_decimal_columns(con):
     assert len(result) == 2
 
 
-@pytest.mark.notimpl(
+@pytest.mark.notyet(["clickhouse"], raises=NotImplementedError)
+@pytest.mark.notyet(["exasol"], raises=TypeError)
+@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
+@pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
+@pytest.mark.notyet(
     ["sqlite"],
     raises=(
         sqlite3.ProgrammingError,
