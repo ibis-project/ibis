@@ -44,7 +44,7 @@ class Foo(enum.Enum):
         (-32769, dt.int32),
         (-2147483649, dt.int64),
         (1.5, dt.double),
-        (decimal.Decimal("1.5"), dt.decimal),
+        (decimal.Decimal("1.5"), dt.Decimal(precision=2, scale=1)),
         # parametric types
         (list("abc"), dt.Array(dt.string)),
         (set("abc"), dt.Array(dt.string)),
