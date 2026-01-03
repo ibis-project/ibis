@@ -143,9 +143,7 @@ def infer_enum(_: enum.Enum) -> dt.String:
 @infer.register(decimal.Decimal)
 def infer_decimal(value: decimal.Decimal) -> dt.Decimal:
     """Infer the [`Decimal`](./datatypes.qmd#ibis.expr.datatypes.Decimal) type of `value`."""
-    from ibis.formats.pyarrow import PyArrowData
-
-    return PyArrowData.infer_scalar(value)
+    return dt.decimal
 
 
 @infer.register(bool)
