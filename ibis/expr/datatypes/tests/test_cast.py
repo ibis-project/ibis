@@ -135,7 +135,12 @@ def test_struct_different_fields():
         # Not equal
         ((12, 2), (13, 3), True),
         ((13, 2), (12, 3), False),
-        ((13, 2), (12, 1), False),
+        ((13, 2), (None, 3), True),
+        ((12, 3), (13, 2), False),
+        ((12, 3), (13, None), True),
+        # Precision and scale are both `None`
+        ((None, None), (12, 2), True),
+        ((12, 2), (None, None), True),
     ],
 )
 def test_castable_decimal_to_decimal(source, target, expected):
