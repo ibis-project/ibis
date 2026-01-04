@@ -413,8 +413,8 @@ def _scalar_parameter(op, dtype, **kwargs):
 
 
 @fmt.register(ops.SortKey)
-def _sort_key(op, expr, **kwargs):
-    return f"{'asc' if op.ascending else 'desc'} {expr}"
+def _sort_key(op, arg, **kwargs):
+    return f"{'asc' if op.ascending else 'desc'} {arg}"
 
 
 @fmt.register(ops.GeoSpatialBinOp)

@@ -394,7 +394,7 @@ class ArrayCollect(Filterable, Reduction):
     distinct: bool = False
 
     def __init__(self, arg, order_by, distinct, **kwargs):
-        if distinct and order_by and [arg] != [key.expr for key in order_by]:
+        if distinct and order_by and [arg] != [key.arg for key in order_by]:
             raise ValidationError(
                 "`collect` with `order_by` and `distinct=True` and may only "
                 "order by the collected column"
