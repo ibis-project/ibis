@@ -495,7 +495,7 @@ def test_order_by(table):
 
     sort_key = result.keys[0]
 
-    assert_equal(sort_key.expr, table.f.op())
+    assert_equal(sort_key.arg, table.f.op())
     assert sort_key.ascending
 
     # non-list input. per #150
