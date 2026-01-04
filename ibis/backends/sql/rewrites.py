@@ -313,9 +313,9 @@ def merge_select_select(_, **kwargs):
     unique_qualified = toolz.unique(_.parent.qualified + qualified)
 
     sort_keys = tuple(s.replace(subs, filter=ops.Value) for s in _.sort_keys)
-    sort_key_exprs = {s.expr for s in sort_keys}
+    sort_key_args = {s.arg for s in sort_keys}
     parent_sort_keys = tuple(
-        k for k in _.parent.sort_keys if k.expr not in sort_key_exprs
+        k for k in _.parent.sort_keys if k.arg not in sort_key_args
     )
     unique_sort_keys = sort_keys + parent_sort_keys
 
@@ -325,7 +325,7 @@ def merge_select_select(_, **kwargs):
         predicates=unique_predicates,
         qualified=unique_qualified,
         sort_keys=tuple(
-            key for key in unique_sort_keys if not isinstance(key.expr, ops.Literal)
+            key for key in unique_sort_keys if not isinstance(key.arg, ops.Literal)
         ),
         distinct=distinct,
     )
