@@ -166,7 +166,7 @@ PySpark is a great API for Spark, but not very Pythonic and tightly coupled to
 the Spark execution engine.
 
 Ibis takes inspiration from pandas and PySpark -- and R and SQL -- but is designed to be
-scalable from the start. If offers a neutral,
+scalable from the start. It offers a neutral,
 [self-governed](https://github.com/ibis-project/governance) open source option
 for your data platform.
 :::
