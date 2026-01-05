@@ -4,7 +4,7 @@ aiohappyeyeballs==2.6.1
 aiohttp==3.13.1
 aioitertools==0.12.0
 aiosignal==1.4.0
-altair==5.5.0
+altair==6.0.0
 annotated-types==0.7.0
 anyio==4.11.0
 anywidget==0.9.18 ; python_full_version >= '3.10'
