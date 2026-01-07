@@ -2914,9 +2914,9 @@ version = "11.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "atpublic" },
+    { name = "parsimonious" },
     { name = "parsy" },
     { name = "python-dateutil" },
-    { name = "singlestoredb" },
     { name = "sqlglot" },
     { name = "toolz" },
     { name = "typing-extensions" },
@@ -3317,6 +3317,7 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'sqlite'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'trino'", specifier = ">=1.5.3,<3" },
     { name = "pandas-gbq", marker = "extra == 'bigquery'", specifier = ">=0.26.1" },
+    { name = "parsimonious", specifier = ">=0.11.0" },
     { name = "parsy", specifier = ">=2" },
     { name = "pins", extras = ["gcs"], marker = "extra == 'examples'", specifier = ">=0.8.3" },
     { name = "polars", marker = "extra == 'polars'", specifier = ">=1" },
@@ -3395,7 +3396,6 @@ requires-dist = [
     { name = "rich", marker = "extra == 'sqlite'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'trino'", specifier = ">=12.4.4" },
     { name = "shapely", marker = "extra == 'geospatial'", specifier = ">=2" },
-    { name = "singlestoredb", specifier = ">=1.16.7" },
     { name = "singlestoredb", marker = "extra == 'singlestoredb'", specifier = ">=1.0" },
     { name = "snowflake-connector-python", marker = "extra == 'snowflake'", specifier = ">=3.0.2,!=3.3.0b1" },
     { name = "sqlglot", specifier = ">=23.4,!=26.32.0" },

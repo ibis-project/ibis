@@ -213,6 +213,7 @@ singlestoredb = [
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
+  "parsimonious>=0.11.0",
   "rich>=12.4.4",
 ]
 snowflake = [

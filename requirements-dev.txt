@@ -181,6 +181,7 @@ packaging==25.0
 pandas==2.2.3
 pandas-gbq==0.29.2
 pandocfilters==1.5.1
+parsimonious==0.11.0
 parso==0.8.5
 parsy==2.2
 pathspec==0.12.1
