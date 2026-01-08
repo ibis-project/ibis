@@ -225,8 +225,8 @@ class Backend(
 
         Examples
         --------
-        >>> con.create_database("my_database")
-        >>> con.create_database("my_database", force=True)  # Won't fail if exists
+        >>> con.create_database("my_database")  # doctest: +SKIP
+        >>> con.create_database("my_database", force=True)  # doctest: +SKIP
         """
         sql = sge.Create(
             kind="DATABASE", exists=force, this=sg.to_identifier(name)
@@ -250,8 +250,8 @@ class Backend(
 
         Examples
         --------
-        >>> con.drop_database("my_database")
-        >>> con.drop_database("my_database", force=True)  # Won't fail if not exists
+        >>> con.drop_database("my_database")  # doctest: +SKIP
+        >>> con.drop_database("my_database", force=True)  # doctest: +SKIP
         """
         sql = sge.Drop(
             kind="DATABASE", exists=force, this=sg.table(name, catalog=catalog)
@@ -301,11 +301,11 @@ class Backend(
 
         Examples
         --------
-        >>> con.list_tables()
+        >>> con.list_tables()  # doctest: +SKIP
         ['users', 'orders', 'products']
-        >>> con.list_tables(like="user_%")
+        >>> con.list_tables(like="user_%")  # doctest: +SKIP
         ['users', 'user_profiles']
-        >>> con.list_tables(database="other_db")
+        >>> con.list_tables(database="other_db")  # doctest: +SKIP
         ['table1', 'table2']
         """
         from operator import itemgetter
@@ -368,8 +368,8 @@ class Backend(
 
         Examples
         --------
-        >>> schema = con.get_schema("users")
-        >>> print(schema)
+        >>> schema = con.get_schema("users")  # doctest: +SKIP
+        >>> print(schema)  # doctest: +SKIP
         Schema:
           id: int64
           name: string
@@ -417,7 +417,7 @@ class Backend(
 
         Examples
         --------
-        >>> with con.begin() as cur:
+        >>> with con.begin() as cur:  # doctest: +SKIP
         ...     cur.execute("SELECT COUNT(*) FROM users")
         ...     result = cur.fetchone()
         """
@@ -515,15 +515,19 @@ class Backend(
 
         Examples
         --------
-        >>> import pandas as pd
-        >>> df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
-        >>> table = con.create_table("my_table", df)
-        >>> # Create with explicit schema
-        >>> import ibis
-        >>> schema = ibis.schema({"id": "int64", "name": "string"})
-        >>> table = con.create_table("users", schema=schema)
-        >>> # Create temporary table
-        >>> temp_table = con.create_table("temp_data", df, temp=True)
+        >>> import pandas as pd  # doctest: +SKIP
+        >>> df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})  # doctest: +SKIP
+        >>> table = con.create_table("my_table", df)  # doctest: +SKIP
+
+        Create with explicit schema:
+
+        >>> import ibis  # doctest: +SKIP
+        >>> schema = ibis.schema({"id": "int64", "name": "string"})  # doctest: +SKIP
+        >>> table = con.create_table("users", schema=schema)  # doctest: +SKIP
+
+        Create temporary table:
+
+        >>> temp_table = con.create_table("temp_data", df, temp=True)  # doctest: +SKIP
         """
         import sqlglot as sg
         import sqlglot.expressions as sge
@@ -734,11 +738,13 @@ class Backend(
 
         Examples
         --------
-        >>> cursor = con.raw_sql("SELECT * FROM users WHERE id = %s", (123,))
-        >>> results = cursor.fetchall()
-        >>> cursor.close()
-        >>> # Using with context manager
-        >>> with con.raw_sql("SHOW TABLES") as cursor:
+        >>> cursor = con.raw_sql("SELECT * FROM users WHERE id = %s", (123,))  # doctest: +SKIP
+        >>> results = cursor.fetchall()  # doctest: +SKIP
+        >>> cursor.close()  # doctest: +SKIP
+
+        Using with context manager:
+
+        >>> with con.raw_sql("SHOW TABLES") as cursor:  # doctest: +SKIP
         ...     tables = [row[0] for row in cursor.fetchall()]
         """
         with contextlib.suppress(AttributeError):
@@ -896,6 +902,37 @@ class Backend(
             Enable LOAD DATA LOCAL INFILE support
         kwargs : dict, optional
             Additional keyword arguments passed to the underlying client
+
+        Examples
+        --------
+        >>> import os
+        >>> import ibis
+        >>> host = os.environ.get("IBIS_TEST_SINGLESTOREDB_HOST", "localhost")
+        >>> user = os.environ.get("IBIS_TEST_SINGLESTOREDB_USER", "root")
+        >>> password = os.environ.get("IBIS_TEST_SINGLESTOREDB_PASSWORD", "ibis_testing")
+        >>> database = os.environ.get("IBIS_TEST_SINGLESTOREDB_DATABASE", "ibis_testing")
+        >>> port = int(os.environ.get("IBIS_TEST_SINGLESTOREDB_PORT", "3307"))
+        >>> con = ibis.singlestoredb.connect(
+        ...     database=database, host=host, user=user, password=password, port=port
+        ... )
+        >>> con.list_tables()  # doctest: +ELLIPSIS
+        [...]
+        >>> t = con.table("functional_alltypes")
+        >>> t
+        DatabaseTable: functional_alltypes
+          id              int32
+          bool_col        boolean
+          tinyint_col     int8
+          smallint_col    int16
+          int_col         int32
+          bigint_col      int64
+          float_col       float32
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   timestamp
+          year            int32
+          month           int32
         """
         import singlestoredb as s2
         from singlestoredb.connection import build_params
@@ -927,7 +964,7 @@ class Backend(
 
         Examples
         --------
-        >>> con.rename_table("old_table", "new_table")
+        >>> con.rename_table("old_table", "new_table")  # doctest: +SKIP
         """
         old_name = self._quote_table_name(old_name)
         new_name = self._quote_table_name(new_name)
@@ -995,16 +1032,20 @@ def connect(
     --------
     Basic connection:
 
-    >>> import ibis
-    >>> con = ibis.singlestoredb.connect(
-    ...     host="localhost", user="root", password="password", database="my_database"
+    >>> import ibis  # doctest: +SKIP
+    >>> con = ibis.singlestoredb.connect(  # doctest: +SKIP
+    ...     host="localhost",
+    ...     user="root",
+    ...     password="password",
+    ...     database="my_database",
+    ...     port=3307,
     ... )
 
     Connection with additional options:
 
-    >>> con = ibis.singlestoredb.connect(
+    >>> con = ibis.singlestoredb.connect(  # doctest: +SKIP
     ...     host="singlestore.example.com",
-    ...     port=3306,
+    ...     port=3307,
     ...     user="app_user",
     ...     password="secret",
     ...     database="production",
@@ -1014,7 +1055,7 @@ def connect(
 
     Using connection string (alternative method):
 
-    >>> con = ibis.connect("singlestoredb://user:password@host:port/database")
+    >>> con = ibis.connect("singlestoredb://user:password@host:port/database")  # doctest: +SKIP
     """
     backend = Backend()
     backend.do_connect(
