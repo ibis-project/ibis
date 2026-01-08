@@ -1,6 +1,6 @@
 SELECT
   "t0"."a",
-  "t0"."b" * 2 AS "b2"
+  "t0"."b" * CAST(2 AS TINYINT) AS "b2"
 FROM "my_table" AS "t0"
 WHERE
   "t0"."a" < 100
@@ -10,7 +10,7 @@ WHERE
     FROM (
       SELECT
         "t0"."a",
-        "t0"."b" * 2 AS "b2"
+        "t0"."b" * CAST(2 AS TINYINT) AS "b2"
       FROM "my_table" AS "t0"
       WHERE
         "t0"."a" < 100

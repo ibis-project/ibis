@@ -458,8 +458,6 @@ class DuckDBCompiler(SQLGlotCompiler):
                 return self.cast(
                     str(value), to=dt.float32 if dtype.is_decimal() else dtype
                 )
-            if dtype.is_floating() or dtype.is_integer():
-                return sge.convert(value)
             return self.cast(value, dtype)
         elif dtype.is_time():
             return self.f.make_time(
@@ -568,6 +566,11 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_ApproxQuantile(self, op, *, arg, quantile, where):
         if not op.arg.dtype.is_floating():
             arg = self.cast(arg, dt.float64)
+        # duckdb only implements approx_quantile(x, FLOAT | FLOAT[])
+        if op.quantile.dtype.is_array():
+            quantile = self.cast(quantile, dt.Array(dt.float32))
+        else:
+            quantile = self.cast(quantile, dt.float32)
         return self.agg.approx_quantile(arg, quantile, where=where)
 
     visit_ApproxMultiQuantile = visit_ApproxQuantile

@@ -1,6 +1,6 @@
 SELECT DISTINCT
   "t1"."a",
-  "t1"."b" % 2 AS "d"
+  "t1"."b" % CAST(2 AS TINYINT) AS "d"
 FROM (
   SELECT DISTINCT
     "t0"."a",
