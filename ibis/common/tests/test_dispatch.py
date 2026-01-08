@@ -8,20 +8,20 @@ from ibis.common.dispatch import lazy_singledispatch
 
 def test_lazy_singledispatch():
     @lazy_singledispatch
-    def foo(_):
+    def foo(_) -> str | int | float | tuple:
         """A docstring."""
         return "base result"
 
     @foo.register(int)
-    def _(x):
+    def _(x) -> int:
         return x + 1
 
     @foo.register(float)
-    def _(x):
+    def _(x) -> float:
         return x - 1
 
     @foo.register((tuple, list))
-    def _(x):
+    def _(x) -> tuple:
         return tuple(foo(i) for i in x)
 
     class Bar:
@@ -118,3 +118,53 @@ def test_lazy_singledispatch_abc():
     assert foo({}) == "mapping"
     assert foo(mydict()) == "mydict"  # concrete takes precedence
     assert foo(sum) == "callable"
+
+
+def test_lazy_singledispatch_finalize():
+    @lazy_singledispatch
+    def foo(_):
+        return "base"
+
+    @foo.register(int)
+    def _(_):
+        return "int"
+
+    foo.finalize()
+
+    try:
+
+        @foo.register(float)
+        def _(_):
+            return "float"
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Expected RuntimeError")
+
+
+def test_lazy_singledispatch_typing():
+    # If we declare the original function as returning type T,
+    # then all registered implementations must also return type T.
+    @lazy_singledispatch
+    def returns_int(x) -> int:
+        return x
+
+    @returns_int.register(int)
+    def _(x) -> int:
+        return x + 1
+
+    @returns_int.register(str)  # ty:ignore[invalid-argument-type]
+    def _(x) -> str:
+        return x + "!"
+
+    # And all the results should be typed as int
+
+    def func_taking_int(x: int):
+        return x
+
+    def func_taking_str(x: str):
+        return x
+
+    inty = returns_int(1)
+    func_taking_int(inty)
+    func_taking_str(inty)  # ty:ignore[invalid-argument-type]

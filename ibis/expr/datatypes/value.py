@@ -250,7 +250,7 @@ def infer_shapely_multipolygon(value) -> dt.MultiPolygon:
 
 
 # lock the dispatcher to prevent adding new implementations
-del infer.register
+infer.finalize()
 
 
 # TODO(kszucs): should raise ValueError instead of TypeError

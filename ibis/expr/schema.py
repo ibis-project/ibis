@@ -55,7 +55,7 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         return self.fields[name]
 
     @classmethod
-    def __coerce__(cls, value) -> Schema:
+    def __coerce__(cls, value, **kwargs) -> Schema:
         if isinstance(value, cls):
             return value
         return schema(value)
@@ -482,5 +482,5 @@ def infer_polars_dataframe(df):
 
 
 # lock the dispatchers to avoid adding new implementations
-del infer.register
-del schema.register
+infer.finalize()
+schema.finalize()

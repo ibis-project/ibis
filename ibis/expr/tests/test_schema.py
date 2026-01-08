@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -12,6 +13,15 @@ import ibis.expr.schema as sch
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Annotable
 from ibis.common.patterns import CoercedTo
+
+
+def test_schema_factory_typing():
+    s = sch.schema({"a": "int64", "b": "string"})
+
+    def func_that_takes_schema(sch: sch.Schema):
+        return sch
+
+    func_that_takes_schema(s)
 
 
 def test_whole_schema():

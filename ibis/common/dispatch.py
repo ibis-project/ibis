@@ -3,13 +3,16 @@ from __future__ import annotations
 import abc
 import functools
 from collections import defaultdict
-from typing import Union
+from typing import Any, Callable, Generic, TypeVar, Union, overload
 
 from ibis.common.typing import UnionType, evaluate_annotations, get_args, get_origin
 from ibis.util import import_object, unalias_package
 
+IntoType = Union[tuple, type, abc.ABCMeta, str]
+R = TypeVar("R")
 
-class SingleDispatch:
+
+class _SingleDispatch:
     def __init__(self, func, typ=None):
         self.lookup = {}
         self.abc_lookup = {}
@@ -17,7 +20,7 @@ class SingleDispatch:
         self.func = func
         self.add(func, typ)
 
-    def add(self, func, typ=None):
+    def add(self, func, typ: IntoType | None = None):
         if typ is None:
             annots = getattr(func, "__annotations__", {})
             typehints = evaluate_annotations(annots, func.__module__, best_effort=True)
@@ -50,7 +53,16 @@ class SingleDispatch:
             self.lookup[typ] = func
         return func
 
-    def register(self, typ, func=None):
+    @overload
+    def register(
+        self, typ: IntoType | None, func: None
+    ) -> Callable[[Callable[..., R]], Callable[..., R]]: ...
+    @overload
+    def register(
+        self, typ: IntoType | None, func: Callable[..., R]
+    ) -> Callable[..., R]: ...
+
+    def register(self, typ: IntoType | None, func=None):
         """Register a new implementation for arguments of type `cls`."""
 
         def inner(func):
@@ -104,16 +116,45 @@ class SingleDispatch:
         return _method
 
 
-def lazy_singledispatch(func):
-    """A `singledispatch` implementation that supports lazily registering implementations."""
+class SingleDispatch(Generic[R]):
+    def __init__(self, func: Callable[..., R]) -> None:
+        self._dispatcher = _SingleDispatch(func, object)
+        self._finalized = False
+        self.__module__ = func.__module__
+        self.__doc__ = func.__doc__
+        self.__name__ = getattr(func, "__name__", None)
+        self.__qualname__ = getattr(func, "__qualname__", None)
+        self.__annotations__ = getattr(func, "__annotations__", {})
+        self.__type_params__ = getattr(func, "__type_params__", ())
 
-    dispatcher = SingleDispatch(func, object)
-
-    @functools.wraps(func)
-    def call(arg, *args, **kwargs):
-        impl = dispatcher.dispatch(type(arg))
+    def __call__(self, arg: Any, *args: Any, **kwargs: Any) -> R:
+        impl = self._dispatcher.dispatch(type(arg))
         return impl(arg, *args, **kwargs)
 
-    call.dispatch = dispatcher.dispatch
-    call.register = dispatcher.register
-    return call
+    def dispatch(self, typ: type) -> Callable[..., R]:
+        """Return the implementation for the given type."""
+        return self._dispatcher.dispatch(typ)
+
+    @overload
+    def register(
+        self, typ: IntoType, func: None = None
+    ) -> Callable[[Callable[..., R]], Callable[..., R]]: ...
+    @overload
+    def register(self, typ: IntoType, func: Callable[..., R]) -> Callable[..., R]: ...
+
+    def register(self, typ, func=None):
+        """Register a new implementation for arguments of type `cls`."""
+        if self._finalized:
+            raise RuntimeError(
+                "Cannot register new implementations on finalized dispatcher"
+            )
+        return self._dispatcher.register(typ, func)
+
+    def finalize(self) -> None:
+        """Prevent further registrations."""
+        self._finalized = True
+
+
+def lazy_singledispatch(func: Callable[..., R]) -> SingleDispatch[R]:
+    """A `singledispatch` implementation that supports lazily registering implementations."""
+    return SingleDispatch(func)

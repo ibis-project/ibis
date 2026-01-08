@@ -155,7 +155,7 @@ def from_polars(value, nullable=True):
 
 
 # lock the dispatcher to prevent new types from being registered
-del dtype.register
+dtype.finalize()
 
 
 @public
