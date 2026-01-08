@@ -63,7 +63,7 @@ services:
       - singlestoredb
     volumes:
       - singlestoredb:/data
-      - $PWD/docker/singlestoredb:/docker-entrypoint-initdb.d:ro
+      - $PWD/docker/singlestoredb/init.sql:/init.sql:ro
 
   postgres:
     environment:
