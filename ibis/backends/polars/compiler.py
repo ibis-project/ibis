@@ -1398,7 +1398,7 @@ def execute_sql_string_view(op, *, ctx: pl.SQLContext, **kw):
 
 @translate.register(ops.View)
 def execute_view(op, *, ctx: pl.SQLContext, **kw):
-    child = translate(op.child, ctx=ctx, **kw)
+    child = translate(op.parent, ctx=ctx, **kw)
     ctx.register(op.name, child)
     return child
 
