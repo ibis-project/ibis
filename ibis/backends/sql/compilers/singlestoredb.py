@@ -237,6 +237,13 @@ class SingleStoreDBCompiler(MySQLCompiler):
             else:
                 time_str = f"{value.hour:02d}:{value.minute:02d}:{value.second:02d}"
             return sge.Anonymous(this="TIME", expressions=[sge.convert(time_str)])
+        elif dtype.is_json():
+            # SingleStoreDB doesn't support `JSON '...'` syntax
+            # Use `:> JSON` cast operator instead: '{"key": "value"}' :> JSON
+            return sge.Cast(
+                this=sge.convert(str(value)),
+                to=sge.DataType.build("JSON", dialect=self.dialect),
+            )
         elif dtype.is_array() or dtype.is_struct() or dtype.is_map():
             # SingleStoreDB has some JSON support for these types
             # For now, treat them as unsupported like MySQL

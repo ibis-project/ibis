@@ -2914,7 +2914,6 @@ version = "11.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "atpublic" },
-    { name = "parsimonious" },
     { name = "parsy" },
     { name = "python-dateutil" },
     { name = "sqlglot" },
@@ -3143,6 +3142,7 @@ singlestoredb = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "numpy", version = "2.3.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
+    { name = "parsimonious" },
     { name = "pyarrow", version = "21.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "pyarrow", version = "22.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pyarrow-hotfix" },
@@ -3317,7 +3317,7 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'sqlite'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'trino'", specifier = ">=1.5.3,<3" },
     { name = "pandas-gbq", marker = "extra == 'bigquery'", specifier = ">=0.26.1" },
-    { name = "parsimonious", specifier = ">=0.11.0" },
+    { name = "parsimonious", marker = "extra == 'singlestoredb'", specifier = ">=0.11.0" },
     { name = "parsy", specifier = ">=2" },
     { name = "pins", extras = ["gcs"], marker = "extra == 'examples'", specifier = ">=0.8.3" },
     { name = "polars", marker = "extra == 'polars'", specifier = ">=1" },

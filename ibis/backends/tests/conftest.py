@@ -124,6 +124,11 @@ NO_MERGE_SUPPORT_MARKS = [
     pytest.mark.notyet(
         ["mysql"], raises=MySQLProgrammingError, reason="MERGE INTO is not supported"
     ),
+    pytest.mark.notyet(
+        ["singlestoredb"],
+        raises=SingleStoreDBProgrammingError,
+        reason="MERGE INTO is not supported",
+    ),
     pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented"),
     pytest.mark.notyet(
         ["pyspark"],
