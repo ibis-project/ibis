@@ -42,7 +42,7 @@ _SENTINEL = object()
 class Value(Expr):
     """Base class for a data generating expression having a known type."""
 
-    def name(self, name: str, /) -> Value:
+    def name(self, name: str, /) -> Self:
         """Rename an expression to `name`.
 
         Parameters
