@@ -16,13 +16,12 @@ from ibis.expr.operations.core import Value
 class SortKey(Value):
     """A sort key."""
 
-    # TODO(kszucs): rename expr to arg or something else except expr
-    expr: Value
+    arg: Value
     ascending: bool = True
     nulls_first: bool = False
 
-    dtype = rlz.dtype_like("expr")
-    shape = rlz.shape_like("expr")
+    dtype = rlz.dtype_like("arg")
+    shape = rlz.shape_like("arg")
 
     @classmethod
     def __coerce__(cls, key, T=None, S=None):
@@ -35,7 +34,7 @@ class SortKey(Value):
 
     @property
     def name(self) -> str:
-        return self.expr.name
+        return self.arg.name
 
     @property
     def descending(self) -> bool:

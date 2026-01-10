@@ -442,12 +442,11 @@ class SQLQueryResult(Relation):
 class View(PhysicalTable):
     """A view created from an expression."""
 
-    # TODO(kszucs): rename it to parent
-    child: Relation
+    parent: Relation
 
     @attribute
     def schema(self):
-        return self.child.schema
+        return self.parent.schema
 
 
 @public

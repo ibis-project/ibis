@@ -671,7 +671,7 @@ class Table(Expr, FixedTextJupyterMixin):
         dm = DerefMap.from_targets(self.op())
 
         bound = self._fast_bind(*args, **kwargs)
-        return (
+        return tuple(
             derefed.to_expr().name(name) if original is not derefed else original
             for name, original, derefed in zip(
                 (expr.get_name() for expr in bound),
@@ -3934,7 +3934,7 @@ class Table(Expr, FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
-        return ops.View(child=self, name=alias).to_expr()
+        return ops.View(parent=self, name=alias).to_expr()
 
     def sql(self, query: str, /, *, dialect: str | None = None) -> ir.Table:
         '''Run a SQL query against a table expression.
@@ -4030,7 +4030,7 @@ class Table(Expr, FixedTextJupyterMixin):
 
         if isinstance(op, ops.View):
             name = op.name
-            expr = op.child.to_expr()
+            expr = op.parent.to_expr()
         else:
             name = util.gen_name("sql_query")
             expr = self
@@ -5166,7 +5166,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def window_by(self, time_col: str | ir.Value, /) -> WindowedTable:
         from ibis.expr.types.temporal_windows import WindowedTable
 
-        time_col = next(self.bind(time_col))
+        (time_col,) = self.bind(time_col)
 
         # validate time_col is a timestamp column
         if not isinstance(time_col, TimestampColumn):

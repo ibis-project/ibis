@@ -143,3 +143,8 @@ def test_unbind(alltypes, expr_fn):
 def test_get_backend(con, alltypes):
     assert alltypes.get_backend() is con
     assert alltypes.id.min().get_backend() is con
+
+
+def test_backend_equality(con):
+    assert con == con
+    assert con != "a non backend object"
