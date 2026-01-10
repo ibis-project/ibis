@@ -449,7 +449,7 @@ class AliasedRelation(PhysicalTable):
 class SQLStringView(Relation):
     """A view created from a SQL string."""
 
-    child: Relation
+    parent: Relation
     query: str
     schema: Schema
     values = FrozenOrderedDict()
