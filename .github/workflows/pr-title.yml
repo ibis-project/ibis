@@ -21,7 +21,7 @@ jobs:
           node-version: 24
 
       - name: checkout code to pick up commitlint configuration
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 

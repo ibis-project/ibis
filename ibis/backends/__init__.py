@@ -997,6 +997,8 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         return hash(self.db_identity)
 
     def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
         return self.db_identity == other.db_identity
 
     @functools.cached_property
@@ -1303,7 +1305,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         expr: ir.Expr,
         /,
         *,
-        limit: str | int | None = None,
+        limit: int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         **kwargs: Any,
     ) -> str | pl.LazyFrame:

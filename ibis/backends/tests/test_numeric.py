@@ -1543,7 +1543,7 @@ def test_scalar_round_is_integer(con):
         param(
             [decimal.Decimal("1.1"), decimal.Decimal("2.2"), decimal.Decimal("3.3")],
             marks=[
-                pytest.mark.notimpl(
+                pytest.mark.notyet(
                     ["sqlite"],
                     raises=(
                         sqlite3.ProgrammingError,

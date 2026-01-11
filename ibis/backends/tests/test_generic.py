@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import decimal
+import sqlite3
 from collections import Counter
 from itertools import permutations
 from operator import invert, methodcaller
@@ -2559,6 +2560,27 @@ def test_table_describe_with_multiple_decimal_columns(con):
     expr = t.describe()
     result = con.to_pyarrow(expr)
     assert len(result) == 2
+
+
+@pytest.mark.notyet(["clickhouse"], raises=NotImplementedError)
+@pytest.mark.notyet(["exasol"], raises=TypeError)
+@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
+@pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
+@pytest.mark.notyet(
+    ["sqlite"],
+    raises=(
+        sqlite3.ProgrammingError,
+        # With Python 3.10, the same code raises a different exception type :(
+        sqlite3.InterfaceError,
+    ),
+)
+def test_comparison_with_decimal_literal(con):
+    t = ibis.memtable(
+        {"a": [decimal.Decimal(1), decimal.Decimal(2), decimal.Decimal(3)]}
+    )
+    expr = t.filter(t.a == decimal.Decimal(2))
+    result = con.to_pyarrow(expr)
+    assert len(result) == 1
 
 
 @pytest.mark.parametrize(

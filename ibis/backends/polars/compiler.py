@@ -313,6 +313,9 @@ def join(op, **kw):
         left, right = right, left
     elif how == "outer":
         how = "full"
+    elif how == "cross":
+        # Cross joins don't use join keys
+        return left.join(right, how=how)
 
     joined = left.join(right, on=on, how=how, coalesce=False)
     joined = joined.drop(*on)

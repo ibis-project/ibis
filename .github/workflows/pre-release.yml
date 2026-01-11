@@ -23,7 +23,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -33,7 +33,7 @@ jobs:
           python-version: "3.13"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.1.3
+        uses: astral-sh/setup-uv@v7.1.4
 
       - uses: extractions/setup-just@v3
         env:
@@ -49,7 +49,7 @@ jobs:
 
       - name: publish pre-release wheel to test pypi index
         if: contains(steps.get-version.outputs.value, '.dev')
-        uses: pypa/gh-action-pypi-publish@987f11e872eb5ca67aad6a4fe531bd3089142c60
+        uses: pypa/gh-action-pypi-publish@3317ede93a4981d0fc490510c6fcf8bf0e92ed05
         with:
           repository-url: https://test.pypi.org/legacy/
           # no need for attestations here, no one should be installing ibis from test-pypi
@@ -57,4 +57,4 @@ jobs:
 
       - name: publish pre-release wheel to pypi
         if: contains(steps.get-version.outputs.value, '.dev')
-        uses: pypa/gh-action-pypi-publish@987f11e872eb5ca67aad6a4fe531bd3089142c60
+        uses: pypa/gh-action-pypi-publish@3317ede93a4981d0fc490510c6fcf8bf0e92ed05

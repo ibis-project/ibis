@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: install python
         uses: actions/setup-python@v6
@@ -44,7 +44,7 @@ jobs:
           cache-dependency-path: requirements-dev.txt
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.1.3
+        uses: astral-sh/setup-uv@v7.1.4
 
       - name: update apt-get
         run: sudo apt-get update -y -q

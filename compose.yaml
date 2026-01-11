@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:25.10.1.3832-alpine
+    image: clickhouse/clickhouse-server:25.10.2.65-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -84,7 +84,7 @@ services:
       - mssql
 
   hive-metastore-db:
-    image: postgres:18.0-alpine
+    image: postgres:18.1-alpine
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -174,7 +174,7 @@ services:
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
   druid-postgres:
-    image: postgres:18.0-alpine
+    image: postgres:18.1-alpine
     container_name: druid-postgres
     environment:
       POSTGRES_PASSWORD: FoolishPassword
@@ -369,7 +369,7 @@ services:
       - oracle:/opt/oracle/data
 
   exasol:
-    image: exasol/docker-db:2025.1.3
+    image: exasol/docker-db:2025.1.8
     privileged: true
     ports:
       - 8563:8563

@@ -51,10 +51,11 @@ dependencies = [
   "atpublic>=2.3",
   "parsy>=2",
   "python-dateutil>=2.8.2",
-  "sqlglot>=23.4,!=26.32.0",
+  # temporarily pin to below 28 to avoid https://github.com/ibis-project/ibis/issues/11767
+  "sqlglot>=23.4,!=26.32.0,<28.0.0",
   "toolz>=0.11",
   "typing-extensions>=4.3.0",
-  "tzdata>=2022.7",           # fallback time zone data on Windows
+  "tzdata>=2022.7",                  # fallback time zone data on Windows
 ]
 
 [project.urls]
@@ -287,7 +288,7 @@ tests = [
   "tomli>=2.0.1,<3",
 ]
 docs = [
-  "altair>=5.0.1,<6",
+  "altair>=5.0.1,<7",
   "griffe>=1.7.3",
   "ipykernel>=6.25.1,<8",
   "itables>=1.6.3,<2.6",
@@ -304,7 +305,7 @@ docs = [
   "jupyter-cache>=1.0.0,<2",
   "jupyterlab>=4.2.5,<5",
   "jupyterlab-night>=0.4.6,<1",
-  "jupyterlite-core>=0.6,<0.7",
+  "jupyterlite-core>=0.6,<0.8",
   "jupyterlite-pyodide-kernel>=0.6,<0.7",
 ]
 

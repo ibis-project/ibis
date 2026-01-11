@@ -2014,6 +2014,8 @@ def test_unbind_with_namespace():
 
 def test_table_bind():
     def eq(left, right):
+        assert isinstance(left, tuple)
+        assert isinstance(right, tuple)
         return all(a.equals(b) for a, b in zip(left, right))
 
     t = ibis.table({"a": "int", "b": "string"}, name="t")
@@ -2101,13 +2103,13 @@ def test_table_bind():
     assert eq(exprs, expected)
 
     # no args
-    assert tuple(t.bind()) == ()
+    assert t.bind() == ()
 
     def utter_failure(_):
         raise ValueError("¡moo!")
 
     with pytest.raises(ValueError, match="¡moo!"):
-        tuple(t.bind(foo=utter_failure))
+        t.bind(foo=utter_failure)
 
 
 # TODO: remove when dropna is fully deprecated
