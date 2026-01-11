@@ -21,12 +21,7 @@ def get_type(node):
     try:
         schema = node.schema
     except (AttributeError, NotImplementedError):
-        # TODO(kszucs): this branch should be removed
-        try:
-            # As a last resort try get the name of the output_type class
-            return node.output_type.__name__
-        except (AttributeError, NotImplementedError):
-            return "\u2205"  # empty set character
+        return "\u2205"  # empty set character
     except com.IbisError:
         assert isinstance(node, ops.Join)
         left_table_name = getattr(node.left, "name", None) or ops.genname()
