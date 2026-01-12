@@ -181,9 +181,6 @@ class SqlglotType(TypeMapper):
     @classmethod
     def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
         if dtype := cls.unknown_type_strings.get(text.lower()):
-            # Apply the nullable parameter to the type from unknown_type_strings
-            # if nullable is not None:
-            #     return dtype.copy(nullable=nullable)
             return dtype
 
         if nullable is None:
