@@ -3934,7 +3934,7 @@ class Table(Expr, FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
-        return ops.View(parent=self, name=alias).to_expr()
+        return ops.AliasedRelation(parent=self, name=alias).to_expr()
 
     def sql(self, query: str, /, *, dialect: str | None = None) -> ir.Table:
         '''Run a SQL query against a table expression.
@@ -4028,7 +4028,7 @@ class Table(Expr, FixedTextJupyterMixin):
             # only transpile if dialect was passed
             query = backend._transpile_sql(query, dialect=dialect)
 
-        if isinstance(op, ops.View):
+        if isinstance(op, ops.AliasedRelation):
             name = op.name
             expr = op.parent.to_expr()
         else:
