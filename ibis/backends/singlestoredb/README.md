@@ -98,14 +98,6 @@ The SingleStoreDB backend provides additional properties and methods for advance
 # Get server version
 print(ibis_con.version)
 
-# Access SingleStoreDB-specific properties
-print(ibis_con.show)             # Access to SHOW commands
-print(ibis_con.globals)          # Global variables
-print(ibis_con.locals)           # Local variables  
-print(ibis_con.cluster_globals)  # Cluster global variables
-print(ibis_con.cluster_locals)   # Cluster local variables
-print(ibis_con.vars)             # Variables accessor
-print(ibis_con.cluster_vars)     # Cluster variables accessor
 
 # Rename a table
 ibis_con.rename_table("old_table_name", "new_table_name")
