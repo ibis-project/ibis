@@ -1673,14 +1673,9 @@ INTERVAL_BACKEND_TYPES = {
     raises=ImpalaHiveServer2Error,
 )
 @pytest.mark.notimpl(
-    ["mysql"],
+    ["mysql", "singlestoredb"],
     "The backend implementation is broken. ",
-    raises=MySQLProgrammingError,
-)
-@pytest.mark.notimpl(
-    ["singlestoredb"],
-    "The backend implementation is broken. ",
-    raises=SingleStoreDBProgrammingError,
+    raises=(MySQLProgrammingError, SingleStoreDBProgrammingError),
 )
 @pytest.mark.notimpl(
     ["bigquery", "duckdb"],
@@ -1984,14 +1979,9 @@ def test_large_timestamp(con):
                     raises=PyODBCProgrammingError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql"],
+                    ["mysql", "singlestoredb"],
                     reason="doesn't support nanoseconds",
-                    raises=MySQLOperationalError,
-                ),
-                pytest.mark.notyet(
-                    ["singlestoredb"],
-                    reason="doesn't support nanoseconds",
-                    raises=SingleStoreDBOperationalError,
+                    raises=(MySQLOperationalError, SingleStoreDBOperationalError),
                 ),
                 pytest.mark.notyet(
                     ["bigquery"],
