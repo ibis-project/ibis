@@ -1396,8 +1396,8 @@ def execute_sql_string_view(op, *, ctx: pl.SQLContext, **kw):
     return ctx.execute(op.query)
 
 
-@translate.register(ops.View)
-def execute_view(op, *, ctx: pl.SQLContext, **kw):
+@translate.register(ops.AliasedRelation)
+def execute_aliased_relation(op, *, ctx: pl.SQLContext, **kw):
     parent = translate(op.parent, ctx=ctx, **kw)
     ctx.register(op.name, parent)
     return parent

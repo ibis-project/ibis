@@ -339,7 +339,7 @@ def extract_ctes(node: ops.Relation) -> set[ops.Relation]:
     g = Graph.from_bfs(node, filter=~InstanceOf(dont_count))
     result = set()
     for op, dependents in g.invert().items():
-        if isinstance(op, ops.View) or (
+        if isinstance(op, ops.AliasedRelation) or (
             len(dependents) > 1 and isinstance(op, cte_types)
         ):
             result.add(op)
