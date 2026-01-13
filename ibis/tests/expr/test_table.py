@@ -119,6 +119,13 @@ def test_getitem_str(table):
         assert col.get_name() == k
 
 
+def test_getitem_int(table):
+    for i, k in enumerate(table.columns):
+        coli = table[i]
+        cols = table[k]
+        assert_equal(coli, cols)
+
+
 def test_getitem_attribute(table):
     result = table.a
     assert_equal(result, table["a"])
@@ -139,6 +146,13 @@ def test_getitem_list_of_str_acts_as_select(table):
     for c in cols:
         expr = proj[c]
         assert isinstance(expr, type(table[c]))
+
+
+def test_getitem_list_of_str_and_int(table):
+    cols = ["f", 0, "h"]
+    exp = table.select("f", "a", "h")
+    proj = table[cols]
+    assert_equal(proj, exp)
 
 
 def test_getitem_slice(table):
