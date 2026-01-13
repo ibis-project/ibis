@@ -29,7 +29,7 @@ r0 := DatabaseTable: airlines
   security_delay      int32
   late_aircraft_delay int32
 
-r1 := View: foo
+r1 := AliasedRelation: foo
   year                int32
   month               int32
   day                 int32
