@@ -182,6 +182,67 @@ def test_getitem_missing_column(table):
         table["oops"]
 
 
+def test_getitem_scalar(table):
+    with pytest.warns(FutureWarning):
+        actual = table[ibis.literal("foo")]
+    expected = table.select(ibis.literal("foo"))
+    assert_equal(expected, actual)
+
+
+def test_getitem_scalars(table):
+    with pytest.warns(FutureWarning):
+        actual = table[[ibis.literal("foo"), ibis.literal("bar")]]
+    expected = table.select(
+        ibis.literal(
+            "foo",
+        ),
+        ibis.literal("bar"),
+    )
+    assert_equal(expected, actual)
+
+
+def test_getitem_column(table):
+    with pytest.warns(FutureWarning):
+        actual = table[table.a]
+    expected = table.select("a")
+    assert_equal(expected, actual)
+
+
+def test_getitem_columns(table):
+    with pytest.warns(FutureWarning):
+        actual = table[[table.a, table.b]]
+    expected = table.select("a", "b")
+    assert_equal(expected, actual)
+
+
+def test_getitem_deferred(table):
+    with pytest.warns(FutureWarning):
+        actual = table[ibis._.a]
+    expected = table.select("a")
+    assert_equal(expected, actual)
+
+
+def test_getitem_deferreds(table):
+    with pytest.warns(FutureWarning):
+        actual = table[[ibis._.a, ibis._.b]]
+    expected = table.select("a", "b")
+    assert_equal(expected, actual)
+
+
+def test_getitem_callable(table):
+    with pytest.warns(FutureWarning):
+        actual = table[lambda t: t.a]
+    expected = table.select("a")
+    assert_equal(expected, actual)
+
+
+def test_getitem_callables(table):
+    with pytest.warns(FutureWarning):
+        actual = table[[lambda t: t.a, lambda t: t.b]]
+    expected = table.select("a", "b")
+    assert_equal(expected, actual)
+
+
 def test_getitem_as_select_warns(table):
     sel = table.select(table, table.a.name("foo"))
     with pytest.warns(FutureWarning):
