@@ -165,6 +165,28 @@ class TestSingleStoreDBDataTypes:
         assert isinstance(result2, dt.Array)
         assert isinstance(result2.value_type, dt.Float64)
 
+        # Test FLOAT16_VECTOR type (binary format)
+        result3 = _type_from_cursor_info(
+            flags=0,
+            type_code=3007,  # FLOAT16_VECTOR type code
+            field_length=256,  # Vector dimension
+            scale=0,
+            multi_byte_maximum_length=1,
+        )
+        assert isinstance(result3, dt.Array)
+        assert isinstance(result3.value_type, dt.Float16)
+
+        # Test FLOAT16_VECTOR_JSON type (JSON format)
+        result4 = _type_from_cursor_info(
+            flags=0,
+            type_code=2007,  # FLOAT16_VECTOR_JSON type code
+            field_length=256,  # Vector dimension
+            scale=0,
+            multi_byte_maximum_length=1,
+        )
+        assert isinstance(result4, dt.Array)
+        assert isinstance(result4.value_type, dt.Float16)
+
     def test_timestamp_with_timezone(self):
         """Test TIMESTAMP type includes UTC timezone by default."""
         result = _type_from_cursor_info(
@@ -346,6 +368,20 @@ class TestSingleStoreDBTypeClass:
         result = SingleStoreDBType.from_ibis(binary_dtype)
         assert result is not None
 
+    def test_from_string_vector_f16(self):
+        """Test VECTOR type string parsing with F16 element type."""
+        result = SingleStoreDBType.from_string("VECTOR(128, F16)")
+        assert isinstance(result, dt.Array)
+        assert isinstance(result.value_type, dt.Float16)
+        assert result.length == 128
+
+    def test_from_string_vector_f32(self):
+        """Test VECTOR type string parsing with F32 element type."""
+        result = SingleStoreDBType.from_string("VECTOR(256, F32)")
+        assert isinstance(result, dt.Array)
+        assert isinstance(result.value_type, dt.Float32)
+        assert result.length == 256
+
 
 class TestSingleStoreDBConverter:
     """Test the SingleStoreDB pandas data converter."""
@@ -462,6 +498,11 @@ class TestSingleStoreDBConverter:
         assert converter._get_type_name(1) == "TINY"
         assert converter._get_type_name(245) == "JSON"
         assert converter._get_type_name(255) == "GEOMETRY"
+
+        # Test vector type codes
+        assert converter._get_type_name(3001) == "FLOAT32_VECTOR"
+        assert converter._get_type_name(3007) == "FLOAT16_VECTOR"
+        assert converter._get_type_name(2007) == "FLOAT16_VECTOR_JSON"
 
         # Test unknown type code
         assert converter._get_type_name(999) == "UNKNOWN"

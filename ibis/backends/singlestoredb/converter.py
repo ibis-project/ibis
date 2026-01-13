@@ -289,6 +289,7 @@ class SingleStoreDBPandasData(PandasData):
             2004: "INT16_VECTOR_JSON",
             2005: "INT32_VECTOR_JSON",
             2006: "INT64_VECTOR_JSON",
+            2007: "FLOAT16_VECTOR_JSON",
             # Vector binary types
             3001: "FLOAT32_VECTOR",
             3002: "FLOAT64_VECTOR",
@@ -296,6 +297,7 @@ class SingleStoreDBPandasData(PandasData):
             3004: "INT16_VECTOR",
             3005: "INT32_VECTOR",
             3006: "INT64_VECTOR",
+            3007: "FLOAT16_VECTOR",
         }
 
         return type_code_map.get(type_code, "UNKNOWN")
@@ -360,6 +362,7 @@ class SingleStoreDBPandasData(PandasData):
             "INT16_VECTOR": partial(dt.Array, dt.int16),
             "INT32_VECTOR": partial(dt.Array, dt.int32),
             "INT64_VECTOR": partial(dt.Array, dt.int64),
+            "FLOAT16_VECTOR": partial(dt.Array, dt.float16),
             # Vector JSON types
             "FLOAT32_VECTOR_JSON": partial(dt.Array, dt.float32),
             "FLOAT64_VECTOR_JSON": partial(dt.Array, dt.float64),
@@ -367,6 +370,7 @@ class SingleStoreDBPandasData(PandasData):
             "INT16_VECTOR_JSON": partial(dt.Array, dt.int16),
             "INT32_VECTOR_JSON": partial(dt.Array, dt.int32),
             "INT64_VECTOR_JSON": partial(dt.Array, dt.int64),
+            "FLOAT16_VECTOR_JSON": partial(dt.Array, dt.float16),
         }
 
         ibis_type = singlestore_specific.get(normalized_name)

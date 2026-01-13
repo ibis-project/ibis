@@ -1649,6 +1649,7 @@ class SingleStoreDBType(MySQLType):
 
                 # Map SingleStore element types to Ibis types
                 element_type_mapping = {
+                    "F16": dt.Float16,
                     "F32": dt.Float32,
                     "F64": dt.Float64,
                     "I8": dt.Int8,

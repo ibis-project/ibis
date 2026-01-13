@@ -140,8 +140,8 @@ The SingleStoreDB backend supports the following data types:
 - `BLOB`, `MEDIUMBLOB`, `LONGBLOB` - for binary data storage
 
 ### Vector Types
-- `VECTOR` - for vector data with element types of `F32` (float32), `F64` (float64),
-  `I8` (int8), `I16` (int16), `I32` (int32), `I64` (int64).
+- `VECTOR` - for vector data with element types of `F16` (float16), `F32` (float32),
+  `F64` (float64), `I8` (int8), `I16` (int16), `I32` (int32), `I64` (int64).
 
 Note that `VECTOR` types may be represented as binary or JSON dependeng on the
 `vector_type_project_format` SingleStoreDB setting.

@@ -21,6 +21,10 @@ TEXT_TYPES = (
 
 _type_codes = {v: k for k, v in inspect.getmembers(FIELD_TYPE) if not k.startswith("_")}
 
+# Add float16 vector type codes if not present (for SDK version compatibility)
+_type_codes.setdefault(3007, "FLOAT16_VECTOR")
+_type_codes.setdefault(2007, "FLOAT16_VECTOR_JSON")
+
 
 class _FieldFlags:
     """Flags used to disambiguate field types for SingleStoreDB."""
@@ -214,6 +218,7 @@ _type_mapping = {
     "INT16_VECTOR": partial(dt.Array, dt.Int16),
     "INT32_VECTOR": partial(dt.Array, dt.Int32),
     "INT64_VECTOR": partial(dt.Array, dt.Int64),
+    "FLOAT16_VECTOR": partial(dt.Array, dt.Float16),
     # Vector JSON types (stored as JSON with vector semantics)
     "FLOAT32_VECTOR_JSON": partial(dt.Array, dt.Float32),
     "FLOAT64_VECTOR_JSON": partial(dt.Array, dt.Float64),
@@ -221,6 +226,7 @@ _type_mapping = {
     "INT16_VECTOR_JSON": partial(dt.Array, dt.Int16),
     "INT32_VECTOR_JSON": partial(dt.Array, dt.Int32),
     "INT64_VECTOR_JSON": partial(dt.Array, dt.Int64),
+    "FLOAT16_VECTOR_JSON": partial(dt.Array, dt.Float16),
     # Extended types (SingleStoreDB-specific extensions)
     "GEOGRAPHY": dt.Geometry,  # Enhanced geospatial support
 }
