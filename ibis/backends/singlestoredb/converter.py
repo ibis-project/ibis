@@ -198,16 +198,6 @@ class SingleStoreDBPandasData(PandasData):
         return super().convert_Decimal(s, dtype, pandas_type)
 
     @classmethod
-    def convert_String(cls, s, dtype, pandas_type):
-        """Convert SingleStoreDB string types with proper NULL handling."""
-        # NOTE: Do not convert empty strings to None for JSON operations
-        # Empty strings are valid JSON string values and should be preserved
-        # Only convert empty strings to None in specific contexts where SingleStoreDB
-        # returns empty strings to represent NULL values (e.g., some legacy column types)
-        # For now, we preserve empty strings to fix JSON unwrap operations
-        return super().convert_String(s, dtype, pandas_type)
-
-    @classmethod
     def convert_Array(cls, s, dtype, pandas_type):
         """Convert SingleStoreDB SET values to arrays.
 

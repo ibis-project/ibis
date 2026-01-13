@@ -162,12 +162,12 @@ class Backend(
     @util.experimental
     @classmethod
     def from_connection(cls, con: Connection, /) -> Backend:
-        """Create an Ibis client from an existing connection to a MySQL database.
+        """Create an Ibis client from an existing connection to a SingleStoreDB database.
 
         Parameters
         ----------
         con
-            An existing connection to a MySQL database.
+            An existing connection to a SingleStoreDB database.
         """
         new_backend = cls()
         new_backend._can_reconnect = False
@@ -214,7 +214,7 @@ class Backend(
         return backend
 
     def create_database(self, name: str, force: bool = False) -> None:
-        """Create a database in SingleStore.
+        """Create a database in SingleStoreDB.
 
         Parameters
         ----------
@@ -237,7 +237,7 @@ class Backend(
     def drop_database(
         self, name: str, *, catalog: str | None = None, force: bool = False
     ) -> None:
-        """Drop a database from SingleStore.
+        """Drop a database from SingleStoreDB.
 
         Parameters
         ----------
@@ -351,6 +351,20 @@ class Backend(
         self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
         """Get schema for a table in SingleStoreDB.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of the terminology the backend uses.
+
+        See the
+        [Table Hierarchy Concepts Guide](/concepts/backend-table-hierarchy.qmd)
+        for more info.
+        :::
 
         Parameters
         ----------
@@ -772,11 +786,6 @@ class Backend(
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Get the schema of a query result."""
-        import sqlglot as sg
-        from sqlglot import expressions as sge
-
-        from ibis import util
-        from ibis.backends.singlestoredb.converter import SingleStoreDBPandasData
         from ibis.backends.singlestoredb.datatypes import _type_from_cursor_info
 
         # Generate a unique alias for the subquery
@@ -842,6 +851,10 @@ class Backend(
                 )
             else:
                 # Fallback for limited cursor info
+                from ibis.backends.singlestoredb.converter import (
+                    SingleStoreDBPandasData,
+                )
+
                 typename = SingleStoreDBPandasData._get_type_name(col_info[1])
                 ibis_type = SingleStoreDBPandasData.convert_SingleStoreDB_type(typename)
 
