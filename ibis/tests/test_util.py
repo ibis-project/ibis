@@ -93,17 +93,10 @@ def test_promote_list(val, expected):
         assert result == expected
 
 
-@pytest.mark.parametrize(
-    "val",
-    [
-        pytest.param([1, 2, 3], id="list"),
-        pytest.param({"a": 1}, id="dict"),
-    ],
-)
-def test_promote_list_identity(val):
+def test_promote_list_identity():
     """Test that lists are returned as-is (same object)."""
-    if isinstance(val, list):
-        assert promote_list(val) is val
+    val = [1, 2, 3]
+    assert promote_list(val) is val
 
 
 @pytest.mark.parametrize(
@@ -142,14 +135,9 @@ def test_promote_tuple(val, expected):
         assert result == expected
 
 
-@pytest.mark.parametrize(
-    "val",
-    [
-        pytest.param((1, 2, 3), id="tuple"),
-    ],
-)
-def test_promote_tuple_identity(val):
+def test_promote_tuple_identity():
     """Test that tuples are returned as-is (same object)."""
+    val = (1, 2, 3)
     assert promote_tuple(val) is val
 
 
