@@ -52,8 +52,8 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.9"
-          - "3.13"
+          - "3.10"
+          - "3.14"
     steps:
       - name: checkout
         uses: actions/checkout@v6
@@ -92,8 +92,8 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.9"
-          - "3.13"
+          - "3.10"
+          - "3.14"
         backend:
           - name: duckdb
             title: DuckDB
@@ -263,10 +263,8 @@ jobs:
               sys-deps:
                 - cmake
                 - ninja-build
-          # pytorch wheel doesn't exist for windows + python 3.13, so test
-          # against 3.12 until that's shipped
           - os: windows-latest
-            python-version: "3.12"
+            python-version: "3.14"
             backend:
               name: duckdb
               title: DuckDB
@@ -280,9 +278,8 @@ jobs:
                 - --extra polars
             additional_deps:
               - torch
-          # also test duckdb with python 3.13 on windows, *without* pytorch
           - os: windows-latest
-            python-version: "3.13"
+            python-version: "3.14"
             backend:
               name: duckdb
               title: DuckDB
@@ -296,7 +293,7 @@ jobs:
                 - --extra polars
         exclude:
           - os: windows-latest
-            python-version: "3.13"
+            python-version: "3.14"
             backend:
               name: duckdb
           - os: windows-latest
@@ -362,7 +359,7 @@ jobs:
                 - libpq5
           # TODO(deepyaman): Test whether this works upon releasing https://github.com/cloudera/impyla/commit/bf1f94c3c4106ded6267d2485c1e939775a6a87f
           - os: ubuntu-latest
-            python-version: "3.13"
+            python-version: "3.14"
             backend:
               name: impala
               title: Impala
@@ -429,7 +426,7 @@ jobs:
               services:
                 - oracle
           - os: ubuntu-latest
-            python-version: "3.13"
+            python-version: "3.14"
             backend:
               name: flink
               title: Flink
@@ -557,18 +554,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python-version: "3.9"
+          - python-version: "3.10"
             pyspark-minor-version: "3.3"
             tag: local
             deps:
               - pyspark==3.3.4
               - pandas==1.5.3
               - numpy==1.23.5
-          - python-version: "3.11"
-            pyspark-minor-version: "3.5"
-            tag: local
-            deps:
-              - delta-spark==3.3.0
           - python-version: "3.13"
             pyspark-minor-version: "3.5"
             tag: local

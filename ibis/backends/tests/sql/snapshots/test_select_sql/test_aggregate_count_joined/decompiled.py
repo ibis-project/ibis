@@ -1,6 +1,5 @@
 import ibis
 
-
 tpch_region = ibis.table(
     name="tpch_region",
     schema={"r_regionkey": "int16", "r_name": "string", "r_comment": "string"},

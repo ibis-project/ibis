@@ -1,6 +1,5 @@
 import ibis
 
-
 customer = ibis.table(
     name="customer",
     schema={

@@ -120,9 +120,10 @@ with pytest.warns(FutureWarning, match="v9.0"):
         param(
             lambda t, win: t.id.percent_rank().over(win),
             lambda t: t.apply(
-                lambda df: (
+                lambda df, **_: (
                     df.sort_values("id").id.rank(method="min").sub(1).div(len(df) - 1)
-                )
+                ),
+                include_groups=False,
             ).reset_index(drop=True, level=[0]),
             id="percent_rank",
             marks=[
@@ -436,7 +437,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
     # shift id column before applying Pandas rolling window summarizer to
     # simulate forward looking window aggregation
     gdf = df.sort_values("id").groupby("string_col")
-    gdf.id = gdf.apply(lambda t: t.id.shift(-2))
+    gdf.id = gdf.apply(lambda t, **_: t.id.shift(-2), include_groups=False)
     expected = (
         df.assign(
             val=gdf.id.rolling(3, min_periods=1)
@@ -971,7 +972,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
     result = expr.execute().set_index("id").sort_index()
 
-    def gb_fn(df):
+    def gb_fn(df, **_):
         indices = np.searchsorted(df.id, [df["prec"], df["foll"]], side="left")
         double_col = df.double_col.values
         return pd.Series(
@@ -985,7 +986,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
         df.assign(prec=lambda t: t.id - preceding, foll=lambda t: t.id + 1)
         .sort_values("id")
         .groupby("string_col")
-        .apply(gb_fn)
+        .apply(gb_fn, include_groups=False)
         .droplevel(0)
     )
     expected = (
@@ -1039,14 +1040,14 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
         .astype("int64")
     )
 
-    def agg(df):
+    def agg(df, **_):
         df = df.sort_values(["id"])
         df = df.assign(bigint_col=lambda df: df.bigint_col.shift())
         return df
 
     expected = (
         df.groupby("month", group_keys=False)
-        .apply(agg)
+        .apply(agg, include_groups=False)
         .sort_values(["id"])
         .reset_index(drop=True)
         .bigint_col.fillna(0.0)

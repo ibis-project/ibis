@@ -10,7 +10,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import databricks.sql
 import pyarrow as pa
@@ -32,7 +32,7 @@ from ibis.backends.sql.compilers.base import STAR, AlterTable, RenameTable
 from ibis.backends.sql.datatypes import DatabricksType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     import pandas as pd
     import polars as pl

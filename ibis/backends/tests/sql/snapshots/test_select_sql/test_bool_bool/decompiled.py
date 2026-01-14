@@ -1,6 +1,5 @@
 import ibis
 
-
 airlines = ibis.table(
     name="airlines", schema={"dest": "string", "origin": "string", "arrdelay": "int32"}
 )

@@ -1918,14 +1918,8 @@ def test_memtable_registered_exactly_once(con, mocker):
     spy.assert_called_once_with(t.op())
 
 
-@pytest.mark.parametrize("i", range(5))
 def test_stateful_data_is_loaded_once(
-    con,
-    data_dir,
-    tmp_path_factory,
-    worker_id,
-    mocker,
-    i,  # noqa: ARG001
+    con, data_dir, tmp_path_factory, worker_id, mocker
 ):
     TestConf = pytest.importorskip(f"ibis.backends.{con.name}.tests.conftest").TestConf
     if not TestConf.stateful:
@@ -1933,7 +1927,7 @@ def test_stateful_data_is_loaded_once(
 
     spy = mocker.spy(TestConf, "stateless_load")
 
-    for _ in range(2):
+    for _ in range(5):
         TestConf.load_data(data_dir, tmp_path_factory, worker_id)
 
     # also verify that it's been called once, by checking that there's at least
