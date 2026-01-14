@@ -1,6 +1,5 @@
 import ibis
 
-
 tpch_nation = ibis.table(
     name="tpch_nation",
     schema={

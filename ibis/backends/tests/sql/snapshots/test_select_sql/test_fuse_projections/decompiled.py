@@ -1,6 +1,5 @@
 import ibis
 
-
 tbl = ibis.table(
     name="tbl", schema={"foo": "int32", "bar": "int64", "value": "float64"}
 )
