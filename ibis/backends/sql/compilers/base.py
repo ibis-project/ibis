@@ -17,6 +17,7 @@ import ibis.common.exceptions as com
 import ibis.common.patterns as pats
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.sql.compilers._compat import WITH_ARG
 from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
@@ -33,7 +34,6 @@ from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
 from ibis.util import get_subclasses
-from ibis.backends.sql.compilers._compat import WITH_ARG
 
 try:
     from sqlglot.expressions import Alter

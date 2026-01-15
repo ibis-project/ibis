@@ -1,5 +1,8 @@
 """Compatibility layer for SQLGlot expressions."""
+from __future__ import annotations
+
 import sqlglot.expressions as sge
+
 
 def _get_arg_name(expr_cls: type[sge.Expression], *args: str) -> str:
     for arg in args:

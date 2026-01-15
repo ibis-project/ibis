@@ -12,6 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
+from ibis.backends.sql.compilers._compat import EXCEPT_ARG
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 from ibis.backends.sql.rewrites import (
@@ -19,7 +20,6 @@ from ibis.backends.sql.rewrites import (
     subtract_one_from_array_map_filter_index,
 )
 from ibis.util import gen_name
-from ibis.backends.sql.compilers._compat import EXCEPT_ARG
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

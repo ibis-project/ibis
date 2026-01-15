@@ -14,6 +14,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
+from ibis.backends.sql.compilers._compat import EXCEPT_ARG
 from ibis.backends.sql.compilers.base import (
     NULL,
     STAR,
@@ -38,7 +39,6 @@ from ibis.backends.sql.rewrites import (
 )
 from ibis.common.patterns import replace
 from ibis.expr.rewrites import p
-from ibis.backends.sql.compilers._compat import EXCEPT_ARG
 
 
 @replace(p.ArrayMap | p.ArrayFilter)

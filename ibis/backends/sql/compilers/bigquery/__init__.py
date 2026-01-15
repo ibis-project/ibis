@@ -15,6 +15,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
+from ibis.backends.sql.compilers._compat import EXCEPT_ARG
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.compilers.bigquery.udf.core import PythonToJavaScriptTranslator
 from ibis.backends.sql.datatypes import BigQueryType, BigQueryUDFType
@@ -28,7 +29,6 @@ from ibis.backends.sql.rewrites import (
     split_select_distinct_with_order_by,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
-from ibis.backends.sql.compilers._compat import EXCEPT_ARG
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
