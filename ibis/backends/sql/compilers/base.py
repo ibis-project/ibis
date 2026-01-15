@@ -33,6 +33,7 @@ from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
 from ibis.util import get_subclasses
+from ibis.backends.sql.compilers._compat import WITH_ARG
 
 try:
     from sqlglot.expressions import Alter
@@ -685,7 +686,7 @@ class SQLGlotCompiler(abc.ABC):
             )
             merged_ctes.append(modified_cte)
         merged_ctes.extend(out.ctes)
-        out.args.pop("with", None)
+        out.args.pop(WITH_ARG, None)
 
         out = reduce(
             lambda parsed, cte: parsed.with_(
@@ -1619,8 +1620,8 @@ class SQLGlotCompiler(abc.ABC):
             ),
             *compiled_query.ctes,
         ]
-        compiled_ibis_expr.args.pop("with", None)
-        compiled_query.args.pop("with", None)
+        compiled_ibis_expr.args.pop(WITH_ARG, None)
+        compiled_query.args.pop(WITH_ARG, None)
 
         # pull existing CTEs from the compiled Ibis expression and combine them
         # with the new query

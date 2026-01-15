@@ -19,6 +19,7 @@ from ibis.backends.sql.rewrites import (
     subtract_one_from_array_map_filter_index,
 )
 from ibis.util import gen_name
+from ibis.backends.sql.compilers._compat import EXCEPT_ARG
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -644,7 +645,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         #
         # then that means "exclude all columns named `a`"
         excludes = [sg.column(column, quoted=quoted) for column in columns_to_drop]
-        star = sge.Star(**{"except": excludes})
+        star = sge.Star(**{EXCEPT_ARG: excludes})
         table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
         column = sge.Column(this=star, table=table)
         return sg.select(column).from_(parent)

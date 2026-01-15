@@ -28,6 +28,7 @@ from ibis.backends.sql.rewrites import (
     split_select_distinct_with_order_by,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
+from ibis.backends.sql.compilers._compat import EXCEPT_ARG
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -1018,7 +1019,7 @@ class BigQueryCompiler(SQLGlotCompiler):
     def visit_DropColumns(self, op, *, parent, columns_to_drop):
         quoted = self.quoted
         excludes = [sg.column(column, quoted=quoted) for column in columns_to_drop]
-        star = sge.Star(**{"except": excludes})
+        star = sge.Star(**{EXCEPT_ARG: excludes})
         table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
         column = sge.Column(this=star, table=table)
         return sg.select(column).from_(parent)
