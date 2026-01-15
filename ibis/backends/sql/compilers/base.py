@@ -664,7 +664,7 @@ class SQLGlotCompiler(abc.ABC):
                 try:
                     return result.subquery(alias, copy=False)
                 except AttributeError:
-                    return result.as_(alias, quoted=self.quoted)
+                    return result.as_(alias, quoted=self.quoted, table=isinstance(result, sge.Table))
 
         # apply translate rules in topological order
         results = op.map(fn)
