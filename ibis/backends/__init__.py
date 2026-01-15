@@ -51,13 +51,13 @@ class TablesAccessor(collections.abc.Mapping):
     def __init__(self, backend: BaseBackend) -> None:
         self._backend = backend
 
-    def __getitem__(self, name) -> ir.Table:
+    def __getitem__(self, name: str, /) -> ir.Table:
         try:
             return self._backend.table(name)
         except Exception as exc:
             raise KeyError(name) from exc
 
-    def __getattr__(self, name) -> ir.Table:
+    def __getattr__(self, name: str, /) -> ir.Table:
         if name.startswith("_"):
             raise AttributeError(name)
         try:
