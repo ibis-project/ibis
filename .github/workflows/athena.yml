@@ -1,0 +1,109 @@
+name: Athena
+
+on:
+  push:
+    # Skip the backend suite if all changes are in the docs directory
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - "codecov.yml"
+      - ".envrc"
+    branches:
+      - main
+  pull_request_target:
+    types:
+      - labeled
+
+env:
+  FORCE_COLOR: "1"
+  SQLALCHEMY_WARN_20: "1"
+  HYPOTHESIS_PROFILE: "ci"
+
+jobs:
+  test_backends:
+    name: ${{ matrix.backend.title }} python-${{ matrix.python-version }}-${{ matrix.os }}
+    concurrency:
+      group: ${{ matrix.backend.title }}-${{ matrix.python-version }}-${{ github.event.label.name || 'ci-run-cloud' }}
+      cancel-in-progress: false
+
+    runs-on: ${{ matrix.os }}
+    if: github.event_name == 'push' || github.event.label.name == 'ci-run-cloud'
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - "3.9"
+          - "3.13"
+        backend:
+          - name: athena
+            title: Amazon Athena
+            extras:
+              - --extra athena
+    # this allows extractions/setup-just to list releases for `just` at a higher
+    # rate limit while restricting GITHUB_TOKEN permissions elsewhere
+    permissions:
+      contents: "read"
+      # required for workload identity federation
+      id-token: "write"
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v6
+        if: github.event.label.name != 'ci-run-cloud'
+
+      - name: checkout
+        if: github.event.label.name == 'ci-run-cloud'
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/create-github-app-token@v2.2.0
+        id: generate_token
+        with:
+          app-id: ${{ secrets.DOCS_BOT_APP_ID }}
+          private-key: ${{ secrets.DOCS_BOT_APP_PRIVATE_KEY }}
+
+      - name: reset cloud ci run label
+        uses: actions-ecosystem/action-remove-labels@v1
+        if: github.event.label.name == 'ci-run-cloud'
+        with:
+          labels: ci-run-cloud
+          github_token: ${{ steps.generate_token.outputs.token }}
+
+      - name: install python
+        uses: actions/setup-python@v6
+        id: install_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v7.1.4
+
+      - uses: extractions/setup-just@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download backend data
+        run: just download-data
+
+      - name: setup aws credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-region: us-east-2
+          role-to-assume: arn:aws:iam::070284473168:role/ibis-project-athena
+
+      - name: "run parallel tests: ${{ matrix.backend.name }}"
+        timeout-minutes: 60
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist loadgroup
+
+      - name: upload code coverage
+        if: success()
+        continue-on-error: true
+        uses: codecov/codecov-action@v5
+        with:
+          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
