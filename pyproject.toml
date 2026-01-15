@@ -51,8 +51,7 @@ dependencies = [
   "atpublic>=2.3",
   "parsy>=2",
   "python-dateutil>=2.8.2",
-  # temporarily pin to below 28 to avoid https://github.com/ibis-project/ibis/issues/11767
-  "sqlglot>=23.4,!=26.32.0,<28.0.0",
+  "sqlglot>=23.4,!=26.32.0",
   "toolz>=0.11",
   "typing-extensions>=4.3.0",
   "tzdata>=2022.7",                  # fallback time zone data on Windows
