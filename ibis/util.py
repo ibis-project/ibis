@@ -593,7 +593,7 @@ class Namespace:
         self._module = module
         self._factory = factory
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str, /):
         obj = getattr(self._module, name)
         return self._factory(obj)
 
@@ -620,7 +620,7 @@ class PseudoHashable(Coercible, Generic[V]):
         self.hash = hash((type(obj), hashable_obj))
 
     @classmethod
-    def __coerce__(cls, value: V) -> PseudoHashable[V]:
+    def __coerce__(cls, value: V, /, **kwargs) -> PseudoHashable[V]:
         if isinstance(value, cls):
             return value
         return cls(value)

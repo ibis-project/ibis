@@ -221,10 +221,10 @@ class StructValue(Value):
         else:
             return ops.StructField(self, name).to_expr()
 
-    def __setstate__(self, instance_dictionary):
+    def __setstate__(self, instance_dictionary, /):
         self.__dict__ = instance_dictionary
 
-    def __getattr__(self, name: str) -> ir.Value:
+    def __getattr__(self, name: str, /) -> ir.Value:
         """Extract the `name` field from this struct.
 
         Parameters

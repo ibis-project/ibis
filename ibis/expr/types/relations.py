@@ -572,7 +572,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 
-    def __dataframe__(self, nan_as_null: bool = False, allow_copy: bool = True):
+    def __dataframe__(self, *, nan_as_null: bool = False, allow_copy: bool = True):
         from ibis.expr.types.dataframe_interchange import IbisDataFrame
 
         return IbisDataFrame(self, nan_as_null=nan_as_null, allow_copy=allow_copy)
@@ -583,6 +583,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def __pyarrow_result__(
         self,
         table: pa.Table,
+        /,
         *,
         schema: sch.Schema | None = None,
         data_mapper: type[PyArrowData] | None = None,
@@ -597,6 +598,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def __pandas_result__(
         self,
         df: pd.DataFrame,
+        /,
         *,
         schema: sch.Schema | None = None,
         data_mapper: type[PandasData] | None = None,
@@ -608,7 +610,7 @@ class Table(Expr, FixedTextJupyterMixin):
             df, self.schema() if schema is None else schema
         )
 
-    def __polars_result__(self, df: pl.DataFrame) -> Any:
+    def __polars_result__(self, df: pl.DataFrame, /) -> Any:
         from ibis.formats.polars import PolarsData
 
         return PolarsData.convert_table(df, self.schema())
@@ -731,7 +733,7 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         return self
 
-    def __contains__(self, name: str) -> bool:
+    def __contains__(self, name: str, /) -> bool:
         """Return whether `name` is a column in the table.
 
         Parameters
@@ -953,12 +955,12 @@ class Table(Expr, FixedTextJupyterMixin):
         )
 
     @overload
-    def __getitem__(self, what: str | int) -> ir.Column: ...
+    def __getitem__(self, what: str | int, /) -> ir.Column: ...
 
     @overload
-    def __getitem__(self, what: slice | Sequence[str | int]) -> Table: ...
+    def __getitem__(self, what: slice | Sequence[str | int], /) -> Table: ...
 
-    def __getitem__(self, what: str | int | slice | Sequence[str | int]):
+    def __getitem__(self, what: str | int | slice | Sequence[str | int], /):
         """Select one or more columns or rows from a table expression.
 
         Parameters
@@ -1098,7 +1100,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def __len__(self) -> NoReturn:
         raise com.ExpressionError("Use .count() instead")
 
-    def __getattr__(self, key: str) -> ir.Column:
+    def __getattr__(self, key: str, /) -> ir.Column:
         """Return the column name of a table.
 
         Parameters
@@ -1162,7 +1164,7 @@ class Table(Expr, FixedTextJupyterMixin):
         return sorted(out)
 
     def _ipython_key_completions_(self) -> list[str]:
-        return self.columns
+        return list(self.columns)
 
     @property
     def columns(self) -> tuple[str, ...]:

@@ -66,7 +66,7 @@ class IbisConnection(BaseConnection[BaseBackend]):
 
         return ibis.connect(url, **kwargs)
 
-    def __getattr__(self, name: str) -> Any:
+    def __getattr__(self, name: str, /) -> Any:
         return getattr(self._instance, name)
 
     @cache_data
