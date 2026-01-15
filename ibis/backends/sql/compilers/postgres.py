@@ -627,7 +627,11 @@ $$""".format(
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         pattern = self.f.concat("(", pattern, ")")
         matches = self.f.regexp_match(arg, pattern)
-        return self.if_(arg.rlike(pattern), sge.paren(matches, copy=False)[index], NULL)
+        return self.if_(
+            arg.rlike(sge.paren(pattern, copy=False)),
+            sge.paren(matches, copy=False)[index],
+            NULL,
+        )
 
     def visit_FindInSet(self, op, *, needle, values):
         return self.f.coalesce(
@@ -719,7 +723,11 @@ $$""".format(
         return self.f.extract("epoch", arg)
 
     def visit_ArrayIndex(self, op, *, arg, index):
-        index = self.if_(index < 0, self.f.cardinality(arg) + index, index)
+        index = self.if_(
+            index < 0,
+            self.f.cardinality(arg) + sge.paren(index + 1, copy=False),
+            index + 1,
+        )
         return sge.paren(arg, copy=False)[index]
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
