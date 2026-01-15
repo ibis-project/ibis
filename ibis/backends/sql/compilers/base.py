@@ -648,8 +648,12 @@ class SQLGlotCompiler(abc.ABC):
             if node is op or not isinstance(node, ops.Relation):
                 return result
 
-            # alias ops.Views to their explicitly assigned name otherwise generate
-            alias = node.name if isinstance(node, ops.View) else f"t{next(counter)}"
+            # alias ops.AliasedRelations to their explicitly assigned name otherwise generate
+            alias = (
+                node.name
+                if isinstance(node, ops.AliasedRelation)
+                else f"t{next(counter)}"
+            )
             aliases[node] = alias
 
             alias = sg.to_identifier(alias, quoted=self.quoted)
@@ -1172,8 +1176,8 @@ class SQLGlotCompiler(abc.ABC):
 
     ### Ordering and window functions
 
-    def visit_SortKey(self, op, *, expr, ascending: bool, nulls_first: bool):
-        return sge.Ordered(this=expr, desc=not ascending, nulls_first=nulls_first)
+    def visit_SortKey(self, op, *, arg, ascending: bool, nulls_first: bool):
+        return sge.Ordered(this=arg, desc=not ascending, nulls_first=nulls_first)
 
     def visit_ApproxMedian(self, op, *, arg, where):
         return self.agg.approx_quantile(arg, 0.5, where=where)
@@ -1547,19 +1551,19 @@ class SQLGlotCompiler(abc.ABC):
     def visit_CTE(self, op, *, parent):
         return sg.table(parent.alias_or_name, quoted=self.quoted)
 
-    def visit_View(self, op, *, child, name: str):
-        if isinstance(child, sge.Table):
-            child = sg.select(STAR, copy=False).from_(child, copy=False)
+    def visit_AliasedRelation(self, op, *, parent, name: str):
+        if isinstance(parent, sge.Table):
+            parent = sg.select(STAR, copy=False).from_(parent, copy=False)
         else:
-            child = child.copy()
+            parent = parent.copy()
 
-        if isinstance(child, sge.Subquery):
-            return child.as_(name, quoted=self.quoted)
+        if isinstance(parent, sge.Subquery):
+            return parent.as_(name, quoted=self.quoted)
         else:
             try:
-                return child.subquery(name, copy=False)
+                return parent.subquery(name, copy=False)
             except AttributeError:
-                return child.as_(name, quoted=self.quoted)
+                return parent.as_(name, quoted=self.quoted)
 
     def visit_SQLStringView(self, op, *, query: str, child, schema):
         return sg.parse_one(query, read=self.dialect)

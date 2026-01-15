@@ -183,7 +183,7 @@ class Reference(Relation):
         return self.parent.schema
 
 
-# TODO(kszucs): remove in favor of View
+# TODO(kszucs): remove in favor of AliasedRelation
 @public
 class SelfReference(Reference):
     """A self-referential relation."""
@@ -435,15 +435,14 @@ class SQLQueryResult(Relation):
 
 
 @public
-class View(PhysicalTable):
-    """A view created from an expression."""
+class AliasedRelation(PhysicalTable):
+    """An aliased relation for a subquery with an explicit name."""
 
-    # TODO(kszucs): rename it to parent
-    child: Relation
+    parent: Relation
 
     @attribute
     def schema(self):
-        return self.child.schema
+        return self.parent.schema
 
 
 @public
