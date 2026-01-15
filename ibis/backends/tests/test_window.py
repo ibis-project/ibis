@@ -116,8 +116,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             lambda t: t.apply(
                 lambda df: (
                     df.sort_values("id").id.rank(method="min").sub(1).div(len(df) - 1)
-                ),
-                include_groups=False,
+                )
             ).reset_index(drop=True, level=[0]),
             id="percent_rank",
             marks=[
@@ -435,7 +434,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
     # shift id column before applying Pandas rolling window summarizer to
     # simulate forward looking window aggregation
     gdf = df.sort_values("id").groupby("string_col")
-    gdf.id = gdf.apply(lambda t: t.id.shift(-2), include_groups=False)
+    gdf.id = gdf.apply(lambda t: t.id.shift(-2))
     expected = (
         df.assign(
             val=gdf.id.rolling(3, min_periods=1)
@@ -991,7 +990,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
         df.assign(prec=lambda t: t.id - preceding, foll=lambda t: t.id + 1)
         .sort_values("id")
         .groupby("string_col")
-        .apply(gb_fn, include_groups=False)
+        .apply(gb_fn)
         .droplevel(0)
     )
     expected = (
@@ -1053,7 +1052,7 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
 
     expected = (
         df.groupby("month", group_keys=False)
-        .apply(agg, include_groups=False)
+        .apply(agg)
         .sort_values(["id"])
         .reset_index(drop=True)
         .bigint_col.fillna(0.0)
