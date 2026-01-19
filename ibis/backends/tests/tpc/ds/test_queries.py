@@ -1015,8 +1015,8 @@ def test_15(catalog_sales, customer, customer_address, date_dim):
 
 @pytest.mark.notyet(
     ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
+    raises=AssertionError,
+    reason="Query results don't match raw SQL results",
 )
 @pytest.mark.notyet(
     ["datafusion"],
@@ -3589,8 +3589,8 @@ def test_68(
 )
 @pytest.mark.notyet(
     ["clickhouse"],
-    reason="parent scope only supported for constants and CTE",
-    raises=ClickHouseDatabaseError,
+    reason="Query results don't match raw SQL results",
+    raises=AssertionError,
 )
 @tpc_test("ds")
 def test_69(
