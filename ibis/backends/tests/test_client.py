@@ -1843,7 +1843,6 @@ def test_cross_database_join(con_create_database, monkeypatch):
 @pytest.mark.notimpl(
     ["druid"], raises=PyDruidProgrammingError, reason="doesn't implement CREATE syntax"
 )
-@pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
 @pytest.mark.notyet(["flink"], raises=AttributeError, reason="no _safe_raw_sql method")
 @pytest.mark.notyet(["polars"], reason="Doesn't support insert")
 @pytest.mark.notimpl(["impala"], reason="Default constraints are not supported")
