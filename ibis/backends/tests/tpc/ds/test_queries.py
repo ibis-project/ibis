@@ -14,11 +14,6 @@ from ibis.backends.tests.tpc.conftest import tpc_test
 from ibis.common.exceptions import OperationNotDefinedError
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("ds")
 def test_01(store_returns, date_dim, store, customer):
     customer_total_return = (
@@ -225,11 +220,6 @@ def test_05(
     raise NotImplementedError()
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("ds")
 def test_06(customer_address, customer, store_sales, date_dim, item):
     return (
@@ -752,11 +742,6 @@ def test_09(store_sales, reason):
 @tpc_test("ds")
 @pytest.mark.notimpl(
     ["datafusion"], reason="Exception: Optimizer rule 'scalar_subquery_to_join' failed"
-)
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
 )
 def test_10(
     customer,
@@ -1529,11 +1514,6 @@ def test_29(store_sales, store_returns, catalog_sales, date_dim, store, item):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 def test_30(web_returns, date_dim, customer_address, customer):
     customer_total_return = (
         web_returns.join(
@@ -4503,11 +4483,6 @@ def test_80(
     raise NotImplementedError()
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("ds")
 def test_81(catalog_returns, date_dim, customer_address, customer):
     customer_total_return = (
@@ -4931,11 +4906,6 @@ def test_91(
     )
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("ds")
 def test_92(web_sales, item, date_dim):
     return (
@@ -4996,11 +4966,6 @@ def test_93(store_sales, store_returns, reason):
     )
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @pytest.mark.notyet(
     ["datafusion"],
     raises=Exception,
