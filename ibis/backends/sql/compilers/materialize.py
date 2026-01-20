@@ -135,12 +135,20 @@ class MaterializeCompiler(PostgresCompiler):
         """Compile ArrayIndex operation.
 
         Override PostgreSQL to use array_length instead of cardinality.
+        Converts 0-based Ibis index to 1-based Materialize/PostgreSQL index.
         """
         # Use array_length(array, 1) instead of cardinality
         arg_length = sge.Anonymous(
             this="array_length", expressions=[arg, sge.convert(1)]
         )
-        index = self.if_(index < 0, arg_length + index, index)
+        # Convert 0-based index to 1-based:
+        # - For negative index: array_length + (index + 1), e.g., -1 -> length
+        # - For positive index: index + 1, e.g., 0 -> 1
+        index = self.if_(
+            index < 0,
+            arg_length + sge.paren(index + 1, copy=False),
+            index + 1,
+        )
         return sge.paren(arg, copy=False)[index]
 
     def visit_ArraySlice(self, op, *, arg, start, stop):

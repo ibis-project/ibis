@@ -557,7 +557,7 @@ services:
       - impala
 
   materialize:
-    image: materialize/materialized:v26.0.0
+    image: materialize/materialized:v26.7.0
     ports:
       - 6875:6875 # SQL port
       - 6876:6876 # HTTP port
