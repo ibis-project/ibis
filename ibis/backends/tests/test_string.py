@@ -950,11 +950,6 @@ def test_subs_with_re_replace(con):
     assert result == "k"
 
 
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize parser bug: rejects bare string literals in simple CASE expressions. Bug reported to Materialize SQL team.",
-)
 def test_multiple_subs(con):
     m = {"foo": "FOO", "bar": "BAR"}
     expr = ibis.literal("foo").substitute(m)
