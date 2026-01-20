@@ -12,6 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
+from ibis.backends.sql.compilers._compat import EXCEPT_ARG
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 from ibis.backends.sql.rewrites import (
@@ -644,7 +645,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         #
         # then that means "exclude all columns named `a`"
         excludes = [sg.column(column, quoted=quoted) for column in columns_to_drop]
-        star = sge.Star(**{"except": excludes})
+        star = sge.Star(**{EXCEPT_ARG: excludes})
         table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
         column = sge.Column(this=star, table=table)
         return sg.select(column).from_(parent)

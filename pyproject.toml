@@ -51,11 +51,10 @@ dependencies = [
   "atpublic>=2.3",
   "parsy>=2",
   "python-dateutil>=2.8.2",
-  # temporarily pin to below 28 to avoid https://github.com/ibis-project/ibis/issues/11767
-  "sqlglot>=23.4,!=26.32.0,<28.0.0",
+  "sqlglot>=23.4,!=26.32.0",
   "toolz>=0.11",
   "typing-extensions>=4.3.0",
-  "tzdata>=2022.7",                  # fallback time zone data on Windows
+  "tzdata>=2022.7",           # fallback time zone data on Windows
 ]
 
 [project.urls]
@@ -314,7 +313,7 @@ docs = [
   "jupyterlab>=4.2.5,<5",
   "jupyterlab-night>=0.4.6,<1",
   "jupyterlite-core>=0.6,<0.8",
-  "jupyterlite-pyodide-kernel>=0.6,<0.7",
+  "jupyterlite-pyodide-kernel>=0.6,<0.8",
 ]
 
 [project.entry-points."ibis.backends"]
@@ -464,6 +463,10 @@ filterwarnings = [
   "ignore:The 'shapely\\.geos' module is deprecated, and will be removed in a future version:DeprecationWarning",
   # snowflake vendors pyopenssl, because why not, and pyopenssl raises a warning on snowflake's use of it
   "ignore:Attempting to mutate a Context after a Connection was created\\. In the future, this will raise an exception:DeprecationWarning",
+  # pins Board.pin_meta leaks file handles (see https://github.com/rstudio/pins-python/pull/353 for a fix)
+  "ignore:unclosed file <_io.BufferedReader.*pins.*>:ResourceWarning",
+  # impala leaves sockets open
+  "ignore:unclosed .*socket.*:ResourceWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [

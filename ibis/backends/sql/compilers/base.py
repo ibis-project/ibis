@@ -17,6 +17,7 @@ import ibis.common.exceptions as com
 import ibis.common.patterns as pats
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.sql.compilers._compat import WITH_ARG
 from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
@@ -663,7 +664,9 @@ class SQLGlotCompiler(abc.ABC):
                 try:
                     return result.subquery(alias, copy=False)
                 except AttributeError:
-                    return result.as_(alias, quoted=self.quoted)
+                    return result.as_(
+                        alias, quoted=self.quoted, table=isinstance(result, sge.Table)
+                    )
 
         # apply translate rules in topological order
         results = op.map(fn)
@@ -685,7 +688,7 @@ class SQLGlotCompiler(abc.ABC):
             )
             merged_ctes.append(modified_cte)
         merged_ctes.extend(out.ctes)
-        out.args.pop("with", None)
+        out.args.pop(WITH_ARG, None)
 
         out = reduce(
             lambda parsed, cte: parsed.with_(
@@ -1619,8 +1622,8 @@ class SQLGlotCompiler(abc.ABC):
             ),
             *compiled_query.ctes,
         ]
-        compiled_ibis_expr.args.pop("with", None)
-        compiled_query.args.pop("with", None)
+        compiled_ibis_expr.args.pop(WITH_ARG, None)
+        compiled_query.args.pop(WITH_ARG, None)
 
         # pull existing CTEs from the compiled Ibis expression and combine them
         # with the new query

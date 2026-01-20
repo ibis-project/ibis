@@ -88,14 +88,6 @@ def test_view_new_relation(table):
     assert node2_ is node2
 
 
-def test_getitem_column_select(table):
-    for k in table.columns:
-        col = table[k]
-
-        # Make sure it's the right type
-        assert isinstance(col, Column)
-
-
 def test_select_using_selector(table):
     expr = table.select(s.numeric())
     expected = table.select(
@@ -120,6 +112,20 @@ def test_table_tab_completion():
     assert items.issuperset(table.columns)
 
 
+def test_getitem_str(table):
+    for k in table.columns:
+        col = table[k]
+        assert isinstance(col, Column)
+        assert col.get_name() == k
+
+
+def test_getitem_int(table):
+    for i, k in enumerate(table.columns):
+        coli = table[i]
+        cols = table[k]
+        assert_equal(coli, cols)
+
+
 def test_getitem_attribute(table):
     result = table.a
     assert_equal(result, table["a"])
@@ -129,9 +135,139 @@ def test_getitem_attribute(table):
     assert not isinstance(view.schema, Column)
 
 
+def test_getitem_list_of_str_acts_as_select(table):
+    cols = ["f", "a", "h"]
+
+    proj = table[cols]
+    assert isinstance(proj, Table)
+    assert isinstance(proj.op(), ops.Project)
+
+    assert proj.schema().names == tuple(cols)
+    for c in cols:
+        expr = proj[c]
+        assert isinstance(expr, type(table[c]))
+
+
+def test_getitem_list_of_str_and_int(table):
+    cols = ["f", 0, "h"]
+    exp = table.select("f", "a", "h")
+    proj = table[cols]
+    assert_equal(proj, exp)
+
+
+def test_getitem_slice(table):
+    expr1 = table[:5]
+    expr2 = table[:5:1]
+    expr3 = table[5:]
+    assert_equal(expr1, table.limit(5))
+    assert_equal(expr1, expr2)
+    assert_equal(expr3, table.limit(None, offset=5))
+
+    expr1 = table[2:7]
+    expr2 = table[2:7:1]
+    expr3 = table[2::1]
+    assert_equal(expr1, table.limit(5, offset=2))
+    assert_equal(expr1, expr2)
+    assert_equal(expr3, table.limit(None, offset=2))
+
+
+@pytest.mark.parametrize("step", [-1, 0, 2])
+def test_getitem_invalid_slice(table, step):
+    with pytest.raises(ValueError):
+        table[:5:step]
+
+
 def test_getitem_missing_column(table):
     with pytest.raises(com.IbisTypeError, match="oops"):
         table["oops"]
+
+
+def test_getitem_scalar(table):
+    with pytest.warns(FutureWarning):
+        actual = table[ibis.literal("foo")]
+    expected = table.select(ibis.literal("foo"))
+    assert_equal(expected, actual)
+
+
+def test_getitem_scalars(table):
+    with pytest.warns(FutureWarning):
+        actual = table[[ibis.literal("foo"), ibis.literal("bar")]]
+    expected = table.select(
+        ibis.literal(
+            "foo",
+        ),
+        ibis.literal("bar"),
+    )
+    assert_equal(expected, actual)
+
+
+def test_getitem_column(table):
+    with pytest.warns(FutureWarning):
+        actual = table[table.a]
+    expected = table.select("a")
+    assert_equal(expected, actual)
+
+
+def test_getitem_columns(table):
+    with pytest.warns(FutureWarning):
+        actual = table[[table.a, table.b]]
+    expected = table.select("a", "b")
+    assert_equal(expected, actual)
+
+
+def test_getitem_deferred(table):
+    with pytest.warns(FutureWarning):
+        actual = table[ibis._.a]
+    expected = table.select("a")
+    assert_equal(expected, actual)
+
+
+def test_getitem_deferreds(table):
+    with pytest.warns(FutureWarning):
+        actual = table[[ibis._.a, ibis._.b]]
+    expected = table.select("a", "b")
+    assert_equal(expected, actual)
+
+
+def test_getitem_callable(table):
+    with pytest.warns(FutureWarning):
+        actual = table[lambda t: t.a]
+    expected = table.select("a")
+    assert_equal(expected, actual)
+
+
+def test_getitem_callables(table):
+    with pytest.warns(FutureWarning):
+        actual = table[[lambda t: t.a, lambda t: t.b]]
+    expected = table.select("a", "b")
+    assert_equal(expected, actual)
+
+
+def test_getitem_as_select_warns(table):
+    sel = table.select(table, table.a.name("foo"))
+    with pytest.warns(FutureWarning):
+        gi1 = table[table, table["a"].name("foo")]
+    with pytest.warns(FutureWarning):
+        gi2 = table[[table, table["a"].name("foo")]]
+    assert_equal(gi1, sel)
+    assert_equal(gi2, sel)
+
+
+def test_getitem_of_selector_warns(table):
+    sel = table.select(s.numeric())
+    with pytest.warns(FutureWarning):
+        gi = table[s.numeric()]
+    assert_equal(gi, sel)
+
+
+def test_getitem_as_filter_warns(table):
+    fil = table.filter(table.a > 10, table.a < 20)
+    with pytest.warns(FutureWarning):
+        gi1 = table[table.a > 10, table.a < 20]
+    with pytest.warns(FutureWarning):
+        gi2 = table[[table.a > 10, table.a < 20]]
+    assert_equal(gi1, fil)
+    assert_equal(gi2, fil)
 
 
 def test_getattr_missing_column(table):
@@ -147,19 +283,6 @@ def test_typo_method_name_recommendation(table):
     # for a common method typo
     table2 = table.rename(sort="a")
     assert isinstance(table2.sort, Column)
-
-
-def test_projection(table):
-    cols = ["f", "a", "h"]
-
-    proj = table[cols]
-    assert isinstance(proj, Table)
-    assert isinstance(proj.op(), ops.Project)
-
-    assert proj.schema().names == tuple(cols)
-    for c in cols:
-        expr = proj[c]
-        assert isinstance(expr, type(table[c]))
 
 
 def test_projection_no_list(table):
@@ -229,33 +352,6 @@ def test_projection_with_star_expr(table):
     with pytest.raises(IntegrityError):
         t.select(t2)
     # TODO: there may be some ways this can be invalid
-
-
-def test_deprecated_getitem_select_filter(table):
-    # Select
-    sol1 = table.select(table, table.a.name("foo"))
-    with pytest.warns(FutureWarning):
-        e1 = table[table, table["a"].name("foo")]
-        e2 = table[[table, table["a"].name("foo")]]
-
-    assert_equal(e1, sol1)
-    assert_equal(e2, sol1)
-
-    # Select with selector
-    sol2 = table.select(s.numeric())
-    with pytest.warns(FutureWarning):
-        e3 = table[s.numeric()]
-
-    assert_equal(e3, sol2)
-
-    # Filter
-    sol3 = table.filter(table.a > 10, table.a < 20)
-    with pytest.warns(FutureWarning):
-        e4 = table[table.a > 10, table.a < 20]
-        e5 = table[[table.a > 10, table.a < 20]]
-
-    assert_equal(e4, sol3)
-    assert_equal(e5, sol3)
 
 
 def test_projection_mutate_analysis_bug(con):
@@ -571,28 +667,6 @@ def test_order_by_nonexistent_column_errors(table, expr_func, key, exc_type):
         expr.order_by(key)
 
 
-def test_slice(table):
-    expr1 = table[:5]
-    expr2 = table[:5:1]
-    expr3 = table[5:]
-    assert_equal(expr1, table.limit(5))
-    assert_equal(expr1, expr2)
-    assert_equal(expr3, table.limit(None, offset=5))
-
-    expr1 = table[2:7]
-    expr2 = table[2:7:1]
-    expr3 = table[2::1]
-    assert_equal(expr1, table.limit(5, offset=2))
-    assert_equal(expr1, expr2)
-    assert_equal(expr3, table.limit(None, offset=2))
-
-
-@pytest.mark.parametrize("step", [-1, 0, 2])
-def test_invalid_slice(table, step):
-    with pytest.raises(ValueError):
-        table[:5:step]
-
-
 @pytest.mark.parametrize(
     "method, op_cls", [("count", ops.CountStar), ("nunique", ops.CountDistinctStar)]
 )
@@ -847,12 +921,12 @@ def test_group_by_column_select_api(table):
 
 def test_value_counts(table):
     expr1 = table.g.value_counts()
-    expr2 = table[["g"]].group_by("g").aggregate(g_count=_.count())
+    expr2 = table.select("g").group_by("g").aggregate(g_count=_.count())
     assert expr1.columns == ("g", "g_count")
     assert_equal(expr1, expr2)
 
     expr3 = table.g.value_counts(name="freq")
-    expr4 = table[["g"]].group_by("g").aggregate(freq=_.count())
+    expr4 = table.select("g").group_by("g").aggregate(freq=_.count())
     assert expr3.columns == ("g", "freq")
     assert_equal(expr3, expr4)
 
@@ -1153,9 +1227,9 @@ def test_cross_join(table):
 
 
 def test_cross_join_multiple(table):
-    a = table["a", "b", "c"]
-    b = table["d", "e"]
-    c = table["f", "h"]
+    a = table.select("a", "b", "c")
+    b = table.select("d", "e")
+    c = table.select("f", "h")
 
     joined = ibis.cross_join(a, b, c)
     with join_tables(joined) as (r1, r2, r3):

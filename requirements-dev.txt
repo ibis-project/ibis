@@ -140,8 +140,10 @@ jupyterlab-night==0.5.2
 jupyterlab-pygments==0.3.0
 jupyterlab-server==2.28.0
 jupyterlab-widgets==3.0.15 ; python_full_version >= '3.10'
-jupyterlite-core==0.6.4
-jupyterlite-pyodide-kernel==0.6.1
+jupyterlite-core==0.6.4 ; python_full_version < '3.10'
+jupyterlite-core==0.7.1 ; python_full_version >= '3.10'
+jupyterlite-pyodide-kernel==0.6.1 ; python_full_version < '3.10'
+jupyterlite-pyodide-kernel==0.7.0 ; python_full_version >= '3.10'
 kiwisolver==1.4.7 ; python_full_version < '3.10'
 kiwisolver==1.4.9 ; python_full_version >= '3.10'
 lark==1.3.0
@@ -220,7 +222,7 @@ pyarrow-hotfix==0.7
 pyasn1==0.6.1
 pyasn1-modules==0.4.2
 pyathena==3.19.0
-pycparser==2.23 ; implementation_name != 'PyPy'
+pycparser==2.23 ; (python_full_version >= '3.10' and platform_python_implementation == 'PyPy') or implementation_name != 'PyPy'
 pydantic==2.12.3
 pydantic-core==2.41.4
 pydata-google-auth==1.9.1
@@ -292,7 +294,7 @@ sortedcontainers==2.4.0
 soupsieve==2.8
 sphobjinv==2.3.1.3
 sqlalchemy==2.0.44
-sqlglot==27.28.1
+sqlglot==28.6.0
 stack-data==0.6.3
 statsmodels==0.14.5
 tabulate==0.9.0

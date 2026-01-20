@@ -17,7 +17,7 @@ jobs:
       id-token: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/create-github-app-token@v2.2.0
+      - uses: actions/create-github-app-token@v2.2.1
         id: generate_token
         with:
           app-id: ${{ secrets.APP_ID }}
@@ -44,4 +44,4 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
 
       - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@3317ede93a4981d0fc490510c6fcf8bf0e92ed05
+        uses: pypa/gh-action-pypi-publish@03f86fee9ac21f854951f5c6e2a02c2a1324aec7

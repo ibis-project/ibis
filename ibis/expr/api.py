@@ -9,7 +9,7 @@ import itertools
 import numbers
 import operator
 from collections import Counter
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
@@ -46,7 +46,7 @@ from ibis.util import experimental
 
 if TYPE_CHECKING:
     import uuid as pyuuid
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
     from pathlib import Path
 
     import geopandas as gpd
@@ -133,6 +133,8 @@ __all__ = (
     "watermark",
     "window",
 )
+
+V = TypeVar("V", bound=ir.Value)
 
 
 dtype = dt.dtype
@@ -581,7 +583,9 @@ def _memtable_from_geopandas_geodataframe(
     return _memtable(wkb_df, schema=schema, columns=columns)
 
 
-def _deferred_method_call(expr, method_name, **kwargs):
+def _deferred_method_call(
+    expr: str | Deferred | Callable | Any, method_name: str, **kwargs
+):
     method = operator.methodcaller(method_name, **kwargs)
     if isinstance(expr, str):
         value = _[expr]
@@ -594,7 +598,7 @@ def _deferred_method_call(expr, method_name, **kwargs):
     return method(value)
 
 
-def desc(expr: ir.Column | str, /, *, nulls_first: bool = False) -> ir.Value:
+def desc(expr: V | str | Deferred, /, *, nulls_first: bool = False) -> V | Deferred:
     """Create a descending sort key from `expr` or column name.
 
     Parameters
@@ -635,7 +639,7 @@ def desc(expr: ir.Column | str, /, *, nulls_first: bool = False) -> ir.Value:
     return _deferred_method_call(expr, "desc", nulls_first=nulls_first)
 
 
-def asc(expr: ir.Column | str, /, *, nulls_first: bool = False) -> ir.Value:
+def asc(expr: V | str | Deferred, /, *, nulls_first: bool = False) -> V | Deferred:
     """Create a ascending sort key from `asc` or column name.
 
     Parameters
@@ -676,15 +680,15 @@ def asc(expr: ir.Column | str, /, *, nulls_first: bool = False) -> ir.Value:
     return _deferred_method_call(expr, "asc", nulls_first=nulls_first)
 
 
-def preceding(value, /) -> ir.Value:
+def preceding(value: V, /) -> V:
     return ops.WindowBoundary(value, preceding=True).to_expr()
 
 
-def following(value, /) -> ir.Value:
+def following(value: V, /) -> V:
     return ops.WindowBoundary(value, preceding=False).to_expr()
 
 
-def and_(*predicates: ir.BooleanValue) -> ir.BooleanValue:
+def and_(*predicates: ir.BooleanValue | bool) -> ir.BooleanValue | bool:
     """Combine multiple predicates using `&`.
 
     Parameters
@@ -704,7 +708,7 @@ def and_(*predicates: ir.BooleanValue) -> ir.BooleanValue:
     return functools.reduce(operator.and_, predicates)
 
 
-def or_(*predicates: ir.BooleanValue) -> ir.BooleanValue:
+def or_(*predicates: ir.BooleanValue | bool) -> ir.BooleanValue | bool:
     """Combine multiple predicates using `|`.
 
     Parameters
