@@ -196,15 +196,24 @@ def drop_null_to_select(_, **kwargs):
 
 
 @replace(p.WindowFunction(p.First | p.Last))
-def first_to_firstvalue(_, **kwargs):
+def first_to_firstvalue(_: ops.WindowFunction, **kwargs):
     """Convert a First or Last node to a FirstValue or LastValue node."""
-    if _.func.where is not None:
+    func: ops.First | ops.Last = _.func
+    # Catch future changes to ops.First and ops.Last,
+    # To make sure we have guard clauses for all of them below.
+    assert set(func.argnames) == {"arg", "where", "order_by", "include_null"}
+    if func.where is not None:
         raise com.UnsupportedOperationError(
-            f"`{type(_.func).__name__.lower()}` with `where` is unsupported "
+            f"`{type(func).__name__.lower()}` with `where` is unsupported "
             "in a window function"
         )
-    klass = FirstValue if isinstance(_.func, ops.First) else LastValue
-    return _.copy(func=klass(_.func.arg))
+    if not func.include_null:
+        raise com.UnsupportedOperationError(
+            f"`{type(func).__name__.lower()}` must have `include_null=True` "
+            "in a window function"
+        )
+    klass = FirstValue if isinstance(func, ops.First) else LastValue
+    return _.copy(func=klass(func.arg))
 
 
 @replace(p.Alias)
@@ -391,8 +400,7 @@ def sqlize(
         | distinct_to_select
         | fill_null_to_select
         | drop_null_to_select
-        | drop_columns_to_select
-        | first_to_firstvalue,
+        | drop_columns_to_select,
         context=context,
     )
 

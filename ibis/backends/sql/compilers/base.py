@@ -24,6 +24,7 @@ from ibis.backends.sql.rewrites import (
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
     empty_in_values_right_side,
+    first_to_firstvalue,
     lower_bucket,
     lower_capitalize,
     lower_sample,
@@ -257,6 +258,7 @@ class SQLGlotCompiler(abc.ABC):
         add_order_by_to_empty_ranking_window_functions,
         one_to_zero_index,
         add_one_to_nth_value_input,
+        first_to_firstvalue,
     )
     """A sequence of rewrites to apply to the expression tree before SQL-specific transforms."""
 
