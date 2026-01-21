@@ -248,13 +248,13 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         """
         import sqlglot.expressions as sge
 
-        from ibis.backends.sql.datatypes import TYPE_MAPPERS, SqlglotType
+        from ibis.backends.sql.datatypes import SqlglotType, get_type_mapper
 
         expressions = schema.expressions
         if not expressions:
             return cls({})
 
-        type_mapper_class = TYPE_MAPPERS.get(dialect, SqlglotType)
+        type_mapper_class = SqlglotType if dialect is None else get_type_mapper(dialect)
         type_mapper = type_mapper_class()
         fields = {}
 
@@ -382,9 +382,9 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         import sqlglot as sg
         import sqlglot.expressions as sge
 
-        from ibis.backends.sql.datatypes import TYPE_MAPPERS as type_mappers
+        from ibis.backends.sql.datatypes import get_type_mapper
 
-        type_mapper = type_mappers[dialect]
+        type_mapper = get_type_mapper(dialect)
         return [
             sge.ColumnDef(
                 this=sg.to_identifier(name, quoted=True),
