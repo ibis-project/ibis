@@ -1608,6 +1608,28 @@ class SQLGlotCompiler(abc.ABC):
         )
         return sg.select(*columns_to_keep).from_(parent)
 
+    def visit_TemplateSQLValue(
+        self,
+        op: ops.TemplateSQLValue,
+        *,
+        strings: tuple[str],
+        values: tuple[sge.Expression],
+        dialect: str,
+        dtype: dt.DataType,
+    ):
+        def iter():
+            for s, i in itertools.zip_longest(strings, values):
+                if s:
+                    yield s
+                if i:
+                    yield i
+
+        str_parts = [
+            part if isinstance(part, str) else part.sql(dialect) for part in iter()
+        ]
+        sql = "".join(str_parts)
+        return sg.parse_one(sql, read=dialect)
+
     def add_query_to_expr(self, *, name: str, table: ir.Table, query: str) -> str:
         dialect = self.dialect
 

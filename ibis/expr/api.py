@@ -16,7 +16,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis import selectors, util
+from ibis import selectors, tstring, util
+from ibis._tstring import PTemplate, t
 from ibis.backends import BaseBackend, connect
 from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.dispatch import lazy_singledispatch
@@ -54,6 +55,7 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
     import pyarrow.dataset as ds
+    import sqlglot as sg
 
     from ibis.expr.schema import SchemaLike
 
@@ -120,7 +122,9 @@ __all__ = (
     "schema",
     "selectors",
     "set_backend",
+    "sql_value",
     "struct",
+    "t",
     "table",
     "time",
     "timestamp",
@@ -128,6 +132,7 @@ __all__ = (
     "today",
     "trailing_range_window",
     "trailing_window",
+    "tstring",
     "union",
     "uuid",
     "watermark",
@@ -726,6 +731,134 @@ def or_(*predicates: ir.BooleanValue | bool) -> ir.BooleanValue | bool:
     if not predicates:
         return literal(False)
     return functools.reduce(operator.or_, predicates)
+
+
+def sql_value(
+    template: PTemplate,
+    /,
+    *,
+    dialect: str | sg.Dialect | None = None,
+    type: dt.IntoDtype | None = None,
+) -> ir.Value | Deferred:
+    """Create an ibis value from a t-string.
+
+    t-strings, or Template Strings, were added as builtin syntax in Python 3.14.
+    For more information, see https://docs.python.org/3.14/library/string.templatelib.html
+
+    This function allows you to create an ibis value expression from a t-string.
+    It does NOT support generic SELECT statements, only expressions that
+    represent a single value, such as `my_table.my_column + 5`.
+
+    Parameters
+    ----------
+    template
+        The template to use for creating the SQL expression.
+    dialect
+        The SQL dialect to use for the expression.
+        If not provided, will be inferred from the backend of any expressions in the template.
+        If the template contains no expressions-with-backends, defaults to the result of `ibis.get_backend()`.
+    type
+        The datatype to use for the value.
+        If not given, will be inferred.
+
+    Returns
+    -------
+    Value | Deferred
+        If any of the interpolations in the template are Deferred, returns a
+        Deferred expression.
+        Otherwise, returns a Value expression.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> con = ibis.duckdb.connect()
+    >>> table = con.create_table("my_table", {"a": [1, 2, 3], "b": [4, 5, 6]})
+
+    If you are using python 3.14+, you can replace the lines
+    below with `t"{table.b} + 3 - {table.a / 10}"`.
+    Here, since we are testing on older versions,
+    we use a tiny implementation of t-strings included in ibis that works as a replacement.
+
+    >>> # use `t"{table.b} + 3 - {table.a / 10}"` in Python 3.14+
+    >>> template = ibis.t("{table.b} + 3 - {table.a / 10}")
+    >>> expr = ibis.sql_value(template)
+    >>> print(expr.to_sql())
+    SELECT
+      "t0"."b" + 3 - "t0"."a" / 10 AS "TemplateSQL((), (b, Divide(a, 10)))"
+    FROM "memory"."main"."my_table" AS "t0"
+    >>> table.mutate(expr=expr, s=expr.cast(str) + "!")
+    ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
+    ┃ a     ┃ b     ┃ expr    ┃ s      ┃
+    ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
+    │ int64 │ int64 │ float64 │ string │
+    ├───────┼───────┼─────────┼────────┤
+    │     1 │     4 │     6.9 │ 6.9!   │
+    │     2 │     5 │     7.8 │ 7.8!   │
+    │     3 │     6 │     8.7 │ 8.7!   │
+    └───────┴───────┴─────────┴────────┘
+
+    If you don't need the `dialect` or `type` parameters, you can also use the template
+    string directly wherever an ibis expression is expected, for example in Table.mutate:
+
+    >>> # use `table.mutate(b2=t"{table.b} * 2")` in Python 3.14+
+    >>> table.mutate(b2=ibis.t("{table.b} * 2"))
+    ┏━━━━━━━┳━━━━━━━┳━━━━━━━┓
+    ┃ a     ┃ b     ┃ b2    ┃
+    ┡━━━━━━━╇━━━━━━━╇━━━━━━━┩
+    │ int64 │ int64 │ int64 │
+    ├───────┼───────┼───────┤
+    │     1 │     4 │     8 │
+    │     2 │     5 │    10 │
+    │     3 │     6 │    12 │
+    └───────┴───────┴───────┘
+
+    You can provide a `dialect` parameter if you pass in a template written in
+    a specific SQL dialect, and then this will be transpiled to
+    the correct dialect upon execution.
+
+    For example, write a template in sqlite syntax (with datatype REAL)
+    and then execute it on duckdb (where REAL will be interpreted as DOUBLE).
+
+    >>> # use `t"CAST({table.a} AS REAL)"` in Python 3.14+
+    >>> expr = ibis.sql_value(ibis.t("CAST({table.a} AS REAL)"), dialect="sqlite")
+    >>> arr = con.to_pyarrow(expr)
+    >>> arr.type
+    DataType(double)
+    >>> arr.to_pylist()
+    [1.0, 2.0, 3.0]
+
+    If the template contains any Deferred interpolations,
+    the resulting expression will also be Deferred, not a concrete ibis Value expression,
+    since we can't infer the datatype until the Deferreds are resolved:
+
+    >>> # use `t"{ibis._.a} % 2 = 0"` in Python 3.14+
+    >>> is_even = ibis.sql_value(ibis.t("{ibis._.a} % 2 = 0"))
+    >>> type(is_even)
+    <class 'ibis.common.deferred.Deferred'>
+    >>> is_odd = (~is_even).name("is_odd")
+    >>> table.mutate(is_odd, is_even=is_even)
+    ┏━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+    ┃ a     ┃ b     ┃ is_odd ┃ is_even ┃
+    ┡━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+    │ int64 │ int64 │ bool   │ bool    │
+    ├───────┼───────┼────────┼─────────┤
+    │     1 │     4 │ True   │ False   │
+    │     2 │     5 │ False  │ True    │
+    │     3 │     6 │ True   │ False   │
+    └───────┴───────┴────────┴─────────┘
+    """
+    if any(isinstance(i.value, Deferred) for i in template.interpolations):
+        from ibis.expr.operations.template_deferred import TemplateValueResolver
+
+        resolver = TemplateValueResolver(template=template, dialect=dialect, dtype=type)
+        return Deferred(resolver)
+    else:
+        from ibis.expr.operations.template import TemplateSQLValue
+
+        return TemplateSQLValue.from_template(
+            template, dialect=dialect, dtype=type
+        ).to_expr()
 
 
 def random() -> ir.FloatingScalar:
