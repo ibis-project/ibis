@@ -1,0 +1,465 @@
+---
+title: "Apache Beam"
+description: "Apache Beam backend for Ibis"
+---
+
+## Overview
+
+The Apache Beam backend for Ibis provides support for running SQL queries using Apache Beam's SQL capabilities. This backend allows you to use Ibis expressions with Beam SQL, enabling portable data processing pipelines that can run on various runners including Apache Flink, Apache Spark, and Google Cloud Dataflow.
+
+## Installation
+
+To use the Beam backend, install Ibis with the beam extra:
+
+```bash
+pip install 'ibis-framework[beam]'
+```
+
+## Connection
+
+Connect to a Beam pipeline:
+
+```python
+import ibis
+import apache_beam as beam
+
+# Create a Beam pipeline
+pipeline = beam.Pipeline()
+
+# Connect Ibis to the pipeline
+con = ibis.beam.connect(pipeline)
+```
+
+## Basic Usage
+
+### Creating Tables
+
+Create tables from pandas DataFrames:
+
+```python
+import pandas as pd
+
+# Create sample data
+data = pd.DataFrame({
+    'id': [1, 2, 3, 4, 5],
+    'name': ['Alice', 'Bob', 'Charlie', 'David', 'Eve'],
+    'age': [25, 30, 35, 40, 45],
+    'salary': [50000, 60000, 70000, 80000, 90000]
+})
+
+# Create a temporary view
+employees = con.create_view('employees', data, temp=True)
+```
+
+### Querying Data
+
+Use Ibis expressions to query your data:
+
+```python
+# Simple selection
+result = employees.select('name', 'age')
+
+# Filtering
+young_employees = employees.filter(employees.age < 35)
+
+# Aggregations
+avg_salary = employees.salary.mean()
+salary_by_age = employees.group_by('age').agg(
+    avg_salary=employees.salary.mean(),
+    count=employees.count()
+)
+```
+
+### Executing Queries
+
+Execute queries and get results:
+
+```python
+# Execute and get pandas DataFrame
+df = con.execute(avg_salary)
+print(df)
+
+# Compile to SQL
+sql = con.compile(salary_by_age)
+print(sql)
+```
+
+## Features
+
+### Supported Operations
+
+The Beam backend supports most standard Ibis operations:
+
+- **Selection and Projection**: `select()`, column access
+- **Filtering**: `filter()`, boolean operations
+- **Aggregations**: `sum()`, `mean()`, `count()`, `min()`, `max()`
+- **Grouping**: `group_by()`, `agg()`
+- **Joins**: `join()`, `left_join()`, `right_join()`, `outer_join()`
+- **Sorting**: `order_by()`
+- **Window Functions**: `row_number()`, `rank()`, `dense_rank()`
+
+### Data Types
+
+The backend supports standard SQL data types:
+
+- **Numeric**: `INTEGER`, `BIGINT`, `FLOAT`, `DOUBLE`
+- **String**: `VARCHAR`, `CHAR`
+- **Boolean**: `BOOLEAN`
+- **Date/Time**: `DATE`, `TIME`, `TIMESTAMP`
+- **Complex**: `ARRAY`, `MAP`, `ROW` (struct)
+
+### Limitations
+
+- **Temporary Tables Only**: Currently, only temporary views are supported for in-memory data
+- **Limited Schema Discovery**: Schema discovery for external tables requires manual specification
+- **No NaN/Infinity**: Beam SQL doesn't support NaN or Infinity values
+- **Limited UDF Support**: User-defined functions have limited support
+
+## Advanced Usage
+
+### Working with Catalogs and Databases
+
+With the upcoming Apache Iceberg catalog support in Beam SQL, you can now work with catalogs and databases:
+
+#### Creating Catalogs
+
+```python
+# Create an Iceberg catalog
+con.raw_sql("CREATE CATALOG iceberg_catalog WITH (type = 'iceberg', warehouse = 's3://my-bucket/warehouse')")
+
+# Create a Hive catalog
+con.raw_sql("CREATE CATALOG hive_catalog WITH (type = 'hive', metastore_uri = 'thrift://localhost:9083', warehouse = 'hdfs://localhost:9000/warehouse')")
+
+# Set current catalog
+con.raw_sql("SET catalog = 'iceberg_catalog'")
+```
+
+#### Creating Databases
+
+```python
+# Create database in current catalog
+con.raw_sql("CREATE DATABASE analytics")
+
+# Create database in specific catalog
+con.raw_sql("CREATE DATABASE staging IN CATALOG iceberg_catalog")
+
+# Create database with properties
+con.raw_sql("CREATE DATABASE analytics WITH (location = 's3://my-bucket/analytics')")
+
+# Set current database
+con.raw_sql("SET database = 'analytics'")
+```
+
+#### Catalog and Database Management
+
+```python
+# List catalogs
+catalogs = con.list_catalogs()
+print(catalogs)  # ['iceberg_catalog', 'hive_catalog']
+
+# List databases
+databases = con.list_databases()
+print(databases)  # ['analytics', 'staging']
+
+# Get current catalog and database
+print(con.current_catalog)  # 'iceberg_catalog'
+print(con.current_database)  # 'analytics'
+
+# Drop database
+con.drop_database('staging')
+
+# Drop catalog
+con.drop_catalog('hive_catalog')
+```
+
+### Working with External Data
+
+For external data sources, you can create tables with explicit schemas:
+
+```python
+import ibis.expr.schema as sch
+
+# Define schema
+schema = sch.Schema({
+    'id': 'int64',
+    'name': 'string',
+    'created_at': 'timestamp'
+})
+
+# Create table with properties
+table = con.create_table(
+    'external_table',
+    schema=schema,
+    tbl_properties={
+        'connector': 'filesystem',
+        'path': '/path/to/data',
+        'format': 'parquet'
+    }
+)
+```
+
+### Apache Iceberg Integration
+
+With the new catalog support, you can leverage Apache Iceberg's advanced features:
+
+```python
+# Complete Iceberg setup
+con.raw_sql("CREATE CATALOG iceberg_catalog WITH (type = 'iceberg', warehouse = 's3://my-bucket/warehouse')")
+con.raw_sql("SET catalog = 'iceberg_catalog'")
+con.raw_sql("CREATE DATABASE analytics")
+con.raw_sql("SET database = 'analytics'")
+
+# Create Iceberg table with partitioning
+con.raw_sql("""
+CREATE TABLE user_events (
+    user_id BIGINT,
+    event_type STRING,
+    event_time TIMESTAMP,
+    properties MAP<STRING, STRING>
+) PARTITIONED BY (event_time)
+""")
+
+# Use Ibis with Iceberg tables
+events = con.table('user_events')
+result = events.filter(events.event_type == 'click').group_by('user_id').agg(
+    click_count=events.count()
+)
+```
+
+### Pipeline Execution
+
+The Beam backend integrates with Beam's pipeline execution model:
+
+```python
+# Your Ibis operations are automatically converted to Beam transforms
+result = con.execute(complex_query)
+
+# The pipeline can be run on various runners
+with beam.Pipeline(runner=beam.runners.DirectRunner()) as pipeline:
+    con = ibis.beam.connect(pipeline)
+    # ... your Ibis operations
+```
+
+## Examples
+
+### Data Processing Pipeline
+
+```python
+import ibis
+import apache_beam as beam
+import pandas as pd
+
+# Create pipeline
+pipeline = beam.Pipeline()
+con = ibis.beam.connect(pipeline)
+
+# Load data
+sales_data = pd.DataFrame({
+    'product_id': [1, 2, 3, 1, 2, 3],
+    'quantity': [10, 5, 8, 12, 7, 9],
+    'price': [100, 200, 150, 110, 190, 160],
+    'date': ['2023-01-01', '2023-01-01', '2023-01-01', 
+             '2023-01-02', '2023-01-02', '2023-01-02']
+})
+
+sales = con.create_view('sales', sales_data, temp=True)
+
+# Calculate daily revenue
+daily_revenue = sales.group_by('date').agg(
+    total_revenue=(sales.quantity * sales.price).sum(),
+    total_quantity=sales.quantity.sum()
+).order_by('date')
+
+# Execute
+result = con.execute(daily_revenue)
+print(result)
+```
+
+### Complex Analytics
+
+```python
+# Calculate running totals
+sales_with_running_total = sales.order_by('date').mutate(
+    running_total=sales.quantity.cumsum()
+)
+
+# Window functions
+sales_with_rank = sales.mutate(
+    price_rank=sales.price.rank().over(
+        ibis.window(order_by=sales.price, group_by=sales.date)
+    )
+)
+
+# Execute complex query
+result = con.execute(sales_with_rank)
+print(result)
+```
+
+## Integration with Beam Runners
+
+The Beam backend works with all Beam runners and supports configuration through SQL SET statements:
+
+- **DirectRunner**: For local development and testing
+- **FlinkRunner**: For Apache Flink clusters
+- **SparkRunner**: For Apache Spark clusters
+- **DataflowRunner**: For Google Cloud Dataflow
+- **PortableRunner**: For portable execution
+
+### Configuring Runners with SET Statements
+
+You can configure runners and their options using SQL SET statements:
+
+```python
+import ibis
+import apache_beam as beam
+
+# Create a pipeline
+pipeline = beam.Pipeline()
+con = ibis.beam.connect(pipeline)
+
+# Configure for DataflowRunner
+con.raw_sql("SET runner = 'dataflow'")
+con.raw_sql("SET dataflow.project = 'my-gcp-project'")
+con.raw_sql("SET dataflow.region = 'us-central1'")
+con.raw_sql("SET dataflow.staging_location = 'gs://my-bucket/staging'")
+con.raw_sql("SET dataflow.temp_location = 'gs://my-bucket/temp'")
+con.raw_sql("SET dataflow.num_workers = '5'")
+con.raw_sql("SET dataflow.max_num_workers = '10'")
+con.raw_sql("SET dataflow.machine_type = 'n1-standard-4'")
+con.raw_sql("SET dataflow.use_public_ips = 'false'")
+con.raw_sql("SET dataflow.enable_streaming_engine = 'true'")
+
+# Create a configured pipeline
+configured_pipeline = con.create_configured_pipeline()
+
+# Use the configured pipeline for your job
+with configured_pipeline as pipeline:
+    con = ibis.beam.connect(pipeline)
+    # ... your Ibis operations
+```
+
+### DataflowRunner Configuration Options
+
+The following Dataflow-specific options can be set using `SET dataflow.option = 'value'`:
+
+#### Required Options
+- `project`: GCP project ID
+- `staging_location`: GCS bucket for staging files
+- `temp_location`: GCS bucket for temporary files
+
+#### Optional Options
+- `region`: GCP region (default: us-central1)
+- `service_account`: Service account email
+- `network`: VPC network name
+- `subnetwork`: VPC subnetwork name
+- `use_public_ips`: Use public IPs (true/false)
+- `num_workers`: Initial number of workers
+- `max_num_workers`: Maximum number of workers
+- `machine_type`: Machine type for workers
+- `disk_size_gb`: Disk size in GB
+- `disk_type`: Disk type (pd-standard, pd-ssd)
+- `worker_machine_type`: Worker machine type
+- `worker_disk_type`: Worker disk type
+- `worker_disk_size_gb`: Worker disk size
+- `autoscaling_algorithm`: Autoscaling algorithm (THROUGHPUT_BASED, NONE)
+- `enable_streaming_engine`: Enable streaming engine (true/false)
+- `flexrs_goal`: FlexRS goal (COST_OPTIMIZED, SPEED_OPTIMIZED)
+- `dataflow_kms_key`: KMS key for encryption
+- `labels`: Comma-separated key=value pairs
+
+### Other Runner Examples
+
+```python
+# FlinkRunner configuration
+con.raw_sql("SET runner = 'flink'")
+con.raw_sql("SET pipeline.flink_master = 'localhost:8081'")
+
+# SparkRunner configuration
+con.raw_sql("SET runner = 'spark'")
+con.raw_sql("SET pipeline.spark_master = 'local[*]'")
+
+# DirectRunner (default)
+con.raw_sql("SET runner = 'direct'")
+```
+
+### Pipeline Options
+
+You can also set general pipeline options:
+
+```python
+# Streaming pipeline
+con.raw_sql("SET pipeline.streaming = 'true'")
+
+# Save main session
+con.raw_sql("SET pipeline.save_main_session = 'true'")
+
+# Setup file
+con.raw_sql("SET pipeline.setup_file = '/path/to/setup.py'")
+
+# Job name
+con.raw_sql("SET job_name = 'my-beam-job'")
+```
+
+## Upcoming Features
+
+The Beam backend is designed to be forward-compatible with upcoming Apache Beam features:
+
+### Apache Iceberg Catalog Support
+
+Based on [Apache Beam PR #36325](https://github.com/apache/beam/pull/36325), Beam SQL will soon support:
+
+- **CREATE CATALOG** statements for managing external data sources
+- **Apache Iceberg** integration with full catalog support
+- **Database management** within catalogs
+- **Schema evolution** and time travel capabilities
+- **ACID transactions** for data consistency
+
+### Current Implementation
+
+The current implementation provides:
+
+- ✅ **Placeholder support** for catalog and database operations
+- ✅ **SQL statement parsing** for CREATE CATALOG and CREATE DATABASE
+- ✅ **Configuration management** through SET statements
+- ✅ **Forward compatibility** with upcoming Beam features
+
+### Migration Path
+
+When the full catalog support becomes available in Apache Beam:
+
+1. **No code changes required** - the API remains the same
+2. **Enhanced functionality** - catalogs and databases will work with real backends
+3. **Better performance** - native catalog integration
+4. **Full Iceberg features** - schema evolution, time travel, etc.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Schema Errors**: Ensure schemas are properly defined for external tables
+2. **Type Mismatches**: Check that data types are compatible with Beam SQL
+3. **Pipeline Execution**: Make sure the pipeline is properly configured for your runner
+4. **Catalog Not Found**: Ensure catalogs are created before use
+5. **Database Not Found**: Verify database exists in the specified catalog
+
+### Debugging
+
+Enable verbose logging to debug issues:
+
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+# Your Ibis operations will show detailed SQL compilation
+result = con.execute(query)
+```
+
+### Version Compatibility
+
+- **Apache Beam 2.50+**: Full catalog and database support
+- **Apache Beam 2.40-2.49**: Placeholder implementation with forward compatibility
+- **Earlier versions**: Basic SQL support only
+
+## Contributing
+
+The Beam backend is part of the Ibis project. Contributions are welcome! Please see the [contributing guide](https://ibis-project.org/contribute/) for more information.

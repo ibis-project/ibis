@@ -149,6 +149,14 @@ flink = [
   "pandas>=1.5.3,<3",
   "rich>=12.4.4",
 ]
+beam = [
+  "apache-beam>=2.50.0",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4",
+]
 impala = [
   "impyla>=0.17",
   "pyarrow>=10.0.1",
@@ -310,6 +318,7 @@ docs = [
 
 [project.entry-points."ibis.backends"]
 athena = "ibis.backends.athena"
+beam = "ibis.backends.beam"
 bigquery = "ibis.backends.bigquery"
 clickhouse = "ibis.backends.clickhouse"
 databricks = "ibis.backends.databricks"
@@ -471,6 +480,7 @@ markers = [
   "notyet: This requires upstream to implement/fix something. We can't/won't workaround on the ibis side",
   "never: The backend will never support this / pass this test. Don't bother trying to fix it",
   "athena: Amazon Athena tests",
+  "beam: Apache Beam tests",
   "bigquery: BigQuery tests",
   "clickhouse: ClickHouse tests",
   "databricks: Databricks SQL tests",
