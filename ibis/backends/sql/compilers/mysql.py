@@ -155,6 +155,22 @@ class MySQLCompiler(SQLGlotCompiler):
             sge.Distinct(expressions=list(map(func, op.arg.schema.keys())))
         )
 
+    def visit_FirstValue(self, op, *, arg, include_null):
+        if include_null:
+            return sge.RespectNulls(this=self.f.first_value(arg))
+        else:
+            raise com.UnsupportedOperationError(
+                "MySQL does not support `include_null=False` for FirstValue"
+            )
+
+    def visit_LastValue(self, op, *, arg, include_null):
+        if include_null:
+            return sge.RespectNulls(this=self.f.last_value(arg))
+        else:
+            raise com.UnsupportedOperationError(
+                "MySQL does not support `include_null=False` for LastValue"
+            )
+
     def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
         if not isinstance(op.sep, ops.Literal):
             raise com.UnsupportedOperationError(

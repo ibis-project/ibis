@@ -19,8 +19,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers._compat import WITH_ARG
 from ibis.backends.sql.rewrites import (
-    FirstValue,
-    LastValue,
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
     empty_in_values_right_side,
@@ -338,13 +336,11 @@ class SQLGlotCompiler(abc.ABC):
         ops.Degrees: "degrees",
         ops.DenseRank: "dense_rank",
         ops.Exp: "exp",
-        FirstValue: "first_value",
         ops.GroupConcat: "group_concat",
         ops.IfElse: "if",
         ops.IsInf: "isinf",
         ops.IsNan: "isnan",
         ops.JSONGetItem: "json_extract",
-        LastValue: "last_value",
         ops.Levenshtein: "levenshtein",
         ops.Ln: "ln",
         ops.Log10: "log",
@@ -1242,6 +1238,18 @@ class SQLGlotCompiler(abc.ABC):
         return self.f[type(op).__name__.lower()](*args)
 
     visit_Lag = visit_Lead = visit_LagLead
+
+    def visit_FirstValue(self, op, *, arg, include_null):
+        if include_null:
+            return sge.RespectNulls(this=self.f.first_value(arg))
+        else:
+            return sge.IgnoreNulls(this=self.f.first_value(arg))
+
+    def visit_LastValue(self, op, *, arg, include_null):
+        if include_null:
+            return sge.RespectNulls(this=self.f.last_value(arg))
+        else:
+            return sge.IgnoreNulls(this=self.f.last_value(arg))
 
     def visit_Argument(self, op, *, name: str, shape, dtype):
         return sg.to_identifier(op.param)
