@@ -1393,7 +1393,15 @@ class AthenaType(SqlglotType):
     dialect = "athena"
 
 
-TYPE_MAPPERS: dict[str, SqlglotType] = {
+_TYPE_MAPPERS: dict[str, type[SqlglotType]] = {
     mapper.dialect: mapper
     for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
 }
+
+
+def get_type_mapper(dialect: str | sg.Dialect, /) -> type[SqlglotType]:
+    if isinstance(dialect, str):
+        dialect_str = dialect.lower()
+    else:
+        dialect_str: str = dialect.__name__.lower()  # ty:ignore[unresolved-attribute]
+    return _TYPE_MAPPERS[dialect_str]
