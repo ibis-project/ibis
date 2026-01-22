@@ -5,14 +5,13 @@ from __future__ import annotations
 import contextlib
 from functools import cached_property
 from operator import itemgetter
-from turtle import ht
-from typing import TYPE_CHECKING, Any, Literal
-from urllib.parse import unquote_plus, urlparse
+from typing import TYPE_CHECKING, Any
+from urllib.parse import unquote_plus
 
 import sqlglot as sg
 import sqlglot.expressions as sge
 import trino
-from trino.auth import BasicAuthentication
+from trino.auth import Authentication, BasicAuthentication
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -249,7 +248,7 @@ class Backend(
     def do_connect(
         self,
         user: str = "user",
-        auth: str | BasicAuthentication | None = None,
+        auth: str | Authentication | None = None,
         host: str = "localhost",
         port: int = 8080,
         database: str | None = None,
