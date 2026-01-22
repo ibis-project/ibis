@@ -399,8 +399,8 @@ def uses_java_re(t):
             id="repeat_method",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=(OracleDatabaseError, com.ExpressionError),
-                reason="REPEAT function not supported",
+                raises=OracleDatabaseError,
+                reason="ORA-00904: REPEAT invalid identifier",
             ),
         ),
         param(

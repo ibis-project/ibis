@@ -79,8 +79,9 @@ class TestConf(ServiceBackendTest):
         with mysql_connection.begin() as cur:
             for table in TEST_TABLES:
                 csv_path = self.data_dir / "csv" / f"{table}.csv"
+                csv_path_str = str(csv_path).replace("'", "''")
                 lines = [
-                    f"LOAD DATA LOCAL INFILE {str(csv_path)!r}",
+                    f"LOAD DATA LOCAL INFILE '{csv_path_str}'",
                     f"INTO TABLE {table}",
                     "FIELDS TERMINATED BY ','",
                     """OPTIONALLY ENCLOSED BY '"'""",
