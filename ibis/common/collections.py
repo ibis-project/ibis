@@ -28,7 +28,7 @@ class Iterable(Abstract, Generic[V]):
     """Iterable abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __iter__(self): ...
+    def __iter__(self) -> collections.abc.Iterator[V]: ...
 
 
 @collections.abc.Reversible.register
@@ -36,7 +36,7 @@ class Reversible(Iterable[V]):
     """Reverse iterable abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __reversed__(self): ...
+    def __reversed__(self) -> collections.abc.Iterator[V]: ...
 
 
 @collections.abc.Iterator.register
@@ -44,9 +44,9 @@ class Iterator(Iterable[V]):
     """Iterator abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __next__(self): ...
+    def __next__(self) -> V: ...
 
-    def __iter__(self):
+    def __iter__(self) -> collections.abc.Iterator[V]:
         return self
 
 
@@ -55,7 +55,7 @@ class Sized(Abstract):
     """Sized abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __len__(self): ...
+    def __len__(self) -> int: ...
 
 
 @collections.abc.Container.register
@@ -63,7 +63,7 @@ class Container(Abstract, Generic[V]):
     """Container abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __contains__(self, x): ...
+    def __contains__(self, x: object, /) -> bool: ...
 
 
 @collections.abc.Collection.register
@@ -76,9 +76,9 @@ class Sequence(Reversible[V], Collection[V]):
     """Sequence abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __getitem__(self, index): ...
+    def __getitem__(self, index: int, /) -> V: ...
 
-    def __iter__(self):
+    def __iter__(self) -> collections.abc.Iterator[V]:
         i = 0
         try:
             while True:
@@ -87,14 +87,13 @@ class Sequence(Reversible[V], Collection[V]):
         except IndexError:
             return
 
-    def __contains__(self, value):
+    def __contains__(self, value: object, /) -> bool:
         return any(v is value or v == value for v in self)
 
-    def __reversed__(self):
-        for i in reversed(range(len(self))):
-            yield self[i]
+    def __reversed__(self) -> collections.abc.Iterator[V]:
+        return (self[i] for i in reversed(range(len(self))))
 
-    def index(self, value, start=0, stop=None):
+    def index(self, value: object, start: int = 0, stop: int | None = None) -> int:
         if start is not None and start < 0:
             start = max(len(self) + start, 0)
         if stop is not None and stop < 0:
@@ -111,7 +110,7 @@ class Sequence(Reversible[V], Collection[V]):
             i += 1
         raise ValueError
 
-    def count(self, value):
+    def count(self, value) -> int:
         return sum(1 for v in self if v is value or v == value)
 
 
@@ -120,15 +119,15 @@ class Mapping(Collection[K], Generic[K, V]):
     """Mapping abstract base class for quicker isinstance checks."""
 
     @abstractmethod
-    def __getitem__(self, key) -> V: ...
+    def __getitem__(self, key: K, /) -> V: ...
 
-    def get(self, key, default=None) -> V | None:
+    def get(self, key: K, default=None, /) -> V | None:
         try:
             return self[key]
         except KeyError:
             return default
 
-    def __contains__(self, key) -> bool:
+    def __contains__(self, key: object, /) -> bool:
         try:
             self[key]
         except KeyError:
@@ -142,10 +141,10 @@ class Mapping(Collection[K], Generic[K, V]):
     def items(self) -> collections.abc.ItemsView[K, V]:
         return collections.abc.ItemsView(self)
 
-    def values(self):
+    def values(self) -> collections.abc.ValuesView[V]:
         return collections.abc.ValuesView(self)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object, /) -> bool:
         if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         return dict(self.items()) == dict(other.items())
@@ -291,12 +290,12 @@ class FrozenDict(dict, Mapping[K, V], Hashable):
     def __hash__(self) -> int:
         return self.__precomputed_hash__
 
-    def __setitem__(self, key: K, value: V) -> None:
+    def __setitem__(self, key: K, value: V, /) -> None:
         raise TypeError(
             f"'{self.__class__.__name__}' object does not support item assignment"
         )
 
-    def __setattr__(self, name: str, _: Any) -> None:
+    def __setattr__(self, name: str, _: Any, /) -> None:
         raise TypeError(f"Attribute {name!r} cannot be assigned to frozendict")
 
     def __reduce__(self) -> tuple:
@@ -313,12 +312,12 @@ class FrozenOrderedDict(FrozenDict[K, V]):
     def __hash__(self) -> int:
         return self.__precomputed_hash__
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any, /) -> bool:
         if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         return tuple(self.items()) == tuple(other.items())
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: Any, /) -> bool:
         return not self == other
 
 
@@ -349,7 +348,7 @@ class RewindableIterator(Iterator[V]):
 
     __slots__ = ("_checkpoint", "_iterator")
 
-    def __init__(self, iterable: collections.abc.Iterable[V]) -> None:
+    def __init__(self, iterable: collections.abc.Iterable[V], /) -> None:
         self._iterator = iter(iterable)
         self._checkpoint = None
 

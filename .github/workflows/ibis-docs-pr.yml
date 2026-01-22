@@ -83,7 +83,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: restore cache of the previously rendered notebooks
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: docs-${{ github.event.pull_request.base.sha }}
           path: docs/**/.jupyter_cache

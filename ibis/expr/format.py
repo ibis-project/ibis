@@ -249,8 +249,8 @@ def _sql_query_result(op, query, **kwargs):
     clsname = op.__class__.__name__
 
     if isinstance(op, ops.SQLStringView):
-        child = kwargs["child"]
-        top = f"{clsname}[{child}]\n"
+        parent = kwargs["parent"]
+        top = f"{clsname}[{parent}]\n"
     else:
         top = f"{clsname}\n"
 

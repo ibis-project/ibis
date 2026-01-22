@@ -4036,7 +4036,7 @@ class Table(Expr, FixedTextJupyterMixin):
             expr = self
 
         schema = backend._get_sql_string_view_schema(name=name, table=expr, query=query)
-        node = ops.SQLStringView(child=self.op(), query=query, schema=schema)
+        node = ops.SQLStringView(parent=self.op(), query=query, schema=schema)
         return node.to_expr()
 
     def to_pandas(

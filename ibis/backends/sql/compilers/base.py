@@ -1568,7 +1568,7 @@ class SQLGlotCompiler(abc.ABC):
             except AttributeError:
                 return parent.as_(name, quoted=self.quoted)
 
-    def visit_SQLStringView(self, op, *, query: str, child, schema):
+    def visit_SQLStringView(self, op, *, query: str, parent, schema):
         return sg.parse_one(query, read=self.dialect)
 
     def visit_SQLQueryResult(self, op, *, query, schema, source):

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 import ibis
-from ibis.backends.tests.errors import ClickHouseDatabaseError, TrinoUserError
+from ibis.backends.tests.errors import TrinoUserError
 from ibis.backends.tests.tpc.conftest import add_date, tpc_test
 
 
@@ -488,11 +488,6 @@ def test_16(partsupp, part, supplier):
     return q
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subquery implementation is buggy in this query",
-)
 @tpc_test("h")
 def test_17(lineitem, part):
     """Small-Quantity-Order Revenue Query (Q17)
