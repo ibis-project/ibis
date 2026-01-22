@@ -27,6 +27,7 @@ from ibis.backends.sql.compilers.singlestoredb import compiler
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping
+    from pathlib import Path
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -661,6 +662,91 @@ class Backend(
         # Convert SQLGlot object to SQL string before execution
         with self.begin() as cur:
             cur.execute(drop_stmt.sql(self.dialect))
+
+    def read_csv(
+        self,
+        path: str | Path,
+        /,
+        *,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a CSV file as a table in SingleStoreDB.
+
+        Parameters
+        ----------
+        path
+            Path to CSV file(s). Supports glob patterns.
+        table_name
+            Optional name for the table. Generated if not provided.
+        **kwargs
+            Reserved for future use.
+
+        Returns
+        -------
+        ir.Table
+            The registered table
+        """
+        import glob as glob_module
+        import os
+
+        import pyarrow.dataset as ds
+
+        from ibis import util
+        from ibis.formats.pyarrow import PyArrowSchema
+
+        # Expand glob patterns
+        path_str = str(path)
+        if glob_module.has_magic(path_str):
+            paths = sorted(glob_module.glob(path_str))
+        else:
+            paths = [os.path.abspath(path_str)]
+
+        if not paths:
+            raise FileNotFoundError(f"No files found matching: {path}")
+
+        # Verify files exist
+        for p in paths:
+            if not os.path.isfile(p):
+                raise FileNotFoundError(f"File not found: {p}")
+
+        # Infer schema using PyArrow
+        dataset = ds.dataset(paths, format="csv")
+        schema = PyArrowSchema.to_ibis(dataset.schema)
+
+        # Create table
+        name = table_name or util.gen_name("read_csv")
+        table = self.create_table(name, schema=schema, temp=True)
+
+        # Load data from each file
+        for file_path in paths:
+            self._load_csv_file(file_path, name)
+
+        return table
+
+    def _load_csv_file(
+        self,
+        file_path: str,
+        table_name: str,
+    ) -> None:
+        """Load CSV data using LOAD DATA LOCAL INFILE."""
+        import os
+
+        abs_path = os.path.abspath(file_path)
+        escaped_path = abs_path.replace("\\", "\\\\").replace("'", "\\'")
+        quoted_table = self._quote_table_name(table_name)
+
+        sql = f"""
+            LOAD DATA LOCAL INFILE '{escaped_path}'
+            INTO TABLE {quoted_table}
+            FIELDS TERMINATED BY ','
+            OPTIONALLY ENCLOSED BY '"'
+            LINES TERMINATED BY '\\n'
+            IGNORE 1 LINES
+        """
+
+        with self.begin() as cur:
+            cur.execute(sql)
 
     def _register_in_memory_table(self, op: Any) -> None:
         """Register an in-memory table in SingleStoreDB."""

@@ -88,7 +88,6 @@ DIAMONDS_COLUMN_TYPES = {
         "impala",
         "mssql",
         "mysql",
-        "singlestoredb",
         "postgres",
         "risingwave",
         "sqlite",
@@ -134,7 +133,6 @@ def test_read_csv(con, data_dir, in_table_name, num_diamonds):
         "impala",
         "mssql",
         "mysql",
-        "singlestoredb",
         "postgres",
         "risingwave",
         "sqlite",
@@ -156,7 +154,6 @@ def test_read_csv_gz(con, data_dir, gzip_csv):
         "impala",
         "mssql",
         "mysql",
-        "singlestoredb",
         "postgres",
         "risingwave",
         "sqlite",
@@ -182,7 +179,6 @@ def test_read_csv_with_dotted_name(con, data_dir, tmp_path):
         "impala",
         "mssql",
         "mysql",
-        "singlestoredb",
         "postgres",
         "risingwave",
         "sqlite",
@@ -218,13 +214,14 @@ def test_read_csv_schema(con, tmp_path):
         "impala",
         "mssql",
         "mysql",
-        "singlestoredb",
         "postgres",
         "risingwave",
+        "singlestoredb",
         "sqlite",
         "trino",
         "athena",
-    ]
+    ],
+    reason="singlestoredb: boolean columns written as true/false cannot be loaded via LOAD DATA",
 )
 def test_read_csv_glob(con, tmp_path, ft_data):
     pc = pytest.importorskip("pyarrow.csv")
