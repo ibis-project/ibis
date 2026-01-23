@@ -745,3 +745,32 @@ def test_type_roundtrip(dtype, fmt):
 def test_dtype_from_polars():
     pl = pytest.importorskip("polars")
     assert dt.dtype(pl.Int64) == dt.int64
+
+
+def test_dtype_typing():
+    d: dt.DataType
+    d = dt.dtype("int64")
+    assert isinstance(d, dt.Int64)
+
+    i: dt.Int64
+    i = dt.dtype(int)
+    assert isinstance(i, dt.Int64)
+
+    b: dt.Boolean
+    b = dt.dtype("boolean")
+    assert isinstance(b, dt.Boolean)
+
+    with pytest.raises(TypeError):
+        dt.dtype(5)  # ty:ignore[no-matching-overload]
+
+
+def test_into_dtype_typing():
+    # Assert we can import IntoDtype from top level ibis module
+    import ibis
+
+    d: ibis.IntoDtype
+    d = dt.int64
+    d = "int64"
+    d = int
+    d = 5  # type: ignore
+    assert d

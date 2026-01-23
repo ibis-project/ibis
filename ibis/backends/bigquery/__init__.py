@@ -1141,7 +1141,7 @@ class Backend(
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.SchemaLike | None = None,
+        schema: sch.IntoSchema | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,

@@ -35,8 +35,9 @@ if TYPE_CHECKING:
 
     import ibis.expr.types as ir
     import ibis.selectors as s
+    from ibis.expr.datatypes import IntoDtype
     from ibis.expr.operations.relations import JoinKind, Set
-    from ibis.expr.schema import SchemaLike
+    from ibis.expr.schema import IntoSchema
     from ibis.expr.types import Table
     from ibis.expr.types.groupby import GroupedTable
     from ibis.expr.types.temporal_windows import WindowedTable
@@ -775,7 +776,9 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         return name in self.schema()
 
-    def cast(self, schema: SchemaLike | None = None, /, **overrides: Any) -> Table:
+    def cast(
+        self, schema: IntoSchema | None = None, /, **overrides: IntoDtype
+    ) -> Table:
         """Cast the columns of a table.
 
         Similar to `pandas.DataFrame.astype`.
@@ -876,7 +879,9 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         return self._cast(schema, overrides, cast_method="cast")
 
-    def try_cast(self, schema: SchemaLike | None = None, /, **overrides: Any) -> Table:
+    def try_cast(
+        self, schema: IntoSchema | None = None, /, **overrides: IntoDtype
+    ) -> Table:
         """Cast the columns of a table, returning NULL/NaN on failure.
 
         If the cast fails for a row, the value is returned
@@ -919,8 +924,8 @@ class Table(Expr, FixedTextJupyterMixin):
 
     def _cast(
         self,
-        schema: SchemaLike | None,
-        overrides: dict[str, Any],
+        schema: IntoSchema | None,
+        overrides: dict[str, IntoDtype],
         cast_method: str = "cast",
     ) -> Table:
         if schema is None:

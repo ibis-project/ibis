@@ -23,9 +23,9 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.common.temporal import normalize_datetime, normalize_timezone
-from ibis.expr.datatypes import DataType
+from ibis.expr.datatypes import DataType, IntoDtype
 from ibis.expr.decompile import decompile
-from ibis.expr.schema import Schema
+from ibis.expr.schema import IntoSchema, Schema
 from ibis.expr.sql import parse_sql, to_sql
 from ibis.expr.types import (
     Column,
@@ -55,13 +55,14 @@ if TYPE_CHECKING:
     import pyarrow as pa
     import pyarrow.dataset as ds
 
-    from ibis.expr.schema import SchemaLike
 
 __all__ = (
     "Column",
     "DataType",
     "Deferred",
     "Expr",
+    "IntoDtype",
+    "IntoSchema",
     "Scalar",
     "Schema",
     "Table",
@@ -215,7 +216,7 @@ def param(type: dt.DataType, /) -> ir.Scalar:
 
 
 def schema(
-    pairs: SchemaLike | None = None,
+    pairs: IntoSchema | None = None,
     /,
     *,
     names: Iterable[str] | None = None,
@@ -226,12 +227,17 @@ def schema(
     Parameters
     ----------
     pairs
-        List or dictionary of name, type pairs. Mutually exclusive with `names`
-        and `types` arguments.
+        One of the following:
+        - An existing `Schema` object
+        - A mapping of column names to data types
+        - An iterable of (name, type) tuples
+
+        Optional. If not given, `names` and `types` must be provided.
+        This takes precedence over `names` and `types`.
     names
-        Field names. Mutually exclusive with `pairs`.
+        Field names. Only used if `pairs` is not provided.
     types
-        Field types. Mutually exclusive with `pairs`.
+        Field types. Only used if `pairs` is not provided.
 
     Returns
     -------
@@ -262,7 +268,7 @@ _table_names = (f"unbound_table_{i:d}" for i in itertools.count())
 
 
 def table(
-    schema: SchemaLike | None = None,
+    schema: IntoSchema | None = None,
     name: str | None = None,
     catalog: str | None = None,
     database: str | None = None,
@@ -334,7 +340,7 @@ def memtable(
     /,
     *,
     columns: Iterable[str] | None = None,
-    schema: SchemaLike | None = None,
+    schema: IntoSchema | None = None,
 ) -> Table:
     """Construct an ibis table expression from in-memory data.
 
@@ -427,7 +433,7 @@ def _memtable(
     data: Any,
     *,
     columns: Iterable[str] | None = None,
-    schema: SchemaLike | None = None,
+    schema: IntoSchema | None = None,
 ) -> Table:
     import ibis
 
@@ -455,7 +461,7 @@ def _memtable_from_pandas_dataframe(
     data: pd.DataFrame,
     *,
     columns: Iterable[str] | None = None,
-    schema: SchemaLike | None = None,
+    schema: IntoSchema | None = None,
 ) -> Table:
     from ibis.formats.pandas import PandasDataFrameProxy
 
@@ -498,7 +504,7 @@ def _memtable_from_pandas_dataframe(
 def _memtable_from_pyarrow_table(
     data: pa.Table,
     *,
-    schema: SchemaLike | None = None,
+    schema: IntoSchema | None = None,
     columns: Iterable[str] | None = None,
 ):
     from ibis.formats.pyarrow import PyArrowTableProxy
@@ -517,7 +523,7 @@ def _memtable_from_pyarrow_table(
 def _memtable_from_pyarrow_dataset(
     data: ds.Dataset,
     *,
-    schema: SchemaLike | None = None,
+    schema: IntoSchema | None = None,
     columns: Iterable[str] | None = None,
 ):
     from ibis.formats.pyarrow import PyArrowDatasetProxy
@@ -533,7 +539,7 @@ def _memtable_from_pyarrow_dataset(
 def _memtable_from_pyarrow_RecordBatchReader(
     data: pa.Table,
     *,
-    schema: SchemaLike | None = None,
+    schema: IntoSchema | None = None,
     columns: Iterable[str] | None = None,
 ):
     raise TypeError(
@@ -552,7 +558,7 @@ def _memtable_from_polars_lazyframe(data: pl.LazyFrame, **kwargs):
 def _memtable_from_polars_dataframe(
     data: pl.DataFrame,
     *,
-    schema: SchemaLike | None = None,
+    schema: IntoSchema | None = None,
     columns: Iterable[str] | None = None,
 ):
     from ibis.formats.polars import PolarsDataFrameProxy
@@ -571,7 +577,7 @@ def _memtable_from_polars_dataframe(
 def _memtable_from_geopandas_geodataframe(
     data: gpd.GeoDataFrame,
     *,
-    schema: SchemaLike | None = None,
+    schema: IntoSchema | None = None,
     columns: Iterable[str] | None = None,
 ):
     # The Pandas data proxy and the `to_arrow` method on it can't handle
