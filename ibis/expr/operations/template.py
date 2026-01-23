@@ -58,15 +58,16 @@ class TemplateSQLValue(ops.Value):
         if dialect is None:
             backend = find_backend(resolved_values)
             if backend is None:
-                backend = ibis.get_backend()
-            # Check for eg polars backends
-            from ibis.backends.sql import SQLBackend
+                dialect = ibis.options.sql.default_dialect
+            else:
+                # Check for eg polars backends
+                from ibis.backends.sql import SQLBackend
 
-            if not isinstance(backend, SQLBackend):
-                raise IbisInputError(
-                    f"Expected a SQL backend, got {type(backend)}: {backend}"
-                )
-            dialect = backend.name
+                if not isinstance(backend, SQLBackend):
+                    raise IbisInputError(
+                        f"Expected a SQL backend, got {type(backend)}: {backend}"
+                    )
+                dialect = backend.name
         if dtype is None:
             parts = interleave(template.strings, resolved_values)
             sql = sql_from_parts(parts, dialect=dialect)

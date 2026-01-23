@@ -756,10 +756,10 @@ def sql_value(
     dialect
         The SQL dialect to use for the expression.
         If not provided, will be inferred from the backend of any expressions in the template.
-        If the template contains no expressions-with-backends, defaults to the result of `ibis.get_backend()`.
+        If the template contains no expressions-with-backends, defaults to `ibis.options.sql.default_dialect`.
     type
         The datatype to use for the value.
-        If not given, will be inferred.
+        If not given, will be inferred using SQLGlot.
 
     Returns
     -------
