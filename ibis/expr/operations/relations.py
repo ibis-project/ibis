@@ -134,7 +134,8 @@ class Project(Relation):
 
     @attribute
     def schema(self):
-        return Schema({k: v.dtype for k, v in self.values.items()})
+        schema_dict = {k: v.dtype for k, v in self.values.items()}
+        return Schema._create_without_validation(schema_dict)
 
 
 class Simple(Relation):
@@ -161,7 +162,7 @@ class DropColumns(Relation):
         schema = self.parent.schema.fields.copy()
         for column in self.columns_to_drop:
             del schema[column]
-        return Schema(schema)
+        return Schema._create_without_validation(schema)
 
     @attribute
     def values(self):
@@ -252,7 +253,7 @@ class JoinChain(Relation):
 
     @attribute
     def schema(self):
-        return Schema({k: v.dtype.copy(nullable=True) for k, v in self.values.items()})
+        return Schema._create_without_validation({k: v.dtype.copy(nullable=True) for k, v in self.values.items()})
 
     def to_expr(self):
         import ibis.expr.types as ir
@@ -329,7 +330,7 @@ class Aggregate(Relation):
 
     @attribute
     def schema(self):
-        return Schema({k: v.dtype for k, v in self.values.items()})
+        return Schema._create_without_validation({k: v.dtype for k, v in self.values.items()})
 
 
 @public
@@ -467,7 +468,7 @@ class DummyTable(Relation):
 
     @attribute
     def schema(self):
-        return Schema({k: v.dtype for k, v in self.values.items()})
+        return Schema._create_without_validation({k: v.dtype for k, v in self.values.items()})
 
 
 @public
@@ -521,7 +522,7 @@ class TableUnnest(Relation):
         if self.offset is not None:
             base[self.offset] = dt.int64
 
-        return Schema(base)
+        return Schema._create_without_validation(base)
 
 
 # TODO(kszucs): support t.select(*t) syntax by implementing Table.__iter__()
