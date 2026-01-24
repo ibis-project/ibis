@@ -384,6 +384,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         use_cloud_fetch: bool = False,
         memtable_volume: str | None = None,
         staging_allowed_local_path: str | None = None,
+        allow_memtable_in_memory: bool = False,
         **config: Any,
     ) -> None:
         """Create an Ibis client connected to a Databricks cloud instance."""
@@ -407,7 +408,22 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
             staging_allowed_local_path=staging_allowed_local_path,
             **config,
         )
+
         if memtable_volume is None:
+            if allow_memtable_in_memory:
+                try:
+                    from ibis.backends.polars import Backend as PolarsBackend
+                except ImportError:
+                    raise ImportError(
+                        "The additional dependencies must be installed to use in-memory memtables. "
+                        "You can install them together with the databricks backend with "
+                        "`pip install 'ibis-framework[databricks-read-only]'`."
+                    ) from None
+                self._polars_backend = PolarsBackend()
+                self._polars_backend.do_connect()
+                self._memtable_in_memory = True
+                return
+            self._memtable_in_memory = False
             short_version = "".join(map(str, sys.version_info[:3]))
             memtable_volume = (
                 f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
@@ -437,6 +453,13 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         new_backend = cls()
         new_backend._can_reconnect = False
         new_backend.con = con
+
+        if memtable_volume is None:
+            short_version = "".join(map(str, sys.version_info[:3]))
+            memtable_volume = (
+                f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
+            )
+
         new_backend._post_connect(memtable_volume=memtable_volume)
         return new_backend
 
@@ -450,6 +473,10 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         return f"/Volumes/{self._memtable_catalog}/{self._memtable_database}/{self._memtable_volume}"
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        if self._memtable_in_memory:
+            self._register_polars_memtable(op)
+            return
+
         import pyarrow.parquet as pq
 
         quoted = self.compiler.quoted
@@ -476,7 +503,21 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
                 cur.execute(put_into)
                 cur.execute(sql)
 
+    def _register_polars_memtable(self, op: ops.InMemoryTable) -> None:
+        """Register memtable in the internal Polars backend."""
+        self._polars_backend._register_in_memory_table(op)
+
     def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        if self._memtable_in_memory:
+
+            def polars_finalizer(
+                name: str = name, backend: Backend = self._polars_backend
+            ) -> None:
+                """Finalizer for in-memory tables in Polars backend."""
+                backend.drop_table(name, force=True)
+
+            return polars_finalizer
+
         path = f"{self._memtable_volume_path}/{name}.parquet"
 
         def finalizer(path: str = path, con=self.con) -> None:
