@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import rich.console
+import sqlglot
 import sqlglot as sg
 import toolz
 from packaging.version import parse as vparse
@@ -44,6 +45,7 @@ from ibis.util import gen_name
 
 if TYPE_CHECKING:
     from ibis.backends import BaseBackend
+    from ibis.backends.sql import SQLBackend
 
 
 np = pytest.importorskip("numpy")
@@ -1708,6 +1710,17 @@ def test_schema_with_caching(alltypes):
     assert pt2.schema() == t2.schema()
 
 
+@contextlib.contextmanager
+def temp_table(con: BaseBackend):
+    # Ideally we'd use a temp table for this test, but several backends don't
+    # support them and it's nice to know that data are being inserted correctly.
+    table_name = gen_name("temp_table")
+    try:
+        yield table_name
+    finally:
+        con.drop_table(table_name)
+
+
 @pytest.mark.notyet(
     ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
 )
@@ -1723,33 +1736,61 @@ def test_schema_with_caching(alltypes):
     [
         param([{"a": 1, "b": 2}], [{"b": 22, "a": 11}], id="column order reversed"),
         param([{"a": 1, "b": 2}], [{"a": 11, "b": 22}], id="column order matching"),
-        param(
-            [{"a": 1, "b": 2}],
-            [(11, 22)],
-            marks=[
-                pytest.mark.notimpl(
-                    ["impala"],
-                    reason="Impala DDL has strict validation checks on schema",
-                )
-            ],
-            id="auto generated cols",
-        ),
     ],
 )
 def test_insert_using_col_name_not_position(con, first_row, second_row, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
-    table_name = gen_name("table")
-    con.create_table(table_name, first_row)
-    con.insert(table_name, second_row)
+    with temp_table(con) as table_name:
+        con.create_table(table_name, first_row)
+        con.insert(table_name, second_row)
 
-    result = con.table(table_name).order_by("a").to_pyarrow()
-    expected_result = pa.table({"a": [1, 11], "b": [2, 22]})
+        result = con.table(table_name).order_by("a").to_pyarrow()
+        expected_result = pa.table({"a": [1, 11], "b": [2, 22]})
 
-    assert result.equals(expected_result)
+        assert result.equals(expected_result)
 
-    # Ideally we'd use a temp table for this test, but several backends don't
-    # support them and it's nice to know that data are being inserted correctly.
-    con.drop_table(table_name)
+
+@pytest.mark.notyet(
+    ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
+)
+@pytest.mark.notyet(["polars"], reason="Doesn't support insert")
+@pytest.mark.notyet(
+    ["datafusion"], reason="Doesn't support table creation from records"
+)
+@pytest.mark.notimpl(
+    ["flink"], reason="Temp tables are implemented as views, which don't support insert"
+)
+def test_insert_errors_on_unknown_columns(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    with temp_table(con) as table_name:
+        con.create_table(table_name, [{"a": 1, "b": 2}])
+        with pytest.raises(com.IbisTypeError):
+            con.insert(table_name, [{"a": 11, "c": 22}])
+        with pytest.raises(com.IbisTypeError):
+            con.insert(table_name, [{"a": 11, "b": 22, "c": 33}])
+
+
+@pytest.mark.notyet(
+    ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
+)
+@pytest.mark.notyet(["polars"], reason="Doesn't support insert")
+@pytest.mark.notimpl(
+    ["flink"], reason="Temp tables are implemented as views, which don't support insert"
+)
+def test_insert_works_for_missing_columns(con: SQLBackend, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    with temp_table(con) as table_name:
+        duckdb_create_table_sql = (
+            f"CREATE TABLE {table_name} (a INTEGER, b INTEGER DEFAULT 42);"
+        )
+        backend_create_table_sql = sqlglot.transpile(
+            duckdb_create_table_sql, read="duckdb", dialect=con.dialect
+        )[0]
+        con.raw_sql(backend_create_table_sql)
+        con.insert(table_name, [{"a": 11}])
+        result = con.table(table_name).to_pyarrow().to_pydict()
+        expected_result = {"a": [11], "b": [42]}
+        assert result == expected_result
 
 
 CON_ATTR = {"bigquery": "client", "flink": "_table_env", "pyspark": "_session"}
