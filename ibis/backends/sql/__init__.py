@@ -463,34 +463,40 @@ class SQLBackend(BaseBackend):
         with self._safe_raw_sql(query):
             pass
 
-    def _get_columns_to_insert(
-        self, *, target: str, source, db: str | None = None, catalog: str | None = None
-    ):
-        # Compare the columns between the target table and the object to be inserted
-        # If source is a subset of target, use source columns for insert list
-        # Otherwise, assume auto-generated column names and use positional ordering.
-        target_cols = self.get_schema(target, catalog=catalog, database=db).keys()
-
-        return (
-            source_cols
-            if (source_cols := source.schema().keys()) <= target_cols
-            else target_cols
-        )
+    def _column_names_to_insert(
+        self, *, target_columns: Iterable[str], source_columns: Iterable[str]
+    ) -> tuple[str, ...]:
+        target_col_names = tuple(target_columns)
+        source_col_names = tuple(source_columns)
+        # Error on unknown columns.
+        # We DO allow missing columns (they will be filled with NULLs or defaults)
+        unknown_cols = set(source_col_names) - set(target_col_names)
+        if unknown_cols:
+            raise exc.IbisTypeError(
+                f"Cannot insert into table {target_columns} because the following "
+                f"columns are not present in the target table: "
+                f"{', '.join(sorted(unknown_cols))}"
+            )
+        return source_col_names
 
     def _build_insert_from_table(
-        self, *, target: str, source, db: str | None = None, catalog: str | None = None
+        self,
+        *,
+        target: str,
+        source: ir.Table,
+        db: str | None = None,
+        catalog: str | None = None,
     ):
         compiler = self.compiler
         quoted = compiler.quoted
-
-        columns = self._get_columns_to_insert(
-            target=target, source=source, db=db, catalog=catalog
+        column_names = self._column_names_to_insert(
+            target_columns=self.get_schema(target, catalog=catalog, database=db),
+            source_columns=source.schema(),
         )
-
         query = sge.insert(
             expression=self.compile(source),
             into=sg.table(target, db=db, catalog=catalog, quoted=quoted),
-            columns=[sg.to_identifier(col, quoted=quoted) for col in columns],
+            columns=[sg.to_identifier(col, quoted=quoted) for col in column_names],
             dialect=compiler.dialect,
         )
         return query
@@ -600,7 +606,7 @@ class SQLBackend(BaseBackend):
         self,
         *,
         target: str,
-        source,
+        source: ir.Table,
         on: str,
         db: str | None = None,
         catalog: str | None = None,
@@ -608,8 +614,9 @@ class SQLBackend(BaseBackend):
         compiler = self.compiler
         quoted = compiler.quoted
 
-        columns = self._get_columns_to_insert(
-            target=target, source=source, db=db, catalog=catalog
+        column_names = self._column_names_to_insert(
+            target_columns=self.get_schema(target, catalog=catalog, database=db),
+            source_columns=source.schema(),
         )
 
         source_alias = util.gen_name("source")
@@ -622,7 +629,7 @@ class SQLBackend(BaseBackend):
                         sg.column(col, quoted=quoted).eq(
                             sg.column(col, table=source_alias, quoted=quoted)
                         )
-                        for col in columns
+                        for col in column_names
                         if col != on
                     ]
                 ),
@@ -631,12 +638,14 @@ class SQLBackend(BaseBackend):
                 matched=False,
                 then=sge.Insert(
                     this=sge.Tuple(
-                        expressions=[sg.column(col, quoted=quoted) for col in columns]
+                        expressions=[
+                            sg.column(col, quoted=quoted) for col in column_names
+                        ]
                     ),
                     expression=sge.Tuple(
                         expressions=[
                             sg.column(col, table=source_alias, quoted=quoted)
-                            for col in columns
+                            for col in column_names
                         ]
                     ),
                 ),
