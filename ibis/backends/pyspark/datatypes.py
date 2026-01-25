@@ -11,7 +11,6 @@ from ibis.formats import SchemaMapper, TypeMapper
 
 # DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
 # PySpark until version 3.3
-PYSPARK_33 = vparse(pyspark.__version__) >= vparse("3.3")
 PYSPARK_35 = vparse(pyspark.__version__) >= vparse("3.5")
 
 
@@ -35,13 +34,12 @@ _to_pyspark_dtypes[dt.JSON] = pt.StringType
 _to_pyspark_dtypes[dt.UUID] = pt.StringType
 
 
-if PYSPARK_33:
-    _pyspark_interval_units = {
-        pt.DayTimeIntervalType.SECOND: "s",
-        pt.DayTimeIntervalType.MINUTE: "m",
-        pt.DayTimeIntervalType.HOUR: "h",
-        pt.DayTimeIntervalType.DAY: "D",
-    }
+_pyspark_interval_units = {
+    pt.DayTimeIntervalType.SECOND: "s",
+    pt.DayTimeIntervalType.MINUTE: "m",
+    pt.DayTimeIntervalType.HOUR: "h",
+    pt.DayTimeIntervalType.DAY: "D",
+}
 
 
 class PySparkType(TypeMapper):
@@ -62,7 +60,7 @@ class PySparkType(TypeMapper):
             fields = {f.name: cls.to_ibis(f.dataType) for f in typ.fields}
 
             return dt.Struct(fields, nullable=nullable)
-        elif PYSPARK_33 and isinstance(typ, pt.DayTimeIntervalType):
+        elif isinstance(typ, pt.DayTimeIntervalType):
             if (
                 typ.startField == typ.endField
                 and typ.startField in _pyspark_interval_units
@@ -71,7 +69,7 @@ class PySparkType(TypeMapper):
                 return dt.Interval(unit, nullable=nullable)
             else:
                 raise com.IbisTypeError(f"{typ!r} couldn't be converted to Interval")
-        elif PYSPARK_35 and isinstance(typ, pt.TimestampNTZType):
+        elif isinstance(typ, pt.TimestampNTZType):
             return dt.Timestamp(nullable=nullable)
         elif isinstance(typ, pt.UserDefinedType):
             return cls.to_ibis(typ.sqlType(), nullable=nullable)

@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from filelock import FileLock
+from packaging.version import parse as parse_version
 
 import ibis
 from ibis import util
@@ -30,6 +31,21 @@ if TYPE_CHECKING:
 
 def set_pyspark_database(con, database):
     con._session.catalog.setCurrentDatabase(database)
+
+
+def spark_version():
+    import pyspark
+
+    return parse_version(pyspark.__version__)
+
+
+def scala_version():
+    import pyspark
+
+    jars = Path(pyspark.__file__).parent.joinpath("jars")
+    (libjar,) = jars.glob("scala-library-*.jar")
+    _, version_str = libjar.stem.rsplit("-", 1)
+    return parse_version(version_str)
 
 
 class BaseSparkTestConf(abc.ABC):
@@ -279,6 +295,8 @@ else:
         def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
             from pyspark.sql import SparkSession
 
+            ver = spark_version()
+            scala_ver = scala_version()
             config = reduce(
                 lambda config, line: config.config(
                     *map(str.strip, line.strip().split("=", 1))
@@ -306,6 +324,7 @@ else:
                         "spark.sql.execution.arrow.pyspark.enabled=false",
                         "spark.sql.shuffle.partitions=1",
                         "spark.storage.blockManagerSlaveTimeoutMs=4200s",
+                        f"spark.jars.packages=org.apache.iceberg:iceberg-spark-runtime-{ver.major}.{ver.minor}_{scala_ver.major}.{scala_ver.minor}:1.10.1",
                     ],
                 ),
                 SparkSession.builder.appName("ibis_testing"),

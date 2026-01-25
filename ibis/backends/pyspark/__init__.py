@@ -128,6 +128,7 @@ class Backend(
     name = "pyspark"
     compiler = sc.pyspark.compiler
     temporary_example = False
+    overwrite_example = True
 
     class Options(ibis.config.Config):
         """PySpark options.

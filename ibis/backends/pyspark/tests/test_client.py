@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import pytest
-
 import ibis
 from ibis.util import gen_name
 
 
-@pytest.mark.xfail_version(pyspark=["pyspark<3.4"], reason="no catalog support")
 def test_catalog_db_args(con):
     t = ibis.memtable({"epoch": [1712848119, 1712848121, 1712848155]})
 
@@ -61,7 +58,6 @@ def test_create_table_no_catalog(con):
     assert con.current_database != "default"
 
 
-@pytest.mark.xfail_version(pyspark=["pyspark<3.4"], reason="no catalog support")
 def test_create_table_with_partition_and_catalog(con):
     # Create a sample table with a partition column
     data = {

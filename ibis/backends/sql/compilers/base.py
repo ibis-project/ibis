@@ -899,7 +899,7 @@ class SQLGlotCompiler(abc.ABC):
     ### Dtype Dysmorphia
 
     def visit_TryCast(self, op, *, arg, to):
-        return sge.TryCast(this=arg, to=self.type_mapper.from_ibis(to))
+        return sge.TryCast(this=arg, to=self.type_mapper.from_ibis(to), safe=True)
 
     ### Comparator Conundrums
 
