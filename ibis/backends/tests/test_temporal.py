@@ -810,11 +810,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=PyAthenaOperationalError,
                     reason="not supported in hive",
                 ),
-                pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="pyarrow.lib.ArrowNotImplementedError: Unsupported cast",
-                ),
                 pytest.mark.notimpl(
                     ["oracle"],
                     raises=com.OperationNotDefinedError,
@@ -1472,7 +1467,7 @@ TIMESTAMP_BACKEND_TYPES = {
     "impala": "TIMESTAMP",
     "snowflake": "TIMESTAMP_NTZ",
     "sqlite": "text",
-    "trino": "timestamp(3)",
+    "trino": "timestamp(0)",
     "athena": "timestamp(3)",
     "duckdb": "TIMESTAMP",
     "postgres": "timestamp without time zone",

@@ -272,8 +272,10 @@ class SQLiteCompiler(SQLGlotCompiler):
         return self.f.time(self.f.printf("%02d:%02d:%02d", hours, minutes, seconds))
 
     def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds
+        self, op, *, year, month, day, hours, minutes, seconds, dtype: dt.Timestamp
     ):
+        if dtype.timezone not in (None, "UTC"):
+            raise NotImplementedError
         return self.f.datetime(
             self.f.printf(
                 "%04d-%02d-%02d %02d:%02d:%02d%s",

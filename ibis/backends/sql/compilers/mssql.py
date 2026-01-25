@@ -335,9 +335,13 @@ class MSSQLCompiler(SQLGlotCompiler):
         return self.f.timefromparts(hours, minutes, seconds, 0, 0)
 
     def visit_TimestampFromYMDHMS(
-        self, op, *, year, month, day, hours, minutes, seconds
+        self, op, *, year, month, day, hours, minutes, seconds, dtype: dt.Timestamp
     ):
-        return self.f.datetimefromparts(year, month, day, hours, minutes, seconds, 0)
+        if dtype.timezone is not None:
+            raise NotImplementedError()
+        return self.f.datetime2fromparts(
+            year, month, day, hours, minutes, seconds, 0, dtype.scale
+        )
 
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if start is not None:

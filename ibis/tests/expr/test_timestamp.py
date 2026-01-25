@@ -104,7 +104,12 @@ def test_comparisons_pandas_timestamp(alltypes):
 def test_timestamp_precedence():
     ts = ibis.literal(datetime.now())
     highest_type = rlz.highest_precedence_dtype([ibis.null().op(), ts.op()])
-    assert highest_type == dt.timestamp
+    assert highest_type == dt.Timestamp(scale=6)
+
+    highest = dt.highest_precedence(
+        [dt.Timestamp(scale=6), dt.Timestamp(scale=3), dt.Timestamp(timezone="UTC")]
+    )
+    assert highest == dt.Timestamp(timezone="UTC")
 
 
 @pytest.mark.parametrize(

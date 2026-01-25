@@ -150,6 +150,10 @@ def higher_precedence(left: dt.DataType, right: dt.DataType) -> dt.DataType:
 @public
 def highest_precedence(dtypes: Iterator[dt.DataType]) -> dt.DataType:
     """Compute the highest precedence of `dtypes`."""
+    # TODO: currently,
+    # highest_precedence([dt.Timestamp(scale=3), dt.Timestamp(timezone="UTC")])
+    # returns dt.Timestamp(timezone="UTC").
+    # Perhaps it should return dt.Timestamp(scale=3, timezone="UTC") instead.
     if collected := list(dtypes):
         return functools.reduce(higher_precedence, collected)
     else:
