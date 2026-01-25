@@ -1679,3 +1679,74 @@ def visit_StringFind(op, **kw):
     end = translate(op.end, **kw) if op.end is not None else None
     expr = arg.str.slice(start, end).str.find(_literal_value(op.substr), literal=True)
     return pl.when(expr.is_null()).then(-1).otherwise(expr + start)
+
+
+@translate.register(ops.Lag)
+@translate.register(ops.Lead)
+def execute_shift(op: ops.Lag | ops.Lead, **kw):
+    """Implement Lead and Lag."""
+    offset = translate(op.offset, **kw) if op.offset is not None else 1
+    if isinstance(op, ops.Lead):
+        offset *= -1
+    fill_value = translate(op.default, **kw) if op.default else None
+    arg = translate(op.arg, **kw)
+    return arg.shift(offset, fill_value=fill_value)
+
+
+@translate.register(ops.SortKey)
+def execute_sort_key(op: ops.SortKey, **kw):
+    """Sort key."""
+    return translate(op.expr, **kw)
+
+
+@translate.register(ops.WindowFunction)
+def execute_window_function(op: ops.WindowFunction, **kw):
+    """Implement WindowFunction."""
+    order_by = [translate(v, **kw) for v in op.order_by]
+    if isinstance(op.func, ops.DenseRank | ops.MinRank):
+        func = pl.struct(*order_by)
+        if isinstance(op.func, ops.DenseRank):
+            method = "dense"
+        else:
+            method = "min"
+        func = func.rank(method) - 1
+    else:
+        func = translate(op.func, **kw)
+        if op.order_by:
+            func = func.sort_by(
+                order_by,
+                descending=[sort_key.descending for sort_key in op.order_by],
+                nulls_last=[not sort_key.nulls_first for sort_key in op.order_by],
+            )
+
+    if op.how == "range":
+        start = translate(op.start.value, **kw)
+        if op.start.preceding:
+            start = start.__neg__()
+        end = translate(op.end.value, **kw)
+        if op.end.preceding:
+            end = end.__neg__()
+        period = end - start
+        if len(op.order_by) != 1 or not op.order_by[0].ascending:
+            raise com.TranslationError(
+                f"Failed to translate {op}; rolling window requires exactly one sort key for order_by with ascending sorting"
+            )
+        order_by_expr = op.order_by[0].expr
+        if isinstance(order_by_expr, ops.Field):
+            order_by_col = order_by_expr.name
+        else:
+            order_by_col = pl.select(translate(order_by_expr, **kw)).item()
+
+        func = func.rolling(
+            index_column=order_by_col,
+            period=pl.select(period).item(),
+            offset=pl.select(start).item(),
+            closed="right",
+        )
+
+    if op.group_by:
+        func = func.over(
+            [translate(v, **kw) for v in op.group_by],
+            mapping_strategy="group_to_rows",
+        )
+    return func
