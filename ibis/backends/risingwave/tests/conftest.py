@@ -30,7 +30,7 @@ class TestConf(ServiceBackendTest):
     # for numeric and decimal
 
     returned_timestamp_unit = "s"
-    supports_structs = False
+    supports_structs = True
     rounding_method = "half_to_even"
     service_name = "risingwave"
     deps = ("psycopg2",)
@@ -49,12 +49,12 @@ class TestConf(ServiceBackendTest):
         script_dir
             Location of scripts defining schemas
         """
-        with self.connection._safe_raw_sql(";".join(self.ddl_script)):
-            pass
+        with self.connection.begin() as cur:
+            cur.execute(";".join(self.ddl_script))
 
     @staticmethod
     def connect(*, tmpdir, worker_id, port: int | None = None, **kw):  # noqa: ARG004
-        con = ibis.risingwave.connect(
+        return ibis.risingwave.connect(
             host=PG_HOST,
             port=port or PG_PORT,
             user=PG_USER,
@@ -62,9 +62,6 @@ class TestConf(ServiceBackendTest):
             database=IBIS_TEST_RISINGWAVE_DB,
             **kw,
         )
-        cursor = con.raw_sql("SET RW_IMPLICIT_FLUSH TO true;")
-        cursor.close()
-        return con
 
 
 @pytest.fixture(scope="session")
@@ -80,4 +77,4 @@ def alltypes(con):
 
 @pytest.fixture(scope="module")
 def df(alltypes):
-    return alltypes.execute()
+    return alltypes.order_by("id").execute()

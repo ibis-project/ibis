@@ -247,11 +247,6 @@ builtin_array = toolz.compose(
     reason="backend does not support nullable nested types",
     raises=AssertionError,
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="Do not nest ARRAY types; ARRAY(basetype) handles multi-dimensional arrays of basetype",
-)
 @pytest.mark.never(
     ["bigquery"], reason="doesn't support arrays of arrays", raises=AssertionError
 )
@@ -467,9 +462,7 @@ def test_array_slice(backend, start, stop):
     ["datafusion", "flink", "polars", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="TODO(Kexiang): seems a bug",
+    ["risingwave"], raises=AssertionError, reason="array order isn't preserved"
 )
 @pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
 @pytest.mark.notimpl(
@@ -526,9 +519,7 @@ def test_array_map(con, input, output, func):
     ["datafusion", "flink", "polars", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="TODO(Kexiang): seems a bug",
+    ["risingwave"], raises=AssertionError, reason="array order isn't preserved"
 )
 @pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
 @pytest.mark.notimpl(
@@ -606,11 +597,6 @@ def test_array_map_with_index(con, input, output, func):
         param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
     ],
 )
-@pytest.mark.notyet(
-    "risingwave",
-    raises=PsycoPg2InternalError,
-    reason="no support for not null column constraint",
-)
 @pytest.mark.parametrize(
     "predicate",
     [lambda x: x > 1, partial(lambda x, y: x > y, y=1), ibis._ > 1],
@@ -653,11 +639,6 @@ def test_array_filter(con, input, output, predicate):
         param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
     ],
 )
-@pytest.mark.notyet(
-    "risingwave",
-    raises=PsycoPg2InternalError,
-    reason="no support for not null column constraint",
-)
 @pytest.mark.parametrize(
     "predicate",
     [lambda x, i: x + (i - i) > 1, partial(lambda x, y, i: x > y + (i * 0), y=1)],
@@ -694,16 +675,16 @@ def test_array_filter_with_index(con, input, output, predicate):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="NULLs are not allowed as array elements",
-                )
+                ),
+                pytest.mark.notyet(
+                    "risingwave",
+                    raises=AssertionError,
+                    reason="array order isn't preserved",
+                ),
             ],
         ),
         param({"a": [[1, 2], [1]]}, {"a": [[1], [1]]}, id="no_nulls"),
     ],
-)
-@pytest.mark.notyet(
-    "risingwave",
-    raises=PsycoPg2InternalError,
-    reason="no support for not null column constraint",
 )
 @pytest.mark.parametrize(
     "predicate",
@@ -1057,7 +1038,9 @@ def test_array_intersect(con, data):
 
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
-@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@pytest.mark.notimpl(
+    ["risingwave"], raises=PsycoPg2ProgrammingError, reason="can't adapt type dict"
+)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
@@ -1080,7 +1063,9 @@ def test_unnest_struct(con):
 
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
-@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@pytest.mark.notimpl(
+    ["risingwave"], raises=PsycoPg2ProgrammingError, reason="can't adapt type dict"
+)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )

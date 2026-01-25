@@ -75,7 +75,7 @@ class RisingWaveCompiler(PostgresCompiler):
         conversions.update(
             (col, table_expr[col].cast(dt.JSON(binary=True)))
             for col, typ in schema.items()
-            if typ.is_map()
+            if typ.is_map() or typ.is_struct()
         )
 
         if conversions:
@@ -166,6 +166,8 @@ class RisingWaveCompiler(PostgresCompiler):
             return self.f.map_from_key_values(
                 self.f.array(*value.keys()), self.f.array(*value.values())
             )
+        elif dtype.is_struct():
+            return self.cast(self.f.row(*value.values()), op.dtype)
         return None
 
     def visit_MapGet(self, op, *, arg, key, default):
@@ -193,6 +195,22 @@ class RisingWaveCompiler(PostgresCompiler):
         return self.f.map_contains(
             self.cast(arg, op.arg.dtype), self.cast(key, op.key.dtype)
         )
+
+    def visit_StructField(self, op, *, arg, field: str):
+        return sge.Dot(
+            this=sge.paren(arg), expression=sge.to_identifier(field, quoted=self.quoted)
+        )
+
+    def visit_StructColumn(self, op, *, names, values):
+        return self.cast(self.f.row(*values), op.dtype)
+
+    def visit_Array(self, op, *, exprs):
+        return self.cast(self.f.array(*exprs), op.dtype)
+
+    def visit_Unnest(self, op, *, arg):
+        # cast the result to ensure that fields are properly named; without
+        # casting the fields are automatically generated
+        return self.cast(super().visit_Unnest(op, arg=arg), op.dtype)
 
 
 compiler = RisingWaveCompiler()

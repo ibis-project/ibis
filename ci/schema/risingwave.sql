@@ -1,4 +1,6 @@
-SET RW_IMPLICIT_FLUSH=true;
+ALTER SYSTEM SET RW_IMPLICIT_FLUSH TO true;
+ALTER SYSTEM SET BYPASS_CLUSTER_LIMITS TO true;
+ALTER SYSTEM SET QUERY_MODE TO local;
 
 DROP TABLE IF EXISTS "diamonds" CASCADE;
 
@@ -188,3 +190,14 @@ DROP TABLE IF EXISTS "topk";
 
 CREATE TABLE "topk" ("x" BIGINT);
 INSERT INTO "topk" VALUES (1), (1), (NULL);
+
+DROP TABLE IF EXISTS "struct";
+CREATE TABLE "struct" ("abc" STRUCT<"a" DOUBLE, "b" VARCHAR, "c" BIGINT>);
+INSERT INTO "struct" VALUES
+    (ROW(1.0, 'banana', 2)),
+    (ROW(2.0, 'apple', 3)),
+    (ROW(3.0, 'orange', 4)),
+    (ROW(NULL, 'banana', 2)),
+    (ROW(2.0, NULL, 3)),
+    (NULL),
+    (ROW(3.0, 'orange', NULL));
