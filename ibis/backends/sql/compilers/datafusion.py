@@ -629,5 +629,45 @@ class DataFusionCompiler(SQLGlotCompiler):
         def visit_ApproxQuantile(self, op, *, arg, quantile, where):
             return self.agg.approx_percentile_cont(arg, quantile, where=where)
 
+    def visit_TableUnnest(
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
+    ):
+        quoted = self.quoted
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+        column_alias = sg.to_identifier(column_name, quoted=quoted)
+        value_type = op.column.dtype.value_type
+
+        if keep_empty:
+            column = self.if_(
+                sg.or_(column.is_(NULL), self.f.empty(column)),
+                self.f.make_array(self.cast(NULL, value_type)),
+                column,
+            )
+
+        selcols = tuple(
+            sge.Column(this=sg.to_identifier(name, quoted=quoted), table=table)
+            if name != column_name
+            else sge.Unnest(expressions=[column]).as_(column_alias)
+            for name in op.parent.schema.names
+        )
+
+        if offset:
+            offset_alias = sg.to_identifier(offset, quoted=quoted)
+            selcols += (
+                sge.Unnest(expressions=[self.f.range(self.f.array_length(column))]).as_(
+                    offset_alias
+                ),
+            )
+
+        res = sg.select(*selcols).from_(parent)
+        return res
+
 
 compiler = DataFusionCompiler()
