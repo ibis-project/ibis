@@ -1009,18 +1009,23 @@ class BigQueryType(SqlglotType):
 
     @classmethod
     def _from_ibis_Decimal(cls, dtype: dt.Decimal) -> sge.DataType:
+        msg = (
+            "BigQuery only supports decimal types with precision <= 38 and "
+            f"scale <= 9 (NUMERIC) or precision <= 76 and scale <= 38 (BIGNUMERIC). "
+            f"Current precision: {dtype.precision}. Current scale: {dtype.scale}"
+        )
         precision = dtype.precision
         scale = dtype.scale
-        if (precision, scale) == (76, 38):
-            return sge.DataType(this=typecode.BIGDECIMAL)
-        elif (precision, scale) in ((38, 9), (None, None)):
+
+        max_precision = precision or 0
+        max_scale = scale or 0
+
+        if max_precision <= 38 and max_scale <= 9:
             return sge.DataType(this=typecode.DECIMAL)
+        elif max_precision <= 76 and max_scale <= 38:
+            return sge.DataType(this=typecode.BIGDECIMAL)
         else:
-            raise com.UnsupportedBackendType(
-                "BigQuery only supports decimal types with precision of 38 and "
-                f"scale of 9 (NUMERIC) or precision of 76 and scale of 38 (BIGNUMERIC). "
-                f"Current precision: {dtype.precision}. Current scale: {dtype.scale}"
-            )
+            raise com.UnsupportedBackendType(msg)
 
     @classmethod
     def _from_ibis_UInt64(cls, dtype: dt.UInt64) -> NoReturn:
