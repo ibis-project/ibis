@@ -11,7 +11,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.tests.conftest import NO_JSON_SUPPORT_MARKS
-from ibis.backends.tests.errors import PySparkPythonException
+from ibis.backends.tests.errors import PyAthenaOperationalError, PySparkPythonException
 from ibis.conftest import IS_SPARK_REMOTE
 
 np = pytest.importorskip("numpy")
@@ -72,6 +72,9 @@ def test_json_getitem_array(json_t):
 @pytest.mark.notyet(
     ["flink"],
     reason="Expecting alias, found character literal",
+)
+@pytest.mark.notyet(
+    ["athena"], reason="no DDL json support", raises=PyAthenaOperationalError
 )
 def test_json_literal(con):
     expr = ibis.literal('{"scale": 100}', dt.json).name("some_literal")
