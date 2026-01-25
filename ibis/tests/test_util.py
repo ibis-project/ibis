@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from ibis.util import PseudoHashable, flatten_iterable, import_object
+from ibis.util import (
+    PseudoHashable,
+    flatten_iterable,
+    import_object,
+    promote_list,
+    promote_tuple,
+)
 
 
 @pytest.mark.parametrize(
@@ -51,7 +57,88 @@ def test_import_object():
         import_object("collections.this_attribute_doesnt_exist")
 
 
-# TODO(kszucs): add tests for promote_list and promote_tuple
+@pytest.mark.parametrize(
+    ("val", "expected"),
+    [
+        # Already a list - pass through unchanged
+        pytest.param([], [], id="empty_list"),
+        pytest.param([1, 2, 3], [1, 2, 3], id="list_of_ints"),
+        pytest.param([[1], [2]], [[1], [2]], id="nested_list"),
+        # Dictionary - wrap in list (special case)
+        pytest.param({}, [{}], id="empty_dict"),
+        pytest.param({"a": 1}, [{"a": 1}], id="dict"),
+        # Other iterables - convert to list
+        pytest.param((), [], id="empty_tuple"),
+        pytest.param((1, 2, 3), [1, 2, 3], id="tuple"),
+        pytest.param(set(), [], id="empty_set"),
+        pytest.param(frozenset({1, 2}), [1, 2], id="frozenset"),
+        pytest.param(range(3), [0, 1, 2], id="range"),
+        # None - return empty list
+        pytest.param(None, [], id="none"),
+        # Non-iterables - wrap in list
+        pytest.param(42, [42], id="int"),
+        pytest.param(3.14, [3.14], id="float"),
+        pytest.param(True, [True], id="bool"),
+        # Strings and bytes are treated as non-iterable
+        pytest.param("hello", ["hello"], id="string"),
+        pytest.param(b"bytes", [b"bytes"], id="bytes"),
+    ],
+)
+def test_promote_list(val, expected):
+    result = promote_list(val)
+    # For sets/frozensets, order is not guaranteed
+    if isinstance(val, (set, frozenset)):
+        assert sorted(result) == sorted(expected)
+    else:
+        assert result == expected
+
+
+def test_promote_list_identity():
+    """Test that lists are returned as-is (same object)."""
+    val = [1, 2, 3]
+    assert promote_list(val) is val
+
+
+@pytest.mark.parametrize(
+    ("val", "expected"),
+    [
+        # Already a tuple - pass through unchanged
+        pytest.param((), (), id="empty_tuple"),
+        pytest.param((1, 2, 3), (1, 2, 3), id="tuple_of_ints"),
+        pytest.param(((1,), (2,)), ((1,), (2,)), id="nested_tuple"),
+        # Other iterables - convert to tuple
+        pytest.param([], (), id="empty_list"),
+        pytest.param([1, 2, 3], (1, 2, 3), id="list"),
+        pytest.param(set(), (), id="empty_set"),
+        pytest.param(frozenset({1, 2}), (1, 2), id="frozenset"),
+        pytest.param(range(3), (0, 1, 2), id="range"),
+        # Dict - iterates over keys
+        pytest.param({}, (), id="empty_dict"),
+        pytest.param({"a": 1, "b": 2}, ("a", "b"), id="dict_keys"),
+        # None - return empty tuple
+        pytest.param(None, (), id="none"),
+        # Non-iterables - wrap in tuple
+        pytest.param(42, (42,), id="int"),
+        pytest.param(3.14, (3.14,), id="float"),
+        pytest.param(True, (True,), id="bool"),
+        # Strings and bytes are treated as non-iterable
+        pytest.param("hello", ("hello",), id="string"),
+        pytest.param(b"bytes", (b"bytes",), id="bytes"),
+    ],
+)
+def test_promote_tuple(val, expected):
+    result = promote_tuple(val)
+    # For sets/frozensets, order is not guaranteed
+    if isinstance(val, (set, frozenset)):
+        assert tuple(sorted(result)) == tuple(sorted(expected))
+    else:
+        assert result == expected
+
+
+def test_promote_tuple_identity():
+    """Test that tuples are returned as-is (same object)."""
+    val = (1, 2, 3)
+    assert promote_tuple(val) is val
 
 
 def test_pseudo_hashable():
