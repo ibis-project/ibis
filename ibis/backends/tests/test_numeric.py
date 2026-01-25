@@ -1282,7 +1282,8 @@ def test_floating_mod(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notyet(["mysql", "singlestoredb", "pyspark"], raises=AssertionError)
+@pytest.mark.notyet(["mysql", "singlestoredb"], raises=AssertionError)
+@pytest.mark.notyet(["pyspark"], raises=(AssertionError, PySparkArithmeticException))
 @pytest.mark.notyet(["databricks"], raises=AssertionError, reason="returns NaNs")
 @pytest.mark.notyet(
     ["sqlite"], raises=AssertionError, reason="returns NULL when dividing by zero"

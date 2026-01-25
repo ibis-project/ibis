@@ -52,6 +52,9 @@ try:
     from pyspark.errors.exceptions.base import (
         ArithmeticException as PySparkArithmeticException,
     )
+    from pyspark.errors.exceptions.base import (
+        NumberFormatException as PySparkNumberFormatException,
+    )
     from pyspark.errors.exceptions.base import ParseException as PySparkParseException
     from pyspark.errors.exceptions.base import PySparkValueError
     from pyspark.errors.exceptions.base import PythonException as PySparkPythonException
@@ -66,7 +69,7 @@ except ImportError:
         PySparkPythonException
     ) = PySparkUnsupportedOperationException = PySparkConnectGrpcException = (
         PySparkValueError
-    ) = None
+    ) = PySparkNumberFormatException = None
 
 try:
     from google.api_core.exceptions import BadRequest as GoogleBadRequest

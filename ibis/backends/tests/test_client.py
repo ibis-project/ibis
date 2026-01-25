@@ -797,7 +797,6 @@ def test_insert_from_memtable(con, temp_table):
     raises=AttributeError,
     reason="doesn't support the common notion of a catalog",
 )
-@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_list_catalogs(con):
     # Every backend has its own databases
     test_catalogs = {
@@ -1870,7 +1869,6 @@ def test_cross_database_join(con_create_database, monkeypatch):
     raises=DatabricksServerOperationError,
 )
 @pytest.mark.notimpl(["athena"], reason="insert isn't implemented yet")
-@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_insert_into_table_missing_columns(con, temp_table):
     db = getattr(con, "current_database", None)
 
