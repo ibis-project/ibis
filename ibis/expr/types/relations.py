@@ -926,7 +926,7 @@ class Table(Expr, FixedTextJupyterMixin):
         if schema is None:
             schema = {}
         schema = sch.schema(schema)
-        schema = sch.schema({**dict(schema.items()), **overrides})
+        schema = sch.schema({**schema, **overrides})
 
         cols = []
 
