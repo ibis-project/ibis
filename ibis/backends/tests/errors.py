@@ -163,6 +163,21 @@ except ImportError:
     MySQLNotSupportedError = MySQLProgrammingError = MySQLOperationalError = None
 
 try:
+    from singlestoredb.exceptions import (
+        NotSupportedError as SingleStoreDBNotSupportedError,
+    )
+    from singlestoredb.exceptions import (
+        OperationalError as SingleStoreDBOperationalError,
+    )
+    from singlestoredb.exceptions import (
+        ProgrammingError as SingleStoreDBProgrammingError,
+    )
+except ImportError:
+    SingleStoreDBNotSupportedError = SingleStoreDBProgrammingError = (
+        SingleStoreDBOperationalError
+    ) = None
+
+try:
     from pydruid.db.exceptions import ProgrammingError as PyDruidProgrammingError
 except ImportError:
     PyDruidProgrammingError = None

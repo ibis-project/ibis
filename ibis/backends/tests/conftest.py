@@ -14,6 +14,8 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     Py4JJavaError,
     PySparkUnsupportedOperationException,
+    SingleStoreDBOperationalError,
+    SingleStoreDBProgrammingError,
     TrinoUserError,
 )
 
@@ -41,12 +43,15 @@ NO_ARRAY_SUPPORT_MARKS = [
         ),
     ),
     pytest.mark.never(
-        ["mysql"],
+        ["mysql", "singlestoredb"],
         reason="No array support",
         raises=(
             com.UnsupportedBackendType,
             com.OperationNotDefinedError,
             MySQLOperationalError,
+            SingleStoreDBOperationalError,
+            SingleStoreDBProgrammingError,
+            com.TableNotFound,
         ),
     ),
     pytest.mark.notyet(
@@ -63,7 +68,9 @@ NO_ARRAY_SUPPORT_MARKS = [
 NO_ARRAY_SUPPORT = combine_marks(NO_ARRAY_SUPPORT_MARKS)
 
 NO_STRUCT_SUPPORT_MARKS = [
-    pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
+    pytest.mark.never(
+        ["mysql", "singlestoredb", "sqlite", "mssql"], reason="No struct support"
+    ),
     pytest.mark.notyet(["impala"]),
     pytest.mark.notimpl(["druid", "oracle", "exasol"]),
 ]
@@ -71,7 +78,8 @@ NO_STRUCT_SUPPORT = combine_marks(NO_STRUCT_SUPPORT_MARKS)
 
 NO_MAP_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["sqlite", "mysql", "mssql"], reason="Unlikely to ever add map support"
+        ["sqlite", "mysql", "singlestoredb", "mssql"],
+        reason="Unlikely to ever add map support",
     ),
     pytest.mark.notyet(
         ["bigquery", "impala"], reason="Backend doesn't yet implement map types"
@@ -115,6 +123,11 @@ NO_MERGE_SUPPORT_MARKS = [
     ),
     pytest.mark.notyet(
         ["mysql"], raises=MySQLProgrammingError, reason="MERGE INTO is not supported"
+    ),
+    pytest.mark.notyet(
+        ["singlestoredb"],
+        raises=SingleStoreDBProgrammingError,
+        reason="MERGE INTO is not supported",
     ),
     pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented"),
     pytest.mark.notyet(

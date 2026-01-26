@@ -19,6 +19,7 @@ from ibis.backends.tests.errors import (
     PyDruidProgrammingError,
     PyODBCProgrammingError,
     PySparkPythonException,
+    SingleStoreDBOperationalError,
     SnowflakeProgrammingError,
 )
 from ibis.conftest import IS_SPARK_REMOTE
@@ -146,7 +147,8 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="cume_dist",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse", "exasol"], raises=com.OperationNotDefinedError
+                    ["clickhouse", "exasol", "singlestoredb"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -371,6 +373,7 @@ def test_grouped_bounded_expanding_window(
                         "impala",
                         "mssql",
                         "mysql",
+                        "singlestoredb",
                         "oracle",
                         "postgres",
                         "risingwave",
@@ -561,6 +564,7 @@ def test_grouped_bounded_preceding_window(
                         "impala",
                         "mssql",
                         "mysql",
+                        "singlestoredb",
                         "oracle",
                         "postgres",
                         "risingwave",
@@ -708,6 +712,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "impala",
                         "mssql",
                         "mysql",
+                        "singlestoredb",
                         "oracle",
                         "postgres",
                         "risingwave",
@@ -744,6 +749,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "impala",
                         "mssql",
                         "mysql",
+                        "singlestoredb",
                         "oracle",
                         "postgres",
                         "risingwave",
@@ -788,7 +794,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             id="unordered-lag",
             marks=[
                 pytest.mark.notimpl(
-                    ["trino", "exasol", "athena"],
+                    ["trino", "exasol", "athena", "singlestoredb"],
                     reason="this isn't actually broken: the backend result is equal up to ordering",
                     raises=AssertionError,
                     strict=False,  # sometimes it passes
@@ -829,9 +835,9 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             id="unordered-lead",
             marks=[
                 pytest.mark.notimpl(
-                    ["trino", "athena"],
+                    ["trino", "athena", "singlestoredb"],
                     reason=(
-                        "this isn't actually broken: the trino backend "
+                        "this isn't actually broken: the backend "
                         "result is equal up to ordering"
                     ),
                     raises=AssertionError,
@@ -868,6 +874,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "impala",
                         "mssql",
                         "mysql",
+                        "singlestoredb",
                         "oracle",
                         "postgres",
                         "risingwave",
@@ -899,6 +906,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "impala",
                         "mssql",
                         "mysql",
+                        "singlestoredb",
                         "oracle",
                         "postgres",
                         "risingwave",
@@ -951,6 +959,11 @@ def test_ungrouped_unbounded_window(
     ["mysql"],
     raises=MySQLOperationalError,
     reason="https://github.com/tobymao/sqlglot/issues/2779",
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=SingleStoreDBOperationalError,
+    reason="Operation 'RANGE PRECEDING without UNBOUNDED' is not allowed",
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_grouped_bounded_range_window(backend, alltypes, df):
@@ -1116,6 +1129,11 @@ def test_first_last(backend):
 )
 @pytest.mark.notyet(
     ["mysql"], raises=MySQLOperationalError, reason="not supported by MySQL"
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=SingleStoreDBOperationalError,
+    reason="not supported by MySQL",
 )
 @pytest.mark.notyet(
     ["sqlite"],

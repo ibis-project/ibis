@@ -83,6 +83,7 @@ def test_json_literal(con):
 
 
 @pytest.mark.notimpl(["mysql", "risingwave"])
+@pytest.mark.notimpl(["mysql", "singlestoredb", "risingwave"])
 @pytest.mark.notyet(["bigquery", "sqlite"], reason="doesn't support maps")
 @pytest.mark.notyet(["postgres"], reason="only supports map<string, string>")
 @pytest.mark.notyet(
@@ -104,7 +105,7 @@ def test_json_map(backend, json_t):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["mysql", "risingwave"])
+@pytest.mark.notimpl(["mysql", "singlestoredb", "risingwave"])
 @pytest.mark.notyet(["sqlite"], reason="doesn't support arrays")
 @pytest.mark.notyet(
     ["pyspark", "flink"], reason="should work but doesn't deserialize JSON"

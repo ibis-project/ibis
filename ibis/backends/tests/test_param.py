@@ -62,7 +62,8 @@ def test_timestamp_accepts_date_literals(alltypes):
 
 @pytest.mark.notimpl(["impala", "druid", "oracle", "exasol"])
 @pytest.mark.never(
-    ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
+    ["mysql", "singlestoredb", "sqlite", "mssql"],
+    reason="backend will never implement array types",
 )
 def test_scalar_param_array(con):
     value = [1, 2, 3]
@@ -73,7 +74,7 @@ def test_scalar_param_array(con):
 
 @pytest.mark.notimpl(["impala", "postgres", "risingwave", "druid", "oracle", "exasol"])
 @pytest.mark.never(
-    ["mysql", "sqlite", "mssql"],
+    ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
 )
 def test_scalar_param_struct(con):
@@ -85,7 +86,7 @@ def test_scalar_param_struct(con):
 
 @pytest.mark.notimpl(["datafusion", "impala", "polars", "druid", "oracle", "exasol"])
 @pytest.mark.never(
-    ["mysql", "sqlite", "mssql"],
+    ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement map types",
 )
 @pytest.mark.notyet(["bigquery"])
@@ -174,7 +175,7 @@ def test_scalar_param_date(backend, alltypes, value):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(["flink", "mysql"], reason="no struct support")
+@pytest.mark.notyet(["flink", "mysql", "singlestoredb"], reason="no struct support")
 @pytest.mark.notimpl(
     [
         "postgres",

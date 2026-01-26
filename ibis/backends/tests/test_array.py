@@ -31,6 +31,7 @@ from ibis.backends.tests.errors import (
     PyAthenaDatabaseError,
     PyAthenaOperationalError,
     PySparkAnalysisException,
+    SingleStoreDBProgrammingError,
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
@@ -225,12 +226,14 @@ def test_array_index(con, idx):
 builtin_array = toolz.compose(
     # these will almost certainly never be supported
     pytest.mark.never(
-        ["mysql"],
+        ["mysql", "singlestoredb"],
         reason="array types are unsupported",
         raises=(
             com.OperationNotDefinedError,
             MySQLOperationalError,
+            SingleStoreDBProgrammingError,
             com.UnsupportedBackendType,
+            com.TableNotFound,
         ),
     ),
     pytest.mark.never(
@@ -1582,6 +1585,11 @@ def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
 @pytest.mark.notimpl(
     ["impala"], raises=AssertionError, reason="backend doesn't support arrays"
 )
+@pytest.mark.never(
+    ["mysql", "singlestoredb"],
+    raises=AssertionError,
+    reason="backend doesn't support arrays",
+)
 def test_repr_timestamp_array(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
     assert ibis.options.interactive is True
@@ -1774,6 +1782,7 @@ def _agg_with_nulls(agg, x):
     return agg(x)
 
 
+@builtin_array
 @pytest.mark.parametrize(
     ("agg", "baseline_func"),
     [
@@ -1876,6 +1885,7 @@ def test_array_agg_bool(con, data, agg, baseline_func):
     assert result == expected
 
 
+@builtin_array
 @pytest.mark.notyet(
     ["postgres"],
     raises=PsycoPgInvalidTextRepresentation,
