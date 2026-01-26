@@ -171,7 +171,7 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     def visit_ScalarUDF(self, op, **kw):
         input_type = op.__input_type__
-        if input_type in (InputType.PYARROW, InputType.BUILTIN):
+        if input_type in (InputType.PYARROW, InputType.BUILTIN, InputType.PANDAS):
             return self.f.anon[op.__func_name__](*kw.values())
         else:
             raise NotImplementedError(
