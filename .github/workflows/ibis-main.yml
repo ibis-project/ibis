@@ -120,7 +120,7 @@ jobs:
         with:
           # 3.14 + pyspark + cloudpickle causes a stack overflow, so keep this
           # at 3.13 for now
-          python-version: "3.13"
+          python-version: "3.13 || 3.14"
 
       - name: install uv
         uses: astral-sh/setup-uv@v7.2.0
