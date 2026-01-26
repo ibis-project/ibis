@@ -384,14 +384,7 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
 
         from ibis.backends.sql.datatypes import get_type_mapper
 
-        # Handle both string dialect names and SQLGlot dialect classes
-        if isinstance(dialect, str):
-            dialect_key = dialect
-        else:
-            # For SQLGlot dialect classes, convert class name to dialect key
-            dialect_key = dialect.__name__.lower()
-
-        type_mapper = type_mappers[dialect_key]
+        type_mapper = get_type_mapper(dialect)
         return [
             sge.ColumnDef(
                 this=sg.to_identifier(name, quoted=True),

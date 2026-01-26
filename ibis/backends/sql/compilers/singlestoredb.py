@@ -852,7 +852,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
         # generate the SQL string
         return parsed.sql(dialect)
 
-    def visit_SQLStringView(self, op, *, query: str, child, schema):
+    def visit_SQLStringView(self, op, *, query: str, parent, schema):
         """Handle SQL string view parsing for SingleStoreDB.
 
         SingleStoreDB's sqlglot parser has issues with qualified column references.

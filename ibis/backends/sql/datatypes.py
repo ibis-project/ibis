@@ -1683,9 +1683,9 @@ class SingleStoreDBType(MySQLType):
         return super().from_string(type_string, nullable=nullable)
 
 
-# Import backend-specific type mappers before building TYPE_MAPPERS
+# Import backend-specific type mappers before building _TYPE_MAPPERS
 
-TYPE_MAPPERS: dict[str, SqlglotType] = {
+_TYPE_MAPPERS: dict[str, type[SqlglotType]] = {
     mapper.dialect: mapper
     for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
 }
