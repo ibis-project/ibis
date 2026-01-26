@@ -8,7 +8,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import fsspec
 import pyarrow_hotfix  # noqa: F401
@@ -29,7 +29,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import AlterTable, RenameTable
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
     import pandas as pd
     import polars as pl

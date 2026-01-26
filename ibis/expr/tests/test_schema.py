@@ -441,9 +441,10 @@ def test_null_fields():
     assert sch.schema({"a": "null", "b": "null"}).null_fields == ("a", "b")
 
 
-def test_to_sqlglot_column_defs():
+@pytest.mark.parametrize("dialect", ["duckdb", "DUCKDB", sg.dialects.DuckDB])
+def test_to_sqlglot_column_defs(dialect):
     schema = sch.schema({"a": "int64", "b": "string", "c": "!string"})
-    columns = schema.to_sqlglot_column_defs("duckdb")
+    columns = schema.to_sqlglot_column_defs(dialect)
 
     assert len(columns) == 3
     assert all(isinstance(col, sge.ColumnDef) for col in columns)

@@ -27,6 +27,12 @@ from ibis.legacy.udf.vectorized import analytic, reduction
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 
+pytestmark = pytest.mark.notimpl(
+    ["polars"],
+    raises=com.OperationNotDefinedError,
+    reason="window functions aren't yet implemented for the polars backend",
+)
+
 
 # adapted from https://gist.github.com/xmnlab/2c1f93df1a6c6bde4e32c8579117e9cc
 def pandas_ntile(x, bucket: int):
@@ -114,9 +120,10 @@ with pytest.warns(FutureWarning, match="v9.0"):
         param(
             lambda t, win: t.id.percent_rank().over(win),
             lambda t: t.apply(
-                lambda df: (
+                lambda df, **_: (
                     df.sort_values("id").id.rank(method="min").sub(1).div(len(df) - 1)
-                )
+                ),
+                include_groups=False,
             ).reset_index(drop=True, level=[0]),
             id="percent_rank",
             marks=[
@@ -310,7 +317,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
         ),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_grouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
@@ -393,8 +399,6 @@ def test_grouped_bounded_expanding_window(
         ),
     ],
 )
-# Some backends do not support non-grouped window specs
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_ungrouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
@@ -422,7 +426,6 @@ def test_ungrouped_bounded_expanding_window(
     ],
     ids=["zero-two", "none-zero-two"],
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_grouped_bounded_following_window(backend, alltypes, df, preceding, following):
     window = ibis.window(
@@ -439,7 +442,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
     # shift id column before applying Pandas rolling window summarizer to
     # simulate forward looking window aggregation
     gdf = df.sort_values("id").groupby("string_col")
-    gdf.id = gdf.apply(lambda t: t.id.shift(-2))
+    gdf.id = gdf.apply(lambda t, **_: t.id.shift(-2), include_groups=False)
     expected = (
         df.assign(
             val=gdf.id.rolling(3, min_periods=1)
@@ -515,7 +518,6 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
         ),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_grouped_bounded_preceding_window(
     backend, alltypes, df, window_fn, window_size
 ):
@@ -588,7 +590,6 @@ def test_grouped_bounded_preceding_window(
         ),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_grouped_unbounded_window(backend, alltypes, df, result_fn, expected_fn):
     # Define a window that is
     # 1) Grouped
@@ -617,7 +618,6 @@ def test_grouped_unbounded_window(backend, alltypes, df, result_fn, expected_fn)
 )
 @pytest.mark.notimpl(["snowflake"], raises=AssertionError)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -646,7 +646,6 @@ def test_simple_ungrouped_unbound_following_window(
 @pytest.mark.never(
     ["mssql"], raises=Exception, reason="order by constant is not supported"
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -934,8 +933,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
         ),
     ],
 )
-# Some backends do not support non-grouped window specs
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_ungrouped_unbounded_window(
     backend, alltypes, df, result_fn, expected_fn, ordered
 ):
@@ -961,7 +958,6 @@ def test_ungrouped_unbounded_window(
     backend.assert_series_equal(left, right)
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["impala"], raises=ImpalaHiveServer2Error, reason="limited RANGE support"
 )
@@ -996,7 +992,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
     result = expr.execute().set_index("id").sort_index()
 
-    def gb_fn(df):
+    def gb_fn(df, **_):
         indices = np.searchsorted(df.id, [df["prec"], df["foll"]], side="left")
         double_col = df.double_col.values
         return pd.Series(
@@ -1010,7 +1006,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
         df.assign(prec=lambda t: t.id - preceding, foll=lambda t: t.id + 1)
         .sort_values("id")
         .groupby("string_col")
-        .apply(gb_fn)
+        .apply(gb_fn, include_groups=False)
         .droplevel(0)
     )
     expected = (
@@ -1025,7 +1021,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     backend.assert_series_equal(result.val, expected.val)
 
 
-@pytest.mark.notimpl(["clickhouse", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["clickhouse"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["materialize"],
     raises=com.OperationNotDefinedError,
@@ -1053,7 +1049,6 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     backend.assert_series_equal(result.val, expected.val)
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     t = alltypes
@@ -1071,14 +1066,14 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
         .astype("int64")
     )
 
-    def agg(df):
+    def agg(df, **_):
         df = df.sort_values(["id"])
         df = df.assign(bigint_col=lambda df: df.bigint_col.shift())
         return df
 
     expected = (
         df.groupby("month", group_keys=False)
-        .apply(agg)
+        .apply(agg, include_groups=False)
         .sort_values(["id"])
         .reset_index(drop=True)
         .bigint_col.fillna(0.0)
@@ -1088,7 +1083,6 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -1109,7 +1103,6 @@ def test_mutate_window_filter(backend, alltypes):
     backend.assert_frame_equal(res, sol, check_dtype=False)
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid", "athena"], raises=com.TableNotFound)
 def test_first_last(backend):
     t = backend.win
@@ -1151,7 +1144,7 @@ def test_first_last(backend):
     ["mysql"], raises=MySQLOperationalError, reason="not supported by MySQL"
 )
 @pytest.mark.notyet(
-    ["polars", "sqlite"],
+    ["sqlite"],
     raises=com.OperationNotDefinedError,
     reason="not support by the backend",
 )
@@ -1205,7 +1198,6 @@ def test_range_expression_bounds(backend):
     assert len(result) == con.execute(t.count())
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't implement percent_rank",
@@ -1250,7 +1242,6 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     reason="IS NULL not valid syntax for mssql",
     raises=PyODBCProgrammingError,
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -1281,11 +1272,6 @@ def test_windowed_order_by_sequence_is_preserved(con):
     assert pd.isna(value)
 
 
-@pytest.mark.notimpl(
-    ["polars"],
-    raises=com.OperationNotDefinedError,
-    reason="window functions aren't yet implemented for the polars backend",
-)
 @pytest.mark.notimpl(
     ["flink"],
     raises=AssertionError,
@@ -1328,3 +1314,15 @@ def test_duplicate_ordered_sum(con):
     # final position, since the *output* order doesn't depend on ORDER BY
     # provided by the user
     assert result[2:] in ([60, 100], [70, 100], [100, 60], [100, 70])
+
+
+def test_over_with_scalar_group_by(backend, alltypes):
+    """You can pass a scalar value to the group_by of a WindowFunction, and that works fine.
+    All values have the same grouping key, so it is basically a noop, but it works.
+    """
+    with_over = alltypes.select(
+        # This shouldn't get confused with the column named "string_col"
+        x=alltypes.tinyint_col.sum().over(group_by=ibis.literal("string_col"))
+    )
+    without_over = alltypes.select(x=alltypes.tinyint_col.sum())
+    backend.assert_series_equal(with_over.x.to_pandas(), without_over.x.to_pandas())

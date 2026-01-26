@@ -1,6 +1,5 @@
 import ibis
 
-
 call = ibis.table(
     name="call",
     schema={

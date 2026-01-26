@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import pickle
-from typing import Callable
+from typing import TYPE_CHECKING
 
 import pytest
 
 import ibis
 import ibis.expr.types as ir
 from ibis import util
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def assert_equal(left, right):

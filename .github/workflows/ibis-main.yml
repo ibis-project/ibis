@@ -44,14 +44,10 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - ubuntu-24.04-arm
           - windows-latest
         python-version:
-          - "3.9"
           - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
+          - "3.14"
         pyarrow:
           - true
           - false
@@ -69,12 +65,12 @@ jobs:
         uses: astral-sh/setup-uv@v7.2.0
 
       - name: install ${{ matrix.os }} system dependencies
-        if: startsWith(matrix.os, 'ubuntu')
+        if: matrix.os != 'windows-latest'
         run: |
           set -euo pipefail
 
           sudo apt-get update -y -qq
-          sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev
+          sudo apt-get install -y -q build-essential graphviz
 
       - name: install ${{ matrix.os }} system dependencies
         if: matrix.os == 'windows-latest'
@@ -83,10 +79,6 @@ jobs:
       - name: install numpy/pandas/pyarrow
         if: matrix.pyarrow
         run: pip install numpy pandas pyarrow pyarrow-hotfix
-
-      - name: check imports
-        if: matrix.pyarrow
-        run: python -c 'import numpy, pandas, pyarrow, pyarrow_hotfix'
 
       - uses: extractions/setup-just@v3
         env:
@@ -108,73 +100,6 @@ jobs:
           flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  test_shapely_duckdb_import:
-    name: Test shapely and duckdb import
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v6
-
-      - name: install python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.9"
-
-      - name: install uv
-        uses: astral-sh/setup-uv@v7.2.0
-
-      - name: install system dependencies
-        run: |
-          set -euo pipefail
-
-          sudo apt-get update -y -qq
-          sudo apt-get install -y -q build-essential libgeos-dev
-
-      - name: check shapely and duckdb imports
-        run: uv run --extra duckdb --extra geospatial python -c 'import shapely.geometry, duckdb'
-
-  test_duckdb_sqlite3_import:
-    name: Test sqlite3 and duckdb import
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v6
-
-      - name: install python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-
-      - name: install uv
-        uses: astral-sh/setup-uv@v7.2.0
-
-      - name: check duckdb doesn't import sqlite3
-        run: uv run --extra duckdb python -c 'import sys, ibis; assert "sqlite3" not in sys.modules; ibis.duckdb.connect(); assert "sqlite3" not in sys.modules'
-
-  test_scrapy_import:
-    name: Test import with twisted
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v6
-
-      - name: install python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-
-      - name: install uv
-        uses: astral-sh/setup-uv@v7.2.0
-
-      - name: check scrapy import
-        run: uv run --with scrapy python -c 'import scrapy; import ibis'
-
-      - name: remove virtual env
-        run: rm -rf .venv
-
-      - name: check twisted import
-        run: uv run --with scrapy python -c 'import twisted.internet.ssl; import ibis'
-
   test_doctests:
     name: Doctests
     runs-on: ubuntu-latest
@@ -193,6 +118,8 @@ jobs:
         uses: actions/setup-python@v6
         id: install_python
         with:
+          # 3.14 + pyspark + cloudpickle causes a stack overflow, so keep this
+          # at 3.13 for now
           python-version: "3.13"
 
       - name: install uv

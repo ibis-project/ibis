@@ -15,7 +15,7 @@ import ibis.expr.rules as rlz
 from ibis.common.patterns import CoercionError
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.operations.analytic import Analytic  # noqa: TC001
-from ibis.expr.operations.core import Column, Value
+from ibis.expr.operations.core import Value
 from ibis.expr.operations.generic import Literal
 from ibis.expr.operations.numeric import Negate
 from ibis.expr.operations.reductions import Reduction  # noqa: TC001
@@ -71,7 +71,7 @@ class WindowFunction(Value):
     how: LiteralType["rows", "range"] = "rows"
     start: Optional[WindowBoundary[dt.Numeric | dt.Interval]] = None
     end: Optional[WindowBoundary[dt.Numeric | dt.Interval]] = None
-    group_by: VarTuple[Column] = ()
+    group_by: VarTuple[Value] = ()
     order_by: VarTuple[SortKey] = ()
 
     dtype = rlz.dtype_like("func")

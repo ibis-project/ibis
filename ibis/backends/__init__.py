@@ -13,7 +13,7 @@ import urllib.parse
 import weakref
 from collections import Counter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, NamedTuple, overload
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, overload
 
 import ibis
 import ibis.common.exceptions as exc
@@ -23,7 +23,7 @@ import ibis.expr.types as ir
 from ibis import util
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+    from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -51,13 +51,13 @@ class TablesAccessor(collections.abc.Mapping):
     def __init__(self, backend: BaseBackend) -> None:
         self._backend = backend
 
-    def __getitem__(self, name) -> ir.Table:
+    def __getitem__(self, name: str, /) -> ir.Table:
         try:
             return self._backend.table(name)
         except Exception as exc:
             raise KeyError(name) from exc
 
-    def __getattr__(self, name) -> ir.Table:
+    def __getattr__(self, name: str, /) -> ir.Table:
         if name.startswith("_"):
             raise AttributeError(name)
         try:
@@ -1665,10 +1665,7 @@ def _get_backend_names(*, exclude: tuple[str] = ()) -> frozenset[str]:
 
     """
 
-    if sys.version_info < (3, 10):
-        entrypoints = importlib.metadata.entry_points()["ibis.backends"]
-    else:
-        entrypoints = importlib.metadata.entry_points(group="ibis.backends")
+    entrypoints = importlib.metadata.entry_points(group="ibis.backends")
     return frozenset(ep.name for ep in entrypoints).difference(exclude)
 
 

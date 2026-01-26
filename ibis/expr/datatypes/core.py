@@ -17,13 +17,15 @@ from typing import (
     Optional,
     TypeVar,
     Union,
+    get_args,
+    get_origin,
     get_type_hints,
     overload,
 )
 
 import toolz
 from public import public
-from typing_extensions import Self, get_args, get_origin
+from typing_extensions import Self
 
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenOrderedDict, MapSet
@@ -610,7 +612,7 @@ class Bounds(NamedTuple):
     lower: int
     upper: int
 
-    def __contains__(self, value: int) -> bool:
+    def __contains__(self, value: Any) -> bool:
         return self.lower <= value <= self.upper
 
 

@@ -46,10 +46,10 @@ with pytest.warns(FutureWarning, match="v9.0"):
 
 
 aggregate_test_params = [
-    param(lambda t: t.double_col.mean(), lambda t: t.double_col.mean(), id="mean"),
+    param(lambda t: t.double_col.mean(), lambda t, **_: t.double_col.mean(), id="mean"),
     param(
         lambda t: mean_udf(t.double_col),
-        lambda t: t.double_col.mean(),
+        lambda t, **_: t.double_col.mean(),
         id="mean_udf",
         marks=[
             pytest.mark.notimpl(
@@ -88,12 +88,12 @@ aggregate_test_params = [
             ),
         ],
     ),
-    param(lambda t: t.double_col.min(), lambda t: t.double_col.min(), id="min"),
-    param(lambda t: t.double_col.max(), lambda t: t.double_col.max(), id="max"),
+    param(lambda t: t.double_col.min(), lambda t, **_: t.double_col.min(), id="min"),
+    param(lambda t: t.double_col.max(), lambda t, **_: t.double_col.max(), id="max"),
     param(
         # int_col % 3 so there are no ties for most common value
         lambda t: (t.int_col % 3).mode(),
-        lambda t: (t.int_col % 3).mode().iloc[0],
+        lambda t, **_: (t.int_col % 3).mode().iloc[0],
         id="mode",
         marks=[
             pytest.mark.notyet(
@@ -119,12 +119,12 @@ aggregate_test_params = [
     ),
     param(
         lambda t: (t.double_col + 5).sum(),
-        lambda t: (t.double_col + 5).sum(),
+        lambda t, **_: (t.double_col + 5).sum(),
         id="complex_sum",
     ),
     param(
         lambda t: t.timestamp_col.max(),
-        lambda t: t.timestamp_col.max(),
+        lambda t, **_: t.timestamp_col.max(),
         id="timestamp_max",
     ),
 ]
@@ -145,13 +145,13 @@ def make_argidx_params(marks):
     return [
         param(
             lambda t: t.timestamp_col.argmin(t.id),
-            lambda s: s.timestamp_col.iloc[s.id.argmin()],
+            lambda s, **_: s.timestamp_col.iloc[s.id.argmin()],
             id="argmin",
             marks=marks,
         ),
         param(
             lambda t: t.double_col.argmax(t.id),
-            lambda s: s.double_col.iloc[s.id.argmax()],
+            lambda s, **_: s.double_col.iloc[s.id.argmax()],
             id="argmax",
             marks=marks,
         ),
@@ -190,7 +190,10 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
 
     # Note: Using `reset_index` to get the grouping key as a column
     expected = (
-        df.groupby(grouping_key_col).apply(expected_fn).rename("tmp").reset_index()
+        df.groupby(grouping_key_col)
+        .apply(expected_fn, include_groups=False)
+        .rename("tmp")
+        .reset_index()
     )
 
     # Row ordering may differ depending on backend, so sort on the
@@ -1294,9 +1297,6 @@ def test_string_quantile(alltypes, func):
     reason="doesn't support quantile on dates",
 )
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
-@pytest.mark.notyet(
-    ["polars"], raises=PolarsInvalidOperationError, reason="not supported upstream"
-)
 @pytest.mark.notyet(
     ["databricks"],
     raises=DatabricksServerOperationError,

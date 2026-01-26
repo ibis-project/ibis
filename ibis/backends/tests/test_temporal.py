@@ -28,7 +28,6 @@ from ibis.backends.tests.errors import (
     MySQLProgrammingError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
-    PolarsPanicException,
     PsycoPg2InternalError,
     Py4JJavaError,
     PyAthenaOperationalError,
@@ -427,11 +426,6 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                         "athena",
                     ],
                     raises=com.UnsupportedOperationError,
-                ),
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=PolarsPanicException,
-                    reason="attempt to calculate the remainder with a divisor of zero",
                 ),
                 pytest.mark.notyet(
                     ["flink"],
@@ -1143,9 +1137,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
     reason="Streaming database does not guarantee row order without ORDER BY",
     strict=False,
 )
-@pytest.mark.notimpl(
-    ["datafusion", "druid", "exasol"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["druid", "exasol"], raises=com.OperationNotDefinedError)
 def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     expr = expr_fn(alltypes)
     expected = df.timestamp_col.dt.strftime(pandas_pattern).rename("formatted")

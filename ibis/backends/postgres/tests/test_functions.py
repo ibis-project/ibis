@@ -727,7 +727,11 @@ def test_partitioned_window(alltypes, func, df):
     f = getattr(t.double_col, func)
     expr = f().over(window).name("double_col")
     result = t.select(expr).execute().double_col
-    expected = df.groupby("string_col").apply(roller(func)).reset_index(drop=True)
+    expected = (
+        df.groupby("string_col")
+        .apply(roller(func), include_groups=False)
+        .reset_index(drop=True)
+    )
     tm.assert_series_equal(result, expected)
 
 
