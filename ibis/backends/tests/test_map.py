@@ -480,7 +480,14 @@ def test_map_construct_array_column(con, alltypes, df):
     result = con.execute(expr)
     expected = df.apply(lambda row: {row["string_col"]: row["int_col"]}, axis=1)
 
-    assert result.to_list() == expected.to_list()
+    # Materialize-specific: avoid pytest's diff which causes issues with map comparisons
+    if con.name == "materialize":
+        if result.to_list() != expected.to_list():
+            pytest.fail(
+                f"Lists differ: got={result.to_list()}, expected={expected.to_list()}"
+            )
+    else:
+        assert result.to_list() == expected.to_list()
 
 
 @mark_notyet_postgres

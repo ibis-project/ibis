@@ -28,6 +28,11 @@ import ibis.common.exceptions as com
     ],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize doesn't have a rowid pseudo-column like SQLite/Oracle (backend limitation).",
+)
 def test_rowid(backend):
     t = backend.diamonds
     result = t.rowid().execute()
