@@ -23,7 +23,8 @@ class Reduction(Value):
     shape = ds.scalar
 
 
-# TODO(kszucs): all reductions all filterable so we could remove Filterable
+# All Reductions here are Filterable, but ReductionVectorizedUDF is only a Reduction,
+# and not Filterable, so we need to keep them separate for now.
 class Filterable(Value):
     where: Optional[Value[dt.Boolean]] = None
 
