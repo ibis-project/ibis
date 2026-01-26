@@ -160,6 +160,7 @@ class Backend(
     def do_connect(
         self,
         session: SparkSession | None = None,
+        *,
         mode: ConnectionMode = "batch",
         **kwargs,
     ) -> None:
