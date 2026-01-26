@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     from ibis.backends.sql.compilers.base import SQLGlotCompiler
+    from ibis.expr.api import IntoMemtable
     from ibis.expr.schema import IntoSchema
 
 
@@ -412,7 +413,7 @@ class SQLBackend(BaseBackend):
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table | list | dict,
+        obj: ir.Table | IntoMemtable,
         *,
         database: str | None = None,
         overwrite: bool = False,
@@ -451,59 +452,76 @@ class SQLBackend(BaseBackend):
         if overwrite:
             self.truncate_table(name, database=(catalog, db))
 
-        if not isinstance(obj, ir.Table):
-            obj = ibis.memtable(obj)
+        source_table = self._ensure_table_to_insert(
+            target_columns=self.get_schema(name, catalog=catalog, database=db),
+            tablish=obj,
+        )
 
-        self._run_pre_execute_hooks(obj)
+        self._run_pre_execute_hooks(source_table)
 
         query = self._build_insert_from_table(
-            target=name, source=obj, db=db, catalog=catalog
+            table_name=name, data=source_table, db=db, catalog=catalog
         )
 
         with self._safe_raw_sql(query):
             pass
 
-    def _column_names_to_insert(
-        self, *, target_columns: Iterable[str], source_columns: Iterable[str]
-    ) -> tuple[str, ...]:
+    def _ensure_table_to_insert(
+        self,
+        *,
+        target_columns: Iterable[str],
+        tablish: ir.Table | IntoMemtable,
+    ) -> ir.Table:
         target_col_names = tuple(target_columns)
-        source_col_names = tuple(source_columns)
+        if isinstance(tablish, ir.Table):
+            source_table = tablish
+        else:
+            from ibis.expr.api import _memtable
+
+            is_named, source_table = _memtable(tablish)
+            if not is_named:
+                if len(source_table.schema()) != len(target_col_names):
+                    raise exc.IbisTypeError(
+                        f"Cannot insert into table with columns {target_col_names} "
+                        f"from data with {len(source_table.schema())} unnamed columns. "
+                        "Please provide data with named columns."
+                    )
+                source_table = source_table.rename(
+                    dict(zip(target_col_names, source_table.schema()))
+                )
+        source_col_names = tuple(source_table.schema())
         # Error on unknown columns.
         # We DO allow missing columns (they will be filled with NULLs or defaults)
         unknown_cols = set(source_col_names) - set(target_col_names)
         if unknown_cols:
             raise exc.IbisTypeError(
-                f"Cannot insert into table {target_columns} because the following "
+                f"Cannot insert into table {target_col_names} because the following "
                 f"columns are not present in the target table: "
                 f"{', '.join(sorted(unknown_cols))}"
             )
-        return source_col_names
+        return source_table
 
     def _build_insert_from_table(
         self,
         *,
-        target: str,
-        source: ir.Table,
+        data: ir.Table,
+        table_name: str,
         db: str | None = None,
         catalog: str | None = None,
     ):
         compiler = self.compiler
         quoted = compiler.quoted
-        column_names = self._column_names_to_insert(
-            target_columns=self.get_schema(target, catalog=catalog, database=db),
-            source_columns=source.schema(),
-        )
         query = sge.insert(
-            expression=self.compile(source),
-            into=sg.table(target, db=db, catalog=catalog, quoted=quoted),
-            columns=[sg.to_identifier(col, quoted=quoted) for col in column_names],
+            expression=self.compile(data),
+            into=sg.table(table_name, db=db, catalog=catalog, quoted=quoted),
+            columns=[sg.to_identifier(col, quoted=quoted) for col in data.schema()],
             dialect=compiler.dialect,
         )
         return query
 
     def _build_insert_template(
         self,
-        name,
+        name: str,
         *,
         schema: sch.Schema,
         catalog: str | None = None,
@@ -554,7 +572,7 @@ class SQLBackend(BaseBackend):
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table | list | dict,
+        obj: ir.Table | IntoMemtable,
         on: str,
         *,
         database: str | None = None,
@@ -590,13 +608,15 @@ class SQLBackend(BaseBackend):
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        if not isinstance(obj, ir.Table):
-            obj = ibis.memtable(obj)
+        source_table = self._ensure_table_to_insert(
+            target_columns=self.get_schema(name, catalog=catalog, database=db),
+            tablish=obj,
+        )
 
-        self._run_pre_execute_hooks(obj)
+        self._run_pre_execute_hooks(source_table)
 
         query = self._build_upsert_from_table(
-            target=name, source=obj, on=on, db=db, catalog=catalog
+            target=name, source=source_table, on=on, db=db, catalog=catalog
         )
 
         with self._safe_raw_sql(query):
@@ -614,11 +634,6 @@ class SQLBackend(BaseBackend):
         compiler = self.compiler
         quoted = compiler.quoted
 
-        column_names = self._column_names_to_insert(
-            target_columns=self.get_schema(target, catalog=catalog, database=db),
-            source_columns=source.schema(),
-        )
-
         source_alias = util.gen_name("source")
         target_alias = util.gen_name("target")
         query = sge.merge(
@@ -629,7 +644,7 @@ class SQLBackend(BaseBackend):
                         sg.column(col, quoted=quoted).eq(
                             sg.column(col, table=source_alias, quoted=quoted)
                         )
-                        for col in column_names
+                        for col in source.schema()
                         if col != on
                     ]
                 ),
@@ -639,13 +654,13 @@ class SQLBackend(BaseBackend):
                 then=sge.Insert(
                     this=sge.Tuple(
                         expressions=[
-                            sg.column(col, quoted=quoted) for col in column_names
+                            sg.column(col, quoted=quoted) for col in source.schema()
                         ]
                     ),
                     expression=sge.Tuple(
                         expressions=[
                             sg.column(col, table=source_alias, quoted=quoted)
-                            for col in column_names
+                            for col in source.schema()
                         ]
                     ),
                 ),
