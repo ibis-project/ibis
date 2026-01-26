@@ -1,6 +1,5 @@
 import ibis
 
-
 t = ibis.table(name="t", schema={"a": "int64", "b": "string"})
 f = t.filter((t.b == "m"))
 agg = f.aggregate([f.a.sum().name("sum"), f.a.max()], by=[f.b])

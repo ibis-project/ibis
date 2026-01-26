@@ -10,7 +10,7 @@ import os
 import re
 from decimal import Decimal
 from functools import partial
-from typing import IO, TYPE_CHECKING, Any, Callable, Optional
+from typing import IO, TYPE_CHECKING, Any, Optional
 
 import google.api_core.exceptions
 import google.auth.credentials
@@ -43,7 +43,7 @@ from ibis.backends.bigquery.datatypes import BigQuerySchema
 from ibis.backends.sql import SQLBackend
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
     from pathlib import Path
     from urllib.parse import ParseResult
 

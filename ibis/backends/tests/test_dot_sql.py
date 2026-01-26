@@ -17,7 +17,6 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     OracleDatabaseError,
-    PolarsSQLInterfaceError,
     PyAthenaOperationalError,
     PyODBCProgrammingError,
 )
@@ -134,11 +133,6 @@ def test_table_dot_sql(backend):
     ["oracle"],
     OracleDatabaseError,
     reason="oracle doesn't know which of the tables in the join to sort from",
-)
-@pytest.mark.xfail_version(
-    polars=["polars>=1.27"],
-    raises=PolarsSQLInterfaceError,
-    reason="broken upstream in polars",
 )
 def test_table_dot_sql_with_join(backend):
     alltypes = backend.functional_alltypes

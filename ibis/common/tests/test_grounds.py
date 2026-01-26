@@ -5,7 +5,8 @@ import pickle
 import sys
 import weakref
 from abc import ABCMeta
-from typing import TYPE_CHECKING, Callable, Generic, Optional, TypeVar, Union
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Generic, Optional, TypeVar, Union
 
 import pytest
 
@@ -1124,8 +1125,5 @@ def test_error_message(snapshot):
 
     # assert "Failed" in str(exc_info.value)
 
-    if sys.version_info >= (3, 11):
-        target = "error_message_py311.txt"
-    else:
-        target = "error_message.txt"
+    target = f"error_message_py{sys.version_info[0]}{sys.version_info[1]}.txt"
     snapshot.assert_match(str(exc_info.value), target)

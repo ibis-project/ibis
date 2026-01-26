@@ -59,36 +59,36 @@
           overlays = [ self.overlays.default ];
         };
 
-        backendDevDeps = with pkgs; [
+        backendDevDeps = [
           # impala UDFs
-          clang_18
-          cmake
-          ninja
+          pkgs.clang_18
+          pkgs.cmake
+          pkgs.ninja
           # snowflake
-          openssl
+          pkgs.openssl
           # backend test suite
-          docker-compose
+          pkgs.docker-compose
           # visualization
-          graphviz-nox
+          pkgs.graphviz-nox
           # duckdb
-          duckdb
+          pkgs.duckdb
           # mysql
-          mariadb-client
+          pkgs.mariadb.client
           # pyodbc setup debugging
           # in particular: odbcinst -j
-          unixODBC
+          pkgs.unixODBC
           # pyspark
-          openjdk17_headless
+          pkgs.openjdk17_headless
           # postgres client
-          libpq.pg_config
-          postgresql
+          pkgs.libpq.pg_config
+          pkgs.postgresql
           # sqlite with readline
-          sqlite-interactive
+          pkgs.sqlite-interactive
           # mysqlclient build
-          libmysqlclient
-          pkg-config
+          pkgs.libmysqlclient
+          pkgs.pkg-config
           # new hotness for build orchestration (?)
-          docker-buildx
+          pkgs.docker-buildx
         ];
         shellHook = ''
           rm -f "$PWD/ci/ibis-testing-data"
@@ -109,21 +109,20 @@
         '';
 
         preCommitDeps =
-          with pkgs;
-          lib.optionals (!stdenv.isDarwin) [
-            actionlint
+          pkgs.lib.optionals (!pkgs.stdenv.isDarwin) [
+            pkgs.actionlint
           ]
           ++ [
-            codespell
-            deadnix
-            git
-            just
-            nixfmt-rfc-style
-            nodejs.pkgs.prettier
-            shellcheck
-            shfmt
-            statix
-            taplo-cli
+            pkgs.codespell
+            pkgs.deadnix
+            pkgs.git
+            pkgs.just
+            pkgs.nixfmt
+            pkgs.nodejs.pkgs.prettier
+            pkgs.shellcheck
+            pkgs.shfmt
+            pkgs.statix
+            pkgs.taplo
           ];
 
         mkDevShell =
@@ -134,26 +133,26 @@
               # python dev environment
               env
             ]
-            ++ (with pkgs; [
+            ++ [
               # uv executable
-              uv
+              pkgs.uv
               # rendering release notes
-              changelog
-              glow
+              pkgs.changelog
+              pkgs.glow
               # used in the justfile
-              jq
-              yj
+              pkgs.jq
+              pkgs.yj
               # commit linting
-              commitlint
+              pkgs.commitlint
               # link checking
-              lychee
+              pkgs.lychee
               # release automation
-              nodejs
+              pkgs.nodejs
               # used in notebooks to download data
-              curl
+              pkgs.curl
               # docs
-              quarto
-            ])
+              pkgs.quarto
+            ]
             ++ preCommitDeps
             ++ backendDevDeps;
 
@@ -177,13 +176,14 @@
       in
       rec {
         packages = {
-          default = packages.ibis313;
+          default = packages.ibis314;
 
           inherit (pkgs)
             ibis310
             ibis311
             ibis312
             ibis313
+            ibis314
             check-release-notes-spelling
             get-latest-quarto-hash
             ;
@@ -194,6 +194,7 @@
           ibis311-pytest = pkgs.ibis311.passthru.tests.pytest;
           ibis312-pytest = pkgs.ibis312.passthru.tests.pytest;
           ibis313-pytest = pkgs.ibis313.passthru.tests.pytest;
+          ibis314-pytest = pkgs.ibis314.passthru.tests.pytest;
         };
 
         devShells = rec {
@@ -201,8 +202,9 @@
           ibis311 = mkDevShell pkgs.ibisDevEnv311;
           ibis312 = mkDevShell pkgs.ibisDevEnv312;
           ibis313 = mkDevShell pkgs.ibisDevEnv313;
+          ibis314 = mkDevShell pkgs.ibisDevEnv314;
 
-          default = ibis313;
+          default = ibis314;
 
           preCommit = pkgs.mkShell {
             name = "preCommit";
@@ -211,21 +213,21 @@
 
           links = pkgs.mkShell {
             name = "links";
-            packages = with pkgs; [
-              just
-              lychee
+            packages = [
+              pkgs.just
+              pkgs.lychee
             ];
           };
 
           release = pkgs.mkShell {
             name = "release";
-            packages = with pkgs; [
-              git
-              uv
-              nodejs
-              unzip
-              gnugrep
-              (python3.withPackages (p: [ p.packaging ]))
+            packages = [
+              pkgs.git
+              pkgs.uv
+              pkgs.nodejs
+              pkgs.unzip
+              pkgs.gnugrep
+              (pkgs.python3.withPackages (p: [ p.packaging ]))
             ];
           };
         };

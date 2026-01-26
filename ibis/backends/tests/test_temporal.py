@@ -28,7 +28,6 @@ from ibis.backends.tests.errors import (
     MySQLProgrammingError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
-    PolarsPanicException,
     PsycoPg2InternalError,
     Py4JJavaError,
     PyAthenaOperationalError,
@@ -392,11 +391,6 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                         "athena",
                     ],
                     raises=com.UnsupportedOperationError,
-                ),
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=PolarsPanicException,
-                    reason="attempt to calculate the remainder with a divisor of zero",
                 ),
                 pytest.mark.notyet(
                     ["flink"],

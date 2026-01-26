@@ -1,6 +1,5 @@
 import ibis
 
-
 first = ibis.table(
     name="first", schema={"key1": "string", "key2": "string", "value1": "float64"}
 )

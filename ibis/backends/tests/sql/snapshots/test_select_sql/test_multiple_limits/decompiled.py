@@ -1,6 +1,5 @@
 import ibis
 
-
 functional_alltypes = ibis.table(
     name="functional_alltypes",
     schema={
