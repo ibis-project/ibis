@@ -1,6 +1,6 @@
-flake.lock linguist-generated=true
-uv.lock linguist-generated=true
-ibis/examples/pixi.lock linguist-generated=true
-requirements-dev.txt linguist-generated=true
+flake.lock linguist-generated=true merge=ours
+uv.lock linguist-generated=true merge=ours
+ibis/examples/pixi.lock linguist-generated=true merge=ours
+requirements-dev.txt linguist-generated=true merge=ours
 docs/_freeze/**/html.json linguist-generated=true
 docs/**/*.excalidraw linguist-generated=true
