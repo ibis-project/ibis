@@ -3137,6 +3137,18 @@ risingwave = [
     { name = "pyarrow-hotfix" },
     { name = "rich" },
 ]
+singlestoredb = [
+    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "numpy", version = "2.3.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas" },
+    { name = "parsimonious" },
+    { name = "pyarrow", version = "21.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "pyarrow", version = "22.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "pyarrow-hotfix" },
+    { name = "rich" },
+    { name = "singlestoredb" },
+]
 snowflake = [
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
@@ -3274,6 +3286,7 @@ requires-dist = [
     { name = "numpy", marker = "extra == 'postgres'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'pyspark'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'risingwave'", specifier = ">=1.23.2,<3" },
+    { name = "numpy", marker = "extra == 'singlestoredb'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'snowflake'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'sqlite'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'trino'", specifier = ">=1.23.2,<3" },
@@ -3299,10 +3312,12 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'postgres'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'pyspark'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'risingwave'", specifier = ">=1.5.3,<3" },
+    { name = "pandas", marker = "extra == 'singlestoredb'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'snowflake'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'sqlite'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'trino'", specifier = ">=1.5.3,<3" },
     { name = "pandas-gbq", marker = "extra == 'bigquery'", specifier = ">=0.26.1" },
+    { name = "parsimonious", marker = "extra == 'singlestoredb'", specifier = ">=0.11.0" },
     { name = "parsy", specifier = ">=2" },
     { name = "pins", extras = ["gcs"], marker = "extra == 'examples'", specifier = ">=0.8.3" },
     { name = "polars", marker = "extra == 'polars'", specifier = ">=1" },
@@ -3325,6 +3340,7 @@ requires-dist = [
     { name = "pyarrow", marker = "extra == 'postgres'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'pyspark'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'risingwave'", specifier = ">=10.0.1" },
+    { name = "pyarrow", marker = "extra == 'singlestoredb'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'snowflake'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'sqlite'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'trino'", specifier = ">=10.0.1" },
@@ -3345,6 +3361,7 @@ requires-dist = [
     { name = "pyarrow-hotfix", marker = "extra == 'postgres'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'pyspark'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'risingwave'", specifier = ">=0.4" },
+    { name = "pyarrow-hotfix", marker = "extra == 'singlestoredb'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'snowflake'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'sqlite'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'trino'", specifier = ">=0.4" },
@@ -3374,10 +3391,12 @@ requires-dist = [
     { name = "rich", marker = "extra == 'postgres'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'pyspark'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'risingwave'", specifier = ">=12.4.4" },
+    { name = "rich", marker = "extra == 'singlestoredb'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'snowflake'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'sqlite'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'trino'", specifier = ">=12.4.4" },
     { name = "shapely", marker = "extra == 'geospatial'", specifier = ">=2" },
+    { name = "singlestoredb", marker = "extra == 'singlestoredb'", specifier = ">=1.0" },
     { name = "snowflake-connector-python", marker = "extra == 'snowflake'", specifier = ">=3.0.2,!=3.3.0b1" },
     { name = "sqlglot", specifier = ">=23.4,!=26.32.0" },
     { name = "toolz", specifier = ">=0.11" },
@@ -3385,7 +3404,7 @@ requires-dist = [
     { name = "typing-extensions", specifier = ">=4.3.0" },
     { name = "tzdata", specifier = ">=2022.7" },
 ]
-provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
+provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "singlestoredb", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -5534,6 +5553,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/70/6f/3dd4940bbe001c06a65f88e36bad298bc7a0de5036115639926b0c5c0458/pandocfilters-1.5.1.tar.gz", hash = "sha256:002b4a555ee4ebc03f8b66307e287fa492e4a77b4ea14d3f934328297bb4939e", size = 8454, upload-time = "2024-01-18T20:08:13.726Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ef/af/4fbc8cab944db5d21b7e2a5b8e9211a03a79852b1157e2c102fcc61ac440/pandocfilters-1.5.1-py2.py3-none-any.whl", hash = "sha256:93be382804a9cdb0a7267585f157e5d1731bbe5545a85b268d6f5fe6232de2bc", size = 8663, upload-time = "2024-01-18T20:08:11.28Z" },
+]
+
+[[package]]
+name = "parsimonious"
+version = "0.11.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "regex" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3c/0b/8a3b9f4a4943b56e67247c65e1b0564ec9bf0718b85f3fd9502d70afaf32/parsimonious-0.11.0.tar.gz", hash = "sha256:e080377d98957beec053580d38ae54fcdf7c470fb78670ba4bf8b5f9d5cad2a9", size = 54238, upload-time = "2025-11-12T01:33:48.172Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/a9/a10a10f12e50993b5a3568a1a90fd70b85f83edc451875d312bf60cd39b8/parsimonious-0.11.0-py3-none-any.whl", hash = "sha256:32e3818abf9f05b3b9f3b6d87d128645e30177e91f614d2277d88a0aea98fae2", size = 54351, upload-time = "2025-11-12T01:33:46.652Z" },
 ]
 
 [[package]]
@@ -8598,6 +8629,28 @@ wheels = [
 ]
 
 [[package]]
+name = "singlestoredb"
+version = "1.16.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "parsimonious" },
+    { name = "pyjwt" },
+    { name = "requests" },
+    { name = "sqlparams" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d7/e9/1ab662fe869c2b1235e0af773abedb5e6c361a3ebc02a5ef396c53b23b43/singlestoredb-1.16.8.tar.gz", hash = "sha256:6d12781051273f016679f2cff5ec954bf1e78cda3a7dcf9861f41279281c1810", size = 376076, upload-time = "2026-01-09T21:58:02.432Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0f/d3/1b142a5efcd537fe58bfbfacdc03fe0995569d2cf2e22092116b5974d70c/singlestoredb-1.16.8-cp38-abi3-macosx_10_9_universal2.whl", hash = "sha256:f652cdf92ba6703c19f9e186e203a25bc1ec1d1651c1e2b8cf87078c909f413c", size = 480457, upload-time = "2026-01-09T21:57:54.205Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/74/d8dfd0ca17afb1c4d119577c8652c73dccc6d8561dd95d15b64fbb09a40c/singlestoredb-1.16.8-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bc520ad1c8061854ef20bb1de130d87e6c19835c8534588962a4c9524c786cdb", size = 937385, upload-time = "2026-01-09T21:57:55.727Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/b3/2d5e0db73f857a3dc1a1affc6f0a1e2d1bf606bfc9d53d1ea7cc7ae6f3ee/singlestoredb-1.16.8-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fb2906c0ad927b84c4ec6e861ba8a571cc4fce786714adb46172bfe689f569cd", size = 938252, upload-time = "2026-01-09T21:57:56.744Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/c4/2e8ce0942e1044f9955261836af7ca011f0e357d38fdae3b55abf9a7aae9/singlestoredb-1.16.8-cp38-abi3-win32.whl", hash = "sha256:c2c4f8ac27f39a20fbc4c9bab7405f937a08a08a51019e806967b089248d85d5", size = 457268, upload-time = "2026-01-09T21:57:58Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/92/ccbf7b0146113804558cb446df37322b0db6c6a26bfe021eb1a45edff3ac/singlestoredb-1.16.8-cp38-abi3-win_amd64.whl", hash = "sha256:6c5bc519c42186ca86f6115fa40475781b40864a3d8ac050a2f13a61711aa524", size = 455780, upload-time = "2026-01-09T21:57:59.317Z" },
+    { url = "https://files.pythonhosted.org/packages/93/06/3a8bb1b73bed0c06ad2f8f8faf72370766f07e55499f9c40864562a85d6c/singlestoredb-1.16.8-py3-none-any.whl", hash = "sha256:9fe77fd30c56e8771c30dec4ac9e6d6d2dee5d89eb1b696cacab48ae32bb41c3", size = 423724, upload-time = "2026-01-09T21:58:00.833Z" },
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -8762,6 +8815,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/46/b6/f188b9616bef49943353f3622d726af30fdb08acbd081deef28ba43ceb48/sqlglot-28.6.0.tar.gz", hash = "sha256:8c0a432a6745c6c7965bbe99a17667c5a3ca1d524a54b31997cf5422b1727f6a", size = 5676522, upload-time = "2026-01-13T17:39:24.389Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8f/a6/21b1e19994296ba4a34bc7abaf4fcb40d7e7787477bdfde58cd843594459/sqlglot-28.6.0-py3-none-any.whl", hash = "sha256:8af76e825dc8456a49f8ce049d69bbfcd116655dda3e53051754789e2edf8eba", size = 575186, upload-time = "2026-01-13T17:39:22.327Z" },
+]
+
+[[package]]
+name = "sqlparams"
+version = "6.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/ec/5d6a5ca217ecd7b08d404b7dc2025c752bdb393c9b34fcc6d48e1f70bb7e/sqlparams-6.2.0.tar.gz", hash = "sha256:3744a2ad16f71293db6505b21fd5229b4757489a9b09f3553656a1ae97ba7ca5", size = 34932, upload-time = "2025-01-25T16:21:59.646Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/e2/f1355629bb1eeb274babc947e2ba4e2e49250e934c86adcce3e54943bc8a/sqlparams-6.2.0-py3-none-any.whl", hash = "sha256:63b32ed9051bdc52e7e8b38bc4f78aed51796cdd9135e730f4c6a7db1048dedf", size = 17629, upload-time = "2025-01-25T16:21:58.272Z" },
 ]
 
 [[package]]
