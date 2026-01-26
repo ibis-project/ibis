@@ -7,6 +7,7 @@ from sqlglot.dialects.singlestore import SingleStore
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.sql.compilers._compat import WITH_ARG
 from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.compilers.mysql import MySQLCompiler
 from ibis.backends.sql.datatypes import SingleStoreDBType
@@ -838,8 +839,8 @@ class SingleStoreDBCompiler(MySQLCompiler):
             ),
             *compiled_query.ctes,
         ]
-        compiled_ibis_expr.args.pop("with", None)
-        compiled_query.args.pop("with", None)
+        compiled_ibis_expr.args.pop(WITH_ARG, None)
+        compiled_query.args.pop(WITH_ARG, None)
 
         # pull existing CTEs from the compiled Ibis expression and combine them
         # with the new query
