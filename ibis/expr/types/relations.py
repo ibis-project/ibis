@@ -775,7 +775,7 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         return name in self.schema()
 
-    def cast(self, schema: SchemaLike, /) -> Table:
+    def cast(self, schema: SchemaLike | None = None, /, **overrides: Any) -> Table:
         """Cast the columns of a table.
 
         Similar to `pandas.DataFrame.astype`.
@@ -787,7 +787,10 @@ class Table(Expr, FixedTextJupyterMixin):
         Parameters
         ----------
         schema
-            Mapping, schema or iterable of pairs to use for casting
+            Mapping, schema or iterable of pairs to use for casting.
+            Anything that [`ibis.schema()`](./schemas.qmd#ibis.schema) can consume.
+        overrides
+            Named types to use for casting. Will override types from `schema`.
 
         Returns
         -------
@@ -797,51 +800,72 @@ class Table(Expr, FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.selectors as s
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch()
-        >>> t.schema()
+        >>> t = ibis.examples.penguins.fetch().select("species", "bill_length_mm", "year").limit(5)
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ species ┃ bill_length_mm ┃ year  ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━┩
+        │ string  │ float64        │ int64 │
+        ├─────────┼────────────────┼───────┤
+        │ Adelie  │           39.1 │  2007 │
+        │ Adelie  │           39.5 │  2007 │
+        │ Adelie  │           40.3 │  2007 │
+        │ Adelie  │           NULL │  2007 │
+        │ Adelie  │           36.7 │  2007 │
+        └─────────┴────────────────┴───────┘
+
+        Columns not present in the input schema will be passed through unchanged:
+
+        >>> t.cast({"year": "uint16", "bill_length_mm": "int"})
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━┓
+        ┃ species ┃ bill_length_mm ┃ year   ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━┩
+        │ string  │ int64          │ uint16 │
+        ├─────────┼────────────────┼────────┤
+        │ Adelie  │             39 │   2007 │
+        │ Adelie  │             40 │   2007 │
+        │ Adelie  │             40 │   2007 │
+        │ Adelie  │           NULL │   2007 │
+        │ Adelie  │             37 │   2007 │
+        └─────────┴────────────────┴────────┘
+
+        In addition to passing a schema-like as the first argument, you can also
+        pass column_name=<type> pairs as keyword arguments.
+        These will override any types specified in the `schema` argument.
+        See below where `bill_length_mm` is overridden to `int8`:
+
+        >>> t.cast({"year": "uint16", "bill_length_mm": "float32"}, bill_length_mm="int8")
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━┓
+        ┃ species ┃ bill_length_mm ┃ year   ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━┩
+        │ string  │ int8           │ uint16 │
+        ├─────────┼────────────────┼────────┤
+        │ Adelie  │             39 │   2007 │
+        │ Adelie  │             40 │   2007 │
+        │ Adelie  │             40 │   2007 │
+        │ Adelie  │           NULL │   2007 │
+        │ Adelie  │             37 │   2007 │
+        └─────────┴────────────────┴────────┘
+
+        If a value is not castable to the target type, since ibis doesn't know about the
+        data at this time, we can't know whether the cast will succeed or fail until execution time,
+        so we still create an expression:
+
+        >>> expr = t.cast(species="int")
+        >>> expr.schema()
         ibis.Schema {
-          species            string
-          island             string
-          bill_length_mm     float64
-          bill_depth_mm      float64
-          flipper_length_mm  int64
-          body_mass_g        int64
-          sex                string
-          year               int64
+            species         int64
+            bill_length_mm  float64
+            year            int64
         }
-        >>> cols = ["body_mass_g", "bill_length_mm"]
-        >>> t[cols].head()
-        ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-        ┃ body_mass_g ┃ bill_length_mm ┃
-        ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-        │ int64       │ float64        │
-        ├─────────────┼────────────────┤
-        │        3750 │           39.1 │
-        │        3800 │           39.5 │
-        │        3250 │           40.3 │
-        │        NULL │           NULL │
-        │        3450 │           36.7 │
-        └─────────────┴────────────────┘
 
-        Columns not present in the input schema will be passed through unchanged
+        But executing the expression will raise an error:
 
-        >>> t.columns
-        ('species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex', 'year')
-        >>> expr = t.cast({"body_mass_g": "float64", "bill_length_mm": "int"})
-        >>> expr.select(*cols).head()
-        ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-        ┃ body_mass_g ┃ bill_length_mm ┃
-        ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-        │ float64     │ int64          │
-        ├─────────────┼────────────────┤
-        │      3750.0 │             39 │
-        │      3800.0 │             40 │
-        │      3250.0 │             40 │
-        │        NULL │           NULL │
-        │      3450.0 │             37 │
-        └─────────────┴────────────────┘
+        >>> expr  # quartodoc: +EXPECTED_FAILURE
+        Traceback (most recent call last):
+            ...
+        _duckdb.ConversionException: Conversion Error: Could not convert string 'Adelie' to INT64 when casting from source column species
 
         Columns that are in the input `schema` but not in the table raise an error
 
@@ -850,10 +874,10 @@ class Table(Expr, FixedTextJupyterMixin):
             ...
         ibis.common.exceptions.IbisError: Cast schema has fields that are not in the table: ['foo']
         """
-        return self._cast(schema, cast_method="cast")
+        return self._cast(schema, overrides, cast_method="cast")
 
-    def try_cast(self, schema: SchemaLike, /) -> Table:
-        """Cast the columns of a table.
+    def try_cast(self, schema: SchemaLike | None = None, /, **overrides: Any) -> Table:
+        """Cast the columns of a table, returning NULL/NaN on failure.
 
         If the cast fails for a row, the value is returned
         as `NULL` or `NaN` depending on backend behavior.
@@ -861,7 +885,10 @@ class Table(Expr, FixedTextJupyterMixin):
         Parameters
         ----------
         schema
-            Mapping, schema or iterable of pairs to use for casting
+            Mapping, schema or iterable of pairs to use for casting.
+            Anything that [`ibis.schema()`](./schemas.qmd#ibis.schema) can consume.
+        overrides
+            `column_name=<type>` overrides. Will override types from `schema`.
 
         Returns
         -------
@@ -873,7 +900,7 @@ class Table(Expr, FixedTextJupyterMixin):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"a": ["1", "2", "3"], "b": ["2.2", "3.3", "book"]})
-        >>> t.try_cast({"a": "int", "b": "float"})
+        >>> t.try_cast({"a": int}, b="float64")
         ┏━━━━━━━┳━━━━━━━━━┓
         ┃ a     ┃ b       ┃
         ┡━━━━━━━╇━━━━━━━━━┩
@@ -883,11 +910,23 @@ class Table(Expr, FixedTextJupyterMixin):
         │     2 │     3.3 │
         │     3 │    NULL │
         └───────┴─────────┘
-        """
-        return self._cast(schema, cast_method="try_cast")
 
-    def _cast(self, schema: SchemaLike, cast_method: str = "cast") -> Table:
+        See Also
+        --------
+        [`Table.cast`](#ibis.expr.types.relations.Table.cast) for more details and examples.
+        """
+        return self._cast(schema, overrides, cast_method="try_cast")
+
+    def _cast(
+        self,
+        schema: SchemaLike | None,
+        overrides: dict[str, Any],
+        cast_method: str = "cast",
+    ) -> Table:
+        if schema is None:
+            schema = {}
         schema = sch.schema(schema)
+        schema = sch.schema({**dict(schema.items()), **overrides})
 
         cols = []
 
