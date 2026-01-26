@@ -38,6 +38,8 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
 
+    from ibis.expr.api import IntoMemtable
+
 
 @functools.cache
 def _init_sqlite3():
@@ -606,7 +608,7 @@ class Backend(
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table | list | dict,
+        obj: ir.Table | IntoMemtable,
         *,
         database: str | None = None,
         overwrite: bool = False,
@@ -631,16 +633,20 @@ class Backend(
         ValueError
             If the type of `obj` isn't supported
         """
-        table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
-        if not isinstance(obj, ir.Expr):
-            obj = ibis.memtable(obj)
+        source_table = self._ensure_table_to_insert(
+            target_columns=self.get_schema(name, catalog=database, database=database),
+            tablish=obj,
+        )
 
-        self._run_pre_execute_hooks(obj)
+        self._run_pre_execute_hooks(source_table)
 
         dialect = self.dialect
-        query = self._build_insert_from_table(target=name, source=obj, catalog=database)
+        query = self._build_insert_from_table(
+            data=source_table, table_name=name, catalog=database
+        )
         insert_stmt = query.sql(dialect)
 
+        table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self.begin() as cur:
             if overwrite:
                 cur.execute(sge.Delete(this=table).sql(dialect))
