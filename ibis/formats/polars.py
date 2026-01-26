@@ -39,9 +39,14 @@ _from_polars_types = {v: k for k, v in _to_polars_types.items()}
 
 class PolarsType(TypeMapper):
     @classmethod
-    def to_ibis(cls, typ: pl.DataType, nullable=True) -> dt.DataType:
+    def to_ibis(cls, typ: pl.DataType, nullable: bool | None = None) -> dt.DataType:
         """Convert a polars type to an ibis type."""
-
+        # polars's type system doesn't keep track of nullability.
+        # We accept nullable=None to be compatible with the rest of TypeMapper.to_ibis()
+        # implementations, but we treat None as True, since we can't infer nullability
+        # from a polars dtype.
+        if nullable is None:
+            nullable = True
         base_type = typ.base_type()
         if base_type in (pl.Categorical, pl.Enum):
             return dt.String(nullable=nullable)

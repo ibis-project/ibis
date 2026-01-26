@@ -46,6 +46,11 @@ from ibis.common.annotations import ValidationError
 )
 def test_primitive_from_string(nullable, spec, expected):
     assert dt.dtype(spec, nullable=nullable) == expected(nullable=nullable)
+    assert dt.dtype(spec, nullable=None) == expected(nullable=True)
+    assert dt.dtype(spec) == expected(nullable=True)
+    assert dt.dtype("!" + spec, nullable=nullable) == expected(nullable=nullable)
+    assert dt.dtype("!" + spec, nullable=None) == expected(nullable=False)
+    assert dt.dtype("!" + spec) == expected(nullable=False)
 
 
 @pytest.mark.parametrize(
