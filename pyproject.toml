@@ -72,7 +72,7 @@ athena = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
   "fsspec[s3]",
 ]
@@ -85,7 +85,7 @@ bigquery = [
   "pydata-google-auth>=1.4.0",
   "pandas-gbq>=0.26.1",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 clickhouse = [
@@ -93,7 +93,7 @@ clickhouse = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 databricks = [
@@ -101,7 +101,7 @@ databricks = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 datafusion = [
@@ -110,7 +110,7 @@ datafusion = [
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "packaging>=21.3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 druid = [
@@ -118,7 +118,7 @@ druid = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 duckdb = [
@@ -129,7 +129,7 @@ duckdb = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
   "packaging>=21.3",
 ]
@@ -138,7 +138,7 @@ exasol = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 flink = [
@@ -147,7 +147,7 @@ flink = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 impala = [
@@ -155,7 +155,7 @@ impala = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 mssql = [
@@ -163,7 +163,7 @@ mssql = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 mysql = [
@@ -171,7 +171,7 @@ mysql = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 oracle = [
@@ -179,7 +179,7 @@ oracle = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 polars = [
@@ -187,7 +187,7 @@ polars = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 postgres = [
@@ -195,7 +195,7 @@ postgres = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 pyspark = [
@@ -204,7 +204,7 @@ pyspark = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 singlestoredb = [
@@ -212,7 +212,7 @@ singlestoredb = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "parsimonious>=0.11.0",
   "rich>=12.4.4",
 ]
@@ -221,7 +221,7 @@ snowflake = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 sqlite = [
@@ -230,7 +230,7 @@ sqlite = [
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "packaging>=21.3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 risingwave = [
@@ -238,7 +238,7 @@ risingwave = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 trino = [
@@ -246,7 +246,7 @@ trino = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 # non-backend extras
