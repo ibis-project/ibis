@@ -54,7 +54,7 @@ services:
       test:
         - CMD-SHELL
         - sdb-admin query --host 127.0.0.1 --user root --password ibis_testing --port 3306 --sql 'select 1'
-    image: ghcr.io/singlestore-labs/singlestoredb-dev:0.2.73
+    image: ghcr.io/singlestore-labs/singlestoredb-dev:8.9.10
     ports:
       - 3307:3306 # Use 3307 to avoid conflict with MySQL
       - 9089:9000 # Data API (use 9089 to avoid conflicts)
