@@ -127,7 +127,7 @@ class SQLBackend(BaseBackend):
             )
         except sg.UnsupportedError as e:
             raise exc.UnsupportedOperationError(
-                f"Operation not supported in {self.name} backend: {e}"
+                f"Operation not supported in {self.name} backend: {e}\n\nexpression:\n{expr}\n\nsqlglot expression:\n{query}"
             ) from e
         self._log(sql)
         return sql
