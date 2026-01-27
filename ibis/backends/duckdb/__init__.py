@@ -1729,6 +1729,24 @@ class Backend(
             }
         )
 
+    def _should_cache_physical_table(self, op: ops.PhysicalTable) -> bool:
+        if isinstance(op, (ops.DatabaseTable, ops.UnboundTable)):
+            # Cache temp views since they're used for `read_csv`/`read_parquet`
+            # and may point to remote data, don't cache anything else.
+            sql = (
+                sg.select(sg.func("any_value", C.table_type.eq("VIEW")))
+                .from_(sg.table("tables", db="information_schema"))
+                .where(
+                    C.table_catalog.eq(op.namespace.catalog or self.current_catalog),
+                    C.table_schema.eq(op.namespace.database or self.current_database),
+                )
+                .sql(self.dialect)
+            )
+            with self._safe_raw_sql(sql) as cur:
+                result = cur.fetchone()
+            return True if result is None else result[0]
+        return False
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         data = op.data
         schema = op.schema
