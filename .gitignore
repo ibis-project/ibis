@@ -149,3 +149,4 @@ jupyter_lite_config.json
 # pixi environments
 .pixi
 *.egg-info
+warehouse
