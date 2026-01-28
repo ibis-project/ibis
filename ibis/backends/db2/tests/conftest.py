@@ -22,11 +22,11 @@ def db2_config():
         Connection configuration
     """
     return {
-        "database": os.getenv("DB2_DATABASE", "testdb1"),
-        "hostname": os.getenv("DB2_HOSTNAME", "db2i-amitparmar-ypm0c-x86.fyre.ibm.com"),
+        "database": os.getenv("DB2_DATABASE", "SAMPLE"),
+        "hostname": os.getenv("DB2_HOSTNAME", "localhost"),
         "port": int(os.getenv("DB2_PORT", "50000")),
-        "username": os.getenv("DB2_USERNAME", "testuser1"),
-        "password": os.getenv("DB2_PASSWORD", "password123"),
+        "username": os.getenv("DB2_USERNAME", "db2inst1"),
+        "password": os.getenv("DB2_PASSWORD", "password"),
         "schema": os.getenv("DB2_SCHEMA"),
     }
 
