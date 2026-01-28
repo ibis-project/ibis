@@ -171,13 +171,20 @@ class TrinoCompiler(SQLGlotCompiler):
                 sge.Lambda(this=body, expressions=[param, index]),
             )
 
-    def visit_ArrayFilter(self, op, *, arg, param, body, index):
+    def visit_ArrayFilter(
+        self,
+        op: ops.ArrayFilter,
+        *,
+        arg,
+        param,
+        body: sge.Identifier,
+        index: sge.Identifier | None,
+    ):
         # no index, life is simpler
         if index is None:
             return self.f.filter(arg, sge.Lambda(this=body, expressions=[param]))
 
         placeholder = sg.to_identifier("__trino_filter__")
-        index = sg.to_identifier(index)
         keep, value = map(sg.to_identifier, ("keep", "value"))
 
         # first, zip the array with the index and call the user's function,
@@ -192,7 +199,14 @@ class TrinoCompiler(SQLGlotCompiler):
                     sge.Struct(
                         expressions=[
                             sge.PropertyEQ(this=keep, expression=body),
-                            sge.PropertyEQ(this=value, expression=param),
+                            # When sqlglot compiles a sge.Struct on presto/trino,
+                            # it warns if the struct fields don't have explicit types:
+                            # https://github.com/tobymao/sqlglot/blob/fc55b9889bcb1e0dad404dc15d357d8c755d85e6/sqlglot/dialects/presto.py#L711-L737
+                            # (and if ibis gets a warning during compilation, it raises an error)
+                            sge.PropertyEQ(
+                                this=value,
+                                expression=self.cast(param, op.arg.dtype.value_type),
+                            ),
                         ]
                     ),
                     dt.Struct(
