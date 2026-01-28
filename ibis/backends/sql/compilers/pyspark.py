@@ -243,10 +243,10 @@ class PySparkCompiler(SQLGlotCompiler):
         ]
         return self.f.count(sge.Distinct(expressions=cols))
 
-    def visit_FirstValue(self, op, *, arg):
+    def visit_FirstValue(self, op, *, arg, include_null):
         return sge.IgnoreNulls(this=self.f.first(arg))
 
-    def visit_LastValue(self, op, *, arg):
+    def visit_LastValue(self, op, *, arg, include_null):
         return sge.IgnoreNulls(this=self.f.last(arg))
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
