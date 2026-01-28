@@ -761,7 +761,7 @@ def test_dtype_typing():
     assert isinstance(b, dt.Boolean)
 
     with pytest.raises(TypeError):
-        dt.dtype(5)  # ty:ignore[no-matching-overload]
+        dt.dtype(5)  # type:ignore[no-matching-overload]
 
 
 def test_into_dtype_typing():

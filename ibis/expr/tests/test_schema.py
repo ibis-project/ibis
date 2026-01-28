@@ -20,7 +20,7 @@ def test_schema_factory_typing():
     assert isinstance(s, sch.Schema)
 
     with pytest.raises(TypeError):
-        sch.schema(5)  # ty:ignore[invalid-argument-type]
+        sch.schema(5)  # type:ignore[invalid-argument-type]
 
 
 def test_whole_schema():

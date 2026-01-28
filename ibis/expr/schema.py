@@ -414,6 +414,8 @@ IntoSchema: TypeAlias = Union[
     Iterable[tuple[str, dt.IntoDtype]],
 ]
 """Something that can be converted into a `Schema`."""
+SchemaLike = IntoSchema
+"""Deprecated, use `IntoSchema` instead."""
 
 
 def schema(value: IntoSchema, /) -> Schema:
