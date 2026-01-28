@@ -11,12 +11,19 @@ from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.generic import Column, Scalar, Value, _binop
 
 if TYPE_CHECKING:
+    from decimal import Decimal
+    from typing import Union
+
+    from typing_extensions import Self
+
     import ibis.expr.types as ir
+
+    Number = Union[int, float, Decimal]
 
 
 @public
 class NumericValue(Value):
-    def negate(self) -> NumericValue:
+    def negate(self) -> Self:
         """Negate a numeric expression.
 
         Returns
@@ -42,7 +49,7 @@ class NumericValue(Value):
         """
         return ops.Negate(self).to_expr()
 
-    def __neg__(self) -> NumericValue:
+    def __neg__(self) -> Self:
         """Negate `self`.
 
         Returns
@@ -163,9 +170,9 @@ class NumericValue(Value):
 
     def clip(
         self,
-        lower: NumericValue | None = None,
-        upper: NumericValue | None = None,
-    ) -> NumericValue:
+        lower: Number | NumericValue | ibis.Deferred | None = None,
+        upper: Number | NumericValue | ibis.Deferred | None = None,
+    ) -> Self:
         """Trim values outside of `lower` and `upper` bounds.
 
         `NULL` values are preserved and are not replaced with bounds.
@@ -211,7 +218,7 @@ class NumericValue(Value):
 
         return ops.Clip(self, lower, upper).to_expr()
 
-    def abs(self) -> NumericValue:
+    def abs(self) -> Self:
         """Return the absolute value of `self`.
 
         Examples
@@ -530,7 +537,7 @@ class NumericValue(Value):
         """
         return ops.Atan(self).to_expr()
 
-    def atan2(self, other: NumericValue, /) -> NumericValue:
+    def atan2(self, other: Number | NumericValue | ibis.Deferred, /) -> NumericValue:
         """Compute the two-argument version of arc tangent.
 
         Examples
@@ -635,86 +642,90 @@ class NumericValue(Value):
         """
         return ops.Tan(self).to_expr()
 
-    def __add__(self, other: NumericValue) -> NumericValue:
+    def __add__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
         """Add `self` with `other`."""
         return _binop(ops.Add, self, other)
 
     add = radd = __radd__ = __add__
 
-    def __sub__(self, other: NumericValue) -> NumericValue:
+    def __sub__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
         """Subtract `other` from `self`."""
         return _binop(ops.Subtract, self, other)
 
     sub = __sub__
 
-    def __rsub__(self, other: NumericValue) -> NumericValue:
+    def __rsub__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
         """Subtract `self` from `other`."""
         return _binop(ops.Subtract, other, self)
 
     rsub = __rsub__
 
-    def __mul__(self, other: NumericValue) -> NumericValue:
+    def __mul__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
         """Multiply `self` and `other`."""
         return _binop(ops.Multiply, self, other)
 
     mul = rmul = __rmul__ = __mul__
 
-    def __truediv__(self, other):
+    def __truediv__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
         """Divide `self` by `other`."""
         return _binop(ops.Divide, self, other)
 
     div = __div__ = __truediv__
 
-    def __rtruediv__(self, other: NumericValue) -> NumericValue:
-        """Divide `other` by `self`."""
+    def __rtruediv__(
+        self, other: Number | NumericValue | ibis.Deferred
+    ) -> NumericValue:
+        """Perform `other` / `self`."""
         return _binop(ops.Divide, other, self)
 
     rdiv = __rdiv__ = __rtruediv__
 
     def __floordiv__(
         self,
-        other: NumericValue,
-    ) -> NumericValue:
-        """Floor divide `self` by `other`."""
+        other: Number | NumericValue | ibis.Deferred,
+    ) -> IntegerValue:
+        """Perform `self` // `other`."""
         return _binop(ops.FloorDivide, self, other)
 
     floordiv = __floordiv__
 
     def __rfloordiv__(
         self,
-        other: NumericValue,
-    ) -> NumericValue:
-        """Floor divide `other` by `self`."""
+        other: Number | NumericValue | ibis.Deferred,
+    ) -> IntegerValue:
+        """Perform `other` // `self`."""
         return _binop(ops.FloorDivide, other, self)
 
     rfloordiv = __rfloordiv__
 
-    def __pow__(self, other: NumericValue) -> NumericValue:
+    def __pow__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
         """Raise `self` to the `other`th power."""
         return _binop(ops.Power, self, other)
 
     pow = __pow__
 
-    def __rpow__(self, other: NumericValue) -> NumericValue:
+    def __rpow__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
         """Raise `other` to the `self`th power."""
         return _binop(ops.Power, other, self)
 
     rpow = __rpow__
 
-    def __mod__(self, other: NumericValue) -> NumericValue:
+    def __mod__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
         """Compute `self` modulo `other`."""
         return _binop(ops.Modulus, self, other)
 
     mod = __mod__
 
-    def __rmod__(self, other: NumericValue) -> NumericValue:
+    def __rmod__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
         """Compute `other` modulo `self`."""
 
         return _binop(ops.Modulus, other, self)
 
     rmod = __rmod__
 
-    def point(self, right: int | float | NumericValue, /) -> ir.PointValue:
+    def point(
+        self, right: int | float | NumericValue | ibis.Deferred, /
+    ) -> ir.PointValue:
         """Return a point constructed from the coordinate values.
 
         Constant coordinates result in construction of a `POINT` literal or
@@ -767,7 +778,7 @@ class NumericColumn(Column, NumericValue):
     def kurtosis(
         self,
         *,
-        where: ir.BooleanValue | None = None,
+        where: bool | ir.BooleanValue | ibis.Deferred | None = None,
         how: Literal["sample", "pop"] = "sample",
     ) -> NumericScalar:
         """Return the kurtosis of a numeric column.
@@ -816,7 +827,7 @@ class NumericColumn(Column, NumericValue):
     def std(
         self,
         *,
-        where: ir.BooleanValue | None = None,
+        where: bool | ir.BooleanValue | ibis.Deferred | None = None,
         how: Literal["sample", "pop"] = "sample",
     ) -> NumericScalar:
         """Return the standard deviation of a numeric column.
@@ -920,9 +931,9 @@ class NumericColumn(Column, NumericValue):
         right: NumericColumn,
         /,
         *,
-        where: ir.BooleanValue | None = None,
+        where: bool | ir.BooleanValue | ibis.Deferred | None = None,
         how: Literal["sample", "pop"] = "sample",
-    ) -> NumericScalar:
+    ) -> FloatingScalar:
         """Return the correlation of two numeric columns.
 
         Parameters
@@ -979,9 +990,9 @@ class NumericColumn(Column, NumericValue):
         right: NumericColumn,
         /,
         *,
-        where: ir.BooleanValue | None = None,
+        where: bool | ir.BooleanValue | ibis.Deferred | None = None,
         how: Literal["sample", "pop"] = "sample",
-    ) -> NumericScalar:
+    ) -> FloatingScalar:
         """Return the covariance of two numeric columns.
 
         Parameters
@@ -1037,7 +1048,9 @@ class NumericColumn(Column, NumericValue):
             where=self._bind_to_parent_table(where),
         ).to_expr()
 
-    def mean(self, *, where: ir.BooleanValue | None = None) -> NumericScalar:
+    def mean(
+        self, *, where: bool | ir.BooleanValue | ibis.Deferred | None = None
+    ) -> NumericScalar:
         """Return the mean of a numeric column.
 
         Parameters
@@ -1093,7 +1106,13 @@ class NumericColumn(Column, NumericValue):
         # of default name generated by ops.Value operations
         return ops.Mean(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def cummean(self, *, where=None, group_by=None, order_by=None) -> NumericColumn:
+    def cummean(
+        self,
+        *,
+        where: bool | ir.BooleanValue | ibis.Deferred | None = None,
+        group_by=None,
+        order_by=None,
+    ) -> FloatingColumn:
         """Return the cumulative mean of the input.
 
         Examples
@@ -1141,7 +1160,9 @@ class NumericColumn(Column, NumericValue):
             ibis.cumulative_window(group_by=group_by, order_by=order_by)
         )
 
-    def sum(self, *, where: ir.BooleanValue | None = None) -> NumericScalar:
+    def sum(
+        self, *, where: bool | ir.BooleanValue | ibis.Deferred | None = None
+    ) -> NumericScalar:
         """Return the sum of a numeric column.
 
         Parameters
@@ -1195,7 +1216,13 @@ class NumericColumn(Column, NumericValue):
         """
         return ops.Sum(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def cumsum(self, *, where=None, group_by=None, order_by=None) -> NumericColumn:
+    def cumsum(
+        self,
+        *,
+        where: bool | ir.BooleanValue | ibis.Deferred | None = None,
+        group_by=None,
+        order_by=None,
+    ) -> NumericColumn:
         """Return the cumulative sum of the input.
 
         Examples
@@ -1322,7 +1349,7 @@ class NumericColumn(Column, NumericValue):
         binwidth: float | None = None,
         base: float | None = None,
         eps: float = 1e-13,
-    ):
+    ) -> IntegerColumn:
         """Compute a histogram with fixed width bins.
 
         Parameters
@@ -1556,9 +1583,9 @@ class IntegerValue(NumericValue):
 
     def convert_base(
         self,
-        from_base: IntegerValue,
-        to_base: IntegerValue,
-    ) -> IntegerValue:
+        from_base: int | IntegerValue,
+        to_base: int | IntegerValue,
+    ) -> ir.StringValue:
         """Convert an integer from one base to another.
 
         Parameters
@@ -1570,46 +1597,46 @@ class IntegerValue(NumericValue):
 
         Returns
         -------
-        IntegerValue
+        StringValue
             Converted expression
         """
         return ops.BaseConvert(self, from_base, to_base).to_expr()
 
-    def __and__(self, other: IntegerValue) -> IntegerValue:
+    def __and__(self, other: int | IntegerValue | ibis.Deferred) -> IntegerValue:
         """Bitwise and `self` with `other`."""
         return _binop(ops.BitwiseAnd, self, other)
 
     __rand__ = __and__
 
-    def __or__(self, other: IntegerValue) -> IntegerValue:
+    def __or__(self, other: int | IntegerValue | ibis.Deferred) -> IntegerValue:
         """Bitwise or `self` with `other`."""
         return _binop(ops.BitwiseOr, self, other)
 
     __ror__ = __or__
 
-    def __xor__(self, other: IntegerValue) -> IntegerValue:
+    def __xor__(self, other: int | IntegerValue | ibis.Deferred) -> IntegerValue:
         """Bitwise xor `self` with `other`."""
         return _binop(ops.BitwiseXor, self, other)
 
     __rxor__ = __xor__
 
-    def __lshift__(self, other: IntegerValue) -> IntegerValue:
+    def __lshift__(self, other: int | IntegerValue | ibis.Deferred) -> IntegerValue:
         """Bitwise left shift `self` with `other`."""
         return _binop(ops.BitwiseLeftShift, self, other)
 
-    def __rlshift__(self, other: IntegerValue) -> IntegerValue:
+    def __rlshift__(self, other: int | IntegerValue | ibis.Deferred) -> IntegerValue:
         """Bitwise left shift `self` with `other`."""
         return _binop(ops.BitwiseLeftShift, other, self)
 
-    def __rshift__(self, other: IntegerValue) -> IntegerValue:
+    def __rshift__(self, other: int | IntegerValue | ibis.Deferred) -> IntegerValue:
         """Bitwise right shift `self` with `other`."""
         return _binop(ops.BitwiseRightShift, self, other)
 
-    def __rrshift__(self, other: IntegerValue) -> IntegerValue:
+    def __rrshift__(self, other: int | IntegerValue | ibis.Deferred) -> IntegerValue:
         """Bitwise right shift `self` with `other`."""
         return _binop(ops.BitwiseRightShift, other, self)
 
-    def __invert__(self) -> IntegerValue:
+    def __invert__(self) -> Self:
         """Bitwise not of `self`.
 
         Returns
@@ -1632,7 +1659,9 @@ class IntegerScalar(NumericScalar, IntegerValue):
 
 @public
 class IntegerColumn(NumericColumn, IntegerValue):
-    def bit_and(self, *, where: ir.BooleanValue | None = None) -> IntegerScalar:
+    def bit_and(
+        self, *, where: bool | ir.BooleanValue | ibis.Deferred | None = None
+    ) -> IntegerScalar:
         """Aggregate the column using the bitwise and operator.
 
         Examples
@@ -1651,7 +1680,9 @@ class IntegerColumn(NumericColumn, IntegerValue):
         """
         return ops.BitAnd(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def bit_or(self, *, where: ir.BooleanValue | None = None) -> IntegerScalar:
+    def bit_or(
+        self, *, where: bool | ir.BooleanValue | ibis.Deferred | None = None
+    ) -> IntegerScalar:
         """Aggregate the column using the bitwise or operator.
 
         Examples
@@ -1670,7 +1701,9 @@ class IntegerColumn(NumericColumn, IntegerValue):
         """
         return ops.BitOr(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def bit_xor(self, *, where: ir.BooleanValue | None = None) -> IntegerScalar:
+    def bit_xor(
+        self, *, where: bool | ir.BooleanValue | ibis.Deferred | None = None
+    ) -> IntegerScalar:
         """Aggregate the column using the bitwise exclusive or operator.
 
         Examples
