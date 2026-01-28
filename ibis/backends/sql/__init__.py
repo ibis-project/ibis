@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     from ibis.backends.sql.compilers.base import SQLGlotCompiler
-    from ibis.expr.schema import SchemaLike
+    from ibis.expr.schema import IntoSchema
 
 
 class SQLBackend(BaseBackend):
@@ -137,7 +137,7 @@ class SQLBackend(BaseBackend):
         query: str,
         /,
         *,
-        schema: SchemaLike | None = None,
+        schema: IntoSchema | None = None,
         dialect: str | None = None,
     ) -> ir.Table:
         """Create an Ibis table expression from a SQL query.

@@ -20,6 +20,14 @@ def test_schema_from_names_types():
     assert s == sch.Schema(dict(a="array<float64>"))
 
 
+def test_IntoSchema_typing():
+    s: ibis.IntoSchema
+    s = {"a": int}
+    s = [("a", "int")]
+    s = ibis.schema({"a": int})
+    assert isinstance(s, sch.Schema)
+
+
 def test_schema_from_names_and_types_length_must_match():
     msg = "Schema names and types must have the same length"
     with pytest.raises(ValueError, match=msg):

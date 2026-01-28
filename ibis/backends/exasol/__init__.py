@@ -350,7 +350,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.SchemaLike | None = None,
+        schema: sch.IntoSchema | None = None,
         database: str | None = None,
         overwrite: bool = False,
         temp: bool = False,

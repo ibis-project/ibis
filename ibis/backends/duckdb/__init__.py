@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     import torch
     from fsspec import AbstractFileSystem
 
-    from ibis.expr.schema import SchemaLike
+    from ibis.expr.schema import IntoSchema
 
 try:
     from duckdb import func as _duckdb_func
@@ -126,7 +126,7 @@ class Backend(
         | pl.LazyFrame
         | None = None,
         *,
-        schema: SchemaLike | None = None,
+        schema: IntoSchema | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,

@@ -79,7 +79,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.SchemaLike | None = None,
+        schema: sch.IntoSchema | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool | None = None,
@@ -87,7 +87,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         properties: Mapping[str, Any] | None = None,
         location: str | None = None,
         stored_as: str = "PARQUET",
-        partitioned_by: sch.SchemaLike = (),
+        partitioned_by: sch.IntoSchema = (),
     ) -> ir.Table:
         """Create a table in Amazon Athena.
 

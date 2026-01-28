@@ -326,7 +326,7 @@ class Backend(SupportsTempTables, BaseBackend, NoUrl, DirectExampleLoader):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.SchemaLike | None = None,
+        schema: sch.IntoSchema | None = None,
         database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,

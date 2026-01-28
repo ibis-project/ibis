@@ -14,6 +14,15 @@ from ibis.common.grounds import Annotable
 from ibis.common.patterns import CoercedTo
 
 
+def test_schema_factory_typing():
+    s: sch.Schema
+    s = sch.schema({"a": "int64", "b": "string"})
+    assert isinstance(s, sch.Schema)
+
+    with pytest.raises(TypeError):
+        sch.schema(5)  # type:ignore[invalid-argument-type]
+
+
 def test_whole_schema():
     schema = {
         "cid": "int64",
