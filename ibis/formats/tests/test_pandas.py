@@ -4,6 +4,7 @@ from datetime import time
 from decimal import Decimal
 
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -354,11 +355,23 @@ def test_schema_from_dataframe_with_array_column():
             "timestamp",
             id="timestamp",
         ),
+        # As of pandas 3.0, the new default resolution when parsing
+        # strings is microseconds, falling back to nanoseconds when the
+        # precision of the string requires it.
         param(
             [
                 pd.Timedelta("1 days"),
                 pd.Timedelta("-1 days 2 min 3us"),
                 pd.Timedelta("-2 days +23:57:59.999997"),
+            ],
+            f"""interval('{"ns" if vparse(pd.__version__) < vparse("3") else "us"}')""",
+            id="interval",
+        ),
+        param(
+            [
+                pd.Timedelta("1 days"),
+                pd.Timedelta("-1 days 2 min 3us"),
+                pd.Timedelta("-2 days +23:57:59.999999997"),
             ],
             "interval('ns')",
             id="interval_ns",
