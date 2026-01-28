@@ -57,6 +57,14 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         return self.fields[name]
 
     @classmethod
+    def _create_without_validation(cls, fields: FrozenOrderedDict[str, dt.DataType]) -> Self:
+        schema = cls.__new__(cls)
+        if not isinstance(fields, FrozenOrderedDict):
+            fields = FrozenOrderedDict(fields)
+        schema.__init__(fields=fields)
+        return schema
+
+    @classmethod
     def __coerce__(cls, value) -> Schema:
         if isinstance(value, cls):
             return value
