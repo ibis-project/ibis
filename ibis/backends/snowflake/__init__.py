@@ -21,7 +21,6 @@ import sqlglot.expressions as sge
 import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -39,13 +38,15 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable, Iterator, Mapping
+    from collections.abc import Generator, Iterator, Mapping
     from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
     import snowflake.connector
     import snowflake.snowpark
+
+    from ibis.expr.api import IntoMemtable
 
 
 @contextlib.contextmanager
@@ -536,7 +537,7 @@ $$ {defn["source"]} $$"""
         *,
         catalog: str | None = None,
         database: str | None = None,
-    ) -> Iterable[tuple[str, dt.DataType]]:
+    ) -> sch.Schema:
         import snowflake.connector
 
         # this will always show temp tables with the same name as a non-temp
@@ -1128,7 +1129,7 @@ $$ {defn["source"]} $$"""
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table | list | dict,
+        obj: IntoMemtable | ir.Table,
         *,
         database: str | None = None,
         overwrite: bool = False,
@@ -1162,13 +1163,15 @@ $$ {defn["source"]} $$"""
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        if not isinstance(obj, ir.Table):
-            obj = ibis.memtable(obj)
+        source_table = self._ensure_table_to_insert(
+            target_columns=self.get_schema(name, catalog=catalog, database=db),
+            tablish=obj,
+        )
 
-        self._run_pre_execute_hooks(obj)
+        self._run_pre_execute_hooks(source_table)
 
         query = self._build_insert_from_table(
-            target=name, source=obj, db=db, catalog=catalog
+            data=source_table, table_name=name, db=db, catalog=catalog
         )
         table = sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted)
 
