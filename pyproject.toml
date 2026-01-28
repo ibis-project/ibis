@@ -97,7 +97,7 @@ clickhouse = [
   "rich>=12.4.4",
 ]
 databricks = [
-  # "databricks-sql-connector>=4",  # FIXME(deepyaman): Temporary removal due to no pandas 3 support
+  # "databricks-sql-connector>=4", # FIXME(deepyaman): Temporary removal due to no pandas 3 support
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
