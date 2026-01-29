@@ -4,6 +4,7 @@ from datetime import time
 from decimal import Decimal
 
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -21,7 +22,7 @@ from ibis.formats.pandas import PandasData, PandasSchema, PandasType  # noqa: E4
 @pytest.mark.parametrize(
     ("ibis_type", "pandas_type"),
     [
-        (dt.string, np.dtype("object")),
+        (dt.string, pd.Series(dtype="str").dtype),
         (dt.int8, np.dtype("int8")),
         (dt.int16, np.dtype("int16")),
         (dt.int32, np.dtype("int32")),
@@ -128,7 +129,7 @@ def test_schema_to_pandas():
 
     assert pandas_schema == [
         ("a", np.dtype("int64")),
-        ("b", np.dtype("object")),
+        ("b", pd.Series(dtype="str").dtype),
         ("c", np.dtype("bool")),
         ("d", np.dtype("float64")),
     ]
@@ -354,11 +355,23 @@ def test_schema_from_dataframe_with_array_column():
             "timestamp",
             id="timestamp",
         ),
+        # As of pandas 3.0, the new default resolution when parsing
+        # strings is microseconds, falling back to nanoseconds when the
+        # precision of the string requires it.
         param(
             [
                 pd.Timedelta("1 days"),
                 pd.Timedelta("-1 days 2 min 3us"),
                 pd.Timedelta("-2 days +23:57:59.999997"),
+            ],
+            f"""interval('{"ns" if vparse(pd.__version__) < vparse("3") else "us"}')""",
+            id="interval",
+        ),
+        param(
+            [
+                pd.Timedelta("1 days"),
+                pd.Timedelta("-1 days 2 min 3us"),
+                pd.Timedelta("-2 days +23:57:59.999999997"),
             ],
             "interval('ns')",
             id="interval_ns",

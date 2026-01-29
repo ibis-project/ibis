@@ -18,6 +18,8 @@ pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
 pa = pytest.importorskip("pyarrow")
 
+from ibis.formats.pandas import using_string_dtype  # noqa: E402
+
 pytestmark = NO_MAP_SUPPORT_MARKS
 
 mark_notyet_postgres = pytest.mark.notyet(
@@ -155,7 +157,14 @@ def test_map_values_nulls(con, map):
 @pytest.mark.parametrize("method", ["get", "contains"])
 def test_map_get_contains_nulls(con, map, key, method):
     expr = getattr(map, method)
-    assert con.execute(expr(key)) is None
+    if method == "get" and using_string_dtype():
+        # The missing value sentinel of the new string data type in
+        # pandas 3.0 is always `NaN` (`np.nan`).
+        expected = np.nan
+    else:
+        expected = None
+
+    assert con.execute(expr(key)) is expected
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
