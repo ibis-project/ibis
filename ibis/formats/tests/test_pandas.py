@@ -22,7 +22,7 @@ from ibis.formats.pandas import PandasData, PandasSchema, PandasType  # noqa: E4
 @pytest.mark.parametrize(
     ("ibis_type", "pandas_type"),
     [
-        (dt.string, np.dtype("object")),
+        (dt.string, pd.Series(dtype="str").dtype),
         (dt.int8, np.dtype("int8")),
         (dt.int16, np.dtype("int16")),
         (dt.int32, np.dtype("int32")),
@@ -129,7 +129,7 @@ def test_schema_to_pandas():
 
     assert pandas_schema == [
         ("a", np.dtype("int64")),
-        ("b", np.dtype("object")),
+        ("b", pd.Series(dtype="str").dtype),
         ("c", np.dtype("bool")),
         ("d", np.dtype("float64")),
     ]
