@@ -2,4 +2,4 @@
 # Install with: pip install -r requirements-local.txt
 
 # SQLGlot DB2 dialect (local package)
--e ../sqlglot-db2
+-e /Users/amitkumar/Documents/Project/sqlglot-db2

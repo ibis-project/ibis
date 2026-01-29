@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     import pandas as pd
+    from typing_extensions import Self
 
 
 class Backend(SQLBackend):
@@ -608,7 +609,7 @@ def connect(
     password: str | None = None,
     schema: str | None = None,
     **kwargs,
-) -> Backend:
+):
     """
     Connect to a DB2 database.
 
@@ -648,7 +649,7 @@ def connect(
     ['EMPLOYEE', 'DEPARTMENT', 'PROJECT']
     """
     backend = Backend()
-    return backend.connect(
+    backend.do_connect(
         database=database,
         hostname=hostname,
         port=port,
@@ -657,3 +658,4 @@ def connect(
         schema=schema,
         **kwargs,
     )
+    return backend
