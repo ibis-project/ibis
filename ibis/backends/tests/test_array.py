@@ -8,6 +8,7 @@ from functools import partial
 
 import pytest
 import toolz
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -1716,8 +1717,8 @@ def test_table_unnest_with_offset(backend):
 def test_table_unnest_with_keep_empty(con):
     t = ibis.memtable(pd.DataFrame({"y": [[], None, ["a"]]}))
     expr = t.unnest("y", keep_empty=True)["y"]
-    result = con.execute(expr)
-    assert Counter(result.values) == Counter(["a", None, None])
+    result = con.to_pyarrow(expr)
+    assert Counter(result.to_numpy()) == Counter(["a", None, None])
 
 
 @pytest.mark.notimpl(
@@ -1736,7 +1737,10 @@ def test_table_unnest_column_expr(backend):
     expr = t.unnest(t.y.map(lambda v: v.cast("str") + "'s").name("plural"))
     result = expr.execute()["plural"]
     expected = t["y"].execute().explode("y") + "'s"
-    assert set(result.values) == set(expected.replace({np.nan: None}).values)
+    if vparse(pd.__version__) < vparse("3"):
+        expected = expected.replace({np.nan: None})
+
+    assert set(result.values) == set(expected.values)
 
 
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
