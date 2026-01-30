@@ -126,7 +126,7 @@ def test_read_geo_from_url(monkeypatch):
 
 @pytest.mark.filterwarnings(
     "ignore:The default 'epoch' date format is deprecated and will be "
-    "removed in a future version:pandas.errors.Pandas4Warning"
+    "removed in a future version:DeprecationWarning"
 )
 def test_read_json(con, data_dir, tmp_path):
     pqt = con.read_parquet(data_dir / "parquet" / "functional_alltypes.parquet")
