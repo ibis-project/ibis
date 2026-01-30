@@ -483,7 +483,7 @@ filterwarnings = [
   # failures to close postgres connection objects
   "ignore:.*psycopg\\.Connection.+was deleted while still open:ResourceWarning",
   # `Pandas4Warning`s coming directly from the way ClickHouse and PySpark use pandas
-  "ignore:The copy keyword is deprecated and will be removed in a future version:DeprecationWarning",
+  "ignore:The copy keyword is deprecated and will be removed in a future version:pandas.errors.Pandas4Warning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
