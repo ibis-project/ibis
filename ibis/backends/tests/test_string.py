@@ -911,7 +911,7 @@ def test_empty_array_string_join(con):
     t = ibis.memtable({"arr": [[], ["a", "b", "c"]]})
 
     expr = t.arr.join(",")
-    assert set(con.execute(expr)) == {None, "a,b,c"}
+    assert set(con.to_pyarrow(expr).to_pylist()) == {None, "a,b,c"}
 
 
 @pytest.mark.notimpl(
