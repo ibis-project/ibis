@@ -270,8 +270,8 @@ class Backend(
                 )
             )
             .where(
-                C.table_name.eq(sge.convert(name)),
-                C.table_schema.eq(sge.convert(database or self.current_database)),
+                C.table_name.eq(sge.National(this=name)),
+                C.table_schema.eq(sge.National(this=database or self.current_database)),
             )
             .order_by(C.ordinal_position)
         )
