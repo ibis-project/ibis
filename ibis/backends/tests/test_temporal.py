@@ -731,7 +731,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
         param(
             lambda t, _: t.timestamp_col.date() + ibis.interval(days=4),
-            lambda t, _: t.timestamp_col.dt.floor("d").add(pd.Timedelta(days=4)),
+            lambda t, _: t.timestamp_col.dt.floor("D").add(pd.Timedelta(days=4)),
             id="date-add-interval",
             marks=[
                 pytest.mark.notimpl(
@@ -742,7 +742,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
         param(
             lambda t, _: t.timestamp_col.date() - ibis.interval(days=14),
-            lambda t, _: t.timestamp_col.dt.floor("d").sub(pd.Timedelta(days=14)),
+            lambda t, _: t.timestamp_col.dt.floor("D").sub(pd.Timedelta(days=14)),
             id="date-subtract-interval",
             marks=[
                 pytest.mark.notimpl(
@@ -802,7 +802,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         param(
             lambda t, _: t.timestamp_col.date() - ibis.date(date_value),
             lambda t, _: pd.Series(
-                (t.timestamp_col.dt.floor("d") - date_value).values.astype(
+                (t.timestamp_col.dt.floor("D") - date_value).values.astype(
                     "timedelta64[D]"
                 )
             ),
@@ -862,7 +862,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
     ("timedelta", "temporal_fn"),
     [
         param(
-            "36500d",
+            "36500D",
             plus,
             id="large-days-plus",
             marks=[
@@ -882,12 +882,12 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             ],
         ),
         param("5W", plus, id="weeks-plus", marks=sqlite_without_ymd_intervals),
-        param("3d", plus, id="three-days-plus", marks=sqlite_without_ymd_intervals),
+        param("3D", plus, id="three-days-plus", marks=sqlite_without_ymd_intervals),
         param("2h", plus, id="two-hours-plus", marks=sqlite_without_hms_intervals),
         param("3m", plus, id="three-minutes-plus", marks=sqlite_without_hms_intervals),
         param("10s", plus, id="ten-seconds-plus", marks=sqlite_without_hms_intervals),
         param(
-            "36500d",
+            "36500D",
             minus,
             id="large-days-minus",
             marks=[
@@ -907,7 +907,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             ],
         ),
         param("5W", minus, id="weeks-minus", marks=sqlite_without_ymd_intervals),
-        param("3d", minus, id="three-days-minus", marks=sqlite_without_ymd_intervals),
+        param("3D", minus, id="three-days-minus", marks=sqlite_without_ymd_intervals),
         param("2h", minus, id="two-hours-minus", marks=sqlite_without_hms_intervals),
         param(
             "3m", minus, id="three-minutes-minus", marks=sqlite_without_hms_intervals
