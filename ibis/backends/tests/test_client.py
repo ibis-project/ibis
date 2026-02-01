@@ -27,6 +27,7 @@ import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.conftest import NO_MERGE_SUPPORT
 from ibis.backends.tests.errors import (
+    ArrowTypeError,
     DatabricksServerOperationError,
     ExaQueryError,
     ImpalaHiveServer2Error,
@@ -1652,7 +1653,7 @@ def test_close_connection(con):
 )
 @pytest.mark.notimpl(
     ["sqlite"],
-    raises=pa.ArrowTypeError,
+    raises=ArrowTypeError,
     reason="mismatch between output value and expected input type",
 )
 @pytest.mark.never(

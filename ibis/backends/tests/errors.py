@@ -87,9 +87,9 @@ except ImportError:
     ) = PolarsColumnNotFoundError = PolarsSQLInterfaceError = None
 
 try:
-    from pyarrow import ArrowInvalid, ArrowNotImplementedError
+    from pyarrow import ArrowInvalid, ArrowNotImplementedError, ArrowTypeError
 except ImportError:
-    ArrowInvalid = ArrowNotImplementedError = None
+    ArrowInvalid = ArrowNotImplementedError = ArrowTypeError = None
 
 try:
     from impala.error import HiveServer2Error as ImpalaHiveServer2Error
