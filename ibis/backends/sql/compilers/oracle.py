@@ -44,7 +44,7 @@ class OracleCompiler(SQLGlotCompiler):
     POS_INF = sge.to_identifier("binary_double_infinity")
     """Backend's positive infinity literal."""
 
-    NEG_INF = sge.to_identifier("-binary_double_infinity")
+    NEG_INF = -POS_INF
     """Backend's negative infinity literal."""
 
     LOWERED_OPS = {
