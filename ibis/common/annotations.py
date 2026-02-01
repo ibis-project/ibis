@@ -312,10 +312,12 @@ class ReprableVariableName:
     function argument list, will call repr() on default values.
     """
 
-    def __init__(self, name: str):
+    __slots__ = ("name",)
+
+    def __init__(self, name: str) -> None:
         self.name = name
 
-    def __repr__(self):
+    def __repr__(self) -> None:
         """Return the variable name without quotes."""
         return self.name
 
