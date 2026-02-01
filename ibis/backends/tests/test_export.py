@@ -664,11 +664,10 @@ def test_column_to_memory(limit, awards_players, output_format, expected_column_
     method = methodcaller(f"to_{output_format}", limit=limit)
     res = method(awards_players.awardID)
     assert isinstance(res, getattr(mod, expected_column_type))
-    assert (
-        (len(res) == limit)
-        if limit is not None
-        else len(res) == awards_players.count().execute()
-    )
+    if limit is not None:
+        assert len(res) == limit
+    else:
+        assert len(res) == awards_players.count().execute()
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
