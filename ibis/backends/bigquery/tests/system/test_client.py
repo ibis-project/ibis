@@ -73,7 +73,10 @@ def test_array_collect(struct_table):
         )
         .groupby("key")
         .apply(
-            lambda df: list(df.array_of_structs_col.apply(lambda x: x[0]["int_field"]))
+            lambda df, **_: list(
+                df.array_of_structs_col.apply(lambda x: x[0]["int_field"])
+            ),
+            include_groups=False,
         )
         .reset_index()
         .rename(columns={0: "foo"})
