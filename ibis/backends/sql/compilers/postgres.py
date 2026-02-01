@@ -57,7 +57,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     NAN = sge.cast(sge.Literal.string("NaN"), _DOUBLE_PRECISION_TYPE)
     POS_INF = sge.cast(sge.Literal.string("Inf"), _DOUBLE_PRECISION_TYPE)
-    NEG_INF = sge.cast(sge.Literal.string("-Inf"), _DOUBLE_PRECISION_TYPE)
+    NEG_INF = -POS_INF
 
     LOWERED_OPS = {ops.Sample: lower_sample(physical_tables_only=True)}
 
