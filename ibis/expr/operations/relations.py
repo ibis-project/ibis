@@ -75,13 +75,12 @@ class Relation(Node, Coercible):
         This calculated property shouldn't be overridden in subclasses since it
         is mostly used for convenience.
         """
-        if not hasattr(self, "_cached_fields"):
-            object.__setattr__(
-                self,
-                "_cached_fields",
-                FrozenOrderedDict({k: Field(self, k) for k in self.schema}),
-            )
-        return self._cached_fields
+        try:
+            fields = self._cached_fields
+        except AttributeError:
+            fields = FrozenOrderedDict({k: Field(self, k) for k in self.schema})
+            object.__setattr__(self, "_cached_fields", fields)
+        return fields
 
     def to_expr(self):
         from ibis.expr.types import Table

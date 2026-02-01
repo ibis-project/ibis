@@ -385,9 +385,9 @@ class Signature(inspect.Signature):
         super().__init__(*args, **kwargs)
         # prebuild dict of patterns to avoid slow retrieval via property&MappingProxyType
         self._patterns = {
-            k: param.annotation.pattern
+            k: pattern
             for k, param in self.parameters.items()
-            if hasattr(param.annotation, "pattern")
+            if (pattern := getattr(param.annotation, "pattern", None)) is not None
         }
         self._binder_fn = SignatureBinder(self)._bind_fn
 
