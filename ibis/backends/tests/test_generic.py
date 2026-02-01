@@ -18,6 +18,7 @@ import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
 from ibis.backends.tests.errors import (
+    ArrowTypeError,
     ClickHouseDatabaseError,
     ExaQueryError,
     GoogleBadRequest,
@@ -2607,7 +2608,7 @@ def test_named_literal(con, backend):
 )
 @pytest.mark.notyet(
     ["clickhouse"],
-    raises=ClickHouseDatabaseError,
+    raises=ArrowTypeError,
     reason="doesn't allow casting Float64 to Decimal(38, 2)",
 )
 @pytest.mark.notimpl(
