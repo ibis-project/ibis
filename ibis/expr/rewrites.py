@@ -275,6 +275,7 @@ def project_wrap_reduction(_, rel):
 _wrap_analytic_or_project_wrap_reduction = wrap_analytic | project_wrap_reduction
 _value_and_not_window_function = p.Value & ~p.WindowFunction
 
+
 def rewrite_project_input(value, relation):
     # we need to detect reductions which are either turned into window functions
     # or scalar subqueries depending on whether they are originating from the

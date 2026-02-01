@@ -92,7 +92,11 @@ class SignatureValidationError(ValidationError):
 
         sig = f"{self.func.__name__}{self.sig}"
         # remove the leading "_custom_bind_fn()" that comes from the custom bind function generated in SignatureBinder
-        cause = str(self.__cause__).removeprefix('_custom_bind_fn() ') if self.__cause__ else ""
+        cause = (
+            str(self.__cause__).removeprefix("_custom_bind_fn() ")
+            if self.__cause__
+            else ""
+        )
 
         return self.msg.format(sig=sig, call=call, cause=cause, errors=errors)
 
@@ -299,11 +303,15 @@ class Parameter(inspect.Parameter):
 
 
 class ReprableVariableName:
-    """Holds a string that will be used as a variable name in code to generate a default value for a parameter 
+    """Holds a string that will be used as a variable name.
+
+    Works to generate a default value for a parameter
     in a binding function for a Signature created by SignatureBinder.
-    
-    Needed because Signature.__repr__, which is used to generate binding function argument list, will call repr() on default values.
+
+    Needed because Signature.__repr__, which is used to generate binding
+    function argument list, will call repr() on default values.
     """
+
     def __init__(self, name: str):
         self.name = name
 
@@ -313,20 +321,19 @@ class ReprableVariableName:
 
 
 class SignatureBinder:
-    """Given a Signature, builds a callable object that binds arguments to parameters
-    according to that Signature, returning a dict of parameter names to bound values.
+    """Given a Signature, builds a callable object that binds arguments to parameters.
 
     Behaviour of the resulting callable object is equivalent to inspect.Signature.bind,
     but is more performant as it uses cpython's argument binding logic directly,
     instead of a slower pure-python implementation.
 
-    Example::
-
-        from ibis.common.annotations import Signature
-        def fn(a, b: int, c: Foo = Foo()): ...
-        sig = Signature.from_callable(fn)
-        binder = SignatureBinder(sig)
-        binder(1, 2)  # returns {'a': 1, 'b': 2, 'c': Foo()}
+    Examples
+    --------
+    >>> from ibis.common.annotations import Signature
+    >>> def fn(a, b: int, c: Foo = Foo()): ...
+    >>> sig = Signature.from_callable(fn)
+    >>> binder = SignatureBinder(sig)
+    >>> binder(1, 2)  # returns {'a': 1, 'b': 2, 'c': Foo()}
     """
 
     def __init__(self, signature: Signature):
@@ -336,26 +343,28 @@ class SignatureBinder:
             if param.default is not inspect.Parameter.empty:
                 # Create a unique variable name for the default value of this parameter,
                 # and store the actual default value in the namespace under that name.
-                varname = f'__default_{name}__'
+                varname = f"__default_{name}__"
                 default_val = ReprableVariableName(varname)
                 namespace[varname] = param.default
             else:
                 default_val = inspect.Parameter.empty
 
-            processed_params.append(param.replace(
-                default=default_val,
-                annotation=inspect.Parameter.empty
-            ))
+            processed_params.append(
+                param.replace(default=default_val, annotation=inspect.Parameter.empty)
+            )
 
         # build a new signature with default values replaced with generated variable names
         processed_signature = inspect.Signature(parameters=processed_params)
-        self.bind_fn_str = f'def _custom_bind_fn{processed_signature}:\n    return locals()'
+        self.bind_fn_str = (
+            f"def _custom_bind_fn{processed_signature}:\n    return locals()"
+        )
 
-        exec(compile(self.bind_fn_str, '<string>', 'exec'), namespace)
-        self._bind_fn = namespace['_custom_bind_fn']
+        compiled_obj = compile(self.bind_fn_str, "<string>", "exec")
+        exec(compiled_obj, namespace)  # noqa: S102
+        self._bind_fn = namespace["_custom_bind_fn"]
 
     def __call__(self, *args, **kwargs):
-       return self._bind_fn(*args, **kwargs)
+        return self._bind_fn(*args, **kwargs)
 
     def __repr__(self) -> str:
         """To help with debugging, returns the generated source code of the binding function."""
@@ -368,12 +377,16 @@ class Signature(inspect.Signature):
     Primarily used in the implementation of `ibis.common.grounds.Annotable`.
     """
 
-    __slots__ = ('_patterns', '_binder_fn')
+    __slots__ = ("_binder_fn", "_patterns")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # prebuild dict of patterns to avoid slow retrieval via property&MappingProxyType
-        self._patterns = {k: param.annotation.pattern for k, param in self.parameters.items() if hasattr(param.annotation, 'pattern')}
+        self._patterns = {
+            k: param.annotation.pattern
+            for k, param in self.parameters.items()
+            if hasattr(param.annotation, "pattern")
+        }
         self._binder_fn = SignatureBinder(self)._bind_fn
 
     @classmethod

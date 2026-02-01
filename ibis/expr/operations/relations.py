@@ -35,8 +35,8 @@ NonSortKey = Annotated[T, ~InstanceOf(SortKey)]
 @public
 class Relation(Node, Coercible):
     """Base class for relational operations."""
-    
-    __slots__ = ('_cached_fields',)
+
+    __slots__ = ("_cached_fields",)
 
     @classmethod
     def __coerce__(cls, value):
@@ -75,8 +75,12 @@ class Relation(Node, Coercible):
         This calculated property shouldn't be overridden in subclasses since it
         is mostly used for convenience.
         """
-        if not hasattr(self, '_cached_fields'):
-            object.__setattr__(self, '_cached_fields', FrozenOrderedDict({k: Field(self, k) for k in self.schema}))
+        if not hasattr(self, "_cached_fields"):
+            object.__setattr__(
+                self,
+                "_cached_fields",
+                FrozenOrderedDict({k: Field(self, k) for k in self.schema}),
+            )
         return self._cached_fields
 
     def to_expr(self):
@@ -253,7 +257,9 @@ class JoinChain(Relation):
 
     @attribute
     def schema(self):
-        return Schema._create_without_validation({k: v.dtype.copy(nullable=True) for k, v in self.values.items()})
+        return Schema._create_without_validation(
+            {k: v.dtype.copy(nullable=True) for k, v in self.values.items()}
+        )
 
     def to_expr(self):
         import ibis.expr.types as ir
@@ -330,7 +336,9 @@ class Aggregate(Relation):
 
     @attribute
     def schema(self):
-        return Schema._create_without_validation({k: v.dtype for k, v in self.values.items()})
+        return Schema._create_without_validation(
+            {k: v.dtype for k, v in self.values.items()}
+        )
 
 
 @public
@@ -468,7 +476,9 @@ class DummyTable(Relation):
 
     @attribute
     def schema(self):
-        return Schema._create_without_validation({k: v.dtype for k, v in self.values.items()})
+        return Schema._create_without_validation(
+            {k: v.dtype for k, v in self.values.items()}
+        )
 
 
 @public
