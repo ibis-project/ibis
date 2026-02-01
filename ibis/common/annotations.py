@@ -322,55 +322,29 @@ class ReprableVariableName:
         return self.name
 
 
-class SignatureBinder:
-    """Given a Signature, builds a callable object that binds arguments to parameters.
+def _make_bind_fn(signature: Signature) -> Callable[..., dict[str, AnyType]]:
+    namespace = {}  # a namespace of default variable name -> default value used with exec below
+    processed_params = []
+    for name, param in signature.parameters.items():
+        if param.default is not inspect.Parameter.empty:
+            # Create a unique variable name for the default value of this parameter,
+            # and store the actual default value in the namespace under that name.
+            varname = f"__default_{name}__"
+            default_val = ReprableVariableName(varname)
+            namespace[varname] = param.default
+        else:
+            default_val = inspect.Parameter.empty
 
-    Behaviour of the resulting callable object is equivalent to inspect.Signature.bind,
-    but is more performant as it uses cpython's argument binding logic directly,
-    instead of a slower pure-python implementation.
-
-    Examples
-    --------
-    >>> from ibis.common.annotations import Signature
-    >>> def fn(a, b: int, c: Foo = Foo()): ...
-    >>> sig = Signature.from_callable(fn)
-    >>> binder = SignatureBinder(sig)
-    >>> binder(1, 2)  # returns {'a': 1, 'b': 2, 'c': Foo()}
-    """
-
-    def __init__(self, signature: Signature):
-        namespace = {}  # a namespace of default variable name -> default value used with exec below
-        processed_params = []
-        for name, param in signature.parameters.items():
-            if param.default is not inspect.Parameter.empty:
-                # Create a unique variable name for the default value of this parameter,
-                # and store the actual default value in the namespace under that name.
-                varname = f"__default_{name}__"
-                default_val = ReprableVariableName(varname)
-                namespace[varname] = param.default
-            else:
-                default_val = inspect.Parameter.empty
-
-            processed_params.append(
-                param.replace(default=default_val, annotation=inspect.Parameter.empty)
-            )
-
-        # build a new signature with default values replaced with generated variable names
-        processed_signature = inspect.Signature(parameters=processed_params)
-        self.bind_fn_str = (
-            f"def _custom_bind_fn{processed_signature}:\n    return locals()"
+        processed_params.append(
+            param.replace(default=default_val, annotation=inspect.Parameter.empty)
         )
 
-        compiled_obj = compile(self.bind_fn_str, "<string>", "exec")
-        exec(compiled_obj, namespace)  # noqa: S102
-        self._bind_fn = namespace["_custom_bind_fn"]
-
-    def __call__(self, *args, **kwargs):
-        return self._bind_fn(*args, **kwargs)
-
-    def __repr__(self) -> str:
-        """To help with debugging, returns the generated source code of the binding function."""
-        return self.bind_fn_str
+    # build a new signature with default values replaced with generated variable names
+    processed_signature = inspect.Signature(parameters=processed_params)
+    bind_fn_str = f"def _custom_bind_fn{processed_signature}:\n    return locals()"
+    compiled_obj = compile(bind_fn_str, "<string>", "exec")
+    exec(compiled_obj, namespace)  # noqa: S102
+    return namespace["_custom_bind_fn"]
 
 
 class Signature(inspect.Signature):
@@ -389,7 +363,7 @@ class Signature(inspect.Signature):
             for k, param in self.parameters.items()
             if (pattern := getattr(param.annotation, "pattern", None)) is not None
         }
-        self._binder_fn = SignatureBinder(self)._bind_fn
+        self._binder_fn = _make_bind_fn(self)
 
     @classmethod
     def merge(cls, *signatures, **annotations):
