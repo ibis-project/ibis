@@ -404,14 +404,7 @@ values = pytest.mark.parametrize(
             [ibis.timestamp("2021-01-01"), ibis.timestamp("2021-01-02")], id="timestamp"
         ),
         pytest.param([ibis.date(2021, 1, 1), ibis.date(2022, 2, 2)], id="date"),
-        pytest.param(
-            [[1, 2], [3, 4]],
-            marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
-                mark_notyet_postgres,
-            ],
-            id="array",
-        ),
+        pytest.param([[1, 2], [3, 4]], marks=[mark_notyet_postgres], id="array"),
         pytest.param(
             [ibis.struct(dict(a=1)), ibis.struct(dict(a=2))],
             marks=[

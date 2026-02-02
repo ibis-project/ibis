@@ -18,6 +18,7 @@ import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
 from ibis.backends.tests.errors import (
+    ArrowTypeError,
     ClickHouseDatabaseError,
     ExaQueryError,
     GoogleBadRequest,
@@ -2607,7 +2608,7 @@ def test_named_literal(con, backend):
 )
 @pytest.mark.notyet(
     ["clickhouse"],
-    raises=ClickHouseDatabaseError,
+    raises=ArrowTypeError,
     reason="doesn't allow casting Float64 to Decimal(38, 2)",
 )
 @pytest.mark.notimpl(
@@ -2635,8 +2636,8 @@ def test_named_literal(con, backend):
 )
 @pytest.mark.notyet(
     ["bigquery"],
-    raises=com.UnsupportedBackendType,
-    reason="BigQuery only supports two decimal types: (38, 9) and (76, 38)",
+    raises=com.OperationNotDefinedError,
+    reason="BigQuery doesn't support quantiles",
 )
 def test_table_describe_with_multiple_decimal_columns(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]}).cast(

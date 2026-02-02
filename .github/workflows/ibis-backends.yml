@@ -65,7 +65,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.2.0
+        uses: astral-sh/setup-uv@v7.2.1
 
       - uses: extractions/setup-just@v3
         env:
@@ -511,7 +511,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.2.0
+        uses: astral-sh/setup-uv@v7.2.1
 
       - name: install other deps
         if: matrix.backend.additional_deps != null
@@ -571,25 +571,24 @@ jobs:
       matrix:
         include:
           - python-version: "3.10"
-            pyspark-minor-version: "3.3"
+            pyspark-minor-version: "3.5"
+            scala-version: "2.12"
             tag: local
             deps:
-              - pyspark==3.3.4
-              - pandas==1.5.3
-              - numpy==1.23.5
+              - "'pyspark>=3.5,<4'"
           - python-version: "3.13"
-            pyspark-minor-version: "3.5"
+            pyspark-minor-version: "4.0"
+            scala-version: "2.13"
             tag: local
             deps:
-              - setuptools==75.1.0
-              - delta-spark==3.3.0
+              - delta-spark
           - python-version: "3.12"
-            pyspark-minor-version: "3.5"
+            pyspark-minor-version: "4.0"
             SPARK_REMOTE: "sc://localhost:15002"
+            scala-version: "2.13"
             tag: remote
             deps:
-              - setuptools==75.1.0
-              - delta-spark==3.3.0
+              - setuptools
               - googleapis-common-protos
               - grpcio
               - grpcio-status
@@ -620,19 +619,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.2.0
-
-        # it requires a version of pandas that pyspark is not compatible with
-      - name: remove lonboard
-        if: matrix.pyspark-minor-version == '3.3'
-        run: uv remove --group docs --no-sync lonboard
+        uses: astral-sh/setup-uv@v7.2.1
 
       - name: install pyspark-specific dependencies
+        if: matrix.deps
         run: uv add --no-sync ${{ join(matrix.deps, ' ') }}
 
       - name: install iceberg
-        shell: bash
-        run: just download-iceberg-jar ${{ matrix.pyspark-minor-version }}
+        run: just download-iceberg-jar ${{ matrix.pyspark-minor-version }} ${{ matrix.scala-version }}
 
       - name: run spark connect tests
         if: matrix.tag == 'remote'
@@ -647,7 +641,6 @@ jobs:
         run: just ci-check "--extra pyspark --extra examples" -m pyspark
 
       - name: check that no untracked files were produced
-        shell: bash
         run: git checkout uv.lock pyproject.toml && ! git status --porcelain | grep -F .
 
       - name: upload code coverage

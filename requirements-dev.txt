@@ -216,7 +216,7 @@ pyopenssl==25.3.0
 pyparsing==3.3.2
 pyproj==3.7.1 ; python_full_version < '3.11'
 pyproj==3.7.2 ; python_full_version >= '3.11'
-pyspark==3.5.8
+pyspark==4.0.1
 pystack==1.6.0 ; sys_platform == 'linux'
 pytest==8.3.5
 pytest-benchmark==5.2.3

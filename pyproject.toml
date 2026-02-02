@@ -199,7 +199,7 @@ postgres = [
   "rich>=12.4.4",
 ]
 pyspark = [
-  "pyspark>=3.3.3,<4",
+  "pyspark>=3.5,<4.1",
   "packaging>=21.3",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
@@ -484,6 +484,8 @@ filterwarnings = [
   "ignore:.*psycopg\\.Connection.+was deleted while still open:ResourceWarning",
   # `Pandas4Warning`s coming directly from the way ClickHouse and PySpark use pandas
   "ignore:The copy keyword is deprecated and will be removed in a future version:DeprecationWarning",
+  # pyspark connect 4.0 warns about ignored arguments
+  "ignore:'.+' is ignored:UserWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [

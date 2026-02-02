@@ -27,6 +27,7 @@ import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.conftest import NO_MERGE_SUPPORT
 from ibis.backends.tests.errors import (
+    ArrowTypeError,
     DatabricksServerOperationError,
     ExaQueryError,
     ImpalaHiveServer2Error,
@@ -801,7 +802,6 @@ def test_insert_from_memtable(con, temp_table):
     raises=AttributeError,
     reason="doesn't support the common notion of a catalog",
 )
-@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_list_catalogs(con):
     # Every backend has its own databases
     test_catalogs = {
@@ -1657,7 +1657,7 @@ def test_close_connection(con):
 )
 @pytest.mark.notimpl(
     ["sqlite"],
-    raises=pa.ArrowTypeError,
+    raises=ArrowTypeError,
     reason="mismatch between output value and expected input type",
 )
 @pytest.mark.never(
@@ -1874,7 +1874,6 @@ def test_cross_database_join(con_create_database, monkeypatch):
     raises=DatabricksServerOperationError,
 )
 @pytest.mark.notimpl(["athena"], reason="insert isn't implemented yet")
-@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_insert_into_table_missing_columns(con, temp_table):
     db = getattr(con, "current_database", None)
 

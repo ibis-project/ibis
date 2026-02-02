@@ -144,7 +144,7 @@ download-data owner="ibis-project" repo="testing-data" rev="master":
     fi
 
 # download the iceberg jar used for testing pyspark and iceberg integration
-download-iceberg-jar pyspark scala="2.12" iceberg="1.6.1":
+download-iceberg-jar pyspark-version="4.0" scala-version="2.13" iceberg-version="1.10.1":
     #!/usr/bin/env bash
     set -eo pipefail
 
@@ -155,10 +155,10 @@ download-iceberg-jar pyspark scala="2.12" iceberg="1.6.1":
     fi
     pyspark="$("${runner[@]}" -c "import pyspark; print(pyspark.__file__.rsplit('/', 1)[0])")"
     pushd "${pyspark}/jars"
-    jar="iceberg-spark-runtime-{{ pyspark }}_{{ scala }}-{{ iceberg }}.jar"
-    url="https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-{{ pyspark }}_{{ scala }}/{{ iceberg }}/${jar}"
-    curl -qSsL -o "${jar}" "${url}"
-    ls "${jar}"
+    jar="iceberg-spark-runtime-{{ pyspark-version }}_{{ scala-version }}-{{ iceberg-version }}.jar"
+    prefix=org/apache/iceberg/iceberg-spark-runtime-{{ pyspark-version }}_{{ scala-version }}
+    url="https://search.maven.org/remotecontent?filepath=${prefix}/{{ iceberg-version }}/${jar}"
+    curl --fail --fail-early --show-error --silent --location --output "${jar}" "${url}"
 
 # pull images
 pull *backends:

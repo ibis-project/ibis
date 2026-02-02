@@ -28,6 +28,7 @@ from ibis.backends.tests.errors import (
     PyDruidProgrammingError,
     PyODBCProgrammingError,
     PySparkAnalysisException,
+    PySparkNumberFormatException,
     PySparkPythonException,
     SingleStoreDBOperationalError,
     SnowflakeProgrammingError,
@@ -1191,7 +1192,9 @@ def test_median(alltypes, df):
     reason="doesn't support median of strings",
 )
 @pytest.mark.notyet(
-    ["pyspark"], raises=AssertionError, reason="pyspark returns null for string median"
+    ["pyspark"],
+    raises=(PySparkNumberFormatException, AssertionError),
+    reason="pyspark does not support string quantiles",
 )
 @pytest.mark.notyet(
     ["databricks"],
