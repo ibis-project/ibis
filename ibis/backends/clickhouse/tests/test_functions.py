@@ -382,18 +382,18 @@ def test_regexp(con, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ("expr", "expected"),
+    ("expr", "expectation"),
     [
-        param(L("abcd").re_extract("([a-z]+)", 0), "abcd", id="simple"),
+        param(L("abcd").re_extract("([a-z]+)", 0), lambda x: x == "abcd", id="simple"),
         # (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),
         # valid group number but no match => None
-        param(L("abcd").re_extract(r"(\\d)", 0), None, id="valid_group_no_match"),
+        param(L("abcd").re_extract(r"(\\d)", 0), pd.isna, id="valid_group_no_match"),
         # match but not a valid group number => NULL
-        param(L("abcd").re_extract("abcd", 3), None, id="invalid_group_match"),
+        param(L("abcd").re_extract("abcd", 3), pd.isna, id="invalid_group_match"),
     ],
 )
-def test_regexp_extract(con, expr, expected):
-    assert con.execute(expr) == expected
+def test_regexp_extract(con, expr, expectation):
+    assert expectation(con.execute(expr))
 
 
 def test_column_regexp_extract(con, alltypes, assert_sql):
@@ -432,7 +432,7 @@ def test_literal_none_to_nullable_column(alltypes):
         ibis.literal(None, dt.String(nullable=True)).name("nullable_string_column")
     )
     result = expr["nullable_string_column"].execute()
-    expected = pd.Series([None] * nrows, name="nullable_string_column")
+    expected = pd.Series([None] * nrows, dtype="str", name="nullable_string_column")
     tm.assert_series_equal(result, expected)
 
 
