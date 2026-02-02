@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import pandas.api.types as pdt
+from packaging.version import parse as vparse
 
 try:
     from pandas._config import using_string_dtype
@@ -64,10 +65,14 @@ class PandasType(NumpyType):
     def from_ibis(cls, dtype) -> np.dtype | pd.Ex:
         if using_string_dtype() and dtype.is_string():
             return str
-        elif dtype.is_timestamp() and dtype.timezone:
-            return pdt.DatetimeTZDtype("ns", dtype.timezone)
+        elif dtype.is_timestamp():
+            unit = "ns" if vparse(pd.__version__) < vparse("3") else "us"
+            if dtype.timezone:
+                return pdt.DatetimeTZDtype(unit, dtype.timezone)
+            else:
+                return np.dtype(f"datetime64[{unit}]")
         elif dtype.is_date():
-            return np.dtype("M8[s]")
+            return np.dtype("datetime64[s]")
         elif dtype.is_interval():
             return np.dtype(f"timedelta64[{dtype.unit.short}]")
         else:
