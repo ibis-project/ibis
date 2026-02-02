@@ -56,6 +56,12 @@ in
     PROJ_DIR = "${lib.getBin pkgs.proj}";
     PROJ_INCDIR = "${lib.getDev pkgs.proj}";
   });
+
+  watchdog = prev.watchdog.overrideAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
+      final.setuptools
+    ];
+  });
 })
 // lib.mapAttrs (name: spec: addBuildSystems prev.${name} spec) buildSystemOverrides
 // {
