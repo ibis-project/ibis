@@ -6,7 +6,6 @@ from typing import NamedTuple
 import pytest
 import sqlglot as sg
 import sqlglot.expressions as sge
-from packaging.version import parse as vparse
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -393,7 +392,7 @@ def test_schema_from_to_polars_schema():
 
 
 def test_schema_from_to_numpy_dtypes():
-    np = pytest.importorskip("np")
+    np = pytest.importorskip("numpy")
     numpy_dtypes = [
         ("a", np.dtype("int64")),
         ("b", np.dtype("str")),
@@ -441,8 +440,8 @@ def test_schema_from_to_pandas_dtypes():
     restored_dtypes = ibis_schema.to_pandas()
     expected_dtypes = [
         ("a", np.dtype("int64")),
-        ("b", np.dtype("object") if vparse(pd.__version__) < vparse("3") else str),
-        ("c", np.dtype("object") if vparse(pd.__version__) < vparse("3") else str),
+        ("b", pd.Series(dtype="str").dtype),
+        ("c", pd.Series(dtype="str").dtype),
         ("d", pd.DatetimeTZDtype(tz="US/Eastern", unit=_DEFAULT_DATETIME_RESOLUTION)),
     ]
     assert restored_dtypes == expected_dtypes
