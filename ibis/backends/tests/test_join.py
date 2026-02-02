@@ -90,13 +90,6 @@ def test_mutating_join(backend, batting, awards_players, how):
         .sort_by(result_order)
     )
 
-    # Cast expected columns to match result schema for comparison
-    for i, field in enumerate(result.schema):
-        if expected.schema.field(field.name).type != field.type:
-            expected = expected.set_column(
-                i, field.name, expected.column(field.name).cast(field.type)
-            )
-
     assert result.equals(expected)
 
 
