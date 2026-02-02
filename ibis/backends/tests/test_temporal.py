@@ -11,6 +11,7 @@ from operator import methodcaller
 import pytest
 import sqlglot as sg
 import toolz
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -1817,7 +1818,12 @@ def test_subsecond_cast_to_timestamp(con, dtype):
     raises=AssertionError,
     reason="clickhouse truncates the result",
 )
-@pytest.mark.notimpl(["druid"], reason="timezone doesn't match", raises=AssertionError)
+@pytest.mark.notimpl(
+    ["druid"],
+    condition=vparse(pd.__version__) < vparse("3"),
+    reason="timezone doesn't match",
+    raises=AssertionError,
+)
 @pytest.mark.notyet(
     ["pyspark"],
     reason="PySpark doesn't handle big timestamps",
