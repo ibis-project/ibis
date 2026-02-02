@@ -394,7 +394,7 @@ class Expr(Immutable, Coercible):
         0       Adelie  Torgersen            39.1  ...       3750.0    male  2007
         1       Adelie  Torgersen            39.5  ...       3800.0  female  2007
         2       Adelie  Torgersen            40.3  ...       3250.0  female  2007
-        3       Adelie  Torgersen             NaN  ...          NaN    None  2007
+        3       Adelie  Torgersen             NaN  ...          NaN     NaN  2007
         4       Adelie  Torgersen            36.7  ...       3450.0  female  2007
         ..         ...        ...             ...  ...          ...     ...   ...
         339  Chinstrap      Dream            55.8  ...       4000.0    male  2009
@@ -402,6 +402,7 @@ class Expr(Immutable, Coercible):
         341  Chinstrap      Dream            49.6  ...       3775.0    male  2009
         342  Chinstrap      Dream            50.8  ...       4100.0    male  2009
         343  Chinstrap      Dream            50.2  ...       3775.0  female  2009
+        <BLANKLINE>
         [344 rows x 8 columns]
 
         Scalar parameters can be supplied dynamically during execution.
