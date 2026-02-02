@@ -4,7 +4,6 @@ from datetime import time
 from decimal import Decimal
 
 import pytest
-from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -16,7 +15,12 @@ np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
 
-from ibis.formats.pandas import PandasData, PandasSchema, PandasType  # noqa: E402
+from ibis.formats.pandas import (  # noqa: E402
+    _DEFAULT_DATETIME_RESOLUTION,
+    PandasData,
+    PandasSchema,
+    PandasType,
+)
 
 
 @pytest.mark.parametrize(
@@ -37,12 +41,7 @@ from ibis.formats.pandas import PandasData, PandasSchema, PandasType  # noqa: E4
         (dt.boolean, np.dtype("bool")),
         (dt.date, np.dtype("datetime64[s]")),
         (dt.time, np.dtype("timedelta64[ns]")),
-        (
-            dt.timestamp,
-            np.dtype(
-                f"""datetime64['{"ns" if vparse(pd.__version__) < vparse("3") else "us"}']"""
-            ),
-        ),
+        (dt.timestamp, np.dtype(f"datetime64[{_DEFAULT_DATETIME_RESOLUTION}]")),
         (dt.Interval("s"), np.dtype("timedelta64[s]")),
         (dt.Interval("ms"), np.dtype("timedelta64[ms]")),
         (dt.Interval("us"), np.dtype("timedelta64[us]")),
@@ -369,7 +368,7 @@ def test_schema_from_dataframe_with_array_column():
                 pd.Timedelta("-1 days 2 min 3us"),
                 pd.Timedelta("-2 days +23:57:59.999997"),
             ],
-            f"""interval('{"ns" if vparse(pd.__version__) < vparse("3") else "us"}')""",
+            f"interval('{_DEFAULT_DATETIME_RESOLUTION}')",
             id="interval",
         ),
         param(

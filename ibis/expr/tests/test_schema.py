@@ -414,6 +414,9 @@ def test_schema_from_to_numpy_dtypes():
 def test_schema_from_to_pandas_dtypes():
     np = pytest.importorskip("numpy")
     pd = pytest.importorskip("pandas")
+
+    from ibis.formats.pandas import _DEFAULT_DATETIME_RESOLUTION
+
     pandas_schema = pd.Series(
         [
             ("a", np.dtype("int64")),
@@ -440,13 +443,7 @@ def test_schema_from_to_pandas_dtypes():
         ("a", np.dtype("int64")),
         ("b", np.dtype("object") if vparse(pd.__version__) < vparse("3") else str),
         ("c", np.dtype("object") if vparse(pd.__version__) < vparse("3") else str),
-        (
-            "d",
-            pd.DatetimeTZDtype(
-                tz="US/Eastern",
-                unit="ns" if vparse(pd.__version__) < vparse("3") else "us",
-            ),
-        ),
+        ("d", pd.DatetimeTZDtype(tz="US/Eastern", unit=_DEFAULT_DATETIME_RESOLUTION)),
     ]
     assert restored_dtypes == expected_dtypes
 

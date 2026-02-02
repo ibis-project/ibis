@@ -35,6 +35,8 @@ if TYPE_CHECKING:
     import pyarrow as pa
     from pandas.api.extensions import ExtensionDtype
 
+_DEFAULT_DATETIME_RESOLUTION = "ns" if vparse(pd.__version__) < vparse("3") else "us"
+
 geospatial_supported = _find_spec("geopandas") is not None
 
 
@@ -66,11 +68,10 @@ class PandasType(NumpyType):
         if using_string_dtype() and dtype.is_string():
             return pd.StringDtype(na_value=np.nan)
         elif dtype.is_timestamp():
-            unit = "ns" if vparse(pd.__version__) < vparse("3") else "us"
             if dtype.timezone:
-                return pdt.DatetimeTZDtype(unit, dtype.timezone)
+                return pdt.DatetimeTZDtype(_DEFAULT_DATETIME_RESOLUTION, dtype.timezone)
             else:
-                return np.dtype(f"datetime64[{unit}]")
+                return np.dtype(f"datetime64[{_DEFAULT_DATETIME_RESOLUTION}]")
         elif dtype.is_date():
             return np.dtype("datetime64[s]")
         elif dtype.is_interval():
