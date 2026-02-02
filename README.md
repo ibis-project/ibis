@@ -159,7 +159,7 @@ Ibis supports more than 20 backends:
 - [SQLite](https://ibis-project.org/backends/sqlite/)
 - [Snowflake](https://ibis-project.org/backends/snowflake)
 - [Trino](https://ibis-project.org/backends/trino/)
-
+- [Db2](https://ibis-project.org/backends/db2/)
 ## How it works
 
 Most Python dataframes are tightly coupled to their execution engine. And many databases only support SQL, with no Python API. Ibis solves this problem by providing a common API for data manipulation in Python, and compiling that API into the backend’s native language. This means you can learn a single API and use it across any supported backend (execution engine).

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 from typing import TYPE_CHECKING, Any
+from urllib.parse import unquote_plus
 
 import sqlglot as sg
 
@@ -18,6 +19,7 @@ from ibis.backends.db2.datatypes import DB2PandasData, parse_db2_type, ibis_type
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     from typing_extensions import Self
@@ -119,6 +121,38 @@ class Backend(SQLBackend):
             raise exc.OperationNotDefinedError(
                 f"Failed to connect to DB2: {e}"
             ) from e
+
+    def _from_url(self, url: ParseResult, **kwarg_overrides):
+        """Create a DB2 backend from a URL.
+        
+        Parameters
+        ----------
+        url : ParseResult
+            Parsed URL object
+        **kwarg_overrides
+            Additional keyword arguments to override URL parameters
+            
+        Returns
+        -------
+        Self
+            Connected DB2 backend instance
+        """
+        kwargs = {}
+        database, *schema = url.path[1:].split("/", 1)
+        if url.username:
+            kwargs["username"] = url.username
+        if url.password:
+            kwargs["password"] = unquote_plus(url.password)
+        if url.hostname:
+            kwargs["hostname"] = url.hostname
+        if database:
+            kwargs["database"] = database
+        if url.port:
+            kwargs["port"] = url.port
+        if schema:
+            kwargs["schema"] = schema[0]
+        kwargs.update(kwarg_overrides)
+        return self.connect(**kwargs)
 
     def disconnect(self) -> None:
         """Disconnect from the database."""
