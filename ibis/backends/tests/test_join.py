@@ -7,13 +7,12 @@ from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
-import pyarrow as pa
-import pyarrow.compute as pc
-
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 
 np = pytest.importorskip("numpy")
+pa = pytest.importorskip("pyarrow")
+pc = pytest.importorskip("pyarrow.compute")
 pd = pytest.importorskip("pandas")
 
 sqlite_right_or_full_mark = pytest.mark.notyet(
@@ -59,7 +58,7 @@ def check_eq(left, right, how, **kwargs):
     ],
 )
 @pytest.mark.notimpl(["druid"])
-def test_mutating_join(backend, batting, awards_players, how):
+def test_mutating_join(batting, awards_players, how):
     left = batting.filter(batting.yearID == 2015)
     right = awards_players.filter(awards_players.lgID == "NL").drop("yearID", "lgID")
 
@@ -74,18 +73,29 @@ def test_mutating_join(backend, batting, awards_players, how):
         result = expr.to_pyarrow().select(cols).sort_by(result_order)
     else:
         t = expr.to_pyarrow()
-        pid = pc.if_else(
+        player_id = pc.if_else(
             pc.is_valid(t.column("playerID")),
             t.column("playerID"),
             t.column("playerID_right"),
         )
-        t = t.set_column(t.schema.get_field_index("playerID"), "playerID", pid)
+        t = t.set_column(t.schema.get_field_index("playerID"), "playerID", player_id)
         t = t.drop("playerID_right")
         result = t.select(cols).sort_by(result_order)
 
-    how_pa = "full outer" if how == "outer" else f"{how} outer" if how in ("left", "right") else how
+    if how == "outer":
+        join_type = "full outer"
+    elif how in ("left", "right"):
+        join_type = f"{how} outer"
+    else:
+        join_type = how
     expected = (
-        left_t.join(right_t, keys="playerID", join_type=how_pa, right_suffix="_y", left_suffix="_x")
+        left_t.join(
+            right_t,
+            keys="playerID",
+            join_type=join_type,
+            right_suffix="_y",
+            left_suffix="_x",
+        )
         .select(cols)
         .sort_by(result_order)
     )
