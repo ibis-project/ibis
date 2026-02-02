@@ -1602,6 +1602,7 @@ TIMESTAMP_BACKEND_TYPES = {
     "risingwave": "timestamp without time zone",
     "flink": "TIMESTAMP(6) NOT NULL",
     "databricks": "timestamp",
+    "materialize": "timestamp without time zone",
 }
 
 
