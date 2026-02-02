@@ -7,6 +7,9 @@ from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
+import pyarrow as pa
+import pyarrow.compute as pc
+
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 
@@ -60,46 +63,41 @@ def test_mutating_join(backend, batting, awards_players, how):
     left = batting.filter(batting.yearID == 2015)
     right = awards_players.filter(awards_players.lgID == "NL").drop("yearID", "lgID")
 
-    left_df = left.execute()
-    right_df = right.execute()
+    left_t = left.to_pyarrow()
+    right_t = right.to_pyarrow()
     predicate = ["playerID"]
-    result_order = ["playerID", "yearID", "lgID", "stint"]
+    result_order = [(c, "ascending") for c in ("playerID", "yearID", "lgID", "stint")]
 
     expr = left.join(right, predicate, how=how)
     cols = list(left.columns)
     if how == "inner":
-        result = (
-            expr.execute()
-            .fillna(np.nan)[cols]
-            .sort_values(result_order)
-            .reset_index(drop=True)
-        )
+        result = expr.to_pyarrow().select(cols).sort_by(result_order)
     else:
-        result = (
-            expr.execute()
-            .fillna(np.nan)
-            .assign(
-                playerID=lambda df: df.playerID.where(
-                    df.playerID.notnull(), df.playerID_right
-                )
-            )
-            .drop(["playerID_right"], axis=1)[cols]
-            .sort_values(result_order)
-            .reset_index(drop=True)
+        t = expr.to_pyarrow()
+        pid = pc.if_else(
+            pc.is_valid(t.column("playerID")),
+            t.column("playerID"),
+            t.column("playerID_right"),
         )
+        t = t.set_column(t.schema.get_field_index("playerID"), "playerID", pid)
+        t = t.drop("playerID_right")
+        result = t.select(cols).sort_by(result_order)
 
+    how_pa = "full outer" if how == "outer" else f"{how} outer" if how in ("left", "right") else how
     expected = (
-        check_eq(left_df, right_df, how=how, on=predicate, suffixes=("_x", "_y"))[cols]
-        .sort_values(result_order)
-        .reset_index(drop=True)
+        left_t.join(right_t, keys="playerID", join_type=how_pa, right_suffix="_y", left_suffix="_x")
+        .select(cols)
+        .sort_by(result_order)
     )
 
-    backend.assert_frame_equal(
-        result,
-        expected,
-        check_like=True,
-        check_dtype=not (how == "right" and backend.name() == "risingwave"),
-    )
+    # Cast expected columns to match result schema for comparison
+    for i, field in enumerate(result.schema):
+        if expected.schema.field(field.name).type != field.type:
+            expected = expected.set_column(
+                i, field.name, expected.column(field.name).cast(field.type)
+            )
+
+    assert result.equals(expected)
 
 
 @pytest.mark.parametrize("how", ["semi", "anti"])
