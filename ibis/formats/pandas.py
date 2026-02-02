@@ -64,7 +64,7 @@ class PandasType(NumpyType):
     @classmethod
     def from_ibis(cls, dtype) -> np.dtype | pd.Ex:
         if using_string_dtype() and dtype.is_string():
-            return str
+            return pd.StringDtype(na_value=np.nan)
         elif dtype.is_timestamp():
             unit = "ns" if vparse(pd.__version__) < vparse("3") else "us"
             if dtype.timezone:
