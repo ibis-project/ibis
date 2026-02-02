@@ -155,7 +155,7 @@ notebook-shim==0.2.4
 numpy==2.2.6 ; python_full_version < '3.11'
 numpy==2.4.1 ; python_full_version >= '3.11'
 oauthlib==3.3.1
-oracledb==3.4.1
+oracledb==3.4.2
 orjson==3.11.5 ; platform_python_implementation != 'PyPy'
 overrides==7.7.0 ; python_full_version < '3.12'
 packaging==26.0
