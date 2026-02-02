@@ -37,7 +37,12 @@ from ibis.formats.pandas import PandasData, PandasSchema, PandasType  # noqa: E4
         (dt.boolean, np.dtype("bool")),
         (dt.date, np.dtype("datetime64[s]")),
         (dt.time, np.dtype("timedelta64[ns]")),
-        (dt.timestamp, np.dtype("datetime64[ns]")),
+        (
+            dt.timestamp,
+            np.dtype(
+                f"""datetime64['{"ns" if vparse(pd.__version__) < vparse("3") else "us"}']"""
+            ),
+        ),
         (dt.Interval("s"), np.dtype("timedelta64[s]")),
         (dt.Interval("ms"), np.dtype("timedelta64[ms]")),
         (dt.Interval("us"), np.dtype("timedelta64[us]")),
