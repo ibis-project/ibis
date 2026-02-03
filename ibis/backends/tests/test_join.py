@@ -79,7 +79,7 @@ def test_mutating_join(batting, awards_players, how):
             t.column("playerID_right"),
         )
         t = t.set_column(t.schema.get_field_index("playerID"), "playerID", player_id)
-        t = t.drop("playerID_right")
+        t = t.drop(["playerID_right"])
         result = t.select(cols).sort_by(result_order)
 
     if how == "outer":
