@@ -234,13 +234,14 @@ class MaterializeCompiler(PostgresCompiler):
             .order_by(order_expr)
         )
         # Cast both branches to the same type to avoid CASE type mismatch
+        dtype = op.dtype
         return self.if_(
             sg.and_(
                 self.f.nullif(step, zero_value(step_dtype)).is_(sg.not_(NULL)),
                 _sign(step, step_dtype).eq(_sign(stop - start, step_dtype)),
             ),
-            self.cast(array_result, op.dtype),
-            self.cast(self.f.array(), op.dtype),
+            self.cast(array_result, dtype),
+            self.cast(self.f.array(), dtype),
         )
 
     visit_IntegerRange = visit_TimestampRange = visit_Range
@@ -273,8 +274,7 @@ class MaterializeCompiler(PostgresCompiler):
 
         # Apply timezone if specified
         if (timezone := op.dtype.timezone) is not None:
-            result = self.f.timezone(timezone, result)
-
+            return self.f.timezone(timezone, result)
         return result
 
     def visit_DateFromYMD(self, op, *, year, month, day):
