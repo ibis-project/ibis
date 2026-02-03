@@ -18,6 +18,7 @@ import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
 from ibis.backends.tests.errors import (
+    ArrowInvalid,
     ArrowTypeError,
     ClickHouseDatabaseError,
     ExaQueryError,
@@ -1416,6 +1417,7 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 @pytest.mark.notyet(
     ["druid"], raises=PyDruidProgrammingError, reason="doesn't support a binary type"
 )
+@pytest.mark.notyet(["materialize"], raises=ArrowInvalid, reason="Invalid UTF8 payload")
 def test_memtable_from_geopandas_dataframe(con, data_dir):
     gpd = pytest.importorskip("geopandas")
     gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")[:5]
