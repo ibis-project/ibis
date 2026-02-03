@@ -38,13 +38,13 @@ class OracleCompiler(SQLGlotCompiler):
 
     post_rewrites = (split_select_distinct_with_order_by,)
 
-    NAN = sge.Literal.number("binary_double_nan")
+    NAN = sge.to_identifier("binary_double_nan")
     """Backend's NaN literal."""
 
-    POS_INF = sge.Literal.number("binary_double_infinity")
+    POS_INF = sge.to_identifier("binary_double_infinity")
     """Backend's positive infinity literal."""
 
-    NEG_INF = sge.Literal.number("-binary_double_infinity")
+    NEG_INF = -POS_INF
     """Backend's negative infinity literal."""
 
     LOWERED_OPS = {
