@@ -32,15 +32,15 @@ def test_distinct_on_with_null_order_by_values(con):
             ts TIMESTAMP
         );
     """)
-    con.raw_sql("""
-        INSERT INTO test_distinct_nulls VALUES
-            ('A', 10, '2024-01-01'::TIMESTAMP),
-            ('A', 20, NULL),
-            ('B', 15, NULL),
-            ('B', 25, '2024-01-02'::TIMESTAMP);
-    """)
 
     try:
+        con.raw_sql("""
+            INSERT INTO test_distinct_nulls VALUES
+                ('A', 10, '2024-01-01'::TIMESTAMP),
+                ('A', 20, NULL),
+                ('B', 15, NULL),
+                ('B', 25, '2024-01-02'::TIMESTAMP);
+        """)
         t = con.table("test_distinct_nulls")
 
         # DISTINCT ON with NULL values in order column
@@ -68,15 +68,15 @@ def test_distinct_on_with_multiple_order_by_columns(con):
             name TEXT
         );
     """)
-    con.raw_sql("""
-        INSERT INTO test_distinct_multi_order VALUES
-            ('A', 100, 1, 'first'),
-            ('A', 100, 2, 'second'),
-            ('B', 200, 1, 'third'),
-            ('B', 200, 1, 'fourth');
-    """)
-
     try:
+        con.raw_sql("""
+            INSERT INTO test_distinct_multi_order VALUES
+                ('A', 100, 1, 'first'),
+                ('A', 100, 2, 'second'),
+                ('B', 200, 1, 'third'),
+                ('B', 200, 1, 'fourth');
+        """)
+
         t = con.table("test_distinct_multi_order")
 
         # DISTINCT ON with multiple sort columns
@@ -128,14 +128,14 @@ def test_distinct_on_all_same_category(con):
             name TEXT
         );
     """)
-    con.raw_sql("""
-        INSERT INTO test_distinct_same VALUES
-            ('A', 10, 'first'),
-            ('A', 20, 'second'),
-            ('A', 30, 'third');
-    """)
 
     try:
+        con.raw_sql("""
+            INSERT INTO test_distinct_same VALUES
+                ('A', 10, 'first'),
+                ('A', 20, 'second'),
+                ('A', 30, 'third');
+        """)
         t = con.table("test_distinct_same")
         expr = t.order_by(ibis.desc(t.value)).distinct(on="category", keep="first")
         result = con.execute(expr)
