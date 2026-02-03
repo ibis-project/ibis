@@ -520,5 +520,27 @@ class MaterializeCompiler(PostgresCompiler):
             NULL,
         )
 
+    def visit_RPad(self, op, *, arg, length, pad):
+        """Materialize doesn't support RPAD directly."""
+        arg_length = self.f.length(arg)
+        pad_length = self.f.length(pad)
+        return self.if_(
+            (arg_length >= length).or_(pad_length.eq(0)),
+            arg,
+            self.f.concat(
+                arg,
+                self.f.left(
+                    self.f.repeat(
+                        pad,
+                        self.cast(
+                            (length - arg_length + pad_length - 1) / pad_length,
+                            dt.int32,
+                        ),
+                    ),
+                    length - arg_length,
+                ),
+            ),
+        )
+
 
 compiler = MaterializeCompiler()

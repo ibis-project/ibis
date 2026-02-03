@@ -461,11 +461,6 @@ def uses_java_re(t):
             lambda t: t.string_col.rpad(10, "a"),
             lambda t: t.string_col.str.pad(10, fillchar="a", side="right"),
             id="rpad",
-            marks=pytest.mark.notimpl(
-                ["materialize"],
-                raises=PsycoPg2InternalError,
-                reason="rpad function does not exist in Materialize",
-            ),
         ),
         param(
             lambda t: t.string_col.find_in_set(["1"]),
@@ -1193,11 +1188,6 @@ def string_temp_table(backend, con):
             lambda t: t.str.pad(4, side="right", fillchar="-"),
             id="rpad",
             marks=[
-                pytest.mark.notimpl(
-                    ["materialize"],
-                    raises=PsycoPg2InternalError,
-                    reason="rpad function does not exist in Materialize",
-                ),
                 pytest.mark.notyet(
                     ["oracle"],
                     raises=AssertionError,
@@ -1215,11 +1205,6 @@ def string_temp_table(backend, con):
             lambda t: t.str.pad(8, side="right", fillchar="-"),
             id="rpad_gt",
             marks=[
-                pytest.mark.notimpl(
-                    ["materialize"],
-                    raises=PsycoPg2InternalError,
-                    reason="rpad function does not exist in Materialize",
-                ),
                 pytest.mark.notyet(
                     ["oracle"],
                     raises=AssertionError,
@@ -1479,21 +1464,11 @@ def string_temp_table_no_complications(backend, con):
             lambda t: t.string_col.rpad(4, "-"),
             lambda t: t.str.pad(4, side="right", fillchar="-"),
             id="rpad_lt",
-            marks=pytest.mark.notimpl(
-                ["materialize"],
-                raises=PsycoPg2InternalError,
-                reason="rpad function does not exist in Materialize",
-            ),
         ),
         param(
             lambda t: t.string_col.rpad(8, "-"),
             lambda t: t.str.pad(8, side="right", fillchar="-"),
             id="rpad_gt",
-            marks=pytest.mark.notimpl(
-                ["materialize"],
-                raises=PsycoPg2InternalError,
-                reason="rpad function does not exist in Materialize",
-            ),
         ),
         param(
             lambda t: t.string_col.lpad(4, "-"),
