@@ -137,7 +137,7 @@ class Project(Relation):
 
     @attribute
     def schema(self):
-        schema_dict = {k: v.dtype for k, v in self.values.items()}
+        schema_dict = FrozenOrderedDict({k: v.dtype for k, v in self.values.items()})
         return Schema._create_without_validation(schema_dict)
 
 
@@ -165,7 +165,7 @@ class DropColumns(Relation):
         schema = self.parent.schema.fields.copy()
         for column in self.columns_to_drop:
             del schema[column]
-        return Schema._create_without_validation(schema)
+        return Schema._create_without_validation(FrozenOrderedDict(schema))
 
     @attribute
     def values(self):
@@ -257,7 +257,7 @@ class JoinChain(Relation):
     @attribute
     def schema(self):
         return Schema._create_without_validation(
-            {k: v.dtype.copy(nullable=True) for k, v in self.values.items()}
+            FrozenOrderedDict({k: v.dtype.copy(nullable=True) for k, v in self.values.items()})
         )
 
     def to_expr(self):
@@ -336,7 +336,7 @@ class Aggregate(Relation):
     @attribute
     def schema(self):
         return Schema._create_without_validation(
-            {k: v.dtype for k, v in self.values.items()}
+            FrozenOrderedDict({k: v.dtype for k, v in self.values.items()})
         )
 
 
@@ -476,7 +476,7 @@ class DummyTable(Relation):
     @attribute
     def schema(self):
         return Schema._create_without_validation(
-            {k: v.dtype for k, v in self.values.items()}
+            FrozenOrderedDict({k: v.dtype for k, v in self.values.items()})
         )
 
 
@@ -531,7 +531,7 @@ class TableUnnest(Relation):
         if self.offset is not None:
             base[self.offset] = dt.int64
 
-        return Schema._create_without_validation(base)
+        return Schema._create_without_validation(FrozenOrderedDict(base))
 
 
 # TODO(kszucs): support t.select(*t) syntax by implementing Table.__iter__()
