@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import os
+import time
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -47,6 +49,25 @@ MZ_PORT = os.environ.get(
 MZ_DATABASE = os.environ.get(
     "IBIS_TEST_MATERIALIZE_DATABASE", os.environ.get("MZ_DATABASE", "materialize")
 )
+
+AUCTION_SUBSOURCES = ("accounts", "auctions", "bids", "organizations", "users")
+
+
+def _drop_auction_sources(con, source_name: str) -> None:
+    # Drop any existing auction subsources (they're created as sources).
+    for subsource in AUCTION_SUBSOURCES:
+        with contextlib.suppress(Exception):
+            con.raw_sql(f"DROP SOURCE IF EXISTS {subsource} CASCADE")
+
+    with contextlib.suppress(Exception):
+        con.drop_source(source_name, cascade=True, force=True)
+
+
+def _auction_source_name(request) -> str:
+    module_name = getattr(request.module, "__name__", "")
+    if module_name.endswith("test_subscribe"):
+        return "test_subscribe_auction"
+    return "test_auction_source"
 
 
 class TestConf(ServiceBackendTest):
@@ -137,6 +158,29 @@ def con(tmp_path_factory, data_dir, worker_id):
     """Session-scoped connection fixture."""
     with TestConf.load_data(data_dir, tmp_path_factory, worker_id) as be:
         yield be.connection
+
+
+@pytest.fixture(scope="module")
+def auction_source(con, request):
+    """Module-level AUCTION source for Materialize tests.
+
+    AUCTION creates subsources with fixed names (bids, auctions, accounts, etc.),
+    so we create one source per module to avoid conflicts.
+    """
+    source_name = _auction_source_name(request)
+
+    _drop_auction_sources(con, source_name)
+
+    con.create_source(
+        source_name, connector="AUCTION", properties={"TICK INTERVAL": "100ms"}
+    )
+
+    # Wait for initial data.
+    time.sleep(2.0)
+
+    yield source_name
+
+    _drop_auction_sources(con, source_name)
 
 
 @pytest.fixture(scope="module")

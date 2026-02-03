@@ -5,48 +5,7 @@ Tests cover streaming query functionality via SUBSCRIBE command.
 
 from __future__ import annotations
 
-import contextlib
-
 import pytest
-
-
-@pytest.fixture(scope="module")
-def auction_source(con):
-    """Module-level AUCTION source for subscribe tests.
-
-    AUCTION creates subsources with fixed names (bids, auctions, accounts, etc.),
-    so we create one source for all tests in this module to avoid conflicts.
-    """
-    import time
-
-    source_name = "test_subscribe_auction"
-
-    # Drop any existing auction subsources (they're created as sources)
-    for subsource in ["accounts", "auctions", "bids", "organizations", "users"]:
-        with contextlib.suppress(Exception):
-            con.raw_sql(f"DROP SOURCE IF EXISTS {subsource} CASCADE")
-
-    # Drop the main source if it exists
-    with contextlib.suppress(Exception):
-        con.drop_source(source_name, cascade=True, force=True)
-
-    # Create the source
-    con.create_source(
-        source_name, connector="AUCTION", properties={"TICK INTERVAL": "100ms"}
-    )
-
-    # Wait for initial data
-    time.sleep(2.0)
-
-    yield source_name
-
-    # Cleanup after all tests - drop subsources first
-    for subsource in ["accounts", "auctions", "bids", "organizations", "users"]:
-        with contextlib.suppress(Exception):
-            con.raw_sql(f"DROP SOURCE IF EXISTS {subsource} CASCADE")
-
-    with contextlib.suppress(Exception):
-        con.drop_source(source_name, cascade=True, force=True)
 
 
 class TestSubscribe:
