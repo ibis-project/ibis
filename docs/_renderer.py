@@ -68,12 +68,16 @@ class Renderer(qd.MdRenderer):
 
                 # remove the quartodoc markers from the rendered code
                 result.append(
-                    first.replace(f"# {quartodoc_skip_doctest}", "")
+                    first.removeprefix(prompt)
+                    .replace(f"# {quartodoc_skip_doctest}", "")
                     .replace(quartodoc_skip_doctest, "")
                     .replace(f"# {expect_failure}", "")
                     .replace(expect_failure, "")
                 )
-                result.extend(rest)
+                result.extend(
+                    line.removeprefix(prompt).removeprefix(continuation)
+                    for line in rest
+                )
                 result.append("```\n")
 
                 if not skipped:
