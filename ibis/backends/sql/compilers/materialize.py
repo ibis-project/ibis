@@ -84,7 +84,7 @@ class MaterializeCompiler(PostgresCompiler):
         """
         # Use array_length with dimension 1 for standard arrays
         # Use Anonymous to prevent sqlglot from transforming the function name
-        return sge.Anonymous(this="array_length", expressions=[arg, sge.convert(1)])
+        return self.f.anon.array_length(arg, 1)
 
     def visit_ArrayRemove(self, op, *, arg, other):
         """Compile ArrayRemove operation.
@@ -101,7 +101,7 @@ class MaterializeCompiler(PostgresCompiler):
         """
         i = sg.to_identifier("i")
         # Use array_length(array, 1) instead of cardinality
-        length = sge.Anonymous(this="array_length", expressions=[arg, sge.convert(1)])
+        length = self.f.anon.array_length(arg, 1)
         return self.f.array(
             sg.select(arg[i % length + 1])
             .from_(self.f.generate_series(0, length * times - 1).as_(i.name))
@@ -138,9 +138,7 @@ class MaterializeCompiler(PostgresCompiler):
         Converts 0-based Ibis index to 1-based Materialize/PostgreSQL index.
         """
         # Use array_length(array, 1) instead of cardinality
-        arg_length = sge.Anonymous(
-            this="array_length", expressions=[arg, sge.convert(1)]
-        )
+        arg_length = self.f.anon.array_length(arg, 1)
         # Convert 0-based index to 1-based:
         # - For negative index: array_length + (index + 1), e.g., -1 -> length
         # - For positive index: index + 1, e.g., 0 -> 1
@@ -159,9 +157,7 @@ class MaterializeCompiler(PostgresCompiler):
         neg_to_pos_index = lambda n, index: self.if_(index < 0, n + index, index)
 
         # Use array_length(array, 1) instead of cardinality
-        arg_length = sge.Anonymous(
-            this="array_length", expressions=[arg, sge.convert(1)]
-        )
+        arg_length = self.f.anon.array_length(arg, 1)
 
         if start is None:
             start = 0
