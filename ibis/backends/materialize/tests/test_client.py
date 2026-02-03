@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 
+import pandas as pd
 import pytest
 import sqlglot as sg
 from pytest import param
@@ -92,12 +93,7 @@ class TestMaterializeClient:
 
 
 @pytest.mark.parametrize(
-    "table_name",
-    [
-        "functional_alltypes",
-        "batting",
-        "awards_players",
-    ],
+    "table_name", ["functional_alltypes", "batting", "awards_players"]
 )
 def test_load_data(con, table_name):
     """Test that test data was loaded successfully."""
@@ -106,7 +102,8 @@ def test_load_data(con, table_name):
     assert len(result) == 1
 
 
-def test_schema_introspection_no_unnest_error(con, alltypes):  # noqa: ARG001
+@pytest.mark.usefixtures("alltypes")
+def test_schema_introspection_no_unnest_error(con):
     """Test that schema introspection doesn't hit unnest() ambiguity error.
 
     This is the second critical workaround - Materialize's unnest() function
@@ -114,17 +111,7 @@ def test_schema_introspection_no_unnest_error(con, alltypes):  # noqa: ARG001
     ANY(array) syntax. Our get_schema() override fixes this.
     """
     # This should not raise "function unnest(unknown) is not unique" error
-    schema = con.get_schema("functional_alltypes")
-    assert schema is not None
-    assert len(schema) > 0
-
-
-def test_connect_with_schema(con):
-    """Test that connecting with a specific schema works."""
-    # Materialize should handle schema parameter
-    # (though implementation may differ from PostgreSQL)
-    # Connection already tested via fixtures
-    assert con is not None
+    assert len(con.get_schema("functional_alltypes"))
 
 
 class TestMaterializeSpecific:
@@ -156,11 +143,6 @@ class TestMaterializeSpecific:
 
         # If we got here, the workaround is working
         assert True
-
-
-def test_table(alltypes):
-    """Test that table returns correct type."""
-    assert isinstance(alltypes, ibis.expr.types.Table)
 
 
 def test_array_execute(alltypes):
@@ -229,7 +211,7 @@ def test_create_and_drop_table(con, temp_table):
 @pytest.mark.parametrize(
     ("pg_type", "expected_type"),
     [
-        param(pg_type, ibis_type, id=pg_type.lower())
+        param(pg_type, ibis_type, id=pg_type)
         for (pg_type, ibis_type) in [
             ("boolean", dt.boolean),
             ("bytea", dt.binary),
@@ -256,11 +238,13 @@ def test_get_schema_from_query(con, pg_type, expected_type):
     name = sg.table(gen_name("materialize_temp_table"), quoted=True)
     with con.begin() as c:
         c.execute(f"CREATE TABLE {name} (x {pg_type}, y {pg_type}[])")
-    expected_schema = ibis.schema(dict(x=expected_type, y=dt.Array(expected_type)))
-    result_schema = con._get_schema_using_query(f"SELECT x, y FROM {name}")
-    assert result_schema == expected_schema
-    with con.begin() as c:
-        c.execute(f"DROP TABLE {name}")
+    try:
+        expected_schema = ibis.schema(dict(x=expected_type, y=dt.Array(expected_type)))
+        result_schema = con._get_schema_using_query(f"SELECT x, y FROM {name}")
+        assert result_schema == expected_schema
+    finally:
+        with con.begin() as c:
+            c.execute(f"DROP TABLE {name}")
 
 
 def test_insert_with_cte(con):
@@ -287,7 +271,6 @@ def test_raw_sql(con):
 
 def test_create_table_from_dataframe(con):
     """Test creating table from pandas DataFrame."""
-    import pandas as pd
 
     df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
     name = gen_name("df_table")
@@ -398,6 +381,7 @@ def test_current_database(con):
     assert current_db == "public"
 
 
+@pytest.mark.usefixtures("alltypes")
 def test_exists_table(con):
     """Test checking if table exists."""
     # Test existing table
