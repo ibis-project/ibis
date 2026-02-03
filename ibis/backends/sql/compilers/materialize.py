@@ -114,9 +114,7 @@ class MaterializeCompiler(PostgresCompiler):
         Use unnest and array_agg with DISTINCT to get unique elements.
         """
         # Materialize supports ARRAY(SELECT DISTINCT UNNEST(array))
-        return self.f.array(
-            sge.Select(expressions=[sge.Distinct(expressions=[self.f.unnest(arg)])])
-        )
+        return self.f.array(sg.select(self.f.unnest(arg)).distinct())
 
     def visit_ArrayUnion(self, op, *, left, right):
         """Compile ArrayUnion operation.
@@ -125,11 +123,7 @@ class MaterializeCompiler(PostgresCompiler):
         """
         # Use array_cat to concatenate, then get distinct elements
         concatenated = self.f.array_cat(left, right)
-        return self.f.array(
-            sge.Select(
-                expressions=[sge.Distinct(expressions=[self.f.unnest(concatenated)])]
-            )
-        )
+        return self.f.array(sg.select(self.f.unnest(concatenated)).distinct())
 
     def visit_ArrayIndex(self, op, *, arg, index):
         """Compile ArrayIndex operation.
