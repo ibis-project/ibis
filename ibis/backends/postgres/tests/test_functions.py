@@ -829,7 +829,7 @@ def test_null_column_union(alltypes, df):
             pd.concat(
                 [
                     df[["double_col"]],
-                    pd.DataFrame({"string_col": [None] * nrows}),
+                    pd.DataFrame({"string_col": [None] * nrows}, dtype="str"),
                 ],
                 axis=1,
             ),
