@@ -503,6 +503,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "druid",
         "databricks",  # feels a bit weird given it's their format ¯\_(ツ)_/¯
         "athena",
+        "materialize",
     ],
     raises=NotImplementedError,
     reason="read_delta not yet implemented",
