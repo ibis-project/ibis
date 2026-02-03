@@ -329,7 +329,7 @@ def test_regexp(con, expr, expected):
     ],
 )
 def test_regexp_extract(con, expr, expected):
-    assert con.execute(expr) == expected
+    assert con.to_pyarrow(expr).as_py() == expected
 
 
 @pytest.mark.parametrize(
