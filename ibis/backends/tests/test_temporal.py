@@ -1603,14 +1603,10 @@ TIMESTAMP_BACKEND_TYPES = {
     "risingwave": "timestamp without time zone",
     "flink": "TIMESTAMP(6) NOT NULL",
     "databricks": "timestamp",
+    "materialize": "timestamp without time zone",
 }
 
 
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=PsycoPgInternalError,
-    reason="Materialize doesn't have make_timestamp() function - backend limitation",
-)
 @pytest.mark.notimpl(
     ["pyspark", "mysql", "singlestoredb", "exasol", "oracle", "databricks"],
     raises=com.OperationNotDefinedError,
