@@ -14,6 +14,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     OracleDatabaseError,
     PsycoPg2InternalError,
+    PsycoPgInternalError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
 )
@@ -40,6 +41,7 @@ pd = pytest.importorskip("pandas")
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(6) NOT NULL",
                 "databricks": "string",
             },
@@ -58,6 +60,7 @@ pd = pytest.importorskip("pandas")
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(7) NOT NULL",
                 "databricks": "string",
             },
@@ -88,6 +91,7 @@ pd = pytest.importorskip("pandas")
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(7) NOT NULL",
                 "databricks": "string",
             },
@@ -635,6 +639,12 @@ def uses_java_re(t):
         ),
     ],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 def test_string(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes).name("tmp")
     result = expr.execute()
@@ -700,6 +710,12 @@ def test_string(backend, alltypes, df, result_func, expected_func):
             ],
         ),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 def test_substring(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes.date_string_col).name("tmp")
@@ -819,6 +835,12 @@ def test_substr_with_null_values(backend, alltypes, df):
         "databricks",
     ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="URL parsing functions not yet implemented for Materialize",
+    # See: https://materialize.com/docs/sql/functions/#string
 )
 def test_parse_url(con, result_func, expected):
     url = "http://user:pass@example.com:80/docs/books/tutorial/index.html?name=networking#DOWNLOADING"
@@ -943,13 +965,19 @@ def test_multiple_subs(con):
         "sqlite",
         "flink",
         "exasol",
+        "materialize",
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have levenshtein() function - backend limitation",
+)
+@pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
-    reason="function levenshtein(character varying, character varying) does not exist",
+    reason="Risingwave doesn't have levenshtein() function - backend limitation",
 )
 @pytest.mark.parametrize(
     "right", ["sitting", ibis.literal("sitting")], ids=["python", "ibis"]
@@ -1286,6 +1314,7 @@ def string_temp_table(backend, con):
                         "clickhouse",
                         "datafusion",
                         "duckdb",
+                        "materialize",
                         "mysql",
                         "singlestoredb",
                         "postgres",

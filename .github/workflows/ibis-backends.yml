@@ -173,6 +173,12 @@ jobs:
             sys-deps:
               - libgeos-dev
               - libpq5
+          - name: materialize
+            title: Materialize
+            services:
+              - materialize
+            extras:
+              - --extra materialize
           - name: risingwave
             title: RisingWave
             serial: true
@@ -348,6 +354,14 @@ jobs:
               sys-deps:
                 - libgeos-dev
                 - libpq5
+          - os: windows-latest
+            backend:
+              name: materialize
+              title: Materialize
+              services:
+                - materialize
+              extras:
+                - --extra materialize
           - os: windows-latest
             backend:
               name: risingwave

@@ -12,6 +12,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     MySQLProgrammingError,
     PsycoPg2InternalError,
+    PsycoPgSyntaxError,
     Py4JJavaError,
     PySparkUnsupportedOperationException,
     SingleStoreDBOperationalError,
@@ -71,7 +72,9 @@ NO_STRUCT_SUPPORT_MARKS = [
     pytest.mark.never(
         ["mysql", "singlestoredb", "sqlite", "mssql"], reason="No struct support"
     ),
-    pytest.mark.notyet(["impala"]),
+    pytest.mark.notyet(
+        ["impala", "materialize"], reason="Backend doesn't yet support struct types"
+    ),
     pytest.mark.notimpl(["druid", "oracle", "exasol"]),
 ]
 NO_STRUCT_SUPPORT = combine_marks(NO_STRUCT_SUPPORT_MARKS)
@@ -82,7 +85,13 @@ NO_MAP_SUPPORT_MARKS = [
         reason="Unlikely to ever add map support",
     ),
     pytest.mark.notyet(
-        ["bigquery", "impala"], reason="Backend doesn't yet implement map types"
+        ["bigquery", "impala"],
+        reason="Backend doesn't yet implement map types",
+    ),
+    pytest.mark.notyet(
+        ["materialize"],
+        reason="Backend has limited map support",
+        strict=False,
     ),
     pytest.mark.notimpl(
         ["exasol", "polars", "druid", "oracle"],
@@ -120,6 +129,11 @@ NO_MERGE_SUPPORT_MARKS = [
         ["impala"],
         raises=ImpalaHiveServer2Error,
         reason="target table must be an Iceberg table",
+    ),
+    pytest.mark.notyet(
+        ["materialize"],
+        raises=PsycoPgSyntaxError,
+        reason="MERGE INTO is not supported",
     ),
     pytest.mark.notyet(
         ["mysql"], raises=MySQLProgrammingError, reason="MERGE INTO is not supported"
