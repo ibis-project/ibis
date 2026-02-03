@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:26.1.1.912-alpine
+    image: clickhouse/clickhouse-server:26.1.2.11-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -581,6 +581,25 @@ services:
     networks:
       - impala
 
+  materialize:
+    image: materialize/materialized:v26.7.0
+    ports:
+      - 6875:6875 # SQL port
+      - 6876:6876 # HTTP port
+      - 6874:6874 # Internal port
+    environment:
+      MZ_LOG: info
+      MZ_TELEMETRY: "false"
+      MZ_SYSTEM_PARAMETER_DEFAULT: "max_tables=1000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "localhost:6878/api/readyz"]
+      interval: 1s
+      start_period: 60s
+    volumes:
+      - materialize:/data
+    networks:
+      - materialize
+
   risingwave:
     image: ghcr.io/risingwavelabs/risingwave:v2.1.3
     command: "standalone --meta-opts=\" \
@@ -654,6 +673,7 @@ networks:
   oracle:
   exasol:
   flink:
+  materialize:
   risingwave:
   spark-connect:
 
@@ -667,5 +687,6 @@ volumes:
   singlestoredb:
   exasol:
   impala:
+  materialize:
   risingwave:
   spark-connect:

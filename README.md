@@ -146,6 +146,7 @@ Ibis supports 20 backends:
 - [ClickHouse](https://ibis-project.org/backends/clickhouse/)
 - [DuckDB](https://ibis-project.org/backends/duckdb/)
 - [Exasol](https://ibis-project.org/backends/exasol)
+- [Materialize](https://ibis-project.org/backends/materialize/)
 - [MySQL](https://ibis-project.org/backends/mysql/)
 - [Oracle](https://ibis-project.org/backends/oracle/)
 - [Polars](https://ibis-project.org/backends/polars/)

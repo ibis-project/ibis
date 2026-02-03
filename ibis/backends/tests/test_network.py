@@ -24,6 +24,7 @@ MACADDR_BACKEND_TYPE = {
     "risingwave": "text",
     "flink": "CHAR(17) NOT NULL",
     "databricks": "string",
+    "materialize": "text",
 }
 
 
@@ -55,6 +56,7 @@ def test_macaddr_literal(con, backend):
                 "impala": "127.0.0.1",
                 "postgres": "127.0.0.1",
                 "risingwave": "127.0.0.1",
+                "materialize": "127.0.0.1",
                 "pyspark": "127.0.0.1",
                 "mysql": "127.0.0.1",
                 "singlestoredb": "127.0.0.1",
@@ -74,6 +76,7 @@ def test_macaddr_literal(con, backend):
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(9) NOT NULL",
                 "databricks": "string",
             },
@@ -92,6 +95,7 @@ def test_macaddr_literal(con, backend):
                 "impala": "2001:db8::1",
                 "postgres": "2001:db8::1",
                 "risingwave": "2001:db8::1",
+                "materialize": "2001:db8::1",
                 "pyspark": "2001:db8::1",
                 "mysql": "2001:db8::1",
                 "singlestoredb": "2001:db8::1",
@@ -111,6 +115,7 @@ def test_macaddr_literal(con, backend):
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(11) NOT NULL",
                 "databricks": "string",
             },

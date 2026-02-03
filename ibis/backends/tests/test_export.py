@@ -295,6 +295,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
         "clickhouse",
         "datafusion",
         "impala",
+        "materialize",
         "mssql",
         "mysql",
         "singlestoredb",
@@ -387,6 +388,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
         "exasol",
         "flink",
         "impala",
+        "materialize",
         "mssql",
         "mysql",
         "singlestoredb",
@@ -443,6 +445,11 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             marks=[
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
+                pytest.mark.notyet(
+                    ["materialize"],
+                    raises=Exception,
+                    reason="precision must be 1-39, not 76",
+                ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
@@ -496,6 +503,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "druid",
         "databricks",  # feels a bit weird given it's their format ¯\_(ツ)_/¯
         "athena",
+        "materialize",
     ],
     raises=NotImplementedError,
     reason="read_delta not yet implemented",
@@ -698,6 +706,7 @@ mark_notyet_nulls = pytest.mark.notyet(
         "exasol",
         "flink",
         "impala",
+        "materialize",
         "mssql",
         "mysql",
         "singlestoredb",

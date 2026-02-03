@@ -18,6 +18,7 @@ import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
 from ibis.backends.tests.errors import (
+    ArrowInvalid,
     ArrowTypeError,
     ClickHouseDatabaseError,
     ExaQueryError,
@@ -27,6 +28,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PolarsInvalidOperationError,
     PsycoPg2InternalError,
+    PsycoPgInternalError,
     PsycoPgSyntaxError,
     Py4JJavaError,
     PyAthenaDatabaseError,
@@ -56,6 +58,7 @@ NULL_BACKEND_TYPES = {
     "trino": "unknown",
     "postgres": "null",
     "risingwave": "null",
+    "materialize": "null",
     "databricks": "void",
 }
 
@@ -98,6 +101,7 @@ BOOLEAN_BACKEND_TYPE = {
     "duckdb": "BOOLEAN",
     "postgres": "boolean",
     "risingwave": "boolean",
+    "materialize": "boolean",
     "flink": "BOOLEAN NOT NULL",
     "databricks": "boolean",
     "athena": "boolean",
@@ -208,6 +212,7 @@ def test_isna(backend, alltypes, col, value, filt):
                         "impala",
                         "postgres",
                         "risingwave",
+                        "materialize",
                         "mysql",
                         "singlestoredb",
                         "snowflake",
@@ -263,6 +268,11 @@ def test_coalesce(con, expr, expected):
 
 
 @pytest.mark.notimpl(["druid", "exasol"])
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=AssertionError,
+    reason="IS NOT DISTINCT FROM has behavioral differences in Materialize vs other backends.",
+)
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     df = sorted_df
@@ -594,6 +604,11 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     raises=com.OperationNotDefinedError,
     reason="random not supported",
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize will never support random() - nondeterministic functions can't be used in materialized views (their core feature)",
+)
 def test_order_by_random(alltypes):
     expr = alltypes.filter(_.id < 100).order_by(ibis.random()).limit(5)
     r1 = expr.execute()
@@ -850,6 +865,11 @@ def test_table_info_large(con):
                     raises=PolarsInvalidOperationError,
                     reason="type Float32 is incompatible with expected type Float64",
                 ),
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=com.OperationNotDefinedError,
+                    reason="SQL compilation error: Expected joined table, found star",
+                ),
             ],
             id="all_cols",
         ),
@@ -886,6 +906,11 @@ def test_table_info_large(con):
                     raises=PolarsInvalidOperationError,
                     reason="type Float32 is incompatible with expected type Float64",
                 ),
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=com.OperationNotDefinedError,
+                    reason="SQL compilation error: Expected joined table, found star",
+                ),
             ],
             id="numeric_col",
         ),
@@ -902,6 +927,11 @@ def test_table_info_large(con):
                     ["oracle"],
                     raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
+                ),
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=com.OperationNotDefinedError,
+                    reason="No support for mode",
                 ),
             ],
             id="string_col",
@@ -929,6 +959,7 @@ def test_table_describe(alltypes, selector, expected_columns):
         "flink",
         "sqlite",
         "athena",
+        "materialize",
     ],
     raises=com.OperationNotDefinedError,
     reason="quantile is not supported",
@@ -941,6 +972,11 @@ def test_table_describe(alltypes, selector, expected_columns):
 )
 @pytest.mark.notyet(
     ["oracle"], raises=OracleDatabaseError, reason="ORA-02000: missing AS keyword"
+)
+@pytest.mark.notimpl(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="describe() uses quantile which Materialize doesn't support",
 )
 def test_table_describe_large(con):
     num_cols = 129
@@ -1381,6 +1417,7 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 @pytest.mark.notyet(
     ["druid"], raises=PyDruidProgrammingError, reason="doesn't support a binary type"
 )
+@pytest.mark.notyet(["materialize"], raises=ArrowInvalid, reason="Invalid UTF8 payload")
 def test_memtable_from_geopandas_dataframe(con, data_dir):
     gpd = pytest.importorskip("geopandas")
     gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")[:5]
@@ -1407,6 +1444,11 @@ def test_memtable_from_geopandas_dataframe(con, data_dir):
     ["flink"],
     reason="invalid code generated for unnesting a struct",
     raises=Py4JJavaError,
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    reason="Materialize doesn't have jsonb_extract_path() function (JSON access differs from Postgres).",
+    raises=PsycoPgInternalError,
 )
 def test_pivot_longer(backend):
     diamonds = backend.diamonds
@@ -1546,7 +1588,22 @@ def test_select_distinct_filter_order_by_commute(backend, alltypes, df, ops):
         ),
     ],
 )
-@pytest.mark.parametrize("keep", ["first", "last"])
+@pytest.mark.parametrize(
+    "keep",
+    [
+        "first",
+        param(
+            "last",
+            marks=[
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=com.OperationNotDefinedError,
+                    reason="last() not supported in materialize",
+                ),
+            ],
+        ),
+    ],
+)
 @pytest.mark.notimpl(
     ["druid", "impala", "oracle"],
     raises=(NotImplementedError, OracleDatabaseError, com.OperationNotDefinedError),
@@ -1630,6 +1687,11 @@ def test_distinct_on_keep(backend, on, keep):
     raises=com.UnsupportedOperationError,
     reason="first/last requires an order_by",
 )
+@pytest.mark.notimpl(
+    ["materialize"],
+    raises=com.UnsupportedOperationError,
+    reason="keep=None not supported in materialize (doesn't use First aggregate)",
+)
 def test_distinct_on_keep_is_none(backend, on):
     from ibis import _
 
@@ -1649,6 +1711,11 @@ def test_distinct_on_keep_is_none(backend, on):
 
 
 @pytest.mark.notimpl(["risingwave", "flink", "exasol"])
+@pytest.mark.notimpl(
+    ["materialize"],
+    reason="Hash/digest functions not yet implemented in Materialize backend (could map to encode(digest(...), 'hex')).",
+    # See: https://materialize.com/docs/sql/functions/
+)
 @pytest.mark.notyet(
     [
         "sqlite",
@@ -1707,6 +1774,11 @@ def test_hash(backend, alltypes, dtype):
 
 
 @pytest.mark.notimpl(["trino", "oracle", "exasol", "snowflake", "athena"])
+@pytest.mark.notimpl(
+    ["materialize"],
+    reason="Hashbytes function not yet implemented in Materialize backend.",
+    # See: https://materialize.com/docs/sql/functions/
+)
 @pytest.mark.notyet(
     [
         "datafusion",
@@ -1755,6 +1827,11 @@ def test_hashbytes(backend, alltypes):
         "trino",
         "athena",
     ]
+)
+@pytest.mark.notimpl(
+    ["materialize"],
+    reason="Hexdigest function not yet implemented in Materialize backend.",
+    # See: https://materialize.com/docs/sql/functions/
 )
 @pytest.mark.notyet(["druid", "polars", "sqlite"])
 def test_hexdigest(backend, alltypes):
@@ -1806,6 +1883,7 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+                pytest.mark.notimpl(["materialize"], raises=PsycoPgSyntaxError),
                 pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(
                     [
@@ -1886,6 +1964,11 @@ def test_try_cast(con, from_val, to_type, expected):
         "sqlite",
     ]
 )
+@pytest.mark.notimpl(
+    ["materialize"],
+    reason="TRY_CAST not implemented. Materialize doesn't have TRY_CAST function.",
+    # Ref: https://materialize.com/docs/sql/functions/cast/
+)
 @pytest.mark.parametrize(
     ("from_val", "to_type"),
     [
@@ -1927,6 +2010,10 @@ def test_try_cast_null(con, from_val, to_type):
         "exasol",
     ]
 )
+@pytest.mark.notimpl(
+    ["materialize"],
+    reason="TRY_CAST not implemented. Materialize doesn't have TRY_CAST function.",
+)
 def test_try_cast_table(backend, con):
     df = pd.DataFrame({"a": ["1", "2", None], "b": ["1.0", "2.2", "goodbye"]})
 
@@ -1950,6 +2037,11 @@ def test_try_cast_table(backend, con):
         "sqlite",
         "exasol",
     ]
+)
+@pytest.mark.notimpl(
+    ["materialize"],
+    reason="TRY_CAST not implemented. Materialize doesn't have TRY_CAST function.",
+    # Ref: https://materialize.com/docs/sql/functions/cast/
 )
 @pytest.mark.notimpl(["druid"], strict=False)
 @pytest.mark.parametrize(
@@ -2114,17 +2206,46 @@ def test_static_table_slice(backend, slc, expected_count_fn):
         param(slice(None, -2), lambda t: t.count().to_pandas() - 2, id="[:-2]"),
         param(slice(0, -2), lambda t: t.count().to_pandas() - 2, id="[0:-2]"),
         # no stop
-        param(slice(-3, None), lambda _: 3, id="[-3:]"),
+        param(
+            slice(-3, None),
+            lambda _: 3,
+            id="[-3:]",
+            marks=[
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPgInternalError,
+                    reason="OFFSET does not allow subqueries",
+                ),
+            ],
+        ),
         ##################
         ### NEGATIVE start
         # negative stop
-        param(slice(-3, -2), lambda _: 1, id="[-3:-2]"),
+        param(
+            slice(-3, -2),
+            lambda _: 1,
+            id="[-3:-2]",
+            marks=[
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPgInternalError,
+                    reason="OFFSET does not allow subqueries",
+                ),
+            ],
+        ),
         # positive stop
         param(
             slice(-4000, 7000),
             lambda _: 3700,
             id="[-4000:7000]",
-            marks=[pytest.mark.notyet("clickhouse", raises=ClickHouseDatabaseError)],
+            marks=[
+                pytest.mark.notyet("clickhouse", raises=ClickHouseDatabaseError),
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPgInternalError,
+                    reason="OFFSET does not allow subqueries",
+                ),
+            ],
         ),
         param(
             slice(-3, 2),
@@ -2135,6 +2256,11 @@ def test_static_table_slice(backend, slc, expected_count_fn):
                     ["mssql"],
                     raises=PyODBCProgrammingError,
                     reason="sqlglot generates code that requires > 0 fetch rows",
+                ),
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPgInternalError,
+                    reason="OFFSET does not allow subqueries",
                 ),
             ],
         ),
@@ -2277,6 +2403,11 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     raises=PsycoPg2InternalError,
     reason="risingwave doesn't support limit/offset",
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't support subqueries in OFFSET clause.",
+)
 def test_dynamic_table_slice_with_computed_offset(backend):
     t = backend.functional_alltypes
 
@@ -2296,6 +2427,12 @@ def test_dynamic_table_slice_with_computed_offset(backend):
 
 
 @pytest.mark.notimpl(["druid", "risingwave"], raises=com.OperationNotDefinedError)
+@pytest.mark.never(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize will never support random() needed for sampling - nondeterministic functions can't be used in materialized views",
+    # Ref: https://materialize.com/docs/sql/functions/#unmaterializable-functions
+)
 @pytest.mark.parametrize("method", ["row", "block"])
 @pytest.mark.parametrize("subquery", [True, False], ids=["subquery", "table"])
 @pytest.mark.xfail_version(pyspark=["sqlglot==25.17.0"])
@@ -2312,6 +2449,12 @@ def test_sample(backend, method, alltypes, subquery):
 
 
 @pytest.mark.notimpl(["druid", "risingwave"], raises=com.OperationNotDefinedError)
+@pytest.mark.never(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize will never support random() needed for sampling - nondeterministic functions can't be used in materialized views",
+    # Ref: https://materialize.com/docs/sql/functions/#unmaterializable-functions
+)
 def test_sample_memtable(con, backend):
     df = pd.DataFrame({"x": [1, 2, 3, 4]})
     res = con.execute(ibis.memtable(df).sample(0.5))
@@ -2340,6 +2483,11 @@ def test_sample_memtable(con, backend):
         "databricks",
         "athena",
     ]
+)
+@pytest.mark.never(
+    ["materialize"],
+    reason="Materialize will never support random() needed for sampling - nondeterministic functions can't be used in materialized views",
+    # Ref: https://materialize.com/docs/sql/functions/#unmaterializable-functions
 )
 def test_sample_with_seed(backend):
     t = backend.functional_alltypes
@@ -2583,6 +2731,11 @@ def test_pivot_wider_empty_id_columns(con, backend, id_cols, monkeypatch):
     raises=com.OperationNotDefinedError,
     reason="backend doesn't support Arbitrary agg",
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="function first does not exist",
+)
 def test_simple_pivot_wider(con, backend, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     data = pd.DataFrame({"outcome": ["yes", "no"], "counted": [3, 4]})
@@ -2625,6 +2778,7 @@ def test_named_literal(con, backend):
         "sqlite",
         "trino",
         "athena",
+        "materialize",
     ],
     raises=com.OperationNotDefinedError,
     reason="quantile not implemented",
@@ -2638,6 +2792,11 @@ def test_named_literal(con, backend):
     ["bigquery"],
     raises=com.OperationNotDefinedError,
     reason="BigQuery doesn't support quantiles",
+)
+@pytest.mark.notimpl(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="describe() uses quantile which Materialize doesn't support",
 )
 def test_table_describe_with_multiple_decimal_columns(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]}).cast(
