@@ -257,7 +257,9 @@ class JoinChain(Relation):
     @attribute
     def schema(self):
         return Schema._create_without_validation(
-            FrozenOrderedDict({k: v.dtype.copy(nullable=True) for k, v in self.values.items()})
+            FrozenOrderedDict(
+                {k: v.dtype.copy(nullable=True) for k, v in self.values.items()}
+            )
         )
 
     def to_expr(self):
