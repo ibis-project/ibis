@@ -74,6 +74,8 @@ class MaterializeCompiler(PostgresCompiler):
         ops.RandomUUID,
         # Materialize doesn't support rowid
         ops.RowID,
+        # Materialize doesn't support some string operations
+        ops.Levenshtein,
     )
 
     def visit_ArrayLength(self, op, *, arg):
