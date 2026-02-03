@@ -10,6 +10,7 @@
   autoPatchelfHook,
   libgcc,
   which,
+  openssl,
 }:
 
 let
@@ -37,6 +38,7 @@ stdenv.mkDerivation rec {
   nativeBuildInputs = lib.optionals stdenv.isLinux [ autoPatchelfHook ] ++ [
     makeWrapper
     libgcc
+    openssl
   ];
 
   preFixup =

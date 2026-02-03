@@ -89,6 +89,10 @@
           pkgs.pkg-config
           # new hotness for build orchestration (?)
           pkgs.docker-buildx
+          # toml setting
+          pkgs.toml-cli
+          # sponge
+          pkgs.moreutils
         ];
         shellHook = ''
           rm -f "$PWD/ci/ibis-testing-data"
