@@ -1881,7 +1881,7 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
-                pytest.mark.notimpl(["materialize"], raises=PsycoPgInternalError),
+                pytest.mark.notimpl(["materialize"], raises=PsycoPgSyntaxError),
                 pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(
                     [
