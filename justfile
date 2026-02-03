@@ -339,7 +339,7 @@ chat *args:
     zulip-term {{ args }}
 
 # compute the next version number
-@compute-version:
+compute-version:
     #!/usr/bin/env -S uv run --script
     # /// script
     # requires-python = ">=3.11"
@@ -357,9 +357,8 @@ chat *args:
 # bump the version number in necessary files
 bump-version:
     #!/usr/bin/env bash
-
     ibis_dev_version="$(just compute-version)"
-    uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "$ibis_dev_version" > /dev/null
+    toml set pyproject.toml project.version "$ibis_dev_version" | sponge pyproject.toml
     sed -i 's/__version__ = .\+/__version__ = "'$ibis_dev_version'"/g' ibis/__init__.py
     just lock > /dev/null
     echo "$ibis_dev_version"
