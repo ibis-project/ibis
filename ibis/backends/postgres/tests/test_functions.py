@@ -907,15 +907,10 @@ def test_array_collect(array_types):
 @pytest.mark.parametrize("index", [0, 1, 3, 4, 11, -1, -3, -4, -11])
 def test_array_index(array_types, index):
     expr = array_types.select(array_types.y[index].name("indexed"))
-    result = expr.execute()
-    expected = pd.DataFrame(
-        {
-            "indexed": array_types.y.execute().map(
-                lambda x: x[index] if -len(x) <= index < len(x) else None
-            )
-        }
-    )
-    tm.assert_frame_equal(result, expected)
+    result = expr.to_pyarrow()
+    y = array_types.y.to_pyarrow()
+    expected = [x[index].as_py() if -len(x) <= index < len(x) else None for x in y]
+    assert result.column("indexed").to_pylist() == expected
 
 
 @pytest.mark.parametrize("n", [1, 3, 4, 7, -2])
