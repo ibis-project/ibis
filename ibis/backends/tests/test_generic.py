@@ -866,7 +866,7 @@ def test_table_info_large(con):
                 ),
                 pytest.mark.notimpl(
                     ["materialize"],
-                    raises=PsycoPg2InternalError,
+                    raises=com.OperationNotDefinedError,
                     reason="SQL compilation error: Expected joined table, found star",
                 ),
             ],
@@ -907,7 +907,7 @@ def test_table_info_large(con):
                 ),
                 pytest.mark.notimpl(
                     ["materialize"],
-                    raises=PsycoPg2InternalError,
+                    raises=com.OperationNotDefinedError,
                     reason="SQL compilation error: Expected joined table, found star",
                 ),
             ],
@@ -929,8 +929,8 @@ def test_table_info_large(con):
                 ),
                 pytest.mark.notimpl(
                     ["materialize"],
-                    raises=PsycoPg2InternalError,
-                    reason="SQL compilation error: Expected joined table, found star",
+                    raises=com.OperationNotDefinedError,
+                    reason="No support for mode",
                 ),
             ],
             id="string_col",
@@ -1446,7 +1446,7 @@ def test_memtable_from_geopandas_dataframe(con, data_dir):
 @pytest.mark.notyet(
     ["materialize"],
     reason="Materialize doesn't have jsonb_extract_path() function (JSON access differs from Postgres).",
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
 )
 def test_pivot_longer(backend):
     diamonds = backend.diamonds
@@ -1881,7 +1881,7 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
-                pytest.mark.notimpl(["materialize"], raises=PsycoPg2InternalError),
+                pytest.mark.notimpl(["materialize"], raises=PsycoPgInternalError),
                 pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(
                     [

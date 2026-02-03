@@ -24,6 +24,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPgDivisionByZero,
+    PsycoPgInternalError,
     Py4JError,
     Py4JJavaError,
     PyAthenaOperationalError,
@@ -440,7 +441,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["materialize"],
                     reason="precision for type numeric must be between 1 and 39",
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                 ),
             ],
             id="decimal-big",
@@ -518,7 +519,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["materialize"],
                     reason='invalid input syntax for type numeric: "Infinity"',
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                 ),
             ],
             id="decimal-infinity+",
@@ -596,7 +597,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["materialize"],
                     reason='invalid input syntax for type numeric: "-Infinity"',
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                 ),
             ],
             id="decimal-infinity-",
@@ -900,7 +901,7 @@ def test_math_functions_literals(con, expr, expected):
             marks=[
                 pytest.mark.notimpl(
                     ["materialize"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason='function "atan2" does not exist',
                 )
             ],
@@ -932,7 +933,7 @@ def test_trig_functions_literals(con, expr, expected):
                 ),
                 pytest.mark.notimpl(
                     ["materialize"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason='function "atan2" does not exist',
                 ),
             ],
@@ -1371,7 +1372,7 @@ def test_floating_mod(backend, alltypes, df):
 @pytest.mark.notyet(["postgres"], raises=PsycoPgDivisionByZero)
 @pytest.mark.notyet(
     ["materialize"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Evaluation error: division by zero",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
@@ -1495,7 +1496,7 @@ def test_histogram(con, alltypes):
             marks=[
                 pytest.mark.notimpl(
                     ["materialize"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason='function "pi" does not exist',
                 )
             ],

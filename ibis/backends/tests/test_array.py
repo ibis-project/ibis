@@ -25,6 +25,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2IndeterminateDatatype,
     PsycoPg2InternalError,
     PsycoPg2ProgrammingError,
+    PsycoPgInternalError,
     PsycoPgInvalidTextRepresentation,
     PsycoPgSyntaxError,
     Py4JJavaError,
@@ -458,7 +459,7 @@ def test_unnest_default_name(backend):
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["materialize"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Materialize arrays don't support slice syntax (e.g., arr[1:3]). Only single-element indexing supported.",
     # Ref: https://materialize.com/docs/sql/types/array/
 )

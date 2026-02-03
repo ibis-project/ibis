@@ -14,6 +14,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     OracleDatabaseError,
     PsycoPg2InternalError,
+    PsycoPgInternalError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
 )
@@ -964,13 +965,19 @@ def test_multiple_subs(con):
         "sqlite",
         "flink",
         "exasol",
+        "materialize",
     ],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
-    ["materialize", "risingwave"],
-    raises=PsycoPg2InternalError,
+    ["materialize"],
+    raises=PsycoPgInternalError,
     reason="Materialize doesn't have levenshtein() function - backend limitation",
+)
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="Risingwave doesn't have levenshtein() function - backend limitation",
 )
 @pytest.mark.parametrize(
     "right", ["sitting", ibis.literal("sitting")], ids=["python", "ibis"]

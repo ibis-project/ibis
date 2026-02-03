@@ -29,6 +29,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PolarsInvalidOperationError,
     PsycoPg2InternalError,
+    PsycoPgInternalError,
     Py4JJavaError,
     PyAthenaOperationalError,
     PyDruidProgrammingError,
@@ -125,7 +126,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
 
 @pytest.mark.notyet(
     ["materialize"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Materialize doesn't support 'isoyear' in EXTRACT (not in supported date parts list).",
     # Ref: https://materialize.com/docs/sql/functions/extract/
 )
@@ -165,7 +166,7 @@ def test_extract_iso_year(backend, alltypes, df, transform):
 
 @pytest.mark.notyet(
     ["materialize"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Materialize doesn't support ISO year extraction - backend limitation",
 )
 @pytest.mark.notimpl(
@@ -1316,7 +1317,7 @@ def test_integer_to_timestamp(backend, con, unit):
 )
 @pytest.mark.notyet(
     ["materialize"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Materialize doesn't support to_timestamp(text, format) - backend limitation",
 )
 @pytest.mark.notimpl(
@@ -1387,7 +1388,7 @@ def test_string_as_timestamp(alltypes, fmt):
 )
 @pytest.mark.notyet(
     ["materialize"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Materialize doesn't have to_date() function - backend limitation",
 )
 @pytest.mark.notimpl(
@@ -1424,7 +1425,7 @@ def test_string_as_date(alltypes, fmt):
 )
 @pytest.mark.notyet(
     ["materialize"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Materialize doesn't support time string parsing - backend limitation",
 )
 @pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedOperationError)
@@ -1607,7 +1608,7 @@ TIMESTAMP_BACKEND_TYPES = {
 
 @pytest.mark.notyet(
     ["materialize"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Materialize doesn't have make_timestamp() function - backend limitation",
 )
 @pytest.mark.notimpl(
@@ -1696,7 +1697,7 @@ TIME_BACKEND_TYPES = {
 )
 @pytest.mark.notyet(
     ["materialize"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Materialize doesn't have make_time() function - backend limitation",
 )
 @pytest.mark.notyet(
@@ -2156,7 +2157,7 @@ def test_large_timestamp(con):
                 ),
                 pytest.mark.notimpl(
                     ["materialize"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="precision for type timestamp or timestamptz must be between 0 and 6",
                 ),
                 pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
