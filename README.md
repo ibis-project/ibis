@@ -16,7 +16,7 @@ Ibis is the portable Python dataframe library:
 - Lazy dataframe expressions
 - Interactive mode for iterative data exploration
 - [Compose Python dataframe and SQL code](#python--sql-better-together)
-- Use the same dataframe API for [nearly 20 backends](#backends)
+- Use the same dataframe API for [more than 20 backends](#backends)
 - Iterate locally and deploy remotely by [changing a single line of code](#portability)
 
 See the documentation on ["Why Ibis?"](https://ibis-project.org/why) to learn more.
@@ -135,7 +135,7 @@ This allows you to combine the flexibility of Python with the scale and performa
 
 ## Backends
 
-Ibis supports 20 backends:
+Ibis supports more than 20 backends:
 
 - [Apache DataFusion](https://ibis-project.org/backends/datafusion/)
 - [Apache Druid](https://ibis-project.org/backends/druid/)
