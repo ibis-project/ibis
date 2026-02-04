@@ -1526,45 +1526,14 @@ wheels = [
 
 [[package]]
 name = "db-dtypes"
-version = "1.4.4"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.14' and sys_platform == 'win32'",
-    "python_full_version >= '3.14' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version == '3.13.*' and sys_platform == 'win32'",
-    "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version == '3.12.*' and sys_platform == 'win32'",
-    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.12.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version == '3.11.*' and sys_platform == 'win32'",
-    "python_full_version == '3.11.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.11.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-]
-dependencies = [
-    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "packaging", marker = "python_full_version >= '3.11'" },
-    { name = "pandas", marker = "python_full_version >= '3.11'" },
-    { name = "pyarrow", marker = "python_full_version >= '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/75/7cbd2af9f3bed29c74df4c6512243b94e0dc17ca03bf82a33e45ee75501b/db_dtypes-1.4.4.tar.gz", hash = "sha256:26f53db5df1acd746b88c5647913a1b20f731c0af1b11abcb6bec5365f31098a", size = 34471, upload-time = "2025-11-11T17:21:59.221Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/46/398af286861992d98f5ca7e1b4662b5d6f1d29978ddc0849c52fb130e8e9/db_dtypes-1.4.4-py3-none-any.whl", hash = "sha256:32c13039982656a8598a0835f25f0e07e34c9a423e471ee60c2553240b7fcf1e", size = 18255, upload-time = "2025-11-11T17:21:57.93Z" },
-]
-
-[[package]]
-name = "db-dtypes"
 version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.11'",
-]
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "packaging", marker = "python_full_version < '3.11'" },
-    { name = "pandas", marker = "python_full_version < '3.11'" },
-    { name = "pyarrow", marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "packaging" },
+    { name = "pandas" },
+    { name = "pyarrow" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/27/3d/8c021df7796bde3bc4a9f8129865676a45d95ba8c5fd14b1de82997ff0b4/db_dtypes-1.5.0.tar.gz", hash = "sha256:ad9e94243f53e104bc77dbf9ae44b580d83a770d3694483aba59c9767966daa5", size = 34800, upload-time = "2025-12-15T21:47:21.874Z" }
 wheels = [
@@ -2517,15 +2486,13 @@ athena = [
     { name = "rich" },
 ]
 bigquery = [
-    { name = "db-dtypes", version = "1.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "db-dtypes", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "db-dtypes" },
     { name = "google-cloud-bigquery" },
     { name = "google-cloud-bigquery-storage" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
-    { name = "pandas-gbq", version = "0.31.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pandas-gbq", version = "0.33.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas-gbq" },
     { name = "pyarrow" },
     { name = "pyarrow-hotfix" },
     { name = "pydata-google-auth" },
@@ -4579,61 +4546,22 @@ wheels = [
 
 [[package]]
 name = "pandas-gbq"
-version = "0.31.0"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.14' and sys_platform == 'win32'",
-    "python_full_version >= '3.14' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version == '3.13.*' and sys_platform == 'win32'",
-    "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version == '3.12.*' and sys_platform == 'win32'",
-    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.12.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version == '3.11.*' and sys_platform == 'win32'",
-    "python_full_version == '3.11.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.11.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-]
-dependencies = [
-    { name = "db-dtypes", version = "1.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "google-api-core", marker = "python_full_version >= '3.11'" },
-    { name = "google-auth", marker = "python_full_version >= '3.11'" },
-    { name = "google-auth-oauthlib", marker = "python_full_version >= '3.11'" },
-    { name = "google-cloud-bigquery", marker = "python_full_version >= '3.11'" },
-    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "packaging", marker = "python_full_version >= '3.11'" },
-    { name = "pandas", marker = "python_full_version >= '3.11'" },
-    { name = "psutil", marker = "python_full_version >= '3.11'" },
-    { name = "pyarrow", marker = "python_full_version >= '3.11'" },
-    { name = "pydata-google-auth", marker = "python_full_version >= '3.11'" },
-    { name = "setuptools", marker = "python_full_version >= '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/47/87/68b37900118cf3136c1c6d29f6678f7134cb98af3b4a41196e3251f4ee41/pandas_gbq-0.31.0.tar.gz", hash = "sha256:0a999cfb06c83efa54d36731dda5748d83daef1445cb23ec03d137d23af7fd5c", size = 73127, upload-time = "2025-11-17T21:26:26.995Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/e7/1848a3e6d017fc3d4ba0e8f61c87235a7558ddf557febc7e03eef386bfad/pandas_gbq-0.31.0-py3-none-any.whl", hash = "sha256:cb7aa43bba052631aed66d4464820657aa037b203e9ee1a413437171ab9ab867", size = 46420, upload-time = "2025-11-17T21:26:25.972Z" },
-]
-
-[[package]]
-name = "pandas-gbq"
 version = "0.33.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.11'",
-]
 dependencies = [
-    { name = "db-dtypes", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "google-api-core", marker = "python_full_version < '3.11'" },
-    { name = "google-auth", marker = "python_full_version < '3.11'" },
-    { name = "google-auth-oauthlib", marker = "python_full_version < '3.11'" },
-    { name = "google-cloud-bigquery", marker = "python_full_version < '3.11'" },
+    { name = "db-dtypes" },
+    { name = "google-api-core" },
+    { name = "google-auth" },
+    { name = "google-auth-oauthlib" },
+    { name = "google-cloud-bigquery" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "packaging", marker = "python_full_version < '3.11'" },
-    { name = "pandas", marker = "python_full_version < '3.11'" },
-    { name = "psutil", marker = "python_full_version < '3.11'" },
-    { name = "pyarrow", marker = "python_full_version < '3.11'" },
-    { name = "pydata-google-auth", marker = "python_full_version < '3.11'" },
-    { name = "setuptools", marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "packaging" },
+    { name = "pandas" },
+    { name = "psutil" },
+    { name = "pyarrow" },
+    { name = "pydata-google-auth" },
+    { name = "setuptools" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/10/8b/4e899f662b09c245193e90e729b7a25c255c7e3bebeb580f97489aca2e13/pandas_gbq-0.33.0.tar.gz", hash = "sha256:61357e11d73e0ae57cbff31e71fc3ed83da3d16b58b653f715b32ad760527e34", size = 76000, upload-time = "2026-01-05T21:47:09.195Z" }
 wheels = [

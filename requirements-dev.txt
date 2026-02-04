@@ -52,8 +52,7 @@ cycler==0.12.1
 databackend==0.0.3
 databricks-sql-connector==4.2.4
 datafusion==51.0.0
-db-dtypes==1.4.4 ; python_full_version >= '3.11'
-db-dtypes==1.5.0 ; python_full_version < '3.11'
+db-dtypes==1.5.0
 debugpy==1.8.20
 decorator==5.2.1
 defusedxml==0.7.1
@@ -163,8 +162,7 @@ orjson==3.11.7 ; platform_python_implementation != 'PyPy'
 overrides==7.7.0 ; python_full_version < '3.12'
 packaging==26.0
 pandas==2.3.3
-pandas-gbq==0.31.0 ; python_full_version >= '3.11'
-pandas-gbq==0.33.0 ; python_full_version < '3.11'
+pandas-gbq==0.33.0
 pandocfilters==1.5.1
 parsimonious==0.11.0
 parso==0.8.5
