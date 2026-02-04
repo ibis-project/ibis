@@ -1790,14 +1790,14 @@ def test_schema_with_caching(alltypes):
 
 
 @contextlib.contextmanager
-def temp_table(con: BaseBackend):
+def temp_table(con: SQLBackend):
     # Ideally we'd use a temp table for this test, but several backends don't
     # support them and it's nice to know that data are being inserted correctly.
     table_name = gen_name("temp_table")
     try:
         yield table_name
     finally:
-        con.drop_table(table_name)
+        con.drop_table(table_name, force=True)
 
 
 @pytest.mark.notyet(
