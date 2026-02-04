@@ -97,7 +97,7 @@ clickhouse = [
   "rich>=12.4.4",
 ]
 databricks = [
-  # "databricks-sql-connector>=4", # FIXME(deepyaman): Temporary removal due to no pandas 3 support
+  "databricks-sql-connector>=4",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
@@ -290,6 +290,7 @@ tests = [
   "packaging>=21.3",
   # without this constraint, pyspark starts to fail some memtable cleanup tests
   # with pytest 8.4.0
+  "pandas<3", # Several backend test suites still fail using pandas 3.0.
   "pytest>=8.2.0,<8.4.0",
   "pytest-benchmark>=3.4.1,<6",
   "pytest-deadfixtures>=2.2.1,<3",

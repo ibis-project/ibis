@@ -18,7 +18,7 @@ dependencies:
   - clickhouse-connect>=0.5.23
   - cloudpickle
   - codespell<3,>=2.2.6
-  # - databricks-sql-connector>=4 # FIXME(deepyaman): Temporary removal due to no pandas 3 support
+  - databricks-sql-connector>=4
   - datafusion>=0.6
   - db-dtypes>=0.3
   - deltalake>=0.9.0
