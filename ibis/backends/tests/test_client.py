@@ -859,7 +859,7 @@ def test_list_catalogs(con):
         "snowflake": {"IBIS_TESTING"},
         "trino": {"memory"},
         "pyspark": {"spark_catalog"},
-        "databricks": {"hive_metastore", "ibis", "ibis_testing", "samples", "system"},
+        "databricks": {"workspace", "samples", "system"},
         "athena": {"AwsDataCatalog"},
         "materialize": {"materialize"},
     }

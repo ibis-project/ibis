@@ -11,6 +11,8 @@ from ibis.expr.types.generic import _binop
 from ibis.expr.types.numeric import NumericColumn, NumericScalar, NumericValue
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     import ibis.expr.types as ir
 
 
@@ -53,7 +55,7 @@ class BooleanValue(NumericValue):
         # must be used.
         return ops.IfElse(self, true_expr, false_expr).to_expr()
 
-    def __and__(self, other: BooleanValue) -> BooleanValue:
+    def __and__(self, other: bool | BooleanValue | ibis.Deferred) -> BooleanValue:
         """Construct a binary AND conditional expression with `self` and `other`.
 
         Parameters
@@ -101,7 +103,7 @@ class BooleanValue(NumericValue):
 
     __rand__ = __and__
 
-    def __or__(self, other: BooleanValue) -> BooleanValue:
+    def __or__(self, other: bool | BooleanValue | ibis.Deferred) -> BooleanValue:
         """Construct a binary OR conditional expression with `self` and `other`.
 
         Parameters
@@ -137,7 +139,7 @@ class BooleanValue(NumericValue):
 
     __ror__ = __or__
 
-    def __xor__(self, other: BooleanValue) -> BooleanValue:
+    def __xor__(self, other: bool | BooleanValue | ibis.Deferred) -> BooleanValue:
         """Construct a binary XOR conditional expression with `self` and `other`.
 
         Parameters
@@ -198,7 +200,7 @@ class BooleanValue(NumericValue):
 
     __rxor__ = __xor__
 
-    def __invert__(self) -> BooleanValue:
+    def __invert__(self) -> Self:
         """Construct a unary NOT conditional expression with `self`.
 
         Parameters
@@ -230,7 +232,7 @@ class BooleanValue(NumericValue):
         """
         return ops.Not(self).to_expr()
 
-    def negate(self) -> BooleanValue:
+    def negate(self) -> Self:
         """DEPRECATED."""
         util.warn_deprecated(
             "`-bool_val`/`bool_val.negate()`",
@@ -247,7 +249,9 @@ class BooleanScalar(NumericScalar, BooleanValue):
 
 @public
 class BooleanColumn(NumericColumn, BooleanValue):
-    def any(self, *, where: BooleanValue | None = None) -> BooleanValue:
+    def any(
+        self, *, where: bool | BooleanValue | ibis.Deferred | None = None
+    ) -> BooleanScalar:
         """Return whether at least one element is `True`.
 
         If the expression does not reference any foreign tables, the result
@@ -339,7 +343,9 @@ class BooleanColumn(NumericColumn, BooleanValue):
 
         return op.to_expr()
 
-    def notany(self, *, where: BooleanValue | None = None) -> BooleanValue:
+    def notany(
+        self, *, where: bool | BooleanValue | ibis.Deferred | None = None
+    ) -> BooleanScalar:
         """Return whether no elements are `True`.
 
         Parameters
@@ -373,7 +379,9 @@ class BooleanColumn(NumericColumn, BooleanValue):
         """
         return ~self.any(where=where)
 
-    def all(self, *, where: BooleanValue | None = None) -> BooleanScalar:
+    def all(
+        self, *, where: bool | BooleanValue | ibis.Deferred | None = None
+    ) -> BooleanScalar:
         """Return whether all elements are `True`.
 
         Parameters
@@ -410,7 +418,9 @@ class BooleanColumn(NumericColumn, BooleanValue):
         """
         return ops.All(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def notall(self, *, where: BooleanValue | None = None) -> BooleanScalar:
+    def notall(
+        self, *, where: bool | BooleanValue | ibis.Deferred | None = None
+    ) -> BooleanScalar:
         """Return whether not all elements are `True`.
 
         Parameters
@@ -447,7 +457,13 @@ class BooleanColumn(NumericColumn, BooleanValue):
         """
         return ~self.all(where=where)
 
-    def cumany(self, *, where=None, group_by=None, order_by=None) -> BooleanColumn:
+    def cumany(
+        self,
+        *,
+        where: bool | BooleanValue | ibis.Deferred | None = None,
+        group_by=None,
+        order_by=None,
+    ) -> BooleanColumn:
         """Accumulate the `any` aggregate.
 
         Returns
@@ -487,7 +503,13 @@ class BooleanColumn(NumericColumn, BooleanValue):
             ibis.cumulative_window(group_by=group_by, order_by=order_by)
         )
 
-    def cumall(self, *, where=None, group_by=None, order_by=None) -> BooleanColumn:
+    def cumall(
+        self,
+        *,
+        where: bool | BooleanValue | ibis.Deferred | None = None,
+        group_by=None,
+        order_by=None,
+    ) -> BooleanColumn:
         """Accumulate the `all` aggregate.
 
         Returns

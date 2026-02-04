@@ -3,9 +3,9 @@ title: "Why Ibis?"
 ---
 
 Ibis defines a Python dataframe API that executes on any query engine -- the
-frontend for any backend data platform, with nearly 20 backends today. This allows
-Ibis to have excellent performance -- as good as the backend it is connected to
--- with a consistent user experience.
+frontend for any backend data platform, with more than 20 backends today. This
+allows Ibis to have excellent performance -- as good as the backend it is
+connected to -- with a consistent user experience.
 
 ## What is Ibis?
 
@@ -186,7 +186,7 @@ practitioners. It also allows organizations to:
 
 Python developers creating libraries can use Ibis to:
 
-- instantly support nearly 20 data backends
+- instantly support more than 20 data backends
 - instantly support pandas, PyArrow, and Polars objects
 - read and write from all common file formats (depending on the backend)
 - trace column-level lineage through Ibis expressions
