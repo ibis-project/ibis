@@ -689,10 +689,6 @@ def test_first_last_ordered(alltypes, method, filtered, include_null):
 
 
 @pytest.mark.notimpl(
-    ["databricks"],
-    raises=com.UnsupportedOperationError,
-)
-@pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,
 )
