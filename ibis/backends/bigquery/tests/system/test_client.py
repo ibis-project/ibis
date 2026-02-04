@@ -100,11 +100,7 @@ def test_cast_string_to_date(alltypes, df):
     expr = expr.cast("date")
 
     result = (
-        expr.execute()
-        .astype("datetime64[ns]")
-        .sort_values()
-        .reset_index(drop=True)
-        .rename("date_string_col")
+        expr.execute().sort_values().reset_index(drop=True).rename("date_string_col")
     )
     expected = (
         pd.to_datetime(df.date_string_col, format="%m/%d/%y")
@@ -226,8 +222,8 @@ def test_cross_project_query(public):
     df = expr.limit(n).execute()
     assert len(df) == n
     assert list(df.columns) == ["title", "tags"]
-    assert df.title.dtype == object
-    assert df.tags.dtype == object
+    assert df.title.dtype == pd.Series(dtype="str").dtype
+    assert df.tags.dtype == pd.Series(dtype="str").dtype
 
 
 def test_set_database(con2):
