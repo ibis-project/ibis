@@ -11,14 +11,6 @@ import pandas as pd
 import pandas.api.types as pdt
 from packaging.version import parse as vparse
 
-try:
-    from pandas._config import using_string_dtype
-except ImportError:
-
-    def using_string_dtype():
-        return False
-
-
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis import util
@@ -43,7 +35,7 @@ geospatial_supported = _find_spec("geopandas") is not None
 class PandasType(NumpyType):
     @classmethod
     def to_ibis(cls, typ, nullable=True):
-        if using_string_dtype() and isinstance(typ, pd.StringDtype):
+        if pd.options.future.infer_string and isinstance(typ, pd.StringDtype):
             return dt.String(nullable=nullable)
         elif isinstance(typ, pdt.DatetimeTZDtype):
             return dt.Timestamp(timezone=str(typ.tz), nullable=nullable)
@@ -65,7 +57,7 @@ class PandasType(NumpyType):
 
     @classmethod
     def from_ibis(cls, dtype) -> np.dtype | pd.Ex:
-        if using_string_dtype() and dtype.is_string():
+        if pd.options.future.infer_string and dtype.is_string():
             return pd.StringDtype(na_value=np.nan)
         elif dtype.is_timestamp():
             if dtype.timezone:
