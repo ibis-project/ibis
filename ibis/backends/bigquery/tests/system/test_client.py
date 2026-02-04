@@ -16,6 +16,7 @@ from google.api_core.exceptions import Forbidden
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.client import bigquery_param
+from ibis.formats.pandas import _DEFAULT_DATETIME_RESOLUTION
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -100,7 +101,11 @@ def test_cast_string_to_date(alltypes, df):
     expr = expr.cast("date")
 
     result = (
-        expr.execute().sort_values().reset_index(drop=True).rename("date_string_col")
+        expr.execute()
+        .astype(f"datetime64[{_DEFAULT_DATETIME_RESOLUTION}]")
+        .sort_values()
+        .reset_index(drop=True)
+        .rename("date_string_col")
     )
     expected = (
         pd.to_datetime(df.date_string_col, format="%m/%d/%y")
