@@ -290,7 +290,7 @@ tests = [
   "packaging>=21.3",
   # without this constraint, pyspark starts to fail some memtable cleanup tests
   # with pytest 8.4.0
-  "pandas<3", # Several backend test suites still fail using pandas 3.0.
+  "pandas<3",                      # Several backend test suites still fail using pandas 3.0.
   "pytest>=8.2.0,<8.4.0",
   "pytest-benchmark>=3.4.1,<6",
   "pytest-deadfixtures>=2.2.1,<3",
