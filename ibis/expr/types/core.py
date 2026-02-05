@@ -402,6 +402,7 @@ class Expr(Immutable, Coercible):
         341  Chinstrap      Dream            49.6  ...       3775.0    male  2009
         342  Chinstrap      Dream            50.8  ...       4100.0    male  2009
         343  Chinstrap      Dream            50.2  ...       3775.0  female  2009
+        <BLANKLINE>
         [344 rows x 8 columns]
 
         Scalar parameters can be supplied dynamically during execution.

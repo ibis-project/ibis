@@ -149,7 +149,6 @@ def test_array_execute(alltypes):
     """Test executing array column."""
     d = alltypes.limit(10).double_col
     s = d.execute()
-    import pandas as pd
 
     assert isinstance(s, pd.Series)
     assert len(s) == 10
@@ -394,8 +393,6 @@ def test_exists_table(con):
 
 def test_null_handling_in_aggregation(alltypes):
     """Test that NULL values are handled correctly in aggregations."""
-    import pandas as pd
-
     # Create expression with potential nulls
     expr = alltypes.double_col.mean()
     result = expr.execute()
@@ -441,5 +438,5 @@ def test_cast_operations(alltypes):
         double_as_int=alltypes.double_col.cast("int"),
     ).limit(5)
     result = expr.execute()
-    assert result["int_as_string"].dtype == object  # string type
+    assert result["int_as_string"].dtype == pd.Series(dtype="str").dtype
     assert result["double_as_int"].dtype in [int, "int32", "int64"]

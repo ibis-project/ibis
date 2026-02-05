@@ -11,6 +11,8 @@ import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 
 np = pytest.importorskip("numpy")
+pa = pytest.importorskip("pyarrow")
+pc = pytest.importorskip("pyarrow.compute")
 pd = pytest.importorskip("pandas")
 
 sqlite_right_or_full_mark = pytest.mark.notyet(
@@ -56,50 +58,49 @@ def check_eq(left, right, how, **kwargs):
     ],
 )
 @pytest.mark.notimpl(["druid"])
-def test_mutating_join(backend, batting, awards_players, how):
+def test_mutating_join(batting, awards_players, how):
     left = batting.filter(batting.yearID == 2015)
     right = awards_players.filter(awards_players.lgID == "NL").drop("yearID", "lgID")
 
-    left_df = left.execute()
-    right_df = right.execute()
+    left_t = left.to_pyarrow()
+    right_t = right.to_pyarrow()
     predicate = ["playerID"]
-    result_order = ["playerID", "yearID", "lgID", "stint"]
+    result_order = [(c, "ascending") for c in ("playerID", "yearID", "lgID", "stint")]
 
     expr = left.join(right, predicate, how=how)
     cols = list(left.columns)
     if how == "inner":
-        result = (
-            expr.execute()
-            .fillna(np.nan)[cols]
-            .sort_values(result_order)
-            .reset_index(drop=True)
-        )
+        result = expr.to_pyarrow().select(cols).sort_by(result_order)
     else:
-        result = (
-            expr.execute()
-            .fillna(np.nan)
-            .assign(
-                playerID=lambda df: df.playerID.where(
-                    df.playerID.notnull(), df.playerID_right
-                )
-            )
-            .drop(["playerID_right"], axis=1)[cols]
-            .sort_values(result_order)
-            .reset_index(drop=True)
+        t = expr.to_pyarrow()
+        player_id = pc.if_else(
+            pc.is_valid(t.column("playerID")),
+            t.column("playerID"),
+            t.column("playerID_right"),
         )
+        t = t.set_column(t.schema.get_field_index("playerID"), "playerID", player_id)
+        t = t.drop(["playerID_right"])
+        result = t.select(cols).sort_by(result_order)
 
+    if how == "outer":
+        join_type = "full outer"
+    elif how in ("left", "right"):
+        join_type = f"{how} outer"
+    else:
+        join_type = how
     expected = (
-        check_eq(left_df, right_df, how=how, on=predicate, suffixes=("_x", "_y"))[cols]
-        .sort_values(result_order)
-        .reset_index(drop=True)
+        left_t.join(
+            right_t,
+            keys="playerID",
+            join_type=join_type,
+            right_suffix="_y",
+            left_suffix="_x",
+        )
+        .select(cols)
+        .sort_by(result_order)
     )
 
-    backend.assert_frame_equal(
-        result,
-        expected,
-        check_like=True,
-        check_dtype=not (how == "right" and backend.name() == "risingwave"),
-    )
+    assert result.equals(expected)
 
 
 @pytest.mark.parametrize("how", ["semi", "anti"])
@@ -179,7 +180,13 @@ def test_semi_join_topk(con, batting, awards_players, func):
 
 @pytest.mark.notimpl(["druid", "exasol", "oracle"])
 @pytest.mark.notimpl(
-    ["postgres", "mssql", "risingwave", "singlestoredb", "materialize"],
+    ["postgres", "risingwave", "materialize"],
+    condition=vparse(pd.__version__) < vparse("3"),
+    raises=com.IbisTypeError,
+    reason="postgres can't handle null types columns",
+)
+@pytest.mark.notimpl(
+    ["mssql", "singlestoredb"],
     raises=com.IbisTypeError,
     reason="postgres can't handle null types columns",
 )

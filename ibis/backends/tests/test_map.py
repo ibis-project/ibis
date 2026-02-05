@@ -68,7 +68,7 @@ def test_map_keys_nulls(con, k, v):
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
 @pytest.mark.parametrize(
-    "map",
+    "map_",
     [
         param(
             ibis.map(
@@ -87,12 +87,12 @@ def test_map_keys_nulls(con, k, v):
     ],
 )
 @mark_notyet_datafusion
-def test_map_values_nulls(con, map):
-    assert con.execute(map.values()) is None
+def test_map_values_nulls(con, map_):
+    assert con.execute(map_.values()) is None
 
 
 @pytest.mark.parametrize(
-    ("map", "key"),
+    ("map_", "key"),
     [
         param(
             ibis.map(
@@ -153,9 +153,9 @@ def test_map_values_nulls(con, map):
     ],
 )
 @pytest.mark.parametrize("method", ["get", "contains"])
-def test_map_get_contains_nulls(con, map, key, method):
-    expr = getattr(map, method)
-    assert con.execute(expr(key)) is None
+def test_map_get_contains_nulls(con, map_, key, method):
+    expr = getattr(map_, method)
+    assert con.to_pyarrow(expr(key)).as_py() is None
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")

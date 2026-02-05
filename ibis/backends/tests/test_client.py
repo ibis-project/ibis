@@ -785,7 +785,12 @@ def test_upsert_from_memtable(backend, con, temp_table, sch, expectation):
         con.upsert(table_name, t2, on="x")
 
         result = temporary.execute()
-        expected = pd.DataFrame(data).set_index("x").combine_first(df1).reset_index()
+        expected = (
+            pd.DataFrame(data)
+            .set_index("x")
+            .combine_first(df1)
+            .reset_index()[list(t1.columns) + [c for c in t2.columns if c not in t1]]
+        )
         assert len(result) == len(expected)
         backend.assert_frame_equal(
             result.sort_values("x").reset_index(drop=True),

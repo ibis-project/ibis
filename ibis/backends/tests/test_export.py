@@ -372,7 +372,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
 
     awards_players.to_csv(outcsv)
 
-    df = pd.read_csv(outcsv, dtype=awards_players.schema().to_pandas())
+    df = pd.read_csv(outcsv, dtype=dict(awards_players.schema().to_pandas()))
 
     backend.assert_frame_equal(awards_players.to_pandas(), df)
 

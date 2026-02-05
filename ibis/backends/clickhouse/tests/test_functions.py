@@ -393,7 +393,7 @@ def test_regexp(con, expr, expected):
     ],
 )
 def test_regexp_extract(con, expr, expected):
-    assert con.execute(expr) == expected
+    assert con.to_pyarrow(expr).as_py() == expected
 
 
 def test_column_regexp_extract(con, alltypes, assert_sql):
@@ -432,7 +432,7 @@ def test_literal_none_to_nullable_column(alltypes):
         ibis.literal(None, dt.String(nullable=True)).name("nullable_string_column")
     )
     result = expr["nullable_string_column"].execute()
-    expected = pd.Series([None] * nrows, name="nullable_string_column")
+    expected = pd.Series([None] * nrows, dtype="str", name="nullable_string_column")
     tm.assert_series_equal(result, expected)
 
 

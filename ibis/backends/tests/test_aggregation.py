@@ -1500,7 +1500,9 @@ def test_collect(alltypes, df, distinct, filtered, ordered, include_null):
         x = x.dropna()
     if distinct:
         x = x.drop_duplicates()
-    sol = sorted(x, key=lambda x: (x is not None, x), reverse=True)
+    sol = sorted(
+        x.replace({np.nan: None}), key=lambda x: (x is not None, x), reverse=True
+    )
 
     if not ordered:
         # If unordered, order afterwards so we can compare
