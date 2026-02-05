@@ -556,9 +556,11 @@ def test_no_cart_join(snapshot):
     )
 
     products = products.mutate(
-        product_level_name=lambda t: ibis.literal("-")
-        .lpad(((t.ancestor_level_number - 1) * 7), "-")
-        .concat(t.ancestor_level_name)
+        product_level_name=lambda t: (
+            ibis.literal("-")
+            .lpad(((t.ancestor_level_number - 1) * 7), "-")
+            .concat(t.ancestor_level_name)
+        )
     )
 
     predicate = facts.product_id == products.descendant_node_natural_key
@@ -668,7 +670,7 @@ def test_ctes_in_order():
 @pytest.mark.parametrize(
     "accessor",
     [
-        pytest.param(lambda s, f: getattr(s, f), id="getattr"),
+        pytest.param(getattr, id="getattr"),
         pytest.param(lambda s, f: s[f], id="getitem"),
     ],
 )

@@ -1385,7 +1385,7 @@ def test_group_concat(
         )
         .groupby("bigint_col")
         .string_col.agg(
-            lambda s: (np.nan if pd.isna(s).all() else pandas_sep.join(s.values))
+            lambda s: np.nan if pd.isna(s).all() else pandas_sep.join(s.values)
         )
         .rename("tmp")
         .sort_index()

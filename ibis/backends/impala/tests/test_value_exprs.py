@@ -214,7 +214,7 @@ def test_timestamp_deltas(table, unit, snapshot):
     [
         lambda v: L(pd.Timestamp(v)),
         lambda v: L(pd.Timestamp(v).to_pydatetime()),
-        lambda v: ibis.timestamp(v),
+        ibis.timestamp,
     ],
     ids=["pd_timestamp", "pydatetime", "timestamp_function"],
 )

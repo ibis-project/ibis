@@ -1715,7 +1715,7 @@ def match(
     return NoMatch if result is NoMatch else result
 
 
-IsTruish = Check(lambda x: bool(x))
+IsTruish = Check(bool)
 IsNumber = InstanceOf(numbers.Number) & ~InstanceOf(bool)
 IsString = InstanceOf(str)
 

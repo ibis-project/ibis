@@ -398,7 +398,7 @@ def test_mutate(table):
         kw1=(table.a + 6),
         kw2=table.b.sum(),
         kw3=(_.a + 7),
-        kw4=lambda _: (_.a + 8),
+        kw4=lambda _: _.a + 8,
         kw5=ibis.literal(9),
         kw6=ibis.literal("ten"),
     )

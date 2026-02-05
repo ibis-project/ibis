@@ -753,10 +753,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             ],
         ),
         param(
-            lambda t, _: t.timestamp_col
-            + (ibis.interval(days=4) - ibis.interval(days=2)),
-            lambda t, _: t.timestamp_col
-            + (pd.Timedelta(days=4) - pd.Timedelta(days=2)),
+            lambda t, _: (
+                t.timestamp_col + (ibis.interval(days=4) - ibis.interval(days=2))
+            ),
+            lambda t, _: (
+                t.timestamp_col + (pd.Timedelta(days=4) - pd.Timedelta(days=2))
+            ),
             id="timestamp-add-interval-binop",
             marks=[
                 pytest.mark.notimpl(
@@ -775,10 +777,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             ],
         ),
         param(
-            lambda t, _: t.timestamp_col
-            + (ibis.interval(days=4) + ibis.interval(hours=2)),
-            lambda t, _: t.timestamp_col
-            + (pd.Timedelta(days=4) + pd.Timedelta(hours=2)),
+            lambda t, _: (
+                t.timestamp_col + (ibis.interval(days=4) + ibis.interval(hours=2))
+            ),
+            lambda t, _: (
+                t.timestamp_col + (pd.Timedelta(days=4) + pd.Timedelta(hours=2))
+            ),
             id="timestamp-add-interval-binop-different-units",
             marks=[
                 pytest.mark.notimpl(
