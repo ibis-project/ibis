@@ -249,7 +249,7 @@ rfc3987-syntax==1.1.0
 rich==14.3.2
 rpds-py==0.30.0
 rsa==4.9.1
-ruff==0.14.14
+ruff==0.15.0
 s3fs==2026.1.0
 s3transfer==0.16.0
 scikit-learn==1.7.2 ; python_full_version < '3.11'

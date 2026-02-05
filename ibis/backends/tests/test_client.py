@@ -208,7 +208,7 @@ def test_create_table_overwrite_temp(backend, con, temp_table, temp, overwrite):
 
 @pytest.mark.parametrize(
     "lamduh",
-    [(lambda df: df), (lambda df: pa.Table.from_pandas(df))],
+    [(lambda df: df), (pa.Table.from_pandas)],
     ids=["dataframe", "pyarrow table"],
 )
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
@@ -1021,7 +1021,7 @@ def test_connect_url(url):
         ),
         param(
             [(1, 2.0, "3")],
-            lambda arg: ibis.memtable(arg),
+            ibis.memtable,
             pd.DataFrame([(1, 2.0, "3")], columns=["col0", "col1", "col2"]),
             id="simple_auto_named",
         ),
@@ -1040,7 +1040,7 @@ def test_connect_url(url):
             pd.DataFrame({"a": [1], "b": [2.0], "c": ["3"]}).astype(
                 {"a": "int8", "b": "float32"}
             ),
-            lambda arg: ibis.memtable(arg),
+            ibis.memtable,
             pd.DataFrame([(1, 2.0, "3")], columns=list("abc")).astype(
                 {"a": "int8", "b": "float32"}
             ),
@@ -1048,7 +1048,7 @@ def test_connect_url(url):
         ),
         param(
             [dict(a=1), dict(a=2)],
-            lambda arg: ibis.memtable(arg),
+            ibis.memtable,
             pd.DataFrame({"a": [1, 2]}),
             id="list_of_dicts",
         ),

@@ -24,8 +24,8 @@ class Renderer(qd.MdRenderer):
         quartodoc_skip_doctest = "quartodoc: +SKIP"
 
         chunker = lambda line: line.startswith((prompt, continuation))
-        should_skip = (
-            lambda line: quartodoc_skip_doctest in line or skip_doctest in line
+        should_skip = lambda line: (
+            quartodoc_skip_doctest in line or skip_doctest in line
         )
 
         for first, *rest in toolz.partitionby(chunker, lines):

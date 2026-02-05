@@ -122,7 +122,9 @@ def add_nycflights13_example(data_path: Path, *, metadata: Metadata) -> None:
     )
 
     def download_and_convert(filename: str, *, bar: tqdm.tqdm):
-        parquet_path = data_path / f"nycflights13_{filename.split('.')[0]}.parquet"
+        parquet_path = (
+            data_path / f"nycflights13_{filename.split('.', maxsplit=1)[0]}.parquet"
+        )
 
         if parquet_path.exists():
             metadata[parquet_path.with_suffix("").name] = {}

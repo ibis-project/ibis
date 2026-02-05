@@ -1040,9 +1040,7 @@ class Backend(
             driver = driver.split("+", 1)[-1].replace("singlestoredb", "mysql")
 
         params = {
-            k: v
-            for k, v in dict(locals()).items()
-            if k not in ("self",) and v is not None
+            k: v for k, v in dict(locals()).items() if k != "self" and v is not None
         }
 
         self._original_connect_params = build_params(**params)

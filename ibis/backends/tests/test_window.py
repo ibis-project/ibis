@@ -228,7 +228,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
         ),
         param(
             lambda t, win: t.double_col.cummean().over(win),
-            lambda t: (t.double_col.expanding().mean().reset_index(drop=True, level=0)),
+            lambda t: t.double_col.expanding().mean().reset_index(drop=True, level=0),
             id="cummean",
             marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
@@ -293,9 +293,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
         ),
         param(
             lambda t, win: t.double_col.mean().over(win),
-            lambda gb: (
-                gb.double_col.expanding().mean().reset_index(drop=True, level=0)
-            ),
+            lambda gb: gb.double_col.expanding().mean().reset_index(drop=True, level=0),
             id="mean",
             marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
@@ -348,7 +346,7 @@ def test_grouped_bounded_expanding_window(
     [
         param(
             lambda t, win: t.double_col.mean().over(win),
-            lambda df: (df.double_col.expanding().mean()),
+            lambda df: df.double_col.expanding().mean(),
             id="mean",
             marks=[
                 pytest.mark.notimpl(
@@ -363,7 +361,7 @@ def test_grouped_bounded_expanding_window(
             # Disabled on PySpark and Spark backends because in pyspark<3.0.0,
             # Pandas UDFs are only supported on unbounded windows
             lambda t, win: mean_udf(t.double_col).over(win),
-            lambda df: (df.double_col.expanding().mean()),
+            lambda df: df.double_col.expanding().mean(),
             id="mean_udf",
             marks=[
                 pytest.mark.notimpl(
@@ -549,13 +547,13 @@ def test_grouped_bounded_preceding_window(
     [
         param(
             lambda t, win: t.double_col.mean().over(win),
-            lambda gb: (gb.double_col.transform("mean")),
+            lambda gb: gb.double_col.transform("mean"),
             id="mean",
             marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: mean_udf(t.double_col).over(win),
-            lambda gb: (gb.double_col.transform("mean")),
+            lambda gb: gb.double_col.transform("mean"),
             id="mean_udf",
             marks=[
                 pytest.mark.notimpl(
@@ -1243,7 +1241,7 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     expected = (
         df.sort_values("int_col")
         .groupby(df["int_col"].notnull())
-        .apply(lambda df: (df.int_col.rank(method="min").sub(1).div(len(df) - 1)))
+        .apply(lambda df: df.int_col.rank(method="min").sub(1).div(len(df) - 1))
         .T.reset_index(drop=True)
         .iloc[:, 0]
         .rename(expr.get_name())

@@ -75,7 +75,7 @@ def test_binary_infix_operators(con, alltypes, op, assert_sql):
     [
         lambda a, b, c: (a + b) + c,
         lambda a, _, c: a.log() + c,
-        lambda a, b, c: (b + (-(a + c))),
+        lambda a, b, c: b + (-(a + c)),
     ],
 )
 def test_binary_infix_parenthesization(con, alltypes, op, assert_sql):

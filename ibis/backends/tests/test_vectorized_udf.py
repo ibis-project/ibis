@@ -72,8 +72,8 @@ def create_add_one_udf(result_formatter, id):
 
 add_one_udfs = [
     *create_add_one_udf(result_formatter=lambda v: v, id="series"),
-    *create_add_one_udf(result_formatter=lambda v: np.array(v), id="array"),
-    *create_add_one_udf(result_formatter=lambda v: list(v), id="list"),
+    *create_add_one_udf(result_formatter=np.array, id="array"),
+    *create_add_one_udf(result_formatter=list, id="list"),
 ]
 
 
@@ -92,8 +92,8 @@ def create_calc_zscore_udf(result_formatter):
 
 calc_zscore_udfs = [
     create_calc_zscore_udf(result_formatter=lambda v: v),  # pd.Series,
-    create_calc_zscore_udf(result_formatter=lambda v: np.array(v)),  # np.array,
-    create_calc_zscore_udf(result_formatter=lambda v: list(v)),  # list,
+    create_calc_zscore_udf(result_formatter=np.array),  # np.array,
+    create_calc_zscore_udf(result_formatter=list),  # list,
 ]
 
 with pytest.warns(FutureWarning, match="v9.0"):

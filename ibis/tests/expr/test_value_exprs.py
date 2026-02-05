@@ -928,9 +928,9 @@ def test_fill_null_null(value, expected):
         operator.gt,
         operator.ge,
         lambda left, right: ibis.timestamp("2017-04-01 00:02:34").between(left, right),
-        lambda left, right: ibis.timestamp("2017-04-01")
-        .cast(dt.date)
-        .between(left, right),
+        lambda left, right: (
+            ibis.timestamp("2017-04-01").cast(dt.date).between(left, right)
+        ),
     ],
 )
 def test_string_temporal_compare(op, left, right):

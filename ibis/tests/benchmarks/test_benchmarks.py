@@ -698,8 +698,8 @@ def ddb(tmp_path_factory):
     N = 20_000_000
 
     path = str(tmp_path_factory.mktemp("duckdb") / "data.ddb")
-    sql = (
-        lambda var, table, n=N: f"""
+    sql = lambda var, table, n=N: (
+        f"""
         CREATE TABLE {table} AS
         SELECT ROW_NUMBER() OVER () AS id, {var}
         FROM (

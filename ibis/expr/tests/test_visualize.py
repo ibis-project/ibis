@@ -31,9 +31,11 @@ def key(node):
         lambda t: t.a + t.b,
         lambda t: t.a + t.b > 3**t.a,
         lambda t: t.filter((t.a + t.b * 2 * t.b / t.b**3 > 4) & (t.b > 5)),
-        lambda t: t.filter((t.a + t.b * 2 * t.b / t.b**3 > 4) & (t.b > 5))
-        .group_by("c")
-        .aggregate(amean=lambda f: f.a.mean(), bsum=lambda f: f.b.sum()),
+        lambda t: (
+            t.filter((t.a + t.b * 2 * t.b / t.b**3 > 4) & (t.b > 5))
+            .group_by("c")
+            .aggregate(amean=lambda f: f.a.mean(), bsum=lambda f: f.b.sum())
+        ),
     ],
 )
 def test_exprs(alltypes, expr_func):
