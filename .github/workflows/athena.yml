@@ -91,7 +91,7 @@ jobs:
         run: just download-data
 
       - name: setup aws credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-region: us-east-2
           role-to-assume: arn:aws:iam::070284473168:role/ibis-project-athena
