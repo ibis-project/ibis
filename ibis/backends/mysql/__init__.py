@@ -130,7 +130,7 @@ class Backend(
             user=user or getpass.getuser(),
             host="127.0.0.1" if host == "localhost" else host,
             port=port,
-            password=password or '',
+            password=password or "",
             autocommit=autocommit,
             **kwargs,
         )
