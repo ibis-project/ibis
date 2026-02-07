@@ -44,7 +44,7 @@ jobs:
           cache-dependency-path: requirements-dev.txt
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.2.1
+        uses: astral-sh/setup-uv@v7.3.0
 
       - name: update apt-get
         run: sudo apt-get update -y -q
