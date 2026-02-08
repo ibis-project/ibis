@@ -111,6 +111,14 @@ def test_contains(t):
     assert t.select(s.contains("a")).equals(t.select("a", "ga"))
 
 
+def test_contains_how_all(t):
+    # Test that how=all requires all needles to be in the column name
+    assert t.select(s.contains(("g", "a"), how=all)).equals(t.select("ga"))
+    # Column "a" contains "a" but not "g", so it should not be selected
+    # Column "g" contains "g" but not "a", so it should not be selected
+    # Column "ga" contains both "g" and "a", so it should be selected
+
+
 @pytest.mark.parametrize(
     ("rx", "expected"),
     [("e|f", ("e", "f")), (re.compile("e|f"), ("e", "f"))],
