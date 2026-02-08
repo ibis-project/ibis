@@ -298,7 +298,7 @@ class Backend(
         """
         if (
             isinstance(auth, str)
-            and (scheme := urlparse(host).scheme)
+            and (scheme := urlparse(host).scheme) is not None
             and scheme != "http"
         ):
             auth = BasicAuthentication(user, auth)
