@@ -512,6 +512,9 @@ class ClickHouseCompiler(SQLGlotCompiler):
         weekdays = len(calendar.day_name)
         return (((self.f.toDayOfWeek(arg) - 1) % weekdays) + weekdays) % weekdays
 
+    def visit_IsoDayOfWeekIndex(self, op, *, arg):
+        return self.f.toDayOfWeek(arg)
+
     def visit_DayOfWeekName(self, op, *, arg):
         # ClickHouse 20 doesn't support dateName
         #
