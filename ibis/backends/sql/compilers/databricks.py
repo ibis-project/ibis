@@ -30,6 +30,8 @@ class DatabricksCompiler(PySparkCompiler):
         SIMPLE_OPS[ops.UnwrapJSONFloat64],
         SIMPLE_OPS[ops.UnwrapJSONBoolean],
     )
+    SIMPLE_OPS.pop(ops.LStrip, None)
+    SIMPLE_OPS.pop(ops.RStrip, None)
 
     UNSUPPORTED_OPS = (
         ops.ElementWiseVectorizedUDF,

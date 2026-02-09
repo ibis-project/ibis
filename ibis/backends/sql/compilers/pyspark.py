@@ -85,8 +85,6 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.EndsWith: "endswith",
         ops.Hash: "hash",
         ops.Log10: "log10",
-        ops.LStrip: "ltrim",
-        ops.RStrip: "rtrim",
         ops.MapLength: "size",
         ops.MapContains: "map_contains_key",
         ops.MapMerge: "map_concat",
@@ -97,6 +95,14 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.UnwrapJSONFloat64: "unwrap_json_float",
         ops.UnwrapJSONBoolean: "unwrap_json_bool",
     }
+
+    _TRIM_WHITESPACE_CODEPOINTS = (32, 9, 10, 13, 11, 12)
+
+    def _trim_whitespace(self) -> sge.Expression:
+        # Build trim characters via CHR() to avoid backslash escapes being
+        # interpreted as literals when escapedStringLiterals is disabled.
+        chars = [self.f.chr(code) for code in self._TRIM_WHITESPACE_CODEPOINTS]
+        return self.f.concat(*chars)
 
     def visit_InSubquery(self, op, *, rel, needle):
         if op.needle.dtype.is_struct():

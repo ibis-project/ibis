@@ -1006,14 +1006,17 @@ class SQLGlotCompiler(abc.ABC):
         return self._make_interval(arg, unit)
 
     ### String Instruments
+    def _trim_whitespace(self) -> sge.Expression:
+        return sge.Literal.string(string.whitespace)
+
     def visit_Strip(self, op, *, arg):
-        return self.f.trim(arg, string.whitespace)
+        return self.f.trim(arg, self._trim_whitespace())
 
     def visit_RStrip(self, op, *, arg):
-        return self.f.rtrim(arg, string.whitespace)
+        return self.f.rtrim(arg, self._trim_whitespace())
 
     def visit_LStrip(self, op, *, arg):
-        return self.f.ltrim(arg, string.whitespace)
+        return self.f.ltrim(arg, self._trim_whitespace())
 
     def visit_LPad(self, op, *, arg, length, pad):
         return self.f.lpad(arg, self.f.greatest(self.f.length(arg), length), pad)

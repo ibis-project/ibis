@@ -145,6 +145,32 @@ def test_string_literal_backslash_escaping(con):
     assert result == "\\d\\e"
 
 
+def test_strip_preserves_literal_f(con):
+    data = [
+        (0, "ffXXXff"),
+        (1, "ffXXXff  "),
+        (2, "  ffXXXff"),
+        (3, "fXXXf"),
+        (4, "XXXff"),
+        (5, "ffXXX"),
+        (6, "XXX"),
+    ]
+    df = con._session.createDataFrame(data, schema="id int, x string")
+    df.createOrReplaceTempView("strip_f_table")
+    t = con.table("strip_f_table")
+    result = t.mutate(x_clean=t.x.strip()).order_by("id").execute()
+
+    expected_strings = [row[1] for row in data]
+    expected = pd.DataFrame(
+        {
+            "id": [row[0] for row in data],
+            "x": expected_strings,
+            "x_clean": [value.strip() for value in expected_strings],
+        }
+    )
+    tm.assert_frame_equal(result, expected)
+
+
 def test_connect_without_explicit_session():
     con = ibis.pyspark.connect()
     result = con.sql("SELECT CAST(1 AS BIGINT) as foo").to_pandas()
