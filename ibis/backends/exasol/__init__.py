@@ -4,7 +4,7 @@ import contextlib
 import datetime
 import re
 import ssl
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
 import pyexasol
@@ -24,7 +24,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -350,7 +350,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.SchemaLike | None = None,
+        schema: sch.IntoSchema | None = None,
         database: str | None = None,
         overwrite: bool = False,
         temp: bool = False,

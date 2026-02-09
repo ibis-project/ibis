@@ -20,6 +20,9 @@ def put_into(con, query):
         cur.execute(query)
 
 
+DATABRICKS_CATALOG = env.get("IBIS_TESTING_DATABRICKS_CATALOG", "workspace")
+
+
 class TestConf(BackendTest):
     supports_map = True
     driver_supports_multiple_statements = False
@@ -33,7 +36,7 @@ class TestConf(BackendTest):
         user = getpass.getuser()
         python_version = "".join(map(str, sys.version_info[:3]))
         volume = f"{user}_{python_version}"
-        volume_prefix = f"/Volumes/ibis_testing/default/{volume}"
+        volume_prefix = f"/Volumes/{DATABRICKS_CATALOG}/default/{volume}"
 
         with databricks.sql.connect(
             server_hostname=env["DATABRICKS_SERVER_HOSTNAME"],
@@ -43,7 +46,7 @@ class TestConf(BackendTest):
         ) as con:
             with con.cursor() as cur:
                 cur.execute(
-                    f"CREATE VOLUME IF NOT EXISTS ibis_testing.default.{volume} COMMENT 'Ibis test data storage'"
+                    f"CREATE VOLUME IF NOT EXISTS {DATABRICKS_CATALOG}.default.{volume} COMMENT 'Ibis test data storage'"
                 )
             with concurrent.futures.ThreadPoolExecutor() as exe:
                 for fut in concurrent.futures.as_completed(
@@ -59,7 +62,12 @@ class TestConf(BackendTest):
             with con.cursor() as cur:
                 for raw_stmt in self.ddl_script:
                     try:
-                        stmt = raw_stmt.format(user=user, python_version=python_version)
+                        # replace with existing catalog name
+                        stmt = raw_stmt.format(
+                            workspace=DATABRICKS_CATALOG,
+                            user=user,
+                            python_version=python_version,
+                        )
                     except KeyError:  # not a valid format string, just execute it
                         stmt = raw_stmt
 
@@ -71,7 +79,7 @@ class TestConf(BackendTest):
             server_hostname=env["DATABRICKS_SERVER_HOSTNAME"],
             http_path=env["DATABRICKS_HTTP_PATH"],
             access_token=env["DATABRICKS_TOKEN"],
-            catalog="ibis_testing",
+            catalog=DATABRICKS_CATALOG,
             schema="default",
             **kw,
         )

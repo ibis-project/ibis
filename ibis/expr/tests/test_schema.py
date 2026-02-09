@@ -14,6 +14,15 @@ from ibis.common.grounds import Annotable
 from ibis.common.patterns import CoercedTo
 
 
+def test_schema_factory_typing():
+    s: sch.Schema
+    s = sch.schema({"a": "int64", "b": "string"})
+    assert isinstance(s, sch.Schema)
+
+    with pytest.raises(TypeError):
+        sch.schema(5)  # type:ignore[invalid-argument-type]
+
+
 def test_whole_schema():
     schema = {
         "cid": "int64",
@@ -383,7 +392,7 @@ def test_schema_from_to_polars_schema():
 
 
 def test_schema_from_to_numpy_dtypes():
-    np = pytest.importorskip("np")
+    np = pytest.importorskip("numpy")
     numpy_dtypes = [
         ("a", np.dtype("int64")),
         ("b", np.dtype("str")),
@@ -404,6 +413,9 @@ def test_schema_from_to_numpy_dtypes():
 def test_schema_from_to_pandas_dtypes():
     np = pytest.importorskip("numpy")
     pd = pytest.importorskip("pandas")
+
+    from ibis.formats.pandas import _DEFAULT_DATETIME_RESOLUTION
+
     pandas_schema = pd.Series(
         [
             ("a", np.dtype("int64")),
@@ -428,9 +440,9 @@ def test_schema_from_to_pandas_dtypes():
     restored_dtypes = ibis_schema.to_pandas()
     expected_dtypes = [
         ("a", np.dtype("int64")),
-        ("b", np.dtype("object")),
-        ("c", np.dtype("object")),
-        ("d", pd.DatetimeTZDtype(tz="US/Eastern", unit="ns")),
+        ("b", pd.Series(dtype="str").dtype),
+        ("c", pd.Series(dtype="str").dtype),
+        ("d", pd.DatetimeTZDtype(tz="US/Eastern", unit=_DEFAULT_DATETIME_RESOLUTION)),
     ]
     assert restored_dtypes == expected_dtypes
 
@@ -441,9 +453,10 @@ def test_null_fields():
     assert sch.schema({"a": "null", "b": "null"}).null_fields == ("a", "b")
 
 
-def test_to_sqlglot_column_defs():
+@pytest.mark.parametrize("dialect", ["duckdb", "DUCKDB", sg.dialects.DuckDB])
+def test_to_sqlglot_column_defs(dialect):
     schema = sch.schema({"a": "int64", "b": "string", "c": "!string"})
-    columns = schema.to_sqlglot_column_defs("duckdb")
+    columns = schema.to_sqlglot_column_defs(dialect)
 
     assert len(columns) == 3
     assert all(isinstance(col, sge.ColumnDef) for col in columns)

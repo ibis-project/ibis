@@ -10,7 +10,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import databricks.sql
 import pyarrow as pa
@@ -32,12 +32,12 @@ from ibis.backends.sql.compilers.base import STAR, AlterTable, RenameTable
 from ibis.backends.sql.datatypes import DatabricksType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     import pandas as pd
     import polars as pl
 
-    from ibis.expr.schema import SchemaLike
+    from ibis.expr.schema import IntoSchema
 
 
 def _databricks_type_to_ibis(typ, nullable: bool = True) -> dt.DataType:
@@ -126,7 +126,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: SchemaLike | None = None,
+        schema: IntoSchema | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,

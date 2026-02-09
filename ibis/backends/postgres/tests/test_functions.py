@@ -329,7 +329,7 @@ def test_regexp(con, expr, expected):
     ],
 )
 def test_regexp_extract(con, expr, expected):
-    assert con.execute(expr) == expected
+    assert con.to_pyarrow(expr).as_py() == expected
 
 
 @pytest.mark.parametrize(
@@ -727,7 +727,11 @@ def test_partitioned_window(alltypes, func, df):
     f = getattr(t.double_col, func)
     expr = f().over(window).name("double_col")
     result = t.select(expr).execute().double_col
-    expected = df.groupby("string_col").apply(roller(func)).reset_index(drop=True)
+    expected = (
+        df.groupby("string_col")
+        .apply(roller(func), include_groups=False)
+        .reset_index(drop=True)
+    )
     tm.assert_series_equal(result, expected)
 
 
@@ -825,7 +829,7 @@ def test_null_column_union(alltypes, df):
             pd.concat(
                 [
                     df[["double_col"]],
-                    pd.DataFrame({"string_col": [None] * nrows}),
+                    pd.DataFrame({"string_col": [None] * nrows}, dtype="str"),
                 ],
                 axis=1,
             ),
@@ -903,15 +907,10 @@ def test_array_collect(array_types):
 @pytest.mark.parametrize("index", [0, 1, 3, 4, 11, -1, -3, -4, -11])
 def test_array_index(array_types, index):
     expr = array_types.select(array_types.y[index].name("indexed"))
-    result = expr.execute()
-    expected = pd.DataFrame(
-        {
-            "indexed": array_types.y.execute().map(
-                lambda x: x[index] if -len(x) <= index < len(x) else None
-            )
-        }
-    )
-    tm.assert_frame_equal(result, expected)
+    result = expr.to_pyarrow()
+    y = array_types.y.to_pyarrow()
+    expected = [x[index].as_py() if -len(x) <= index < len(x) else None for x in y]
+    assert result.column("indexed").to_pylist() == expected
 
 
 @pytest.mark.parametrize("n", [1, 3, 4, 7, -2])

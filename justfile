@@ -144,7 +144,7 @@ download-data owner="ibis-project" repo="testing-data" rev="master":
     fi
 
 # download the iceberg jar used for testing pyspark and iceberg integration
-download-iceberg-jar pyspark scala="2.12" iceberg="1.6.1":
+download-iceberg-jar pyspark-version="4.0" scala-version="2.13" iceberg-version="1.10.1":
     #!/usr/bin/env bash
     set -eo pipefail
 
@@ -155,10 +155,10 @@ download-iceberg-jar pyspark scala="2.12" iceberg="1.6.1":
     fi
     pyspark="$("${runner[@]}" -c "import pyspark; print(pyspark.__file__.rsplit('/', 1)[0])")"
     pushd "${pyspark}/jars"
-    jar="iceberg-spark-runtime-{{ pyspark }}_{{ scala }}-{{ iceberg }}.jar"
-    url="https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-{{ pyspark }}_{{ scala }}/{{ iceberg }}/${jar}"
-    curl -qSsL -o "${jar}" "${url}"
-    ls "${jar}"
+    jar="iceberg-spark-runtime-{{ pyspark-version }}_{{ scala-version }}-{{ iceberg-version }}.jar"
+    prefix=org/apache/iceberg/iceberg-spark-runtime-{{ pyspark-version }}_{{ scala-version }}
+    url="https://search.maven.org/remotecontent?filepath=${prefix}/{{ iceberg-version }}/${jar}"
+    curl --fail --fail-early --show-error --silent --location --output "${jar}" "${url}"
 
 # pull images
 pull *backends:
@@ -339,7 +339,7 @@ chat *args:
     zulip-term {{ args }}
 
 # compute the next version number
-@compute-version:
+compute-version:
     #!/usr/bin/env -S uv run --script
     # /// script
     # requires-python = ">=3.11"
@@ -357,9 +357,8 @@ chat *args:
 # bump the version number in necessary files
 bump-version:
     #!/usr/bin/env bash
-
     ibis_dev_version="$(just compute-version)"
-    uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "$ibis_dev_version" > /dev/null
+    toml set pyproject.toml project.version "$ibis_dev_version" | sponge pyproject.toml
     sed -i 's/__version__ = .\+/__version__ = "'$ibis_dev_version'"/g' ibis/__init__.py
     just lock > /dev/null
     echo "$ibis_dev_version"

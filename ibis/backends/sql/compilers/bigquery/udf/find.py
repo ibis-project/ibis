@@ -47,7 +47,7 @@ def find_names(node: ast.AST) -> list[ast.Name]:
     >>> node = ast.parse("a + b")
     >>> names = find_names(node)
     >>> names
-    [<....Name object at 0x...>, <....Name object at 0x...>]
+    [...Name..., ...Name...]
     >>> names[0].id
     'a'
     >>> names[1].id

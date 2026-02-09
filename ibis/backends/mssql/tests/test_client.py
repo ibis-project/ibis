@@ -328,6 +328,29 @@ def test_non_ascii_column_name(con):
     assert names[0] == "калона"
 
 
+@pytest.mark.parametrize(
+    ("table_prefix", "schema_prefix"),
+    [("tábla", "esquéma"), ("表", "模式")],
+    ids=["accented-latin", "chinese"],
+)
+def test_get_schema_uses_national_for_unicode_identifiers(
+    con, table_prefix, schema_prefix
+):
+    table_name = f"{table_prefix}_{gen_name('unicode')}"
+    schema_name = f"{schema_prefix}_{gen_name('unicode')}"
+    con.create_database(schema_name)
+
+    try:
+        con.create_table(table_name, schema={"x": "int32"}, database=schema_name)
+        try:
+            schema = con.get_schema(table_name, database=schema_name)
+            assert schema == ibis.schema({"x": "int32"})
+        finally:
+            con.drop_table(table_name, database=schema_name, force=True)
+    finally:
+        con.drop_database(schema_name, force=True)
+
+
 def test_mssql_without_password_is_valid():
     with pytest.raises(
         PyODBCProgrammingError, match=f"Login failed for user '{MSSQL_USER}'"

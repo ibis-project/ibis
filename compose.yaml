@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:25.12.3.21-alpine
+    image: clickhouse/clickhouse-server:26.1.2.11-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -39,6 +39,31 @@ services:
     volumes:
       - mysql:/data
       - $PWD/docker/mysql:/docker-entrypoint-initdb.d:ro
+
+  singlestoredb:
+    environment:
+      ROOT_PASSWORD: ibis_testing
+      SINGLESTORE_LICENSE: "" # Optional license key
+      SINGLESTOREDB_DATABASE: ibis_testing
+      SINGLESTOREDB_PASSWORD: ibis_testing
+      SINGLESTOREDB_USER: root
+      SINGLESTOREDB_PORT: 3307
+    healthcheck:
+      interval: 1s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - sdb-admin query --host 127.0.0.1 --user root --password ibis_testing --port 3306 --sql 'select 1'
+    image: ghcr.io/singlestore-labs/singlestoredb-dev:0.2.74
+    ports:
+      - 3307:3306 # Use 3307 to avoid conflict with MySQL
+      - 9089:9000 # Data API (use 9089 to avoid conflicts)
+      # - 9088:8080 # SingleStore Studio UI (use 9088 to avoid conflicts)
+    networks:
+      - singlestoredb
+    volumes:
+      - singlestoredb:/data
+      - $PWD/docker/singlestoredb/init.sql:/init.sql:ro
 
   postgres:
     environment:
@@ -163,7 +188,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:478
+    image: trinodb/trino:479
     ports:
       - 8080:8080
     networks:
@@ -206,7 +231,7 @@ services:
       - druid
 
   druid-coordinator:
-    image: apache/druid:35.0.0
+    image: apache/druid:36.0.0
     hostname: coordinator
     container_name: coordinator
     volumes:
@@ -231,7 +256,7 @@ services:
       - druid
 
   druid-broker:
-    image: apache/druid:35.0.0
+    image: apache/druid:36.0.0
     hostname: broker
     container_name: broker
     volumes:
@@ -259,7 +284,7 @@ services:
       - druid
 
   druid-historical:
-    image: apache/druid:35.0.0
+    image: apache/druid:36.0.0
     hostname: historical
     container_name: historical
     volumes:
@@ -286,7 +311,7 @@ services:
       - druid
 
   druid-middlemanager:
-    image: apache/druid:35.0.0
+    image: apache/druid:36.0.0
     hostname: middlemanager
     container_name: middlemanager
     volumes:
@@ -314,7 +339,7 @@ services:
       - druid
 
   druid:
-    image: apache/druid:35.0.0
+    image: apache/druid:36.0.0
     hostname: router
     container_name: router
     volumes:
@@ -556,6 +581,25 @@ services:
     networks:
       - impala
 
+  materialize:
+    image: materialize/materialized:v26.10.1
+    ports:
+      - 6875:6875 # SQL port
+      - 6876:6876 # HTTP port
+      - 6874:6874 # Internal port
+    environment:
+      MZ_LOG: info
+      MZ_TELEMETRY: "false"
+      MZ_SYSTEM_PARAMETER_DEFAULT: "max_tables=1000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "localhost:6878/api/readyz"]
+      interval: 1s
+      start_period: 60s
+    volumes:
+      - materialize:/data
+    networks:
+      - materialize
+
   risingwave:
     image: ghcr.io/risingwavelabs/risingwave:v2.1.3
     command: "standalone --meta-opts=\" \
@@ -590,10 +634,15 @@ services:
       - risingwave
 
   spark-connect:
-    image: bitnamilegacy/spark:3.5.6
+    image: bitnamilegacy/spark:4.0.0
     ports:
       - 15002:15002
-    command: /opt/bitnami/spark/sbin/start-connect-server.sh --name ibis_testing --packages org.apache.spark:spark-connect_2.12:3.5.3,org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.1,io.delta:delta-spark_2.12:3.3.0
+    command:
+      - /opt/bitnami/spark/sbin/start-connect-server.sh
+      - --name
+      - ibis_testing
+      - --packages
+      - org.apache.spark:spark-connect_2.13:4.0.0,org.apache.iceberg:iceberg-spark-runtime-4.0_2.13:1.10.1,io.delta:delta-spark_2.13:4.0.0
     healthcheck:
       test:
         - CMD-SHELL
@@ -618,11 +667,13 @@ networks:
   mssql:
   clickhouse:
   postgres:
+  singlestoredb:
   trino:
   druid:
   oracle:
   exasol:
   flink:
+  materialize:
   risingwave:
   spark-connect:
 
@@ -633,7 +684,9 @@ volumes:
   mysql:
   oracle:
   postgres:
+  singlestoredb:
   exasol:
   impala:
+  materialize:
   risingwave:
   spark-connect:

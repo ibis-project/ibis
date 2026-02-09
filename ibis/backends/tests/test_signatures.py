@@ -42,10 +42,14 @@ def _scrape_methods(modules, params):
 marks = {
     "compile": pytest.param(BaseBackend, "compile"),
     "create_database": pytest.param(
-        CanCreateDatabase, "create_database", marks=pytest.mark.notyet(["mysql"])
+        CanCreateDatabase,
+        "create_database",
+        marks=pytest.mark.notyet(["mysql", "singlestoredb"]),
     ),
     "drop_database": pytest.param(
-        CanCreateDatabase, "drop_database", marks=pytest.mark.notyet(["mysql"])
+        CanCreateDatabase,
+        "drop_database",
+        marks=pytest.mark.notyet(["mysql", "singlestoredb"]),
     ),
     "drop_table": pytest.param(
         SQLBackend, "drop_table", marks=pytest.mark.notyet(["druid"])

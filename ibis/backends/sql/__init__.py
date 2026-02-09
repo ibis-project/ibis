@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -16,13 +16,13 @@ from ibis import util
 from ibis.backends import BaseBackend
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     import pandas as pd
     import pyarrow as pa
 
     from ibis.backends.sql.compilers.base import SQLGlotCompiler
-    from ibis.expr.schema import SchemaLike
+    from ibis.expr.schema import IntoSchema
 
 
 class SQLBackend(BaseBackend):
@@ -118,7 +118,17 @@ class SQLBackend(BaseBackend):
             Compiled expression
         """
         query = self.compiler.to_sqlglot(expr, limit=limit, params=params)
-        sql = query.sql(dialect=self.dialect, pretty=pretty, copy=False)
+        try:
+            sql = query.sql(
+                dialect=self.dialect,
+                pretty=pretty,
+                copy=False,
+                unsupported_level=sg.ErrorLevel.RAISE,
+            )
+        except sg.UnsupportedError as e:
+            raise exc.UnsupportedOperationError(
+                f"Operation not supported in {self.name} backend: {e}\n\nexpression:\n{expr}\n\nsqlglot expression:\n{query}"
+            ) from e
         self._log(sql)
         return sql
 
@@ -137,7 +147,7 @@ class SQLBackend(BaseBackend):
         query: str,
         /,
         *,
-        schema: SchemaLike | None = None,
+        schema: IntoSchema | None = None,
         dialect: str | None = None,
     ) -> ir.Table:
         """Create an Ibis table expression from a SQL query.
@@ -705,10 +715,10 @@ class SQLBackend(BaseBackend):
     def _to_catalog_db_tuple(self, table_loc: sge.Table):
         if (sg_cat := table_loc.args["catalog"]) is not None:
             sg_cat.args["quoted"] = False
-            sg_cat = sg_cat.sql(self.name)
+            sg_cat = sg_cat.sql(self.dialect)
         if (sg_db := table_loc.args["db"]) is not None:
             sg_db.args["quoted"] = False
-            sg_db = sg_db.sql(self.name)
+            sg_db = sg_db.sql(self.dialect)
 
         return sg_cat, sg_db
 

@@ -46,6 +46,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.env.local
 
 # OS generated files
 .directory
@@ -148,3 +149,5 @@ jupyter_lite_config.json
 # pixi environments
 .pixi
 *.egg-info
+warehouse
+penguins.csv

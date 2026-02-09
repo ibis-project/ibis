@@ -1,6 +1,5 @@
 import ibis
 
-
 lineitem = ibis.table(
     name="lineitem",
     schema={

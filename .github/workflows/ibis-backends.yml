@@ -52,8 +52,8 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.9"
-          - "3.13"
+          - "3.10"
+          - "3.14"
     steps:
       - name: checkout
         uses: actions/checkout@v6
@@ -65,7 +65,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.2.0
+        uses: astral-sh/setup-uv@v7.3.0
 
       - uses: extractions/setup-just@v3
         env:
@@ -92,8 +92,8 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.9"
-          - "3.13"
+          - "3.10"
+          - "3.14"
         backend:
           - name: duckdb
             title: DuckDB
@@ -141,6 +141,13 @@ jobs:
             sys-deps:
               - libgeos-dev
               - default-libmysqlclient-dev
+          - name: singlestoredb
+            title: SingleStoreDB
+            serial: true
+            services:
+              - singlestoredb
+            extras:
+              - --extra singlestoredb
           - name: postgres
             title: PostgreSQL
             serial: true
@@ -166,6 +173,12 @@ jobs:
             sys-deps:
               - libgeos-dev
               - libpq5
+          - name: materialize
+            title: Materialize
+            services:
+              - materialize
+            extras:
+              - --extra materialize
           - name: risingwave
             title: RisingWave
             serial: true
@@ -263,10 +276,8 @@ jobs:
               sys-deps:
                 - cmake
                 - ninja-build
-          # pytorch wheel doesn't exist for windows + python 3.13, so test
-          # against 3.12 until that's shipped
           - os: windows-latest
-            python-version: "3.12"
+            python-version: "3.14"
             backend:
               name: duckdb
               title: DuckDB
@@ -280,9 +291,8 @@ jobs:
                 - --extra polars
             additional_deps:
               - torch
-          # also test duckdb with python 3.13 on windows, *without* pytorch
           - os: windows-latest
-            python-version: "3.13"
+            python-version: "3.14"
             backend:
               name: duckdb
               title: DuckDB
@@ -296,7 +306,7 @@ jobs:
                 - --extra polars
         exclude:
           - os: windows-latest
-            python-version: "3.13"
+            python-version: "3.14"
             backend:
               name: duckdb
           - os: windows-latest
@@ -313,6 +323,15 @@ jobs:
               sys-deps:
                 - libgeos-dev
                 - default-libmysqlclient-dev
+          - os: windows-latest
+            backend:
+              name: singlestoredb
+              title: SingleStoreDB
+              serial: true
+              extras:
+                - --extra singlestoredb
+              services:
+                - singlestoredb
           - os: windows-latest
             backend:
               name: clickhouse
@@ -335,6 +354,14 @@ jobs:
               sys-deps:
                 - libgeos-dev
                 - libpq5
+          - os: windows-latest
+            backend:
+              name: materialize
+              title: Materialize
+              services:
+                - materialize
+              extras:
+                - --extra materialize
           - os: windows-latest
             backend:
               name: risingwave
@@ -362,7 +389,7 @@ jobs:
                 - libpq5
           # TODO(deepyaman): Test whether this works upon releasing https://github.com/cloudera/impyla/commit/bf1f94c3c4106ded6267d2485c1e939775a6a87f
           - os: ubuntu-latest
-            python-version: "3.13"
+            python-version: "3.14"
             backend:
               name: impala
               title: Impala
@@ -429,7 +456,7 @@ jobs:
               services:
                 - oracle
           - os: ubuntu-latest
-            python-version: "3.13"
+            python-version: "3.14"
             backend:
               name: flink
               title: Flink
@@ -498,7 +525,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.2.0
+        uses: astral-sh/setup-uv@v7.3.0
 
       - name: install other deps
         if: matrix.backend.additional_deps != null
@@ -557,31 +584,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python-version: "3.9"
-            pyspark-minor-version: "3.3"
-            tag: local
-            deps:
-              - pyspark==3.3.4
-              - pandas==1.5.3
-              - numpy==1.23.5
-          - python-version: "3.11"
+          - python-version: "3.10"
             pyspark-minor-version: "3.5"
+            scala-version: "2.12"
             tag: local
             deps:
-              - delta-spark==3.3.0
+              - "'pyspark>=3.5,<4'"
           - python-version: "3.13"
-            pyspark-minor-version: "3.5"
+            pyspark-minor-version: "4.0"
+            scala-version: "2.13"
             tag: local
             deps:
-              - setuptools==75.1.0
-              - delta-spark==3.3.0
+              - delta-spark
           - python-version: "3.12"
-            pyspark-minor-version: "3.5"
+            pyspark-minor-version: "4.0"
             SPARK_REMOTE: "sc://localhost:15002"
+            scala-version: "2.13"
             tag: remote
             deps:
-              - setuptools==75.1.0
-              - delta-spark==3.3.0
+              - setuptools
               - googleapis-common-protos
               - grpcio
               - grpcio-status
@@ -612,19 +633,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.2.0
-
-        # it requires a version of pandas that pyspark is not compatible with
-      - name: remove lonboard
-        if: matrix.pyspark-minor-version == '3.3'
-        run: uv remove --group docs --no-sync lonboard
+        uses: astral-sh/setup-uv@v7.3.0
 
       - name: install pyspark-specific dependencies
+        if: matrix.deps
         run: uv add --no-sync ${{ join(matrix.deps, ' ') }}
 
       - name: install iceberg
-        shell: bash
-        run: just download-iceberg-jar ${{ matrix.pyspark-minor-version }}
+        run: just download-iceberg-jar ${{ matrix.pyspark-minor-version }} ${{ matrix.scala-version }}
 
       - name: run spark connect tests
         if: matrix.tag == 'remote'
@@ -639,7 +655,6 @@ jobs:
         run: just ci-check "--extra pyspark --extra examples" -m pyspark
 
       - name: check that no untracked files were produced
-        shell: bash
         run: git checkout uv.lock pyproject.toml && ! git status --porcelain | grep -F .
 
       - name: upload code coverage

@@ -7,7 +7,7 @@ import re
 import warnings
 from functools import cached_property
 from operator import itemgetter
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
 import oracledb
@@ -32,6 +32,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -387,7 +388,7 @@ class Backend(
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.SchemaLike | None = None,
+        schema: sch.IntoSchema | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,

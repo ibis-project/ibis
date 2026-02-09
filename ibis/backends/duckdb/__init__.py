@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     import torch
     from fsspec import AbstractFileSystem
 
-    from ibis.expr.schema import SchemaLike
+    from ibis.expr.schema import IntoSchema
 
 try:
     from duckdb import func as _duckdb_func
@@ -126,7 +126,7 @@ class Backend(
         | pl.LazyFrame
         | None = None,
         *,
-        schema: SchemaLike | None = None,
+        schema: IntoSchema | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -1009,18 +1009,18 @@ class Backend(
 
         Examples
         --------
-        >>> import ibis
+        >>> from contextlib import closing
         >>> import sqlite3
+        >>> import ibis
         >>> ibis.options.interactive = True
-        >>> con = sqlite3.connect("/tmp/sqlite.db")
-        >>> with con:
+        >>> with closing(sqlite3.connect("/tmp/sqlite.db")) as con:
         ...     con.execute("DROP TABLE IF EXISTS t")  # doctest: +ELLIPSIS
         ...     con.execute("CREATE TABLE t (a INT, b TEXT)")  # doctest: +ELLIPSIS
         ...     con.execute(
         ...         "INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')"
         ...     )  # doctest: +ELLIPSIS
+        ...     con.commit()
         <...>
-        >>> con.close()
         >>> con = ibis.connect("duckdb://")
         >>> t = con.read_sqlite("/tmp/sqlite.db", table_name="t")
         >>> t
@@ -1226,17 +1226,16 @@ class Backend(
 
         Examples
         --------
-        >>> import ibis
+        >>> from contextlib import closing
         >>> import sqlite3
-        >>> con = sqlite3.connect("/tmp/attach_sqlite.db")
-        >>> with con:
+        >>> import ibis
+        >>> with closing(sqlite3.connect("/tmp/attach_sqlite.db")) as con:
         ...     con.execute("DROP TABLE IF EXISTS t")  # doctest: +ELLIPSIS
         ...     con.execute("CREATE TABLE t (a INT, b TEXT)")  # doctest: +ELLIPSIS
         ...     con.execute(
         ...         "INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')"
         ...     )  # doctest: +ELLIPSIS
         <...>
-        >>> con.close()
         >>> con = ibis.connect("duckdb://")
         >>> con.list_tables()
         []

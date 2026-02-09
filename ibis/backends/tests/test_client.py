@@ -27,6 +27,7 @@ import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.conftest import NO_MERGE_SUPPORT
 from ibis.backends.tests.errors import (
+    ArrowTypeError,
     DatabricksServerOperationError,
     ExaQueryError,
     ImpalaHiveServer2Error,
@@ -207,7 +208,7 @@ def test_create_table_overwrite_temp(backend, con, temp_table, temp, overwrite):
 
 @pytest.mark.parametrize(
     "lamduh",
-    [(lambda df: df), (lambda df: pa.Table.from_pandas(df))],
+    [(lambda df: df), (pa.Table.from_pandas)],
     ids=["dataframe", "pyarrow table"],
 )
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
@@ -397,6 +398,12 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
+@pytest.mark.notimpl(
+    ["materialize"],
+    raises=NotImplementedError,
+    reason="rename_table() method not implemented in Materialize backend (could be added using ALTER...RENAME).",
+    # Ref: https://materialize.com/docs/sql/alter-rename/
+)
 def test_rename_table(con, temp_table, temp_table_orig):
     schema = ibis.schema({"a": "string", "b": "bool", "c": "int32"})
     con.create_table(temp_table_orig, schema=schema)
@@ -546,6 +553,12 @@ def employee_data_3_temp_table(
 
 
 @pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_no_overwrite_from_dataframe(
     backend, con, test_employee_data_2, employee_empty_temp_table
 ):
@@ -572,6 +585,12 @@ def test_insert_no_overwrite_from_dataframe(
 @pytest.mark.notyet(
     ["athena"], raises=com.UnsupportedOperationError, reason="s3 location required"
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_overwrite_from_dataframe(
     backend, con, employee_data_1_temp_table, test_employee_data_2
 ):
@@ -587,6 +606,12 @@ def test_insert_overwrite_from_dataframe(
 
 
 @pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_no_overwrite_from_expr(
     backend, con, employee_empty_temp_table, employee_data_2_temp_table
 ):
@@ -611,6 +636,12 @@ def test_insert_no_overwrite_from_expr(
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_overwrite_from_expr(
     backend, con, employee_data_1_temp_table, employee_data_2_temp_table
 ):
@@ -634,6 +665,12 @@ def test_insert_overwrite_from_expr(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
 )
 def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
     def _emp(a, b, c, d):
@@ -748,7 +785,12 @@ def test_upsert_from_memtable(backend, con, temp_table, sch, expectation):
         con.upsert(table_name, t2, on="x")
 
         result = temporary.execute()
-        expected = pd.DataFrame(data).set_index("x").combine_first(df1).reset_index()
+        expected = (
+            pd.DataFrame(data)
+            .set_index("x")
+            .combine_first(df1)
+            .reset_index()[list(t1.columns) + [c for c in t2.columns if c not in t1]]
+        )
         assert len(result) == len(expected)
         backend.assert_frame_equal(
             result.sort_values("x").reset_index(drop=True),
@@ -765,6 +807,12 @@ def test_upsert_from_memtable(backend, con, temp_table, sch, expectation):
     ["flink"],
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
 )
 def test_insert_from_memtable(con, temp_table):
     df = pd.DataFrame({"x": range(3)})
@@ -787,6 +835,7 @@ def test_insert_from_memtable(con, temp_table):
         "exasol",
         "impala",
         "mysql",
+        "singlestoredb",
         "oracle",
         "polars",
         "flink",
@@ -795,7 +844,6 @@ def test_insert_from_memtable(con, temp_table):
     raises=AttributeError,
     reason="doesn't support the common notion of a catalog",
 )
-@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_list_catalogs(con):
     # Every backend has its own databases
     test_catalogs = {
@@ -807,11 +855,13 @@ def test_list_catalogs(con):
         "oracle": set(),
         "postgres": {"postgres", "ibis_testing"},
         "risingwave": {"dev"},
+        "singlestoredb": set(),  # SingleStoreDB doesn't support catalogs
         "snowflake": {"IBIS_TESTING"},
         "trino": {"memory"},
         "pyspark": {"spark_catalog"},
-        "databricks": {"hive_metastore", "ibis", "ibis_testing", "samples", "system"},
+        "databricks": {"workspace", "samples", "system"},
         "athena": {"AwsDataCatalog"},
+        "materialize": {"materialize"},
     }
     result = set(con.list_catalogs())
     assert test_catalogs[con.name] <= result
@@ -832,12 +882,14 @@ def test_list_database_contents(con):
         "exasol": {"EXASOL"},
         "flink": {"default_database"},
         "impala": {"ibis_testing", "default", "_impala_builtins"},
+        "materialize": {"public", "mz_catalog", "pg_catalog"},
         "mssql": {"INFORMATION_SCHEMA", "dbo", "guest"},
         "mysql": {"ibis-testing", "information_schema"},
         "oracle": {"SYS", "IBIS"},
         "postgres": {"public", "information_schema"},
         "pyspark": set(),
         "risingwave": {"public", "rw_catalog", "information_schema"},
+        "singlestoredb": {"ibis_testing", "information_schema"},
         "snowflake": {"IBIS_TESTING"},
         "sqlite": {"main"},
         "trino": {"default", "information_schema"},
@@ -897,6 +949,11 @@ def test_unsigned_integer_type(con, temp_table):
         param("datafusion://", marks=mark.datafusion, id="datafusion"),
         param("impala://localhost:21050/default", marks=mark.impala, id="impala"),
         param("mysql://ibis:ibis@localhost:3306", marks=mark.mysql, id="mysql"),
+        param(
+            "singlestoredb://root:ibis_testing@localhost:3307/ibis_testing",
+            marks=mark.singlestoredb,
+            id="singlestoredb",
+        ),
         param("polars://", marks=mark.polars, id="polars"),
         param(
             "postgres://postgres:postgres@localhost:5432",
@@ -969,7 +1026,7 @@ def test_connect_url(url):
         ),
         param(
             [(1, 2.0, "3")],
-            lambda arg: ibis.memtable(arg),
+            ibis.memtable,
             pd.DataFrame([(1, 2.0, "3")], columns=["col0", "col1", "col2"]),
             id="simple_auto_named",
         ),
@@ -988,7 +1045,7 @@ def test_connect_url(url):
             pd.DataFrame({"a": [1], "b": [2.0], "c": ["3"]}).astype(
                 {"a": "int8", "b": "float32"}
             ),
-            lambda arg: ibis.memtable(arg),
+            ibis.memtable,
             pd.DataFrame([(1, 2.0, "3")], columns=list("abc")).astype(
                 {"a": "int8", "b": "float32"}
             ),
@@ -996,7 +1053,7 @@ def test_connect_url(url):
         ),
         param(
             [dict(a=1), dict(a=2)],
-            lambda arg: ibis.memtable(arg),
+            ibis.memtable,
             pd.DataFrame({"a": [1, 2]}),
             id="list_of_dicts",
         ),
@@ -1057,6 +1114,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "duckdb",
                         "exasol",
                         "impala",
+                        "materialize",
                         "mssql",
                         "mysql",
                         "oracle",
@@ -1068,6 +1126,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "trino",
                         "databricks",
                         "athena",
+                        "singlestoredb",
                     ]
                 )
             ],
@@ -1088,6 +1147,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "clickhouse",
                         "exasol",
                         "impala",
+                        "materialize",
                         "mssql",
                         "mysql",
                         "oracle",
@@ -1099,6 +1159,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "trino",
                         "databricks",
                         "athena",
+                        "singlestoredb",
                     ],
                     raises=com.UnsupportedOperationError,
                     reason="we don't materialize datasets to avoid perf footguns",
@@ -1402,6 +1463,11 @@ def test_set_backend_name(name, monkeypatch):
             id="mysql",
         ),
         param(
+            "singlestoredb://root:ibis_testing@localhost:3307/ibis_testing",
+            marks=mark.singlestoredb,
+            id="singlestoredb",
+        ),
+        param(
             "postgres://postgres:postgres@localhost:5432",
             marks=mark.postgres,
             id="postgres",
@@ -1436,6 +1502,7 @@ def test_set_backend_url(url, monkeypatch):
         "pyspark",
         "sqlite",
         "databricks",
+        "singlestoredb",
     ],
     reason="backend doesn't support timestamp with scale parameter",
 )
@@ -1452,6 +1519,12 @@ def test_set_backend_url(url, monkeypatch):
     ["flink"],
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize timestamp precision is limited to 0-6 (microsecond precision max), not 0-9 like Postgres.",
+    # Ref: https://materialize.com/docs/sql/types/timestamp/
 )
 def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
@@ -1523,6 +1596,12 @@ def create_and_destroy_db(con):
     ["flink"],
     reason="unclear whether Flink supports cross catalog/database inserts",
     raises=Py4JJavaError,
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
 )
 def test_insert_with_database_specified(con_create_database):
     con = con_create_database
@@ -1636,7 +1715,7 @@ def test_close_connection(con):
 )
 @pytest.mark.notimpl(
     ["sqlite"],
-    raises=pa.ArrowTypeError,
+    raises=ArrowTypeError,
     reason="mismatch between output value and expected input type",
 )
 @pytest.mark.never(
@@ -1718,6 +1797,12 @@ def test_schema_with_caching(alltypes):
 @pytest.mark.notimpl(
     ["flink"], reason="Temp tables are implemented as views, which don't support insert"
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 @pytest.mark.parametrize(
     "first_row, second_row",
     [
@@ -1772,6 +1857,11 @@ def test_table_not_found(con):
 
 @pytest.mark.notimpl(
     ["flink"], raises=com.IbisError, reason="not yet implemented for Flink"
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Schema resolution issue with cross-database table loading in Materialize (needs investigation).",
 )
 def test_no_accidental_cross_database_table_load(con_create_database):
     con = con_create_database
@@ -1854,6 +1944,12 @@ def test_cross_database_join(con_create_database, monkeypatch):
 )
 @pytest.mark.notimpl(["athena"], reason="insert isn't implemented yet")
 @pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
+    # Ref: https://materialize.com/docs/sql/begin/
+)
 def test_insert_into_table_missing_columns(con, temp_table):
     db = getattr(con, "current_database", None)
 
@@ -1881,6 +1977,12 @@ def test_insert_into_table_missing_columns(con, temp_table):
 )
 @pytest.mark.notyet(
     ["bigquery"], raises=AssertionError, reason="test is flaky", strict=False
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Memtables not visible in list_tables() due to transaction block restrictions.",
+    # Related to: https://materialize.com/docs/sql/begin/
 )
 def test_memtable_cleanup(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": list("def")})
@@ -1918,14 +2020,8 @@ def test_memtable_registered_exactly_once(con, mocker):
     spy.assert_called_once_with(t.op())
 
 
-@pytest.mark.parametrize("i", range(5))
 def test_stateful_data_is_loaded_once(
-    con,
-    data_dir,
-    tmp_path_factory,
-    worker_id,
-    mocker,
-    i,  # noqa: ARG001
+    con, data_dir, tmp_path_factory, worker_id, mocker
 ):
     TestConf = pytest.importorskip(f"ibis.backends.{con.name}.tests.conftest").TestConf
     if not TestConf.stateful:
@@ -1933,7 +2029,7 @@ def test_stateful_data_is_loaded_once(
 
     spy = mocker.spy(TestConf, "stateless_load")
 
-    for _ in range(2):
+    for _ in range(5):
         TestConf.load_data(data_dir, tmp_path_factory, worker_id)
 
     # also verify that it's been called once, by checking that there's at least

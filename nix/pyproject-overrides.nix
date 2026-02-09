@@ -56,6 +56,12 @@ in
     PROJ_DIR = "${lib.getBin pkgs.proj}";
     PROJ_INCDIR = "${lib.getDev pkgs.proj}";
   });
+
+  watchdog = prev.watchdog.overrideAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
+      final.setuptools
+    ];
+  });
 })
 // lib.mapAttrs (name: spec: addBuildSystems prev.${name} spec) buildSystemOverrides
 // {
@@ -127,26 +133,34 @@ in
     attrs:
     let
       pysparkVersion = lib.versions.majorMinor attrs.version;
-      jarHashes = {
-        "3.5" = "sha256-h+cYTzHvDKrEFbvfzxvElDNGpYuY10fcg0NPcTnhKss=";
-        "3.3" = "sha256-3D++9VCiLoMP7jPvdCtBn7xnxqHnyQowcqdGUe0M3mk=";
+      icebergVersion = "1.10.1";
+      jarSpecs = {
+        "4.0" = {
+          scalaVersion = "2.13";
+          hash = "sha256-IZKgiB7Q9Xc7WoOogg0rCyBpvuwgMChkOhwzhVEAfwk=";
+        };
+        "3.5" = {
+          scalaVersion = "2.12";
+          hash = "sha256-OeoJ5sA1UKMAudmrSYlJg20tQ05EHaTBKpQ6CG45aUA=";
+        };
       };
-      icebergVersion = "1.6.1";
-      scalaVersion = "2.12";
+      jarInfo = jarSpecs."${pysparkVersion}";
+      inherit (jarInfo) scalaVersion;
       jarName = "iceberg-spark-runtime-${pysparkVersion}_${scalaVersion}-${icebergVersion}.jar";
       icebergJarUrl = "https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-${pysparkVersion}_${scalaVersion}/${icebergVersion}/${jarName}";
       icebergJar = pkgs.fetchurl {
         name = jarName;
         url = icebergJarUrl;
-        sha256 = jarHashes."${pysparkVersion}";
+        sha256 = jarInfo.hash;
       };
     in
     {
       nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
       postInstall = attrs.postInstall or "" + ''
-        cp -v ${icebergJar} $out/${final.python.sitePackages}/pyspark/jars/${icebergJar.name}
-        mkdir -p $out/${final.python.sitePackages}/pyspark/conf
-        cp -v ${../docker/spark-connect/log4j2.properties} $out/${final.python.sitePackages}/pyspark/conf/log4j2.properties
+        sitePackagesPySpark=$out/${final.python.sitePackages}/pyspark
+        cp -v ${icebergJar} $sitePackagesPySpark/jars/${icebergJar.name}
+        mkdir -p $sitePackagesPySpark/conf
+        cp -v ${../docker/spark-connect/log4j2.properties} $sitePackagesPySpark/conf/log4j2.properties
       '';
     }
   );

@@ -1,4 +1,4 @@
-name: Cloud Backends
+name: Snowflake
 
 on:
   push:
@@ -23,8 +23,6 @@ env:
 jobs:
   test_backends:
     name: ${{ matrix.backend.title }} python-${{ matrix.python-version }}-${{ matrix.os }}
-    # only a single bigquery or snowflake run at a time, otherwise test data is
-    # clobbered by concurrent runs
     concurrency:
       group: ${{ matrix.backend.title }}-${{ matrix.python-version }}-${{ github.event.label.name || 'ci-run-cloud' }}
       cancel-in-progress: false
@@ -37,37 +35,14 @@ jobs:
         os:
           - ubuntu-latest
         python-version:
-          - "3.9"
-          - "3.13"
+          - "3.10"
+          - "3.14"
         backend:
           - name: snowflake
             title: Snowflake
             extras:
               - --extra snowflake
-          - name: databricks
-            title: Databricks
-            extras:
-              - --extra databricks
-          - name: athena
-            title: Amazon Athena
-            extras:
-              - --extra athena
         include:
-          - os: ubuntu-latest
-            python-version: "3.9"
-            backend:
-              name: bigquery
-              title: BigQuery
-              extras:
-                - --extra bigquery
-          - os: ubuntu-latest
-            python-version: "3.13"
-            backend:
-              name: bigquery
-              title: BigQuery
-              extras:
-                - --extra bigquery
-                - --extra geospatial
           - os: ubuntu-latest
             python-version: "3.10"
             backend:
@@ -130,7 +105,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.2.0
+        uses: astral-sh/setup-uv@v7.3.0
 
       - name: install additional deps
         if: matrix.backend.key == 'snowpark'
@@ -143,60 +118,27 @@ jobs:
       - name: download backend data
         run: just download-data
 
-      - uses: google-github-actions/auth@v3
-        if: matrix.backend.name == 'bigquery'
-        with:
-          project_id: "ibis-gbq"
-          workload_identity_provider: "${{ vars.WIF_PROVIDER_NAME }}"
-
-      - name: setup databricks credentials
-        if: matrix.backend.name == 'databricks'
-        shell: bash
-        run: |
-          {
-            echo "DATABRICKS_HTTP_PATH=${DATABRICKS_HTTP_PATH}"
-            echo "DATABRICKS_SERVER_HOSTNAME=${DATABRICKS_SERVER_HOSTNAME}"
-            echo "DATABRICKS_TOKEN=${DATABRICKS_TOKEN}"
-          } >> "$GITHUB_ENV"
-        env:
-          DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
-          DATABRICKS_SERVER_HOSTNAME: ${{ secrets.DATABRICKS_SERVER_HOSTNAME }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-
       - name: setup snowflake credentials
-        if: matrix.backend.name == 'snowflake'
         shell: bash
         run: |
           pyversion="${{ matrix.python-version }}"
-          {
-            echo "SNOWFLAKE_USER=${SNOWFLAKE_USER}"
-            echo "SNOWFLAKE_PASSWORD=${SNOWFLAKE_PASSWORD}"
-            echo "SNOWFLAKE_ACCOUNT=${SNOWFLAKE_ACCOUNT}"
-            echo "SNOWFLAKE_DATABASE=${SNOWFLAKE_DATABASE}"
-            echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}_python${pyversion//./}_${{ matrix.backend.key }}"
-            echo "SNOWFLAKE_WAREHOUSE=${SNOWFLAKE_WAREHOUSE}"
-            if ${{ matrix.backend.key == 'snowpark' }}; then
-              echo "SNOWFLAKE_SNOWPARK=1" >> "$GITHUB_ENV"
-            fi
-          } >> "$GITHUB_ENV"
+          echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}_python${pyversion//./}_${{ matrix.backend.key }}" >> "$GITHUB_ENV"
+        env:
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+
+      - name: add snowpark envar
+        if: matrix.backend.key == 'snowpark'
+        run: echo "SNOWFLAKE_SNOWPARK=1" >> "$GITHUB_ENV"
+
+      - name: "run parallel tests: ${{ matrix.backend.name }}"
+        timeout-minutes: 60
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist loadgroup
         env:
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-
-      - name: setup aws credentials
-        if: matrix.backend.name == 'athena'
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          aws-region: us-east-2
-          role-to-assume: arn:aws:iam::070284473168:role/ibis-project-athena
-
-      - name: "run parallel tests: ${{ matrix.backend.name }}"
-        timeout-minutes: 60
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist loadgroup
 
       - name: upload code coverage
         if: success()

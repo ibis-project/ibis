@@ -62,7 +62,8 @@ def test_timestamp_accepts_date_literals(alltypes):
 
 @pytest.mark.notimpl(["impala", "druid", "oracle", "exasol"])
 @pytest.mark.never(
-    ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
+    ["mysql", "singlestoredb", "sqlite", "mssql"],
+    reason="backend will never implement array types",
 )
 def test_scalar_param_array(con):
     value = [1, 2, 3]
@@ -73,8 +74,13 @@ def test_scalar_param_array(con):
 
 @pytest.mark.notimpl(["impala", "postgres", "risingwave", "druid", "oracle", "exasol"])
 @pytest.mark.never(
-    ["mysql", "sqlite", "mssql"],
+    ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize doesn't support ROW constructor syntax for struct params",
 )
 def test_scalar_param_struct(con):
     value = dict(a=1, b="abc", c=3.0)
@@ -85,10 +91,15 @@ def test_scalar_param_struct(con):
 
 @pytest.mark.notimpl(["datafusion", "impala", "polars", "druid", "oracle", "exasol"])
 @pytest.mark.never(
-    ["mysql", "sqlite", "mssql"],
+    ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement map types",
 )
 @pytest.mark.notyet(["bigquery"])
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize doesn't support jsonb_extract_path_text function",
+)
 def test_scalar_param_map(con):
     value = {"a": "ghi", "b": "def", "c": "abc"}
     param = ibis.param(dt.Map(dt.string, dt.string))
@@ -174,7 +185,7 @@ def test_scalar_param_date(backend, alltypes, value):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(["flink", "mysql"], reason="no struct support")
+@pytest.mark.notyet(["flink", "mysql", "singlestoredb"], reason="no struct support")
 @pytest.mark.notimpl(
     [
         "postgres",
@@ -187,6 +198,11 @@ def test_scalar_param_date(backend, alltypes, value):
         "druid",
         "exasol",
     ]
+)
+@pytest.mark.notimpl(
+    ["materialize"],
+    reason="Nested parameter support not yet implemented for Materialize",
+    # See: https://materialize.com/docs/sql/types/
 )
 def test_scalar_param_nested(con):
     param = ibis.param("struct<x: array<struct<y: array<double>>>>")

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import getpass
 import warnings
 from functools import cached_property
 from operator import itemgetter
@@ -126,10 +127,10 @@ class Backend(
           month           int32
         """
         self.con = MySQLdb.connect(
-            user=user,
+            user=user or getpass.getuser(),
             host="127.0.0.1" if host == "localhost" else host,
             port=port,
-            password=password,
+            password=password or "",
             autocommit=autocommit,
             **kwargs,
         )
@@ -380,7 +381,7 @@ class Backend(
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.SchemaLike | None = None,
+        schema: sch.IntoSchema | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,

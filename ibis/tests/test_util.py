@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ibis.util import PseudoHashable, flatten_iterable, import_object
+from ibis.util import PseudoHashable, flatten_iterable, import_object, is_iterable
 
 
 @pytest.mark.parametrize(
@@ -138,3 +138,24 @@ def test_pseudo_hashable():
     assert ph2 != ph3
     assert ph3 == ph3
     assert ph1 == ph4
+
+
+@pytest.mark.parametrize(
+    ("x", "expected"),
+    [
+        (1, False),
+        (True, False),
+        ("abc", False),
+        (bytes([1, 2, 3]), False),
+        ([], []),
+        ([1, 2, 3], [1, 2, 3]),
+        ((x for x in [1, 2, 3]), [1, 2, 3]),
+    ],
+)
+def test_is_iterable(x, expected):
+    actual = is_iterable(x)
+    if expected is False:
+        assert actual is False
+    else:
+        assert actual is True
+        assert list(x) == list(expected)

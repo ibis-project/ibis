@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from filelock import FileLock
+from packaging.version import parse as parse_version
 
 import ibis
 from ibis import util
@@ -277,7 +278,19 @@ else:
 
         @staticmethod
         def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
+            import pyspark
             from pyspark.sql import SparkSession
+
+            spark_ver = parse_version(pyspark.__version__)
+
+            (scala_jarfile,) = (
+                Path(pyspark.__file__)
+                .parent.joinpath("jars")
+                .glob("scala-library-*.jar")
+            )
+            _, scala_version_str = scala_jarfile.stem.rsplit("-", 1)
+            scala_ver = parse_version(scala_version_str)
+            iceberg_jar = f"iceberg-spark-runtime-{spark_ver.major}.{spark_ver.minor}_{scala_ver.major}.{scala_ver.minor}:1.10.1"
 
             config = reduce(
                 lambda config, line: config.config(
@@ -306,6 +319,7 @@ else:
                         "spark.sql.execution.arrow.pyspark.enabled=false",
                         "spark.sql.shuffle.partitions=1",
                         "spark.storage.blockManagerSlaveTimeoutMs=4200s",
+                        f"spark.jars.packages=org.apache.iceberg:{iceberg_jar}",
                     ],
                 ),
                 SparkSession.builder.appName("ibis_testing"),

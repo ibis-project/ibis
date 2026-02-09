@@ -30,13 +30,13 @@ def test_version(backend):
         "oracle",
         "bigquery",
         "mysql",
+        "singlestoredb",
         "impala",
         "flink",
     ],
     reason="backend does not support catalogs",
     raises=AttributeError,
 )
-@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_catalog_consistency(backend, con):
     catalogs = con.list_catalogs()
     assert isinstance(catalogs, list)

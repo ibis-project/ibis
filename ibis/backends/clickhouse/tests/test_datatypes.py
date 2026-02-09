@@ -23,17 +23,18 @@ def test_column_types(alltypes):
     assert df.bigint_col.dtype.name == "int64"
     assert df.float_col.dtype.name == "float32"
     assert df.double_col.dtype.name == "float64"
-    assert df.timestamp_col.dtype.name == "datetime64[ns]"
+    assert df.timestamp_col.dtype.name in ("datetime64[ns]", "datetime64[s]")
 
 
 def test_columns_types_with_additional_argument(con):
+    pd = pytest.importorskip("pandas")
     sql_types = [
         "toFixedString('foo', 8) AS fixedstring_col",
         "toDateTime('2018-07-02 00:00:00', 'UTC') AS datetime_col",
         "toDateTime64('2018-07-02 00:00:00', 9, 'UTC') AS datetime_ns_col",
     ]
     df = con.sql(f"SELECT {', '.join(sql_types)}").execute()
-    assert df.fixedstring_col.dtype.name == "object"
+    assert df.fixedstring_col.dtype == pd.Series(dtype="str").dtype
     assert df.datetime_col.dtype.name in ("datetime64[ns, UTC]", "datetime64[s, UTC]")
     assert df.datetime_ns_col.dtype.name == "datetime64[ns, UTC]"
 

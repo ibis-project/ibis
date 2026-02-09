@@ -7,7 +7,7 @@ import math
 import operator
 import string
 from functools import partial, reduce
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Literal
+from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -52,7 +52,7 @@ except ImportError:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
@@ -899,7 +899,7 @@ class SQLGlotCompiler(abc.ABC):
     ### Dtype Dysmorphia
 
     def visit_TryCast(self, op, *, arg, to):
-        return sge.TryCast(this=arg, to=self.type_mapper.from_ibis(to))
+        return sge.TryCast(this=arg, to=self.type_mapper.from_ibis(to), safe=True)
 
     ### Comparator Conundrums
 

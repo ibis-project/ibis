@@ -17,27 +17,25 @@ class Renderer(qd.MdRenderer):
         result = []
 
         prompt = ">>> "
-        continuation = "..."
+        continuation = "... "
 
         skip_doctest = "doctest: +SKIP"
         expect_failure = "quartodoc: +EXPECTED_FAILURE"
         quartodoc_skip_doctest = "quartodoc: +SKIP"
 
         chunker = lambda line: line.startswith((prompt, continuation))
-        should_skip = (
-            lambda line: quartodoc_skip_doctest in line or skip_doctest in line
+        should_skip = lambda line: (
+            quartodoc_skip_doctest in line or skip_doctest in line
         )
 
-        for chunk in toolz.partitionby(chunker, lines):
-            first, *rest = chunk
-
+        for first, *rest in toolz.partitionby(chunker, lines):
             # only attempt to execute or render code blocks that start with the
             # >>> prompt
             if first.startswith(prompt):
                 # check whether to skip execution and if so, render the code
                 # block as `python` (not `{python}`) if it's marked with
                 # skip_doctest, expect_failure or quartodoc_skip_doctest
-                if skipped := any(map(should_skip, chunk)):
+                if skipped := (should_skip(first) or any(map(should_skip, rest))):
                     start = end = ""
                 else:
                     start, end = "{}"
@@ -68,12 +66,16 @@ class Renderer(qd.MdRenderer):
 
                 # remove the quartodoc markers from the rendered code
                 result.append(
-                    first.replace(f"# {quartodoc_skip_doctest}", "")
+                    first.removeprefix(prompt)
+                    .replace(f"# {quartodoc_skip_doctest}", "")
                     .replace(quartodoc_skip_doctest, "")
                     .replace(f"# {expect_failure}", "")
                     .replace(expect_failure, "")
                 )
-                result.extend(rest)
+                result.extend(
+                    line.removeprefix(prompt).removeprefix(continuation)
+                    for line in rest
+                )
                 result.append("```\n")
 
                 if not skipped:

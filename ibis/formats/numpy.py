@@ -67,7 +67,7 @@ class NumpyType(TypeMapper[np.dtype]):
         if dtype.is_interval():
             return np.dtype(f"timedelta64[{dtype.unit.short}]")
         elif dtype.is_timestamp():
-            # TODO(kszucs): the following code provedes proper timestamp roundtrips
+            # TODO(kszucs): the following code provides proper timestamp roundtrips
             # between ibis and numpy/pandas but breaks the test suite at several
             # places, we should revisit this later
             # return np.dtype(f"datetime64[{dtype.unit.short}]")

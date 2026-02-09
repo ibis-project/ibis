@@ -17,7 +17,6 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     OracleDatabaseError,
-    PolarsSQLInterfaceError,
     PyAthenaOperationalError,
     PyODBCProgrammingError,
 )
@@ -135,11 +134,6 @@ def test_table_dot_sql(backend):
     OracleDatabaseError,
     reason="oracle doesn't know which of the tables in the join to sort from",
 )
-@pytest.mark.xfail_version(
-    polars=["polars>=1.27"],
-    raises=PolarsSQLInterfaceError,
-    reason="broken upstream in polars",
-)
 def test_table_dot_sql_with_join(backend):
     alltypes = backend.functional_alltypes
     t = (
@@ -232,15 +226,21 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
 
 dialects = sorted(_get_backend_names())
 
+# Map backend names to SQLGlot dialect names when they differ
+BACKEND_TO_SQLGLOT_DIALECT = {
+    "singlestoredb": "singlestore",
+}
+
 
 @pytest.mark.parametrize("dialect", dialects)
 @pytest.mark.notyet(["druid"], reason="druid doesn't respect column name case")
 def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
+    sqlglot_dialect = BACKEND_TO_SQLGLOT_DIALECT.get(dialect, dialect)
     name = "foo2"
     foo = alltypes.select(x=_.bigint_col + 1).alias(name)
     expr = sg.select(sg.column("x", quoted=True)).from_(sg.table(name, quoted=True))
-    sqlstr = expr.sql(dialect=dialect, pretty=True)
-    dot_sql_expr = foo.sql(sqlstr, dialect=dialect)
+    sqlstr = expr.sql(dialect=sqlglot_dialect, pretty=True)
+    dot_sql_expr = foo.sql(sqlstr, dialect=sqlglot_dialect)
     result = dot_sql_expr.execute()
     expected = df.bigint_col.add(1).rename("x")
     backend.assert_series_equal(result.x, expected)
@@ -252,12 +252,13 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
 )
 @pytest.mark.notyet(["bigquery"])
 def test_con_dot_sql_transpile(backend, con, dialect, df):
+    sqlglot_dialect = BACKEND_TO_SQLGLOT_DIALECT.get(dialect, dialect)
     t = sg.table("functional_alltypes", quoted=True)
     foo = sg.select(
         sg.alias(sg.column("bigint_col", quoted=True) + 1, "x", quoted=True)
     ).from_(t)
-    sqlstr = foo.sql(dialect=dialect, pretty=True)
-    expr = con.sql(sqlstr, dialect=dialect)
+    sqlstr = foo.sql(dialect=sqlglot_dialect, pretty=True)
+    expr = con.sql(sqlstr, dialect=sqlglot_dialect)
     result = expr.execute()
     expected = df.bigint_col.add(1).rename("x")
     backend.assert_series_equal(result.x, expected)

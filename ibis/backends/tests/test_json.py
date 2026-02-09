@@ -11,7 +11,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.tests.conftest import NO_JSON_SUPPORT_MARKS
-from ibis.backends.tests.errors import PySparkPythonException
+from ibis.backends.tests.errors import PyAthenaOperationalError, PySparkPythonException
 from ibis.conftest import IS_SPARK_REMOTE
 
 np = pytest.importorskip("numpy")
@@ -73,6 +73,9 @@ def test_json_getitem_array(json_t):
     ["flink"],
     reason="Expecting alias, found character literal",
 )
+@pytest.mark.notyet(
+    ["athena"], reason="no DDL json support", raises=PyAthenaOperationalError
+)
 def test_json_literal(con):
     expr = ibis.literal('{"scale": 100}', dt.json).name("some_literal")
     result = con.execute(expr)
@@ -80,8 +83,11 @@ def test_json_literal(con):
 
 
 @pytest.mark.notimpl(["mysql", "risingwave"])
+@pytest.mark.notimpl(["mysql", "singlestoredb", "risingwave"])
 @pytest.mark.notyet(["bigquery", "sqlite"], reason="doesn't support maps")
-@pytest.mark.notyet(["postgres"], reason="only supports map<string, string>")
+@pytest.mark.notyet(
+    ["postgres", "materialize"], reason="only supports map<string, string>"
+)
 @pytest.mark.notyet(
     ["pyspark", "flink"], reason="should work but doesn't deserialize JSON"
 )
@@ -101,7 +107,7 @@ def test_json_map(backend, json_t):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["mysql", "risingwave"])
+@pytest.mark.notimpl(["mysql", "singlestoredb", "risingwave"])
 @pytest.mark.notyet(["sqlite"], reason="doesn't support arrays")
 @pytest.mark.notyet(
     ["pyspark", "flink"], reason="should work but doesn't deserialize JSON"
@@ -130,6 +136,11 @@ def test_json_array(backend, json_t):
     condition=IS_SPARK_REMOTE,
     raises=PySparkPythonException,
     reason="environment issues",
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    reason="returns empty string instead of NULL for JSON empty strings",
+    strict=False,
 )
 @pytest.mark.parametrize(
     ("typ", "expected_data"),

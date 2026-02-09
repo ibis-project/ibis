@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from datetime import date
 
 import pandas as pd
@@ -36,30 +37,25 @@ TIMESTAMPS_TZ = [
 @pytest.fixture(scope="session")
 def db(tmp_path_factory):
     path = str(tmp_path_factory.mktemp("databases") / "formats.db")
-    con = sqlite3.connect(path)
-    try:
-        with con:
-            con.execute("CREATE TABLE timestamps (ts TIMESTAMP)")
-            con.execute("CREATE TABLE timestamps_tz (ts TIMESTAMPTZ)")
-            con.execute("CREATE TABLE weird (str_col STRING, date_col ITSADATE)")
-            con.execute("CREATE TABLE basic (a INTEGER, b REAL, c BOOLEAN, d BLOB)")
-            con.executemany(
-                "INSERT INTO timestamps VALUES (?)", [(t,) for t in TIMESTAMPS]
-            )
-            con.executemany(
-                "INSERT INTO timestamps_tz VALUES (?)", [(t,) for t in TIMESTAMPS_TZ]
-            )
-            con.executemany(
-                "INSERT INTO weird VALUES (?, ?)",
-                [
-                    ("a", "2022-01-01"),
-                    ("b", "2022-01-02"),
-                    ("c", "2022-01-03"),
-                    ("d", "2022-01-04"),
-                ],
-            )
-    finally:
-        con.close()
+    with closing(sqlite3.connect(path)) as con:
+        con.execute("CREATE TABLE timestamps (ts TIMESTAMP)")
+        con.execute("CREATE TABLE timestamps_tz (ts TIMESTAMPTZ)")
+        con.execute("CREATE TABLE weird (str_col STRING, date_col ITSADATE)")
+        con.execute("CREATE TABLE basic (a INTEGER, b REAL, c BOOLEAN, d BLOB)")
+        con.executemany("INSERT INTO timestamps VALUES (?)", [(t,) for t in TIMESTAMPS])
+        con.executemany(
+            "INSERT INTO timestamps_tz VALUES (?)", [(t,) for t in TIMESTAMPS_TZ]
+        )
+        con.executemany(
+            "INSERT INTO weird VALUES (?, ?)",
+            [
+                ("a", "2022-01-01"),
+                ("b", "2022-01-02"),
+                ("c", "2022-01-03"),
+                ("d", "2022-01-04"),
+            ],
+        )
+        con.commit()
     return path
 
 

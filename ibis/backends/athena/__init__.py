@@ -8,7 +8,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import fsspec
 import pyarrow_hotfix  # noqa: F401
@@ -29,7 +29,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import AlterTable, RenameTable
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
     import pandas as pd
     import polars as pl
@@ -79,7 +79,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.SchemaLike | None = None,
+        schema: sch.IntoSchema | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool | None = None,
@@ -87,7 +87,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         properties: Mapping[str, Any] | None = None,
         location: str | None = None,
         stored_as: str = "PARQUET",
-        partitioned_by: sch.SchemaLike = (),
+        partitioned_by: sch.IntoSchema = (),
     ) -> ir.Table:
         """Create a table in Amazon Athena.
 

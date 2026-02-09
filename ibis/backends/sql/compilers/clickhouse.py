@@ -304,7 +304,9 @@ class ClickHouseCompiler(SQLGlotCompiler):
             return type_name(value, dtype.scale)
         elif dtype.is_numeric():
             if not math.isfinite(value):
-                return sge.Literal.number(str(value))
+                if value < 0:
+                    return -sg.to_identifier(str(abs(value)))
+                return sg.to_identifier(str(value))
             return sge.convert(value)
         elif dtype.is_interval():
             if dtype.unit.short in ("ms", "us", "ns"):

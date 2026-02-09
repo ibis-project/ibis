@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 pytestmark = [
-    pytest.mark.notimpl(["druid", "exasol", "oracle"]),
+    pytest.mark.notimpl(["druid", "exasol", "materialize", "oracle"]),
     pytest.mark.notyet(
         ["pyspark"], condition=IS_SPARK_REMOTE, raises=PySparkAnalysisException
     ),
@@ -216,10 +216,12 @@ def test_read_csv_schema(con, tmp_path):
         "mysql",
         "postgres",
         "risingwave",
+        "singlestoredb",
         "sqlite",
         "trino",
         "athena",
-    ]
+    ],
+    reason="singlestoredb: boolean columns written as true/false cannot be loaded via LOAD DATA",
 )
 def test_read_csv_glob(con, tmp_path, ft_data):
     pc = pytest.importorskip("pyarrow.csv")
@@ -250,6 +252,7 @@ def test_read_csv_glob(con, tmp_path, ft_data):
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "postgres",
         "risingwave",
         "sqlite",
@@ -299,6 +302,7 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "postgres",
         "risingwave",
         "pyspark",
@@ -338,6 +342,7 @@ def test_read_parquet_iterator(
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "postgres",
         "risingwave",
         "sqlite",
@@ -368,6 +373,7 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "postgres",
         "risingwave",
         "sqlite",
@@ -405,6 +411,7 @@ def test_read_json_glob(con, tmp_path, ft_data):
         "flink",
         "impala",
         "mysql",
+        "singlestoredb",
         "mssql",
         "polars",
         "postgres",

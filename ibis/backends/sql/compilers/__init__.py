@@ -12,6 +12,7 @@ __all__ = [
     "FlinkCompiler",
     "ImpalaCompiler",
     "MSSQLCompiler",
+    "MaterializeCompiler",
     "MySQLCompiler",
     "OracleCompiler",
     "PostgresCompiler",
@@ -32,6 +33,7 @@ from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 from ibis.backends.sql.compilers.exasol import ExasolCompiler
 from ibis.backends.sql.compilers.flink import FlinkCompiler
 from ibis.backends.sql.compilers.impala import ImpalaCompiler
+from ibis.backends.sql.compilers.materialize import MaterializeCompiler
 from ibis.backends.sql.compilers.mssql import MSSQLCompiler
 from ibis.backends.sql.compilers.mysql import MySQLCompiler
 from ibis.backends.sql.compilers.oracle import OracleCompiler

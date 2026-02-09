@@ -42,6 +42,9 @@ class PostgresUDFNode(ops.Value):
     shape = rlz.shape_like("args")
 
 
+_DOUBLE_PRECISION_TYPE = sge.DataType(this=sge.DataType.Type.DOUBLE)
+
+
 class PostgresCompiler(SQLGlotCompiler):
     __slots__ = ()
 
@@ -52,9 +55,9 @@ class PostgresCompiler(SQLGlotCompiler):
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
-    NAN = sge.Literal.number("'NaN'::double precision")
-    POS_INF = sge.Literal.number("'Inf'::double precision")
-    NEG_INF = sge.Literal.number("'-Inf'::double precision")
+    NAN = sge.cast(sge.Literal.string("NaN"), _DOUBLE_PRECISION_TYPE)
+    POS_INF = sge.cast(sge.Literal.string("Inf"), _DOUBLE_PRECISION_TYPE)
+    NEG_INF = -POS_INF
 
     LOWERED_OPS = {ops.Sample: lower_sample(physical_tables_only=True)}
 
