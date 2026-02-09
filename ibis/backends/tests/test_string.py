@@ -1515,3 +1515,29 @@ def test_string_methods_no_accents_and_no_emoji(
     expected = expected_func(series)
 
     backend.assert_series_equal(result, expected)
+
+
+def test_strip_preserves_non_whitespace_characters(con):
+    """Regression test for https://github.com/ibis-project/ibis/issues/11894.
+
+    The base SQLGlotCompiler passes `string.whitespace` (which contains '\\x0c')
+    to the SQL TRIM function. In PySpark, this caused 'f' characters to be
+    incorrectly stripped from strings.
+    """
+    t = ibis.memtable(
+        {
+            "x": [
+                "ffXXXff  ",
+                "fXXXf",
+                "XXXff",
+                "ffXXX",
+                "ffffXXXffff",
+                "XXX",
+                "  ffXXXff  ",
+            ]
+        }
+    )
+    expr = t.x.strip()
+    result = con.execute(expr).tolist()
+    expected = [s.strip() for s in t.execute()["x"].tolist()]
+    assert result == expected
