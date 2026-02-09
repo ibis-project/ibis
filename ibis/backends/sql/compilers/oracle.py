@@ -9,6 +9,7 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import OracleType
 from ibis.backends.sql.dialects import Oracle
+from ibis.backends.sql.compilers._compat import special_float_literal
 from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
@@ -38,10 +39,10 @@ class OracleCompiler(SQLGlotCompiler):
 
     post_rewrites = (split_select_distinct_with_order_by,)
 
-    NAN = sge.to_identifier("binary_double_nan")
+    NAN = special_float_literal("binary_double_nan")
     """Backend's NaN literal."""
 
-    POS_INF = sge.to_identifier("binary_double_infinity")
+    POS_INF = special_float_literal("binary_double_infinity")
     """Backend's positive infinity literal."""
 
     NEG_INF = -POS_INF

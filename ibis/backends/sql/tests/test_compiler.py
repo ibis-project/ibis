@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib
+
 import sqlglot as sg
 
 import ibis
@@ -26,3 +28,17 @@ def test_transpile_join():
         "SELECT * FROM t1 JOIN t2 ON x = y", read="duckdb", write=Trino
     )
     assert "CROSS JOIN" not in result
+
+
+def test_compilers_lazy_imports(monkeypatch):
+    real_import = importlib.import_module
+
+    def guarded_import(name: str, package: str | None = None):
+        if name == "ibis.backends.sql.compilers.oracle":
+            raise AssertionError("Oracle compiler imported eagerly")
+        return real_import(name, package)
+
+    monkeypatch.setattr(importlib, "import_module", guarded_import)
+    compilers = importlib.import_module("ibis.backends.sql.compilers")
+    assert "OracleCompiler" in compilers.__all__
+    assert compilers.TrinoCompiler is not None
