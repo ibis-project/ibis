@@ -1247,10 +1247,27 @@ class MSSQLType(SqlglotType):
         )
 
     @classmethod
+    def _from_sqlglot_DATETIMEOFFSET(cls, n=None, nullable: bool | None = None):
+        scale = n if n is None else int(n.this.this)
+        return dt.Timestamp(scale=scale, timezone="UTC", nullable=nullable)
+
+    @classmethod
     def _from_sqlglot_TIMESTAMP(
         cls, scale: int | None = None, nullable: bool | None = None
     ):
         return dt.Binary(nullable=False)
+
+    @classmethod
+    def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+        if dtype.timezone is None:
+            code = getattr(typecode, "DATETIME2", typecode.DATETIME)
+        else:
+            code = getattr(typecode, "DATETIMEOFFSET", typecode.TIMESTAMPTZ)
+
+        expressions = []
+        if dtype.scale is not None:
+            expressions.append(sge.DataTypeParam(this=sge.Literal.number(dtype.scale)))
+        return sge.DataType(this=code, expressions=expressions or None)
 
     @classmethod
     def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:

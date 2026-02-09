@@ -213,12 +213,16 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_Timestamp(cls, s, dtype, pandas_type):
+        normed_tz = None
+        if dtype.timezone is not None:
+            normed_tz = normalize_timezone(dtype.timezone)
+
         if isinstance(pandas_type, pd.DatetimeTZDtype) and isinstance(
             s.dtype, pd.DatetimeTZDtype
         ):
-            return s if s.dtype == pandas_type else s.dt.tz_convert(dtype.timezone)
+            return s if s.dtype == pandas_type else s.dt.tz_convert(normed_tz)
         elif pdt.is_datetime64_dtype(s.dtype):
-            return s.dt.tz_localize(dtype.timezone)
+            return s.dt.tz_localize(normed_tz)
         else:
             try:
                 return s.astype(pandas_type)
@@ -231,9 +235,25 @@ class PandasData(DataMapper):
                     return s
             except (ValueError, TypeError):
                 try:
-                    return pd.to_datetime(s).dt.tz_convert(dtype.timezone)
+                    return pd.to_datetime(s).dt.tz_convert(normed_tz)
                 except TypeError:
-                    return pd.to_datetime(s).dt.tz_localize(dtype.timezone)
+                    return pd.to_datetime(s).dt.tz_localize(normed_tz)
+
+    @classmethod
+    def format_timestamp_offset(cls, s: pd.Series, timezone: str) -> pd.Series:
+        normed_tz = normalize_timezone(timezone)
+
+        def format_value(value):
+            if pd.isna(value):
+                return None
+            ts = pd.Timestamp(value)
+            if ts.tzinfo is None:
+                ts = ts.tz_localize(normed_tz)
+            else:
+                ts = ts.tz_convert(normed_tz)
+            return ts.to_pydatetime().isoformat(sep=" ")
+
+        return s.map(format_value)
 
     @classmethod
     def convert_Date(cls, s, dtype, pandas_type):

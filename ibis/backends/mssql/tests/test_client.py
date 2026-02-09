@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import datetime
 from urllib.parse import urlencode
 
+import pandas as pd
 import pytest
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -218,6 +220,22 @@ def test_create_temp_table_from_obj(con):
             con.drop_table("fuhreal")
     finally:
         con.drop_table("#team", force=True)
+
+
+def test_create_table_preserves_timezone_offset(con, temp_table):
+    tz = datetime.timezone(datetime.timedelta(hours=-5))
+    data = pd.DataFrame(
+        {"ts": [datetime.datetime(2024, 1, 1, 12, 15, tzinfo=tz)]}
+    )
+
+    con.create_table(temp_table, obj=data, overwrite=True)
+    result = con.table(temp_table).execute()
+
+    value = pd.Timestamp(result.loc[0, "ts"])
+    expected = pd.Timestamp(data.loc[0, "ts"])
+
+    assert value.replace(tzinfo=None) == expected.replace(tzinfo=None)
+    assert value.utcoffset() == expected.utcoffset()
 
 
 @pytest.mark.parametrize("explicit_schema", [False, True])

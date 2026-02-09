@@ -766,6 +766,23 @@ GO"""
         )
 
         df = op.data.to_frame()
+        tz_columns = {
+            column: dtype
+            for column, dtype in schema.items()
+            if dtype.is_timestamp() and dtype.timezone is not None
+        }
+        if tz_columns:
+            import pandas as pd
+
+            from ibis.formats.pandas import PandasData
+
+            for column, dtype in tz_columns.items():
+                series = df[column]
+                if isinstance(series.dtype, pd.DatetimeTZDtype) or series.dtype == object:
+                    df[column] = PandasData.format_timestamp_offset(
+                        series, dtype.timezone
+                    )
+
         data = df.itertuples(index=False)
 
         insert_stmt = self._build_insert_template(name, schema=schema, columns=True)

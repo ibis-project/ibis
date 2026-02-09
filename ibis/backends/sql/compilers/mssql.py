@@ -31,6 +31,7 @@ from ibis.backends.sql.rewrites import (
     split_select_distinct_with_order_by,
 )
 from ibis.common.deferred import var
+from ibis.common.temporal import normalize_timezone
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -371,16 +372,21 @@ class MSSQLCompiler(SQLGlotCompiler):
                 value.microsecond,
             )
             if dtype.timezone is not None:
-                assert value.tzinfo is not None
-
+                normed_tz = normalize_timezone(dtype.timezone)
+                if value.tzinfo is None:
+                    value = value.replace(tzinfo=normed_tz)
+                else:
+                    value = value.astimezone(normed_tz)
                 offset = value.strftime("%z")
                 hour_offset = int(offset[:3])
                 minute_offset = int(offset[-2:])
+                scale = dtype.scale or 6
                 return self.f.datetimeoffsetfromparts(
-                    *args, hour_offset, minute_offset, 6
+                    *args, hour_offset, minute_offset, scale
                 )
             else:
-                return self.f.datetime2fromparts(*args, 6)
+                scale = dtype.scale or 6
+                return self.f.datetime2fromparts(*args, scale)
         elif dtype.is_time():
             return self.f.timefromparts(
                 value.hour, value.minute, value.second, value.microsecond, 0
