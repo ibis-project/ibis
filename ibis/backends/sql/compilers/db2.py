@@ -71,37 +71,58 @@ class DB2Generator(Generator):
     def offset_sql(self, expression: exp.Offset) -> str:
         """Generate OFFSET clause for DB2."""
         return f"OFFSET {self.sql(expression, 'expression')} ROWS"
+    
+    def fetch_sql(self, expression: exp.Fetch) -> str:
+        """Generate FETCH clause for DB2."""
+        return f"FETCH FIRST {self.sql(expression, 'count')} ROWS ONLY"
 
     def select_sql(self, expression: exp.Select) -> str:
-        """Generate SELECT statement for DB2."""
-        sql = super().select_sql(expression)
+        """Generate SELECT statement for DB2 with proper clause ordering."""
+        import re
+        
+        # Check if we have both OFFSET and LIMIT
+        has_offset = expression.args.get("offset") is not None
+        has_limit = expression.args.get("limit") is not None
+        
+        if has_offset and has_limit:
+            # Temporarily remove both limit and offset to generate SQL without them
+            limit_expr = expression.args.pop("limit")
+            offset_expr = expression.args.pop("offset")
+            
+            # Generate SQL with everything except limit and offset
+            sql = super().select_sql(expression)
+            
+            # Restore limit and offset
+            expression.args["limit"] = limit_expr
+            expression.args["offset"] = offset_expr
+            
+            # Now manually add OFFSET and FETCH FIRST in the correct order
+            offset_val = self.sql(offset_expr, "expression")
+            limit_val = self.sql(limit_expr, "expression")
+            
+            sql = f"{sql} OFFSET {offset_val} ROWS FETCH FIRST {limit_val} ROWS ONLY"
+        else:
+            # Normal generation for cases without both OFFSET and LIMIT
+            sql = super().select_sql(expression)
         
         # Fix spacing issues in generated SQL
         # DB2 requires proper spacing between clauses
-        import re
-        
-        # Fix all spacing issues with FETCH FIRST
         sql = sql.replace("LASTFETCH", "LAST FETCH")
         sql = sql.replace("DESCFETCH", "DESC FETCH")
         sql = sql.replace("ASCFETCH", "ASC FETCH")
         sql = sql.replace("ONLYOFFSET", "ONLY OFFSET")
         sql = re.sub(r'(\d+)\s*ROWSFETCH', r'\1 ROWS FETCH', sql)
         
+        # Ensure space before FETCH FIRST and OFFSET
+        sql = re.sub(r'(\S)FETCH\s+FIRST', r'\1 FETCH FIRST', sql)
+        sql = re.sub(r'(\S)OFFSET\s+', r'\1 OFFSET ', sql)
+        
         # Remove ROWS BETWEEN clauses from window functions that don't support them
-        # DB2 doesn't support ROWS BETWEEN for ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, etc.
         sql = re.sub(
             r'(ROW_NUMBER\(\)|RANK\(\)|DENSE_RANK\(\)|PERCENT_RANK\(\)|CUME_DIST\(\)|NTILE\([^)]+\)|LAG\([^)]+\)|LEAD\([^)]+\)|FIRST_VALUE\([^)]+\)|LAST_VALUE\([^)]+\))\s+OVER\s+\(([^)]*?)\s+ROWS\s+BETWEEN[^)]+\)',
             r'\1 OVER (\2)',
             sql
         )
-        
-        # DB2 requires OFFSET before FETCH FIRST
-        if expression.args.get("offset") and expression.args.get("limit"):
-            # Reorder OFFSET and LIMIT clauses
-            parts = sql.split(" FETCH FIRST ")
-            if len(parts) == 2 and " OFFSET " in parts[0]:
-                offset_parts = parts[0].split(" OFFSET ")
-                sql = f"{offset_parts[0]} OFFSET {offset_parts[1]} FETCH FIRST {parts[1]}"
         
         return sql
 
