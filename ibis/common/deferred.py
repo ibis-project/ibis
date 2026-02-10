@@ -408,9 +408,17 @@ class Call(FrozenSlotted, Resolver):
         super().__init__(func=func, args=args, kwargs=kwargs)
 
     def resolve(self, context):
-        func = self.func.resolve(context)
-        args = tuple(arg.resolve(context) for arg in self.args)
-        kwargs = {k: v.resolve(context) for k, v in self.kwargs.items()}
+        if isinstance(self.func, Attr):
+            obj = self.func.obj.resolve(context)
+            name = self.func.name.resolve(context)
+            func = getattr(obj, name)
+        else:
+            obj = None
+            func = self.func.resolve(context)
+
+        call_context = _maybe_rebind_context(context, obj)
+        args = tuple(arg.resolve(call_context) for arg in self.args)
+        kwargs = {k: v.resolve(call_context) for k, v in self.kwargs.items()}
         return func(*args, **kwargs)
 
     def __repr__(self):
@@ -549,6 +557,29 @@ def resolver(obj):
     else:
         # the object is used as a constant value
         return Just(obj)
+
+
+def resolve_deferred(value: Any, context: dict[str, Any]) -> Any:
+    if isinstance(value, Deferred):
+        return value._resolver.resolve(context)
+    elif isinstance(value, Resolver):
+        return value.resolve(context)
+    else:
+        return value
+
+
+def _maybe_rebind_context(context: dict[str, Any], obj: Any) -> dict[str, Any]:
+    if obj is None or "_" not in context:
+        return context
+
+    try:
+        from ibis.expr.types.relations import Table
+    except Exception:
+        return context
+
+    if isinstance(obj, Table):
+        return {**context, "_": obj}
+    return context
 
 
 def deferred(obj):

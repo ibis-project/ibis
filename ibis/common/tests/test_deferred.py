@@ -411,6 +411,16 @@ def test_deferred_method_with_kwargs(table):
     assert repr(expr) == "_.a.log(base=_.b)"
 
 
+def test_deferred_chained_mutate_resolve():
+    input_table = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
+    expr = _.mutate(c=_.a + _.b).mutate(d=_.c * 2)
+    result = expr.resolve(input_table)
+
+    expected = input_table.mutate(c=input_table.a + input_table.b)
+    expected = expected.mutate(d=expected.c * 2)
+    assert result.equals(expected)
+
+
 def test_deferred_apply(table):
     expr = Deferred(Call(operator.add, _.a, 2))
     res = expr.resolve(table)

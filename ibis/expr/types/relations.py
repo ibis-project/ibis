@@ -18,7 +18,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.common.deferred import Deferred, Resolver
+from ibis.common.deferred import Deferred, Resolver, resolve_deferred
 from ibis.common.selectors import Expandable, Selector
 from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr
@@ -479,10 +479,8 @@ def bind(table: Table, value) -> Iterator[ir.Value]:
     elif isinstance(value, Table):
         for name in value.columns:
             yield ops.Field(value, name).to_expr()
-    elif isinstance(value, Deferred):
-        yield value.resolve(table)
-    elif isinstance(value, Resolver):
-        yield value.resolve({"_": table})
+    elif isinstance(value, (Deferred, Resolver)):
+        yield resolve_deferred(value, {"_": table})
     elif isinstance(value, Expandable):
         yield from value.expand(table)
     elif callable(value):

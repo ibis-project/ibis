@@ -11,7 +11,7 @@ import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import ValidationError
-from ibis.common.deferred import Deferred, _, deferrable
+from ibis.common.deferred import Deferred, Resolver, _, deferrable, resolve_deferred
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
 from ibis.expr.types.core import Expr
@@ -1806,8 +1806,8 @@ class Column(Value, FixedTextJupyterMixin):
 
             if isinstance(value, str):
                 return table[value]
-            elif isinstance(value, Deferred):
-                return value.resolve(table)
+            elif isinstance(value, (Deferred, Resolver)):
+                return resolve_deferred(value, {"_": table})
             else:
                 value = value(table)
 
