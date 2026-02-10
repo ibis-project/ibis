@@ -13,8 +13,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.generator import Generator
 
-# Import DB2 dialect from local sqlglot-db2 package (required)
-from sqlglot_db2.dialect import DB2 as DB2BaseDialect
+from sqlglot.dialects.db2 import DB2 as DB2BaseDialect
 
 # Import type mapper from local datatypes module
 from ibis.backends.db2.datatypes import ibis_type_to_db2_type
