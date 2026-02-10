@@ -388,6 +388,8 @@ class Backend(SQLBackend):
         create_sql = f"CREATE {temp_clause}TABLE {full_name} ({columns_sql})"
 
         self.raw_sql(create_sql)
+        # Commit the CREATE TABLE statement
+        self._connection.commit()
 
         # Insert data if provided
         if obj is not None:
@@ -423,21 +425,37 @@ class Backend(SQLBackend):
         full_name = f"{db_prefix}{name}"
 
         if force:
-            # Check if table exists first
-            check_sql = f"""
-                SELECT COUNT(*)
-                FROM SYSCAT.TABLES
-                WHERE TABNAME = '{name.upper()}'
-                AND TABSCHEMA = COALESCE('{database.upper() if database else ""}', CURRENT SCHEMA)
-            """
-            with self._safe_raw_sql(check_sql) as cursor:
+            # Check if table exists first using parameterized query
+            cursor = self._connection.cursor()
+            try:
+                if database:
+                    check_sql = """
+                        SELECT COUNT(*)
+                        FROM SYSCAT.TABLES
+                        WHERE TABNAME = ?
+                        AND TABSCHEMA = ?
+                    """
+                    cursor.execute(check_sql, (name.upper(), database.upper()))
+                else:
+                    check_sql = """
+                        SELECT COUNT(*)
+                        FROM SYSCAT.TABLES
+                        WHERE TABNAME = ?
+                        AND TABSCHEMA = CURRENT SCHEMA
+                    """
+                    cursor.execute(check_sql, (name.upper(),))
+                
                 exists = cursor.fetchone()[0] > 0
+            finally:
+                cursor.close()
 
             if not exists:
                 return
 
         drop_sql = f"DROP TABLE {full_name}"
         self.raw_sql(drop_sql)
+        # Commit the DROP TABLE statement
+        self._connection.commit()
 
     def insert(
         self,
