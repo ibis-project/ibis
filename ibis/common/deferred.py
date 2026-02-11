@@ -563,14 +563,19 @@ def const(value):
     return Deferred(Just(value))
 
 
-def _contains_deferred(obj: Any) -> bool:
+def contains_deferred(obj: Any) -> bool:
+    """Return whether an object contains deferred values."""
     if isinstance(obj, (Resolver, Deferred)):
         return True
     elif (typ := type(obj)) in (tuple, list, set):
-        return any(_contains_deferred(o) for o in obj)
+        return any(contains_deferred(o) for o in obj)
     elif typ is dict:
-        return any(_contains_deferred(o) for o in obj.values())
+        return any(contains_deferred(o) for o in obj.values())
     return False
+
+
+def _contains_deferred(obj: Any) -> bool:
+    return contains_deferred(obj)
 
 
 F = TypeVar("F", bound=Callable)
@@ -611,7 +616,7 @@ def deferrable(func=None, *, repr=None):
 
         @functools.wraps(func)
         def inner(*args, **kwargs):
-            if _contains_deferred((args, kwargs)):
+            if contains_deferred((args, kwargs)):
                 # Try to bind the arguments now, raising a nice error
                 # immediately if the function was called incorrectly
                 sig.bind(*args, **kwargs)

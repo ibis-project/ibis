@@ -368,15 +368,21 @@ class TimestampDiff(Binary):
     dtype = dt.Interval("s")
 
 
+def _interval_units(args: tuple[Value, Value]) -> list[IntervalUnit]:
+    units: list[IntervalUnit] = []
+    for arg in args:
+        if arg.dtype.is_interval():
+            units.append(arg.dtype.unit)
+    return units
+
+
 @public
 class IntervalBinary(Binary):
     """Base class for interval binary operations."""
 
     @attribute
     def dtype(self):
-        interval_unit_args = [
-            arg.dtype.unit for arg in (self.left, self.right) if arg.dtype.is_interval()
-        ]
+        interval_unit_args = _interval_units((self.left, self.right))
         unit = rlz._promote_interval_resolution(interval_unit_args)
 
         return self.left.dtype.copy(unit=unit)

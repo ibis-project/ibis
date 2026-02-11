@@ -9,6 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.common.annotations import Attribute, attribute
+from ibis.common.deferred import Deferred, Resolver
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import CoercionError, NoMatch, Pattern
 from ibis.common.temporal import IntervalUnit
@@ -136,11 +137,16 @@ def _promote_interval_resolution(units: list[IntervalUnit]) -> IntervalUnit:
     raise AssertionError("unreachable")
 
 
+def _is_deferred_value(value: object) -> bool:
+    return isinstance(value, (Deferred, Resolver))
+
+
 def arg_type_error_format(op: ops.Value) -> str:
+    if _is_deferred_value(op):
+        return repr(op)
     if isinstance(op, ops.Literal):
         return f"Literal({op.value}):{op.dtype}"
-    else:
-        return f"{op.name}:{op.dtype}"
+    return f"{op.name}:{op.dtype}"
 
 
 class ValueOf(Concrete, Pattern):

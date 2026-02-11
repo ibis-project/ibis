@@ -840,6 +840,15 @@ def test_date_expression():
     assert repr(deferred) == "date(_.s)"
 
 
+def test_date_add_with_deferred_interval():
+    t = ibis.memtable({"days": [0, 10, 100, 365]})
+    deferred_expr = ibis.date(1970, 1, 1) + _.days.as_interval("D")
+    resolved = deferred_expr.resolve(t)
+
+    expected = ibis.date(1970, 1, 1) + t.days.as_interval("D")
+    assert resolved.equals(expected)
+
+
 def test_time_literal():
     expr = ibis.time(1, 2, 3)
     sol = ops.TimeFromHMS(1, 2, 3).to_expr()
