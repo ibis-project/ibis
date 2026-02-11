@@ -16,6 +16,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis import _
 from ibis.conftest import LINUX, SANDBOXED, not_windows
 from ibis.util import gen_name
 
@@ -192,6 +193,21 @@ def test_insert(con):
 
     con.insert(name, {"a": [1, 2]}, overwrite=True)
     assert t.count().execute() == 2
+
+
+def test_drop_window_column_after_filter(con):
+    t = ibis.memtable(
+        [{"a": 1, "b": 2}, {"a": 2, "b": 3}, {"a": 3, "b": 4}],
+        schema={"a": "int64", "b": "int64"},
+    )
+
+    expr = (
+        t.mutate(rn=ibis.row_number().over(order_by=_.a))
+        .filter(_.rn == 1)
+        .drop(_.rn)
+    )
+    result = con.execute(expr)
+    assert "rn" not in result.columns
 
 
 def test_to_other_sql(con, snapshot):

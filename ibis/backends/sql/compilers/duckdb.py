@@ -19,6 +19,7 @@ from ibis.backends.sql.rewrites import (
     lower_sample,
     subtract_one_from_array_map_filter_index,
 )
+from ibis.expr.rewrites import project_drop_window_columns
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -46,7 +47,11 @@ class DuckDBCompiler(SQLGlotCompiler):
     type_mapper = DuckDBType
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
-    rewrites = (subtract_one_from_array_map_filter_index, *SQLGlotCompiler.rewrites)
+    rewrites = (
+        project_drop_window_columns,
+        subtract_one_from_array_map_filter_index,
+        *SQLGlotCompiler.rewrites,
+    )
 
     supports_qualify = True
 
@@ -626,6 +631,13 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_DropColumns(self, op, *, parent, columns_to_drop):
         quoted = self.quoted
+        if self._drop_requires_explicit_projection(op):
+            columns_to_keep = (
+                sg.column(name, table=parent.alias_or_name, quoted=quoted)
+                for name in op.schema.names
+            )
+            return sg.select(*columns_to_keep).from_(parent)
+
         # duckdb doesn't support specifying the table name of the column name
         # to drop, e.g., in SELECT t.* EXCLUDE (t.a) FROM t, the t.a bit
         #
@@ -649,6 +661,15 @@ class DuckDBCompiler(SQLGlotCompiler):
         table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
         column = sge.Column(this=star, table=table)
         return sg.select(column).from_(parent)
+
+    @staticmethod
+    def _drop_requires_explicit_projection(op) -> bool:
+        parent_values = getattr(op.parent, "values", {})
+        for column in op.columns_to_drop:
+            value = parent_values.get(column)
+            if value is not None and value.find(ops.WindowFunction, filter=ops.Value):
+                return True
+        return False
 
     def visit_TableUnnest(
         self,

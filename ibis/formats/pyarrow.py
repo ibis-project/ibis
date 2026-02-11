@@ -329,6 +329,15 @@ class PyArrowData(DataMapper):
     @classmethod
     def convert_table(cls, table: pa.Table, schema: Schema) -> pa.Table:
         desired_schema = PyArrowSchema.from_ibis(schema)
+        if table.column_names != list(schema.names):
+            missing = [name for name in schema.names if name not in table.column_names]
+            if missing:
+                raise ValueError(
+                    "PyArrow table is missing columns required by the schema: "
+                    f"{missing}"
+                )
+            table = table.select(list(schema.names))
+
         if table.schema == desired_schema:
             return table
         arrays = [

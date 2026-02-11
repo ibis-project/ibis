@@ -223,6 +223,22 @@ def peel_join_field(_):
     return _.rel.values[_.name]
 
 
+@replace(p.DropColumns)
+def project_drop_window_columns(_):
+    """Materialize drop columns as a projection when dropping window outputs.
+
+    Window-only columns can leak through star selections in some SQL backends,
+    so force an explicit projection when a dropped column is defined by a
+    window expression.
+    """
+    parent_values = _.parent.values
+    for column in _.columns_to_drop:
+        value = parent_values.get(column)
+        if value is not None and value.find(ops.WindowFunction, filter=ops.Value):
+            return ops.Project(_.parent, _.values)
+    return _
+
+
 @replace(p.ScalarParameter)
 def replace_parameter(_, params, **kwargs):
     """Replace scalar parameters with their values."""
