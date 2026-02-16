@@ -24,14 +24,17 @@ category_colors = {
 
 backend_categories = {
     list(category_colors.keys())[1]: [
+        "Athena",
         "BigQuery",
         "ClickHouse",
+        "Databricks",
         "DataFusion",
         "Druid",
         "DuckDB",
         "Exasol",
         "Flink",
         "Impala",
+        "Materialize",
         "MSSQL",
         "MySQL",
         "Oracle",
@@ -41,7 +44,6 @@ backend_categories = {
         "SingleStoreDB",
         "Snowflake",
         "SQLite",
-        "Theseus",
         "Trino",
     ],
     list(category_colors.keys())[2]: ["Polars"],
