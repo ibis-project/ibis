@@ -142,8 +142,10 @@ Ibis supports more than 20 backends:
 - [Apache Flink](https://ibis-project.org/backends/flink)
 - [Apache Impala](https://ibis-project.org/backends/impala/)
 - [Apache PySpark](https://ibis-project.org/backends/pyspark/)
+- [Athena](https://ibis-project.org/backends/athena/)
 - [BigQuery](https://ibis-project.org/backends/bigquery/)
 - [ClickHouse](https://ibis-project.org/backends/clickhouse/)
+- [Databricks](https://ibis-project.org/backends/databricks/)
 - [DuckDB](https://ibis-project.org/backends/duckdb/)
 - [Exasol](https://ibis-project.org/backends/exasol)
 - [Materialize](https://ibis-project.org/backends/materialize/)
@@ -156,7 +158,6 @@ Ibis supports more than 20 backends:
 - [SQL Server](https://ibis-project.org/backends/mssql/)
 - [SQLite](https://ibis-project.org/backends/sqlite/)
 - [Snowflake](https://ibis-project.org/backends/snowflake)
-- [Theseus](https://voltrondata.com/start)
 - [Trino](https://ibis-project.org/backends/trino/)
 
 ## How it works
