@@ -524,11 +524,7 @@ def exclude_unsupported_window_frame_from_rank(_, **kwargs):
     )
 
 
-@replace(
-    p.WindowFunction(
-        p.Lag | p.Lead | p.PercentRank | p.CumeDist | p.Any | p.All, start=None
-    )
-)
+@replace(p.WindowFunction(p.Lag | p.Lead | p.PercentRank | p.CumeDist, start=None))
 def exclude_unsupported_window_frame_from_ops(_, **kwargs):
     return _.copy(start=None, end=0, order_by=_.order_by or (ops.NULL,))
 
