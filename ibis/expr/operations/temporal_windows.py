@@ -37,4 +37,4 @@ class WindowAggregate(Relation):
             **{k: v.dtype for k, v in self.groups.items()},
             **{k: v.dtype for k, v in self.metrics.items()},
         }
-        return Schema(field_pairs)
+        return Schema._create_without_validation(field_pairs)
