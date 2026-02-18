@@ -194,6 +194,17 @@ def test_insert(con):
     assert t.count().execute() == 2
 
 
+def test_drop_column_wide_table(con):
+    df = pd.DataFrame(
+        [["a", 1, 2, 5, 6, 7], ["b", 3, 4, 7, 8, 9]],
+        columns=["one", "two", "three", "four", "five", "six"],
+        index=[5, 6],
+    )
+    t = ibis.memtable(df)
+    result = t.drop("three").execute()
+    assert list(result.columns) == ["one", "two", "four", "five", "six"]
+
+
 def test_to_other_sql(con, snapshot):
     t = con.table("functional_alltypes")
 

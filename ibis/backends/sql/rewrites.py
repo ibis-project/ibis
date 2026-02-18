@@ -142,6 +142,8 @@ def drop_columns_to_select(_, **kwargs):
     # if we're dropping fewer than 50% of the parent table's columns then the
     # compiled query will likely be smaller than if we list everything *NOT*
     # being dropped
+    if len(_.schema) > 5:
+        return Select(_.parent, selections=_.values)
     if len(_.columns_to_drop) < len(_.schema) // 2:
         return _
     return Select(_.parent, selections=_.values)

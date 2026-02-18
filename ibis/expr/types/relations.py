@@ -2912,7 +2912,19 @@ class Table(Expr, FixedTextJupyterMixin):
             return self
 
         columns_to_drop = frozenset(map(Expr.get_name, self._fast_bind(*fields)))
+        if self._drop_requires_projection(columns_to_drop):
+            selections = {
+                name: ops.Field(self, name)
+                for name in self.schema.names
+                if name not in columns_to_drop
+            }
+            return ops.Project(self, selections).to_expr()
         return ops.DropColumns(parent=self, columns_to_drop=columns_to_drop).to_expr()
+
+    def _drop_requires_projection(self, columns_to_drop: frozenset[str]) -> bool:
+        # Explicit projections avoid brittle backend behaviors around star-exclude
+        # semantics for wider tables.
+        return len(self.schema) > 5 and len(columns_to_drop) > 0
 
     def filter(
         self,

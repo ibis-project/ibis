@@ -1316,6 +1316,14 @@ class SQLGlotCompiler(abc.ABC):
             else:
                 yield value.as_(name, quoted=self.quoted, copy=False)
 
+    def _qualified_columns(
+        self, parent: sge.Expression, names: Iterable[str]
+    ) -> list[sge.Column]:
+        table = parent.alias_or_name
+        return [
+            sg.column(name, table=table, quoted=self.quoted) for name in names
+        ]
+
     def visit_Select(
         self, op, *, parent, selections, predicates, qualified, sort_keys, distinct
     ):
@@ -1600,12 +1608,7 @@ class SQLGlotCompiler(abc.ABC):
         #
         # TODO: figure out a way to produce an IR that only contains exactly
         # what is used
-        parent_alias = parent.alias_or_name
-        quoted = self.quoted
-        columns_to_keep = (
-            sg.column(column, table=parent_alias, quoted=quoted)
-            for column in op.schema.names
-        )
+        columns_to_keep = self._qualified_columns(parent, op.schema.names)
         return sg.select(*columns_to_keep).from_(parent)
 
     def add_query_to_expr(self, *, name: str, table: ir.Table, query: str) -> str:
