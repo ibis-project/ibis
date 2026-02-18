@@ -60,7 +60,7 @@ module.exports = {
           {
             files: ["CITATION.cff"],
             from: "^version: .*",
-            to: "^version: ${nextRelease.version}",
+            to: "version: ${nextRelease.version}",
             results: [
               {
                 file: "CITATION.cff",

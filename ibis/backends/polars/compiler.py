@@ -223,7 +223,7 @@ def sort(op, **kw):
     if not op.keys:
         return lf
 
-    newcols = {gen_name("sort_key"): translate(col.expr, **kw) for col in op.keys}
+    newcols = {gen_name("sort_key"): translate(col.arg, **kw) for col in op.keys}
     lf = lf.with_columns(**newcols)
 
     by = list(newcols.keys())
@@ -313,6 +313,9 @@ def join(op, **kw):
         left, right = right, left
     elif how == "outer":
         how = "full"
+    elif how == "cross":
+        # Cross joins don't use join keys
+        return left.join(right, how=how)
 
     joined = left.join(right, on=on, how=how, coalesce=False)
     joined = joined.drop(*on)
@@ -347,7 +350,7 @@ def asof_join(op, **kw):
         raise NotImplementedError(f"Operator {operator} not supported for asof join")
 
     assert len(on) == 1
-    joined = left.join_asof(right, on=on[0], by=by, strategy=direction)
+    joined = left.join_asof(right, on=on[0], by=by or None, strategy=direction)
     joined = joined.drop(*on, *by)
     return joined
 
@@ -791,7 +794,7 @@ def execute_first_last(op, **kw):
     arg = arg.filter(predicate)
 
     if order_by := getattr(op, "order_by", ()):
-        keys = [translate(k.expr, **kw).filter(predicate) for k in order_by]
+        keys = [translate(k.arg, **kw).filter(predicate) for k in order_by]
         descending = [k.descending for k in order_by]
         arg = arg.sort_by(keys, descending=descending)
 
@@ -1079,7 +1082,7 @@ def array_collect(op, in_group_by=False, **kw):
     arg = arg.filter(predicate)
 
     if op.order_by:
-        keys = [translate(k.expr, **kw).filter(predicate) for k in op.order_by]
+        keys = [translate(k.arg, **kw).filter(predicate) for k in op.order_by]
         descending = [k.descending for k in op.order_by]
         arg = arg.sort_by(keys, descending=descending, nulls_last=True)
 
@@ -1388,16 +1391,16 @@ def execute_arg_min(op, **kw):
 
 
 @translate.register(ops.SQLStringView)
-def execute_sql_string_view(op, *, ctx: pl.SQLContext, **kw):
-    translate(op.child, ctx=ctx, **kw)
+def execute_sql_string_view(op: ops.SQLStringView, *, ctx: pl.SQLContext, **kw):
+    translate(op.parent, ctx=ctx, **kw)
     return ctx.execute(op.query)
 
 
-@translate.register(ops.View)
-def execute_view(op, *, ctx: pl.SQLContext, **kw):
-    child = translate(op.child, ctx=ctx, **kw)
-    ctx.register(op.name, child)
-    return child
+@translate.register(ops.AliasedRelation)
+def execute_aliased_relation(op, *, ctx: pl.SQLContext, **kw):
+    parent = translate(op.parent, ctx=ctx, **kw)
+    ctx.register(op.name, parent)
+    return parent
 
 
 @translate.register(ops.Reference)
@@ -1586,7 +1589,7 @@ def execute_group_concat(op, **kw):
     arg = arg.filter(predicate)
 
     if order_by := op.order_by:
-        keys = [translate(k.expr, **kw).filter(predicate) for k in order_by]
+        keys = [translate(k.arg, **kw).filter(predicate) for k in order_by]
         descending = [k.descending for k in order_by]
         arg = arg.sort_by(keys, descending=descending)
 

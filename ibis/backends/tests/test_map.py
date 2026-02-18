@@ -68,7 +68,7 @@ def test_map_keys_nulls(con, k, v):
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
 @pytest.mark.parametrize(
-    "map",
+    "map_",
     [
         param(
             ibis.map(
@@ -87,12 +87,12 @@ def test_map_keys_nulls(con, k, v):
     ],
 )
 @mark_notyet_datafusion
-def test_map_values_nulls(con, map):
-    assert con.execute(map.values()) is None
+def test_map_values_nulls(con, map_):
+    assert con.execute(map_.values()) is None
 
 
 @pytest.mark.parametrize(
-    ("map", "key"),
+    ("map_", "key"),
     [
         param(
             ibis.map(
@@ -153,9 +153,9 @@ def test_map_values_nulls(con, map):
     ],
 )
 @pytest.mark.parametrize("method", ["get", "contains"])
-def test_map_get_contains_nulls(con, map, key, method):
-    expr = getattr(map, method)
-    assert con.execute(expr(key)) is None
+def test_map_get_contains_nulls(con, map_, key, method):
+    expr = getattr(map_, method)
+    assert con.to_pyarrow(expr(key)).as_py() is None
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
@@ -404,14 +404,7 @@ values = pytest.mark.parametrize(
             [ibis.timestamp("2021-01-01"), ibis.timestamp("2021-01-02")], id="timestamp"
         ),
         pytest.param([ibis.date(2021, 1, 1), ibis.date(2022, 2, 2)], id="date"),
-        pytest.param(
-            [[1, 2], [3, 4]],
-            marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
-                mark_notyet_postgres,
-            ],
-            id="array",
-        ),
+        pytest.param([[1, 2], [3, 4]], marks=[mark_notyet_postgres], id="array"),
         pytest.param(
             [ibis.struct(dict(a=1)), ibis.struct(dict(a=2))],
             marks=[
@@ -480,7 +473,14 @@ def test_map_construct_array_column(con, alltypes, df):
     result = con.execute(expr)
     expected = df.apply(lambda row: {row["string_col"]: row["int_col"]}, axis=1)
 
-    assert result.to_list() == expected.to_list()
+    # Materialize-specific: avoid pytest's diff which causes issues with map comparisons
+    if con.name == "materialize":
+        if result.to_list() != expected.to_list():
+            pytest.fail(
+                f"Lists differ: got={result.to_list()}, expected={expected.to_list()}"
+            )
+    else:
+        assert result.to_list() == expected.to_list()
 
 
 @mark_notyet_postgres

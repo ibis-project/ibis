@@ -1,7 +1,7 @@
 [project]
 name = "ibis-framework"
-version = "11.0.0"
-requires-python = ">=3.9"
+version = "12.0.0"
+requires-python = ">=3.10"
 description = "The portable Python dataframe library"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -37,6 +37,7 @@ keywords = [
   "sqlite",
   "impala",
   "postgresql",
+  "singlestoredb",
   "snowflake",
   "pandas",
   "pyspark",
@@ -71,7 +72,7 @@ athena = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
   "fsspec[s3]",
 ]
@@ -84,7 +85,7 @@ bigquery = [
   "pydata-google-auth>=1.4.0",
   "pandas-gbq>=0.26.1",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 clickhouse = [
@@ -92,15 +93,15 @@ clickhouse = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 databricks = [
-  "databricks-sql-connector-core>=4",
+  "databricks-sql-connector>=4",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 datafusion = [
@@ -109,7 +110,7 @@ datafusion = [
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "packaging>=21.3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 druid = [
@@ -117,7 +118,7 @@ druid = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 duckdb = [
@@ -128,7 +129,7 @@ duckdb = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
   "packaging>=21.3",
 ]
@@ -137,7 +138,7 @@ exasol = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 flink = [
@@ -146,7 +147,7 @@ flink = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 impala = [
@@ -154,7 +155,7 @@ impala = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 mssql = [
@@ -162,7 +163,7 @@ mssql = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 mysql = [
@@ -170,7 +171,15 @@ mysql = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
+  "rich>=12.4.4",
+]
+materialize = [
+  "psycopg>=3.2.0",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 oracle = [
@@ -178,7 +187,7 @@ oracle = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 polars = [
@@ -186,7 +195,7 @@ polars = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 postgres = [
@@ -194,16 +203,25 @@ postgres = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 pyspark = [
-  "pyspark>=3.3.3,<4",
+  "pyspark>=3.5,<4.1",
   "packaging>=21.3",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
+  "rich>=12.4.4",
+]
+singlestoredb = [
+  "singlestoredb>=1.0",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<4",
+  "parsimonious>=0.11.0",
   "rich>=12.4.4",
 ]
 snowflake = [
@@ -211,7 +229,7 @@ snowflake = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 sqlite = [
@@ -220,7 +238,7 @@ sqlite = [
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "packaging>=21.3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 risingwave = [
@@ -228,7 +246,7 @@ risingwave = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 trino = [
@@ -236,7 +254,7 @@ trino = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
 # non-backend extras
@@ -287,10 +305,10 @@ tests = [
   "tomli>=2.0.1,<3",
 ]
 docs = [
-  "altair>=5.0.1,<6",
+  "altair>=5.0.1,<7",
   "griffe>=1.7.3",
   "ipykernel>=6.25.1,<8",
-  "itables>=1.6.3,<2.6",
+  "itables>=1.6.3",
   "nbclient>=0.8.0,<1",
   "plotly>=5.16.1",
   "plotnine>=0.12.2,<1",
@@ -300,12 +318,12 @@ docs = [
   "rich>=13.8.1",
   "scikit-learn>=1.3,<2",
   "seaborn>=0.12.2,<1",
-  "lonboard==0.12.1; python_version >= '3.10'",
+  "lonboard>=0.12.1",
   "jupyter-cache>=1.0.0,<2",
   "jupyterlab>=4.2.5,<5",
   "jupyterlab-night>=0.4.6,<1",
-  "jupyterlite-core>=0.6,<0.7",
-  "jupyterlite-pyodide-kernel>=0.6,<0.7",
+  "jupyterlite-core>=0.6,<0.8",
+  "jupyterlite-pyodide-kernel>=0.6,<0.8",
 ]
 
 [project.entry-points."ibis.backends"]
@@ -324,8 +342,10 @@ mssql = "ibis.backends.mssql"
 oracle = "ibis.backends.oracle"
 polars = "ibis.backends.polars"
 postgres = "ibis.backends.postgres"
+materialize = "ibis.backends.materialize"
 risingwave = "ibis.backends.risingwave"
 pyspark = "ibis.backends.pyspark"
+singlestoredb = "ibis.backends.singlestoredb"
 snowflake = "ibis.backends.snowflake"
 sqlite = "ibis.backends.sqlite"
 trino = "ibis.backends.trino"
@@ -454,6 +474,27 @@ filterwarnings = [
   "ignore:The 'shapely\\.geos' module is deprecated, and will be removed in a future version:DeprecationWarning",
   # snowflake vendors pyopenssl, because why not, and pyopenssl raises a warning on snowflake's use of it
   "ignore:Attempting to mutate a Context after a Connection was created\\. In the future, this will raise an exception:DeprecationWarning",
+  # pins Board.pin_meta leaks file handles (see https://github.com/rstudio/pins-python/pull/353 for a fix)
+  "ignore:unclosed file <_io.BufferedReader.*pins.*>:ResourceWarning",
+  # impala leaves sockets open
+  "ignore:unclosed .*socket.*:ResourceWarning",
+  # singlestoredb HTTP protocol cannot set session timezone
+  "ignore:Unable to set session timezone to UTC:UserWarning",
+  # BigQuery dropping support for 3.10 in Oct 2026
+  "ignore:You are using a Python version .+ which Google will stop supporting.+:FutureWarning",
+  # flink deprecation warning
+  "ignore:.+setName.+:DeprecationWarning",
+  # flink deprecation warning (can't use the specific type because it's a
+  # dependency [pyparsing] that only shows up in flink)
+  "ignore:.*deprecated - use.*:",
+  # failures to close sqlite3.Connection objects
+  "ignore:unclosed database.+sqlite3\\.Connection.+:ResourceWarning",
+  # failures to close postgres connection objects
+  "ignore:.*psycopg\\.Connection.+was deleted while still open:ResourceWarning",
+  # `Pandas4Warning`s coming directly from the way ClickHouse and PySpark use pandas
+  "ignore:The copy keyword is deprecated and will be removed in a future version:DeprecationWarning",
+  # pyspark connect 4.0 warns about ignored arguments
+  "ignore:'.+' is ignored:UserWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
@@ -481,8 +522,12 @@ markers = [
   "oracle: Oracle tests",
   "polars: Polars tests",
   "postgres: PostgreSQL tests",
+  "materialize: Materialize tests",
   "risingwave: RisingWave tests",
   "pyspark: PySpark tests",
+  "singlestoredb: SingleStoreDB tests",
+  "singlestoredb_mysql: SingleStoreDB MySQL protocol tests",
+  "singlestoredb_http: SingleStoreDB HTTP protocol tests",
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",
   "trino: Trino tests",

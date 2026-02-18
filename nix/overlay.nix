@@ -108,11 +108,13 @@ in
   ibis311 = mkEnv pkgs.python311;
   ibis312 = mkEnv pkgs.python312;
   ibis313 = mkEnv pkgs.python313;
+  ibis314 = mkEnv pkgs.python314;
 
   ibisDevEnv310 = mkDevEnv pkgs.python310;
   ibisDevEnv311 = mkDevEnv pkgs.python311;
   ibisDevEnv312 = mkDevEnv pkgs.python312;
   ibisDevEnv313 = mkDevEnv pkgs.python313;
+  ibisDevEnv314 = mkDevEnv pkgs.python314;
 
   ibisSmallDevEnv = mkEnv' {
     deps = {
@@ -129,7 +131,6 @@ in
   );
 
   quarto = pkgs.callPackage ./quarto { };
-  uv = uv2nix.packages.${pkgs.system}.uv-bin;
 
   changelog = pkgs.writeShellApplication {
     name = "changelog";

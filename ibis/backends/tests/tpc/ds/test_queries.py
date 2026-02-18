@@ -14,11 +14,6 @@ from ibis.backends.tests.tpc.conftest import tpc_test
 from ibis.common.exceptions import OperationNotDefinedError
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("ds")
 def test_01(store_returns, date_dim, store, customer):
     customer_total_return = (
@@ -35,11 +30,13 @@ def test_01(store_returns, date_dim, store, customer):
         )
         .join(customer, _.ctr_customer_sk == customer.c_customer_sk)
         .filter(
-            lambda t: t.ctr_total_return
-            > ctr2.filter(t.ctr_store_sk == ctr2.ctr_store_sk)
-            .ctr_total_return.mean()
-            .as_scalar()
-            * 1.2
+            lambda t: (
+                t.ctr_total_return
+                > ctr2.filter(t.ctr_store_sk == ctr2.ctr_store_sk)
+                .ctr_total_return.mean()
+                .as_scalar()
+                * 1.2
+            )
         )
         .select(_.c_customer_id)
         .order_by(_.c_customer_id)
@@ -225,11 +222,6 @@ def test_05(
     raise NotImplementedError()
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("ds")
 def test_06(customer_address, customer, store_sales, date_dim, item):
     return (
@@ -753,11 +745,6 @@ def test_09(store_sales, reason):
 @pytest.mark.notimpl(
     ["datafusion"], reason="Exception: Optimizer rule 'scalar_subquery_to_join' failed"
 )
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 def test_10(
     customer,
     customer_address,
@@ -791,24 +778,26 @@ def test_10(
                 > 0
             ),
             lambda t: (
-                web_sales.join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
-                .filter(
-                    t.c_customer_sk == web_sales.ws_bill_customer_sk,
-                    _.d_year == 2002,
-                    _.d_moy.between(1, 1 + 3),
+                (
+                    web_sales.join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+                    .filter(
+                        t.c_customer_sk == web_sales.ws_bill_customer_sk,
+                        _.d_year == 2002,
+                        _.d_moy.between(1, 1 + 3),
+                    )
+                    .count()
+                    > 0
                 )
-                .count()
-                > 0
-            )
-            | (
-                catalog_sales.join(date_dim, [("cs_sold_date_sk", "d_date_sk")])
-                .filter(
-                    t.c_customer_sk == catalog_sales.cs_ship_customer_sk,
-                    _.d_year == 2002,
-                    _.d_moy.between(1, 1 + 3),
+                | (
+                    catalog_sales.join(date_dim, [("cs_sold_date_sk", "d_date_sk")])
+                    .filter(
+                        t.c_customer_sk == catalog_sales.cs_ship_customer_sk,
+                        _.d_year == 2002,
+                        _.d_moy.between(1, 1 + 3),
+                    )
+                    .count()
+                    > 0
                 )
-                .count()
-                > 0
             ),
         )
         .group_by(
@@ -1030,8 +1019,8 @@ def test_15(catalog_sales, customer, customer_address, date_dim):
 
 @pytest.mark.notyet(
     ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
+    raises=AssertionError,
+    reason="Query results don't match raw SQL results",
 )
 @pytest.mark.notyet(
     ["datafusion"],
@@ -1047,15 +1036,17 @@ def test_16(catalog_sales, date_dim, customer_address, call_center, catalog_retu
             _.d_date.between(date("2002-02-01"), date("2002-04-02")),
             _.ca_state == "GA",
             _.cc_county == "Williamson County",
-            lambda t: catalog_sales.filter(
-                t.cs_order_number == _.cs_order_number,
-                t.cs_warehouse_sk != _.cs_warehouse_sk,
-            ).count()
-            > 0,
-            lambda t: catalog_returns.filter(
-                t.cs_order_number == _.cr_order_number
-            ).count()
-            == 0,
+            lambda t: (
+                catalog_sales.filter(
+                    t.cs_order_number == _.cs_order_number,
+                    t.cs_warehouse_sk != _.cs_warehouse_sk,
+                ).count()
+                > 0
+            ),
+            lambda t: (
+                catalog_returns.filter(t.cs_order_number == _.cr_order_number).count()
+                == 0
+            ),
         )
         .agg(
             **{
@@ -1529,11 +1520,6 @@ def test_29(store_sales, store_returns, catalog_sales, date_dim, store, item):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 def test_30(web_returns, date_dim, customer_address, customer):
     customer_total_return = (
         web_returns.join(
@@ -2071,67 +2057,71 @@ def test_41(item):
         item.view()
         .filter(
             _.i_manufact_id.between(738, 738 + 40),
-            lambda i1: item.filter(
-                lambda s: (
-                    (i1.i_manufact == s.i_manufact)
-                    & (
+            lambda i1: (
+                item.filter(
+                    lambda s: (
                         (
-                            (s.i_category == "Women")
-                            & s.i_color.isin(("powder", "khaki"))
-                            & s.i_units.isin(("Ounce", "Oz"))
-                            & s.i_size.isin(("medium", "extra large"))
+                            (i1.i_manufact == s.i_manufact)
+                            & (
+                                (
+                                    (s.i_category == "Women")
+                                    & s.i_color.isin(("powder", "khaki"))
+                                    & s.i_units.isin(("Ounce", "Oz"))
+                                    & s.i_size.isin(("medium", "extra large"))
+                                )
+                                | (
+                                    (s.i_category == "Women")
+                                    & s.i_color.isin(("brown", "honeydew"))
+                                    & s.i_units.isin(("Bunch", "Ton"))
+                                    & s.i_size.isin(("N/A", "small"))
+                                )
+                                | (
+                                    (s.i_category == "Men")
+                                    & s.i_color.isin(("floral", "deep"))
+                                    & s.i_units.isin(("N/A", "Dozen"))
+                                    & s.i_size.isin(("petite", "petite"))
+                                )
+                                | (
+                                    (s.i_category == "Men")
+                                    & s.i_color.isin(("light", "cornflower"))
+                                    & s.i_units.isin(("Box", "Pound"))
+                                    & s.i_size.isin(("medium", "extra large"))
+                                )
+                            )
                         )
                         | (
-                            (s.i_category == "Women")
-                            & s.i_color.isin(("brown", "honeydew"))
-                            & s.i_units.isin(("Bunch", "Ton"))
-                            & s.i_size.isin(("N/A", "small"))
-                        )
-                        | (
-                            (s.i_category == "Men")
-                            & s.i_color.isin(("floral", "deep"))
-                            & s.i_units.isin(("N/A", "Dozen"))
-                            & s.i_size.isin(("petite", "petite"))
-                        )
-                        | (
-                            (s.i_category == "Men")
-                            & s.i_color.isin(("light", "cornflower"))
-                            & s.i_units.isin(("Box", "Pound"))
-                            & s.i_size.isin(("medium", "extra large"))
+                            (i1.i_manufact == s.i_manufact)
+                            & (
+                                (
+                                    (s.i_category == "Women")
+                                    & s.i_color.isin(("midnight", "snow"))
+                                    & s.i_units.isin(("Pallet", "Gross"))
+                                    & s.i_size.isin(("medium", "extra large"))
+                                )
+                                | (
+                                    (s.i_category == "Women")
+                                    & s.i_color.isin(("cyan", "papaya"))
+                                    & s.i_units.isin(("Cup", "Dram"))
+                                    & s.i_size.isin(("N/A", "small"))
+                                )
+                                | (
+                                    (s.i_category == "Men")
+                                    & s.i_color.isin(("orange", "frosted"))
+                                    & s.i_units.isin(("Each", "Tbl"))
+                                    & s.i_size.isin(("petite", "petite"))
+                                )
+                                | (
+                                    (s.i_category == "Men")
+                                    & s.i_color.isin(("forest", "ghost"))
+                                    & s.i_units.isin(("Lb", "Bundle"))
+                                    & s.i_size.isin(("medium", "extra large"))
+                                )
+                            )
                         )
                     )
-                )
-                | (
-                    (i1.i_manufact == s.i_manufact)
-                    & (
-                        (
-                            (s.i_category == "Women")
-                            & s.i_color.isin(("midnight", "snow"))
-                            & s.i_units.isin(("Pallet", "Gross"))
-                            & s.i_size.isin(("medium", "extra large"))
-                        )
-                        | (
-                            (s.i_category == "Women")
-                            & s.i_color.isin(("cyan", "papaya"))
-                            & s.i_units.isin(("Cup", "Dram"))
-                            & s.i_size.isin(("N/A", "small"))
-                        )
-                        | (
-                            (s.i_category == "Men")
-                            & s.i_color.isin(("orange", "frosted"))
-                            & s.i_units.isin(("Each", "Tbl"))
-                            & s.i_size.isin(("petite", "petite"))
-                        )
-                        | (
-                            (s.i_category == "Men")
-                            & s.i_color.isin(("forest", "ghost"))
-                            & s.i_units.isin(("Lb", "Bundle"))
-                            & s.i_size.isin(("medium", "extra large"))
-                        )
-                    )
-                )
-            ).count()
-            > 0,
+                ).count()
+                > 0
+            ),
         )
         .select(_.i_product_name)
         .distinct()
@@ -3609,8 +3599,8 @@ def test_68(
 )
 @pytest.mark.notyet(
     ["clickhouse"],
-    reason="parent scope only supported for constants and CTE",
-    raises=ClickHouseDatabaseError,
+    reason="Query results don't match raw SQL results",
+    raises=AssertionError,
 )
 @tpc_test("ds")
 def test_69(
@@ -4503,11 +4493,6 @@ def test_80(
     raise NotImplementedError()
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("ds")
 def test_81(catalog_returns, date_dim, customer_address, customer):
     customer_total_return = (
@@ -4522,10 +4507,13 @@ def test_81(catalog_returns, date_dim, customer_address, customer):
         customer_total_return.join(customer, [("ctr_customer_sk", "c_customer_sk")])
         .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
         .filter(
-            lambda ctr1: ctr1.ctr_total_return
-            > (
-                ctr2.filter(ctr1.ctr_state == _.ctr_state).ctr_total_return.mean() * 1.2
-            ).as_scalar(),
+            lambda ctr1: (
+                ctr1.ctr_total_return
+                > (
+                    ctr2.filter(ctr1.ctr_state == _.ctr_state).ctr_total_return.mean()
+                    * 1.2
+                ).as_scalar()
+            ),
             _.ca_state == "GA",
         )
         .select(
@@ -4931,11 +4919,6 @@ def test_91(
     )
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @tpc_test("ds")
 def test_92(web_sales, item, date_dim):
     return (
@@ -4944,16 +4927,18 @@ def test_92(web_sales, item, date_dim):
         .filter(
             _.i_manufact_id == 350,
             _.d_date.between(date("2000-01-07"), date("2000-04-26")),
-            lambda t: t.ws_ext_discount_amt
-            > (
-                web_sales.join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
-                .filter(
-                    t.i_item_sk == _.ws_item_sk,
-                    _.d_date.between(date("2000-01-07"), date("2000-04-26")),
+            lambda t: (
+                t.ws_ext_discount_amt
+                > (
+                    web_sales.join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+                    .filter(
+                        t.i_item_sk == _.ws_item_sk,
+                        _.d_date.between(date("2000-01-07"), date("2000-04-26")),
+                    )
+                    .ws_ext_discount_amt.mean()
+                    .as_scalar()
+                    * 1.3
                 )
-                .ws_ext_discount_amt.mean()
-                .as_scalar()
-                * 1.3
             ),
         )
         .select(_.ws_ext_discount_amt.sum().name("Excess Discount Amount"))
@@ -4996,11 +4981,6 @@ def test_93(store_sales, store_returns, reason):
     )
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=ClickHouseDatabaseError,
-    reason="correlated subqueries don't exist in clickhouse",
-)
 @pytest.mark.notyet(
     ["datafusion"],
     raises=Exception,

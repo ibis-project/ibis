@@ -10,10 +10,11 @@ import ibis.common.exceptions as com
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.annotations import ValidationError
 from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
-from ibis.expr.types.core import Expr, _binop
+from ibis.expr.types.core import Expr
 from ibis.expr.types.rich import FixedTextJupyterMixin, to_rich
 from ibis.util import deprecated, experimental, promote_list
 
@@ -41,7 +42,7 @@ _SENTINEL = object()
 class Value(Expr):
     """Base class for a data generating expression having a known type."""
 
-    def name(self, name: str, /) -> Value:
+    def name(self, name: str, /) -> Self:
         """Rename an expression to `name`.
 
         Parameters
@@ -1483,11 +1484,12 @@ class Scalar(Value):
 
         return PolarsData.convert_scalar(df, self.type())
 
-    def as_scalar(self):
-        """Inform ibis that the expression should be treated as a scalar.
+    def as_scalar(self) -> Self:
+        """Tell ibis to treat this expression as a single scalar value.
 
-        If the expression is a literal, it will be returned as is. If it depends
-        on a table, it will be turned to a scalar subquery.
+        If the expression is a literal, it will be returned as is.
+        If it depends on a table, eg an aggregation of a column,
+        it will be turned to a scalar subquery.
 
         Returns
         -------
@@ -1518,7 +1520,7 @@ class Scalar(Value):
             return self
 
     def as_table(self) -> ir.Table:
-        """Promote the scalar expression to a table.
+        """Promote the expression to a [Table](./expression-tables.qmd#ibis.expr.types.Table).
 
         Returns
         -------
@@ -1694,14 +1696,16 @@ class Column(Value, FixedTextJupyterMixin):
         return PolarsData.convert_column(df, self.type())
 
     def as_scalar(self) -> Scalar:
-        """Inform ibis that the expression should be treated as a scalar.
+        """Inform ibis to treat this Column as a scalar.
 
-        Creates a scalar subquery from the column expression. Since ibis cannot
-        be sure that the column expression contains only one value, the column
-        expression is wrapped in a scalar subquery and treated as a scalar.
+        Ibis cannot know until execution time whether a column expression
+        contains only one value or many values.
 
-        Note that the execution of the scalar subquery will fail if the column
-        expression contains more than one value.
+        This method is a way to explicitly tell ibis to trust you that
+        this column expression will only contain one value at execution time.
+        This allows you to use this column expression with other tables.
+
+        Note that execution will fail if the column DOES contain more than one value.
 
         Returns
         -------
@@ -1714,6 +1718,23 @@ class Column(Value, FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> heavy_gentoo = t.filter(t.species == "Gentoo", t.body_mass_g > 6200)
+
+        We know from domain knowledge that there is only one Gentoo penguin
+        with body mass greater than 6200g, so heavy_gentoo is a table with
+        exactly one row.
+
+        If we try to use `t.island == heavy_gentoo.island` directly in a filter,
+        we will get an error because we are trying to compare columns from two tables
+        to each other, which we don't know know to align without a specific join:
+
+        >>> t.filter(t.island == heavy_gentoo.island)  # quartodoc: +EXPECTED_FAILURE
+        Traceback (most recent call last):
+            ...
+        _duckdb.BinderException: Binder Error: Referenced table "t1" not found!
+
+        Instead, we should use `as_scalar()` to tell ibis that we know
+        `heavy_gentoo.island` contains exactly one value:
+
         >>> from_that_island = t.filter(t.island == heavy_gentoo.island.as_scalar())
         >>> from_that_island.species.value_counts().order_by("species")
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━┓
@@ -2460,7 +2481,7 @@ class Column(Value, FixedTextJupyterMixin):
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
-    ) -> Value:
+    ) -> Scalar:
         """Return the first value of a column.
 
         Parameters
@@ -2514,7 +2535,7 @@ class Column(Value, FixedTextJupyterMixin):
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
-    ) -> Value:
+    ) -> Scalar:
         """Return the last value of a column.
 
         Parameters
@@ -2626,7 +2647,7 @@ class Column(Value, FixedTextJupyterMixin):
         """
         return ibis.dense_rank().over(order_by=self)
 
-    def percent_rank(self) -> Column:
+    def percent_rank(self) -> ir.FloatingColumn:
         """Return the relative rank of the values in the column.
 
         Examples
@@ -2650,7 +2671,7 @@ class Column(Value, FixedTextJupyterMixin):
         """
         return ibis.percent_rank().over(order_by=self)
 
-    def cume_dist(self) -> Column:
+    def cume_dist(self) -> ir.FloatingColumn:
         """Return the cumulative distribution over a window.
 
         Examples
@@ -2994,7 +3015,7 @@ class NullColumn(Column, NullValue):
 
 @public
 @deferrable
-def null(type: dt.DataType | str | None = None, /) -> Value:
+def null(type: dt.DataType | str | None = None, /) -> NullScalar:
     """Create a NULL scalar.
 
     `NULL`s with an unspecified type are castable and comparable to values,
@@ -3117,6 +3138,57 @@ def _is_null_literal(value: Any) -> bool:
         and isinstance(op := value.op(), ops.Literal)
         and op.value is None
     )
+
+
+def _binop(op_class: type[ops.Value], left: Value | Any, right: Value | Any) -> Value:
+    """Try to construct a binary operation between two Values.
+
+    Parameters
+    ----------
+    op_class
+        An ops.Value that accepts two Value positional operands.
+        Not necessarily a ops.Binary subclass,
+        eg this works with ops.Repeat for string repetition.
+    left
+        Left operand. Can be a Value, or something coercible to a Value.
+    right
+        Right operand. Can be a Value, or something coercible to a Value.
+
+    Returns
+    -------
+    ir.Value
+        A value expression
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.expr.operations as ops
+    >>> _binop(ops.TimeAdd, ibis.time("01:00"), ibis.interval(hours=1))
+    TimeAdd(datetime.time(1, 0), 1h): datetime.time(1, 0) + 1 h
+    >>> _binop(ops.TimeAdd, 1, ibis.interval(hours=1))
+    TimeAdd(datetime.time(0, 0, 1), 1h): datetime.time(0, 0, 1) + 1 h
+    >>> _binop(ops.Equals, 5, 2)
+    Equals(5, 2): 5 == 2
+
+    This raises if the operation is known to be invalid between the two operands:
+
+    >>> _binop(ops.Equals, ibis.literal("foo"), 2)  # quartodoc: +EXPECTED_FAILURE
+    Traceback (most recent call last):
+      ...
+    IbisTypeError: Arguments Literal(foo):string and Literal(2):int8 are not comparable
+
+    But returns NotImplemented if we aren't sure:
+
+    >>> _binop(ops.Equals, 5, ibis.table({"a": "int"}))
+    NotImplemented
+    """
+    assert issubclass(op_class, ops.Value)
+    try:
+        node = op_class(left, right)
+    except (ValidationError, NotImplementedError):
+        return NotImplemented
+    else:
+        return node.to_expr()
 
 
 public(

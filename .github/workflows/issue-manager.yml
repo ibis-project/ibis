@@ -1,0 +1,33 @@
+name: Issue Manager
+
+on:
+  issue_comment:
+    types:
+      - created
+  issues:
+    types:
+      - labeled
+  pull_request_target:
+    types:
+      - labeled
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  issue-manager:
+    if: github.repository_owner == 'ibis-project'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: tiangolo/issue-manager@0.6.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config: >
+            {
+              "maybe-ai": {
+                "delay": 0,
+                "message": "This was marked as potentially AI generated and will be closed now. If this is an error, please provide additional details, make sure to read the docs about contributing and AI."
+              }
+            }

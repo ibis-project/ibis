@@ -599,6 +599,70 @@ class DataFusionType(PostgresType):
         )
 
 
+class MaterializeType(PostgresType):
+    """Type mapper for Materialize.
+
+    Materialize supports native unsigned integer types with byte-count-based naming:
+
+    | Materialize Type | Size      | Bit Width | Ibis Type |
+    |-----------------|-----------|-----------|-----------|
+    | uint2           | 2 bytes   | 16 bits   | UInt16    |
+    | uint4           | 4 bytes   | 32 bits   | UInt32    |
+    | uint8           | 8 bytes   | 64 bits   | UInt64    |
+
+    IMPORTANT NAMING CLARIFICATION:
+    - Materialize's "uint8" means 8 BYTES (64 bits), NOT 8 bits
+    - Ibis's "UInt8" means 8 BITS (1 byte)
+    - Materialize does NOT support 1-byte (8-bit) unsigned integers
+
+    Ref: https://materialize.com/docs/sql/types/uint/
+    """
+
+    dialect = "postgres"  # Materialize uses Postgres wire protocol
+
+    @classmethod
+    def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
+        """Parse type strings including Materialize-specific uint types."""
+        text_lower = text.lower()
+
+        # Use default nullable if not specified
+        if nullable is None:
+            nullable = cls.default_nullable
+
+        # Handle Materialize unsigned integer types
+        if text_lower == "uint2":
+            return dt.UInt16(nullable=nullable)
+        elif text_lower == "uint4":
+            return dt.UInt32(nullable=nullable)
+        elif text_lower == "uint8":
+            return dt.UInt64(nullable=nullable)
+
+        # Delegate to parent for all other types
+        return super().from_string(text, nullable=nullable)
+
+    @classmethod
+    def _from_ibis_UInt8(cls, dtype: dt.UInt8) -> sge.DataType:
+        # Materialize doesn't have a 1-byte unsigned integer type.
+        # Map to uint2 (16-bit/2-byte unsigned integer), the smallest supported unsigned type.
+        # Ref: https://materialize.com/docs/sql/types/uint/
+        return sge.DataType(this="uint2")
+
+    @classmethod
+    def _from_ibis_UInt16(cls, dtype: dt.UInt16) -> sge.DataType:
+        # Materialize uses 'uint2' for 16-bit unsigned integers
+        return sge.DataType(this="uint2")
+
+    @classmethod
+    def _from_ibis_UInt32(cls, dtype: dt.UInt32) -> sge.DataType:
+        # Materialize uses 'uint4' for 32-bit unsigned integers
+        return sge.DataType(this="uint4")
+
+    @classmethod
+    def _from_ibis_UInt64(cls, dtype: dt.UInt64) -> sge.DataType:
+        # Materialize uses 'uint8' for 64-bit unsigned integers
+        return sge.DataType(this="uint8")
+
+
 class MySQLType(SqlglotType):
     dialect = "mysql"
     # these are mysql's defaults, see
@@ -1009,18 +1073,23 @@ class BigQueryType(SqlglotType):
 
     @classmethod
     def _from_ibis_Decimal(cls, dtype: dt.Decimal) -> sge.DataType:
+        msg = (
+            "BigQuery only supports decimal types with precision <= 38 and "
+            f"scale <= 9 (NUMERIC) or precision <= 76 and scale <= 38 (BIGNUMERIC). "
+            f"Current precision: {dtype.precision}. Current scale: {dtype.scale}"
+        )
         precision = dtype.precision
         scale = dtype.scale
-        if (precision, scale) == (76, 38):
-            return sge.DataType(this=typecode.BIGDECIMAL)
-        elif (precision, scale) in ((38, 9), (None, None)):
+
+        max_precision = precision or 0
+        max_scale = scale or 0
+
+        if max_precision <= 38 and max_scale <= 9:
             return sge.DataType(this=typecode.DECIMAL)
+        elif max_precision <= 76 and max_scale <= 38:
+            return sge.DataType(this=typecode.BIGDECIMAL)
         else:
-            raise com.UnsupportedBackendType(
-                "BigQuery only supports decimal types with precision of 38 and "
-                f"scale of 9 (NUMERIC) or precision of 76 and scale of 38 (BIGNUMERIC). "
-                f"Current precision: {dtype.precision}. Current scale: {dtype.scale}"
-            )
+            raise com.UnsupportedBackendType(msg)
 
     @classmethod
     def _from_ibis_UInt64(cls, dtype: dt.UInt64) -> NoReturn:
@@ -1393,7 +1462,302 @@ class AthenaType(SqlglotType):
     dialect = "athena"
 
 
-TYPE_MAPPERS: dict[str, SqlglotType] = {
+class SingleStoreDBType(MySQLType):
+    """SingleStoreDB type implementation, inheriting from MySQL with SingleStoreDB-specific extensions.
+
+    SingleStoreDB uses the MySQL protocol but has additional features:
+    - Enhanced JSON support with columnstore optimizations
+    - VECTOR type for AI/ML workloads
+    - GEOGRAPHY type for extended geospatial operations
+    - Better BOOLEAN type handling
+    """
+
+    dialect = "singlestore"
+
+    @classmethod
+    def to_ibis(cls, typ, nullable=True):
+        """Convert SingleStoreDB type to Ibis type.
+
+        Handles both standard MySQL types and SingleStoreDB-specific extensions.
+        """
+        if hasattr(typ, "this"):
+            type_name = str(typ.this).upper()
+
+            # Handle BOOLEAN type directly
+            if type_name == "BOOLEAN":
+                return dt.Boolean(nullable=nullable)
+
+            # Handle TINYINT as Boolean - MySQL/SingleStoreDB convention
+            if type_name.endswith("TINYINT"):
+                # Check if it has explicit length parameter
+                if hasattr(typ, "expressions") and typ.expressions:
+                    # Extract length parameter from TINYINT(length)
+                    length_param = typ.expressions[0]
+                    if hasattr(length_param, "this") and hasattr(
+                        length_param.this, "this"
+                    ):
+                        length = int(length_param.this.this)
+                        if length == 1:
+                            # TINYINT(1) is commonly used as BOOLEAN
+                            return dt.Boolean(nullable=nullable)
+
+            # Handle DATETIME with scale parameter specially
+            if (
+                type_name.endswith("DATETIME")
+                and hasattr(typ, "expressions")
+                and typ.expressions
+            ):
+                # Extract scale from the first parameter
+                scale_param = typ.expressions[0]
+                if hasattr(scale_param, "this") and hasattr(scale_param.this, "this"):
+                    scale = int(scale_param.this.this)
+                    return dt.Timestamp(scale=scale or None, nullable=nullable)
+
+            # Handle BIT types with length parameter
+            if (
+                type_name.endswith("BIT")
+                and hasattr(typ, "expressions")
+                and typ.expressions
+            ):
+                # Extract bit length from the first parameter
+                length_param = typ.expressions[0]
+                if hasattr(length_param, "this") and hasattr(length_param.this, "this"):
+                    bit_length = int(length_param.this.this)
+                    # Map bit length to appropriate integer type
+                    if bit_length <= 8:
+                        return dt.Int8(nullable=nullable)
+                    elif bit_length <= 16:
+                        return dt.Int16(nullable=nullable)
+                    elif bit_length <= 32:
+                        return dt.Int32(nullable=nullable)
+                    elif bit_length <= 64:
+                        return dt.Int64(nullable=nullable)
+                    else:
+                        raise ValueError(f"BIT({bit_length}) is not supported")
+
+            # Handle DECIMAL types with precision and scale parameters
+            if (
+                type_name.endswith(("DECIMAL", "NEWDECIMAL"))
+                and hasattr(typ, "expressions")
+                and typ.expressions
+            ):
+                # Extract precision and scale from parameters
+                if len(typ.expressions) >= 1:
+                    precision_param = typ.expressions[0]
+                    if hasattr(precision_param, "this") and hasattr(
+                        precision_param.this, "this"
+                    ):
+                        precision = int(precision_param.this.this)
+
+                        scale = 0  # Default scale
+                        if len(typ.expressions) >= 2:
+                            scale_param = typ.expressions[1]
+                            if hasattr(scale_param, "this") and hasattr(
+                                scale_param.this, "this"
+                            ):
+                                scale = int(scale_param.this.this)
+
+                        return dt.Decimal(
+                            precision=precision, scale=scale, nullable=nullable
+                        )
+
+            # Handle string types with length parameters (VARCHAR, CHAR)
+            if (
+                type_name.endswith(("VARCHAR", "CHAR"))
+                and hasattr(typ, "expressions")
+                and typ.expressions
+            ):
+                # Extract length from the first parameter
+                length_param = typ.expressions[0]
+                if hasattr(length_param, "this") and hasattr(length_param.this, "this"):
+                    length = int(length_param.this.this)
+                    return dt.String(length=length, nullable=nullable)
+
+            # Extract just the type part (e.g., "DATETIME" from "TYPE.DATETIME")
+            if "." in type_name:
+                type_name = type_name.split(".")[-1]
+
+            # Handle SingleStoreDB-specific types
+            if type_name == "JSON":
+                return dt.JSON(nullable=nullable)
+            elif type_name == "GEOGRAPHY":
+                return dt.Geometry(nullable=nullable)
+            elif type_name == "GEOMETRY":
+                return dt.Geometry(nullable=nullable)
+            elif type_name == "VECTOR":
+                return dt.Binary(nullable=nullable)
+
+        # Fall back to parent implementation for standard types
+        return super().to_ibis(typ, nullable=nullable)
+
+    @classmethod
+    def from_ibis(cls, dtype):
+        """Convert Ibis type to SingleStoreDB type.
+
+        Handles conversion from Ibis types to SingleStoreDB SQL types,
+        including support for SingleStoreDB-specific features.
+        """
+        # Handle SingleStoreDB-specific type conversions
+        if isinstance(dtype, dt.JSON):
+            # SingleStoreDB has enhanced JSON support
+            return sge.DataType(this=sge.DataType.Type.JSON)
+        elif isinstance(dtype, dt.Array):
+            # SingleStoreDB doesn't support native array types
+            # Map arrays to JSON as a workaround for compatibility
+            return sge.DataType(this=sge.DataType.Type.JSON)
+        elif isinstance(dtype, dt.Geometry):
+            # Use GEOMETRY type
+            return sge.DataType(this=sge.DataType.Type.GEOMETRY)
+        elif isinstance(dtype, dt.Binary):
+            # Could be BLOB or VECTOR type - default to BLOB
+            return sge.DataType(this=sge.DataType.Type.BLOB)
+        elif isinstance(dtype, dt.UUID):
+            # SingleStoreDB doesn't support UUID natively, map to CHAR(36)
+            return sge.DataType(
+                this=sge.DataType.Type.CHAR, expressions=[sge.convert(36)]
+            )
+        elif isinstance(dtype, dt.Timestamp):
+            # SingleStoreDB only supports DATETIME precision 0 or 6
+            # Normalize precision to nearest supported value
+            if dtype.scale is not None:
+                if dtype.scale <= 3:
+                    # Use precision 0 for scales 0-3
+                    precision = 0
+                else:
+                    # Use precision 6 for scales 4-9
+                    precision = 6
+
+                if precision == 0:
+                    return sge.DataType(this=sge.DataType.Type.DATETIME)
+                else:
+                    return sge.DataType(
+                        this=sge.DataType.Type.DATETIME,
+                        expressions=[sge.convert(precision)],
+                    )
+            else:
+                # Default DATETIME without precision
+                return sge.DataType(this=sge.DataType.Type.DATETIME)
+
+        # Fall back to parent implementation for standard types
+        return super().from_ibis(dtype)
+
+    @classmethod
+    def from_string(cls, type_string, nullable=True):
+        """Convert type string to Ibis type.
+
+        Handles SingleStoreDB-specific type names and aliases.
+        """
+        import re
+
+        type_string = type_string.strip().upper()
+
+        # Handle SingleStoreDB's datetime type - map to timestamp
+        if type_string.startswith("DATETIME"):
+            # Extract scale parameter if present
+            if "(" in type_string and ")" in type_string:
+                # datetime(6) -> extract the 6
+                scale_part = type_string[
+                    type_string.find("(") + 1 : type_string.find(")")
+                ].strip()
+                try:
+                    scale = int(scale_part)
+                    return dt.Timestamp(scale=scale, nullable=nullable)
+                except ValueError:
+                    # Invalid scale, use default
+                    pass
+            return dt.Timestamp(nullable=nullable)
+
+        # Handle DECIMAL types with precision/scale
+        elif re.match(r"DECIMAL\(\d+(,\s*\d+)?\)", type_string):
+            match = re.match(r"DECIMAL\((\d+)(?:,\s*(\d+))?\)", type_string)
+            if match:
+                precision = int(match.group(1))
+                scale = int(match.group(2)) if match.group(2) else 0
+                return dt.Decimal(precision=precision, scale=scale, nullable=nullable)
+
+        # Handle BIT types with length
+        elif re.match(r"BIT\(\d+\)", type_string):
+            match = re.match(r"BIT\((\d+)\)", type_string)
+            if match:
+                bit_length = int(match.group(1))
+                if bit_length <= 8:
+                    return dt.Int8(nullable=nullable)
+                elif bit_length <= 16:
+                    return dt.Int16(nullable=nullable)
+                elif bit_length <= 32:
+                    return dt.Int32(nullable=nullable)
+                elif bit_length <= 64:
+                    return dt.Int64(nullable=nullable)
+
+        # Handle CHAR/VARCHAR with length
+        elif re.match(r"(CHAR|VARCHAR)\(\d+\)", type_string):
+            match = re.match(r"(?:CHAR|VARCHAR)\((\d+)\)", type_string)
+            if match:
+                length = int(match.group(1))
+                return dt.String(length=length, nullable=nullable)
+
+        # Handle binary blob types
+        elif type_string in ("BLOB", "MEDIUMBLOB", "LONGBLOB", "TINYBLOB"):
+            return dt.Binary(nullable=nullable)
+
+        # Handle binary types with length
+        elif re.match(r"(BINARY|VARBINARY)\(\d+\)", type_string):
+            return dt.Binary(nullable=nullable)
+
+        # Handle VECTOR types with dimension and element type
+        elif re.match(r"VECTOR\(\d+,\s*[A-Z0-9]+\)", type_string):
+            match = re.match(r"VECTOR\((\d+),\s*([A-Z0-9]+)\)", type_string)
+            if match:
+                dimension = int(match.group(1))
+                element_type = match.group(2).strip()
+
+                # Map SingleStore element types to Ibis types
+                element_type_mapping = {
+                    "F16": dt.Float16,
+                    "F32": dt.Float32,
+                    "F64": dt.Float64,
+                    "I8": dt.Int8,
+                    "I16": dt.Int16,
+                    "I32": dt.Int32,
+                    "I64": dt.Int64,
+                }
+
+                ibis_element_type = element_type_mapping.get(element_type)
+                if ibis_element_type:
+                    return dt.Array(
+                        ibis_element_type(nullable=False),
+                        length=dimension,
+                        nullable=nullable,
+                    )
+                else:
+                    # Fallback to float32 for unknown element types
+                    return dt.Array(
+                        dt.Float32(nullable=False), length=dimension, nullable=nullable
+                    )
+
+        # Handle other SingleStoreDB types
+        elif type_string == "JSON":
+            return dt.JSON(nullable=nullable)
+        elif type_string == "GEOGRAPHY":
+            return dt.Geometry(nullable=nullable)
+        elif type_string == "BOOLEAN":
+            return dt.Boolean(nullable=nullable)
+
+        # Fall back to parent implementation for other types
+        return super().from_string(type_string, nullable=nullable)
+
+
+# Import backend-specific type mappers before building _TYPE_MAPPERS
+
+_TYPE_MAPPERS: dict[str, type[SqlglotType]] = {
     mapper.dialect: mapper
     for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
 }
+
+
+def get_type_mapper(dialect: str | sg.Dialect, /) -> type[SqlglotType]:
+    if isinstance(dialect, str):
+        dialect_str = dialect.lower()
+    else:
+        dialect_str: str = dialect.__name__.lower()  # ty:ignore[unresolved-attribute]
+    return _TYPE_MAPPERS[dialect_str]

@@ -468,6 +468,18 @@ def test_create_temp_table_in_nondefault_schema():
     con.con.execute(f"USE {database}")
     con.create_table("foo", {"id": [1, 2, 3]}, temp=True)
 
+    assert not con.list_tables(database=database) and not con.list_tables()
+    assert con.list_tables(database="main") == ["foo"]
+
+
+@pytest.mark.parametrize("temp", [False, True])
+def test_create_table_from_in_memory_data(temp):
+    con = ibis.duckdb.connect()
+    con.create_table("foo", pd.DataFrame({"id": [1, 2, 3]}), temp=temp)
+
+    assert con.list_tables() == ["foo"]
+    assert con.con.execute("SHOW TABLES").fetchall() == [("foo",)]
+
 
 def test_create_table_with_quoted_columns():
     con = ibis.duckdb.connect()
@@ -476,6 +488,7 @@ def test_create_table_with_quoted_columns():
         {"group": ["G1"], "value": ["E1"], "id": [1], "date": [datetime(2025, 5, 13)]}
     )
     con.create_table(name, df, temp=True)
+    assert con.list_tables() == [name]
 
 
 def test_create_table_with_out_of_order_columns(con):

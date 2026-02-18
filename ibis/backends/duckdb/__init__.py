@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     import torch
     from fsspec import AbstractFileSystem
 
-    from ibis.expr.schema import SchemaLike
+    from ibis.expr.schema import IntoSchema
 
 try:
     from duckdb import func as _duckdb_func
@@ -126,7 +126,7 @@ class Backend(
         | pl.LazyFrame
         | None = None,
         *,
-        schema: SchemaLike | None = None,
+        schema: IntoSchema | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -180,9 +180,11 @@ class Backend(
             catalog = "temp"
             database = "main"
 
+        in_memory = False
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
+                in_memory = True
             else:
                 table = obj
 
@@ -233,6 +235,13 @@ class Backend(
                 ).sql(dialect)
                 cur.execute(insert_stmt).fetchall()
 
+                if in_memory:
+                    cur.execute(
+                        sge.Drop(kind="VIEW", this=table.get_name(), exists=True).sql(
+                            dialect
+                        )
+                    )
+
             if overwrite:
                 cur.execute(
                     sge.Drop(kind="TABLE", this=final_table, exists=True).sql(dialect)
@@ -265,7 +274,9 @@ class Backend(
 
         return self.table(name, database=(catalog, database))
 
-    def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
+    def table(
+        self, name: str, /, *, database: str | tuple[str, str] | None = None
+    ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
 
         # TODO: set these to better defaults
@@ -998,18 +1009,18 @@ class Backend(
 
         Examples
         --------
-        >>> import ibis
+        >>> from contextlib import closing
         >>> import sqlite3
+        >>> import ibis
         >>> ibis.options.interactive = True
-        >>> con = sqlite3.connect("/tmp/sqlite.db")
-        >>> with con:
+        >>> with closing(sqlite3.connect("/tmp/sqlite.db")) as con:
         ...     con.execute("DROP TABLE IF EXISTS t")  # doctest: +ELLIPSIS
         ...     con.execute("CREATE TABLE t (a INT, b TEXT)")  # doctest: +ELLIPSIS
         ...     con.execute(
         ...         "INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')"
         ...     )  # doctest: +ELLIPSIS
+        ...     con.commit()
         <...>
-        >>> con.close()
         >>> con = ibis.connect("duckdb://")
         >>> t = con.read_sqlite("/tmp/sqlite.db", table_name="t")
         >>> t
@@ -1215,17 +1226,16 @@ class Backend(
 
         Examples
         --------
-        >>> import ibis
+        >>> from contextlib import closing
         >>> import sqlite3
-        >>> con = sqlite3.connect("/tmp/attach_sqlite.db")
-        >>> with con:
+        >>> import ibis
+        >>> with closing(sqlite3.connect("/tmp/attach_sqlite.db")) as con:
         ...     con.execute("DROP TABLE IF EXISTS t")  # doctest: +ELLIPSIS
         ...     con.execute("CREATE TABLE t (a INT, b TEXT)")  # doctest: +ELLIPSIS
         ...     con.execute(
         ...         "INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')"
         ...     )  # doctest: +ELLIPSIS
         <...>
-        >>> con.close()
         >>> con = ibis.connect("duckdb://")
         >>> con.list_tables()
         []

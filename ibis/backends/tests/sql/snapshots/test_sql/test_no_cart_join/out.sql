@@ -26,14 +26,11 @@ FROM (
             ) * 7
           ) <= LENGTH('-')
           THEN '-'
-          ELSE CONCAT(
-            REPEAT('-', (
-              (
-                "t1"."ancestor_level_number" - 1
-              ) * 7
-            ) - LENGTH('-')),
-            '-'
-          )
+          ELSE REPEAT('-', (
+            (
+              "t1"."ancestor_level_number" - 1
+            ) * 7
+          ) - LENGTH('-')) || '-'
         END || "t1"."ancestor_level_name" AS "product_level_name"
       FROM "products" AS "t1"
     ) AS "t4"

@@ -76,7 +76,7 @@ def test_simple(datatype, expected):
     assert BigQueryType.to_string(datatype) == expected
 
 
-@pytest.mark.parametrize("datatype", [dt.uint64, dt.Decimal(8, 3)])
+@pytest.mark.parametrize("datatype", [dt.uint64, dt.Decimal(84, 40)])
 def test_simple_failure_mode(datatype):
     with pytest.raises(com.UnsupportedBackendType):
         BigQueryType.to_string(datatype)

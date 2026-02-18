@@ -52,16 +52,24 @@ try:
     from pyspark.errors.exceptions.base import (
         ArithmeticException as PySparkArithmeticException,
     )
+    from pyspark.errors.exceptions.base import (
+        NumberFormatException as PySparkNumberFormatException,
+    )
     from pyspark.errors.exceptions.base import ParseException as PySparkParseException
     from pyspark.errors.exceptions.base import PySparkValueError
     from pyspark.errors.exceptions.base import PythonException as PySparkPythonException
+    from pyspark.errors.exceptions.base import (
+        UnsupportedOperationException as PySparkUnsupportedOperationException,
+    )
     from pyspark.errors.exceptions.connect import (
         SparkConnectGrpcException as PySparkConnectGrpcException,
     )
 except ImportError:
     PySparkParseException = PySparkAnalysisException = PySparkArithmeticException = (
         PySparkPythonException
-    ) = PySparkConnectGrpcException = PySparkValueError = None
+    ) = PySparkUnsupportedOperationException = PySparkConnectGrpcException = (
+        PySparkValueError
+    ) = PySparkNumberFormatException = None
 
 try:
     from google.api_core.exceptions import BadRequest as GoogleBadRequest
@@ -82,9 +90,9 @@ except ImportError:
     ) = PolarsColumnNotFoundError = PolarsSQLInterfaceError = None
 
 try:
-    from pyarrow import ArrowInvalid, ArrowNotImplementedError
+    from pyarrow import ArrowInvalid, ArrowNotImplementedError, ArrowTypeError
 except ImportError:
-    ArrowInvalid = ArrowNotImplementedError = None
+    ArrowInvalid = ArrowNotImplementedError = ArrowTypeError = None
 
 try:
     from impala.error import HiveServer2Error as ImpalaHiveServer2Error
@@ -156,6 +164,21 @@ try:
     from MySQLdb import ProgrammingError as MySQLProgrammingError
 except ImportError:
     MySQLNotSupportedError = MySQLProgrammingError = MySQLOperationalError = None
+
+try:
+    from singlestoredb.exceptions import (
+        NotSupportedError as SingleStoreDBNotSupportedError,
+    )
+    from singlestoredb.exceptions import (
+        OperationalError as SingleStoreDBOperationalError,
+    )
+    from singlestoredb.exceptions import (
+        ProgrammingError as SingleStoreDBProgrammingError,
+    )
+except ImportError:
+    SingleStoreDBNotSupportedError = SingleStoreDBProgrammingError = (
+        SingleStoreDBOperationalError
+    ) = None
 
 try:
     from pydruid.db.exceptions import ProgrammingError as PyDruidProgrammingError

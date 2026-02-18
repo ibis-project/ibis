@@ -545,5 +545,13 @@ class SQLiteCompiler(SQLGlotCompiler):
             )
         return self.f._ibis_date_delta(left, right)
 
+    def visit_Divide(self, op, *, left, right):
+        left = (
+            sge.cast(left, sge.DataType.Type.FLOAT, copy=False)
+            if all(arg.dtype.is_integer() for arg in op.args)
+            else left
+        )
+        return self.binop(sge.Div, left, right)
+
 
 compiler = SQLiteCompiler()

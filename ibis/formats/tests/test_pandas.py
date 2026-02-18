@@ -15,13 +15,18 @@ np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
 
-from ibis.formats.pandas import PandasData, PandasSchema, PandasType  # noqa: E402
+from ibis.formats.pandas import (  # noqa: E402
+    _DEFAULT_DATETIME_RESOLUTION,
+    PandasData,
+    PandasSchema,
+    PandasType,
+)
 
 
 @pytest.mark.parametrize(
     ("ibis_type", "pandas_type"),
     [
-        (dt.string, np.dtype("object")),
+        (dt.string, pd.Series(dtype="str").dtype),
         (dt.int8, np.dtype("int8")),
         (dt.int16, np.dtype("int16")),
         (dt.int32, np.dtype("int32")),
@@ -36,7 +41,7 @@ from ibis.formats.pandas import PandasData, PandasSchema, PandasType  # noqa: E4
         (dt.boolean, np.dtype("bool")),
         (dt.date, np.dtype("datetime64[s]")),
         (dt.time, np.dtype("timedelta64[ns]")),
-        (dt.timestamp, np.dtype("datetime64[ns]")),
+        (dt.timestamp, np.dtype(f"datetime64[{_DEFAULT_DATETIME_RESOLUTION}]")),
         (dt.Interval("s"), np.dtype("timedelta64[s]")),
         (dt.Interval("ms"), np.dtype("timedelta64[ms]")),
         (dt.Interval("us"), np.dtype("timedelta64[us]")),
@@ -128,7 +133,7 @@ def test_schema_to_pandas():
 
     assert pandas_schema == [
         ("a", np.dtype("int64")),
-        ("b", np.dtype("object")),
+        ("b", pd.Series(dtype="str").dtype),
         ("c", np.dtype("bool")),
         ("d", np.dtype("float64")),
     ]
@@ -354,11 +359,23 @@ def test_schema_from_dataframe_with_array_column():
             "timestamp",
             id="timestamp",
         ),
+        # As of pandas 3.0, the new default resolution when parsing
+        # strings is microseconds, falling back to nanoseconds when the
+        # precision of the string requires it.
         param(
             [
                 pd.Timedelta("1 days"),
                 pd.Timedelta("-1 days 2 min 3us"),
                 pd.Timedelta("-2 days +23:57:59.999997"),
+            ],
+            f"interval('{_DEFAULT_DATETIME_RESOLUTION}')",
+            id="interval",
+        ),
+        param(
+            [
+                pd.Timedelta("1 days"),
+                pd.Timedelta("-1 days 2 min 3us"),
+                pd.Timedelta("-2 days +23:57:59.999999997"),
             ],
             "interval('ns')",
             id="interval_ns",

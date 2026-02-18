@@ -38,7 +38,6 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.CountDistinctStar,
         ops.DateDelta,
         ops.RowID,
-        ops.Strftime,
         ops.TimeDelta,
         ops.TimestampBucket,
         ops.TimestampDelta,
@@ -628,6 +627,9 @@ class DataFusionCompiler(SQLGlotCompiler):
 
         def visit_ApproxQuantile(self, op, *, arg, quantile, where):
             return self.agg.approx_percentile_cont(arg, quantile, where=where)
+
+    def visit_Strftime(self, op, *, arg, format_str):
+        return self.f.date_format(arg, format_str)
 
 
 compiler = DataFusionCompiler()

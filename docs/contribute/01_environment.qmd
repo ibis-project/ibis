@@ -89,13 +89,8 @@ for manager, params in managers.items():
         print("`git`.")
         print()
     print(
-        "    If you're using arm64 architecture (Mac M1/M2), use "
-        "`conda/environment-arm64.yml` for setting up a dev environment for all the "
-        "backends that are possible to install excluding Flink; use "
-        "`conda/environment-arm64-flink.yml` for setting up a dev environment for all "
-        "the backends that are possible to install including Flink. The reason to have "
-        "two separate environments is because `apache-flink` forces `pyarrow` to "
-        "downgrade to 11.0, which causes conflicts in other backends."
+        "    If you're using an ARM64 architecture (Mac M1/M2/M3/M4), use "
+        "`conda/environment-arm64.yml` for setting up a dev environment."
     )
     print()
     print(f"1. Activate the environment")

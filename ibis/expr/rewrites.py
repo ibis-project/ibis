@@ -261,7 +261,7 @@ def project_wrap_reduction(_, rel):
     if _.relations == {rel}:
         # The reduction is fully originating from the `rel`, so turn
         # it into a window function of `rel`
-        return ops.WindowFunction(_)
+        return ops.WindowFunction(_, order_by=getattr(_, "order_by", ()))
     else:
         # 1. The reduction doesn't depend on any table, constructed from
         #    scalar values, so turn it into a scalar subquery.
@@ -338,7 +338,7 @@ def window_merge_frames(_, window):
 
     order_keys = {}
     for sort_key in window.orderings + _.order_by:
-        order_keys[sort_key.expr] = sort_key.ascending, sort_key.nulls_first
+        order_keys[sort_key.arg] = sort_key.ascending, sort_key.nulls_first
 
     order_by = (
         ops.SortKey(expr, ascending=ascending, nulls_first=nulls_first)

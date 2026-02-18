@@ -32,7 +32,7 @@ jobs:
           extraPullNames: nix-community
 
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: run doctests
         # keep HOME because duckdb (which we use for doctests) wants to use
@@ -56,12 +56,12 @@ jobs:
           extraPullNames: nix-community
 
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: restore cache of the previously rendered notebooks
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           # https://docs.github.com/en/webhooks/webhook-events-and-payloads#push
           # > The SHA of the most recent commit on ref before the push.
@@ -75,7 +75,7 @@ jobs:
         run: nix develop '.#ibis312' --ignore-environment --keep HOME -c just docs-render
 
       - name: cache rendered notebooks
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           key: docs-${{ github.sha }}
           path: docs/**/.jupyter_cache
@@ -98,7 +98,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install Algolia API Dependencies
         run: |

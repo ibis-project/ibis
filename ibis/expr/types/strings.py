@@ -8,18 +8,20 @@ from public import public
 
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.expr.types.core import _binop
-from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.expr.types.generic import Column, Scalar, Value, _binop
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
+    from typing_extensions import Self
+
     import ibis.expr.types as ir
+    from ibis.common.deferred import Deferred
 
 
 @public
 class StringValue(Value):
-    def __getitem__(self, key: slice | int | ir.IntegerScalar) -> StringValue:
+    def __getitem__(self, key: slice | int | ir.IntegerValue | Deferred) -> StringValue:
         """Index or slice a string expression.
 
         Parameters
@@ -136,7 +138,7 @@ class StringValue(Value):
         """
         return ops.StringLength(self).to_expr()
 
-    def lower(self) -> StringValue:
+    def lower(self) -> Self:
         """Convert string to all lowercase.
 
         Returns
@@ -172,7 +174,7 @@ class StringValue(Value):
         """
         return ops.Lowercase(self).to_expr()
 
-    def upper(self) -> StringValue:
+    def upper(self) -> Self:
         """Convert string to all uppercase.
 
         Returns
@@ -208,7 +210,7 @@ class StringValue(Value):
         """
         return ops.Uppercase(self).to_expr()
 
-    def reverse(self) -> StringValue:
+    def reverse(self) -> Self:
         """Reverse the characters of a string.
 
         Returns
@@ -270,7 +272,7 @@ class StringValue(Value):
         """
         return ops.StringAscii(self).to_expr()
 
-    def strip(self) -> StringValue:
+    def strip(self) -> Self:
         r"""Remove whitespace from left and right sides of a string.
 
         Returns
@@ -306,7 +308,7 @@ class StringValue(Value):
         """
         return ops.Strip(self).to_expr()
 
-    def lstrip(self) -> StringValue:
+    def lstrip(self) -> Self:
         r"""Remove whitespace from the left side of string.
 
         Returns
@@ -342,7 +344,7 @@ class StringValue(Value):
         """
         return ops.LStrip(self).to_expr()
 
-    def rstrip(self) -> StringValue:
+    def rstrip(self) -> Self:
         r"""Remove whitespace from the right side of string.
 
         Returns
@@ -378,7 +380,7 @@ class StringValue(Value):
         """
         return ops.RStrip(self).to_expr()
 
-    def capitalize(self) -> StringValue:
+    def capitalize(self) -> Self:
         """Uppercase the first letter, lowercase the rest.
 
         This API matches the semantics of the Python [](`str.capitalize`)
@@ -411,7 +413,7 @@ class StringValue(Value):
     def __contains__(self, *_: Any) -> bool:
         raise TypeError("Use string_expr.contains(arg)")
 
-    def contains(self, substr: str | StringValue, /) -> ir.BooleanValue:
+    def contains(self, substr: str | StringValue | Deferred, /) -> ir.BooleanValue:
         """Return whether the expression contains `substr`.
 
         Parameters
@@ -499,7 +501,9 @@ class StringValue(Value):
         return ops.HexDigest(self, how.lower()).to_expr()
 
     def substr(
-        self, start: int | ir.IntegerValue, length: int | ir.IntegerValue | None = None
+        self,
+        start: int | ir.IntegerValue | Deferred,
+        length: int | ir.IntegerValue | Deferred | None = None,
     ) -> StringValue:
         """Extract a substring.
 
@@ -534,7 +538,7 @@ class StringValue(Value):
         """
         return ops.Substring(self, start, length).to_expr()
 
-    def left(self, nchars: int | ir.IntegerValue, /) -> StringValue:
+    def left(self, nchars: int | ir.IntegerValue | Deferred, /) -> StringValue:
         """Return the `nchars` left-most characters.
 
         Parameters
@@ -565,7 +569,7 @@ class StringValue(Value):
         """
         return self.substr(0, length=nchars)
 
-    def right(self, nchars: int | ir.IntegerValue, /) -> StringValue:
+    def right(self, nchars: int | ir.IntegerValue | Deferred, /) -> StringValue:
         """Return up to `nchars` from the end of each string.
 
         Parameters
@@ -596,7 +600,7 @@ class StringValue(Value):
         """
         return ops.StrRight(self, nchars).to_expr()
 
-    def repeat(self, n: int | ir.IntegerValue, /) -> StringValue:
+    def repeat(self, n: int | ir.IntegerValue | Deferred, /) -> StringValue:
         """Repeat a string `n` times.
 
         Parameters
@@ -655,9 +659,9 @@ class StringValue(Value):
 
     def find(
         self,
-        sub: str | StringValue,
-        start: int | ir.IntegerValue | None = None,
-        end: int | ir.IntegerValue | None = None,
+        sub: str | StringValue | Deferred,
+        start: int | ir.IntegerValue | Deferred | None = None,
+        end: int | ir.IntegerValue | Deferred | None = None,
         /,
     ) -> ir.IntegerValue:
         """Return the position of the first occurrence of substring.
@@ -708,7 +712,10 @@ class StringValue(Value):
         return ops.StringFind(self, sub, start, end).to_expr()
 
     def lpad(
-        self, width: int | ir.IntegerValue, fillchar: str | StringValue = " ", /
+        self,
+        width: int | ir.IntegerValue | Deferred,
+        fillchar: str | StringValue = " ",
+        /,
     ) -> StringValue:
         """Pad `arg` by truncating on the right or padding on the left.
 
@@ -743,7 +750,10 @@ class StringValue(Value):
         return ops.LPad(self, width, fillchar).to_expr()
 
     def rpad(
-        self, width: int | ir.IntegerValue, fillchar: str | StringValue = " ", /
+        self,
+        width: int | ir.IntegerValue | Deferred,
+        fillchar: str | StringValue = " ",
+        /,
     ) -> StringValue:
         """Pad `self` by truncating or padding on the right.
 
@@ -804,7 +814,9 @@ class StringValue(Value):
         return ops.FindInSet(self, str_list).to_expr()
 
     def join(
-        self, strings: Sequence[str | StringValue] | ir.ArrayValue, /
+        self,
+        strings: Sequence[str | StringValue | Deferred] | ir.ArrayValue | Deferred,
+        /,
     ) -> StringValue:
         """Join a list of strings using `self` as the separator.
 
@@ -858,7 +870,7 @@ class StringValue(Value):
             cls = ops.StringJoin
         return cls(strings, sep=self).to_expr()
 
-    def startswith(self, start: str | StringValue, /) -> ir.BooleanValue:
+    def startswith(self, start: str | StringValue | Deferred, /) -> ir.BooleanValue:
         """Determine whether `self` starts with `start`.
 
         Parameters
@@ -888,7 +900,7 @@ class StringValue(Value):
         """
         return ops.StartsWith(self, start).to_expr()
 
-    def endswith(self, end: str | StringValue, /) -> ir.BooleanValue:
+    def endswith(self, end: str | StringValue | Deferred, /) -> ir.BooleanValue:
         """Determine if `self` ends with `end`.
 
         Parameters
@@ -919,7 +931,9 @@ class StringValue(Value):
         return ops.EndsWith(self, end).to_expr()
 
     def like(
-        self, patterns: str | StringValue | Iterable[str | StringValue], /
+        self,
+        patterns: str | StringValue | Deferred | Iterable[str | StringValue | Deferred],
+        /,
     ) -> ir.BooleanValue:
         """Match `patterns` against `self`, case-sensitive.
 
@@ -963,7 +977,9 @@ class StringValue(Value):
         )
 
     def ilike(
-        self, patterns: str | StringValue | Iterable[str | StringValue], /
+        self,
+        patterns: str | StringValue | Deferred | Iterable[str | StringValue | Deferred],
+        /,
     ) -> ir.BooleanValue:
         """Match `patterns` against `self`, case-insensitive.
 
@@ -1009,7 +1025,7 @@ class StringValue(Value):
     @util.backend_sensitive(
         why="Different backends support different regular expression syntax."
     )
-    def re_search(self, pattern: str | StringValue, /) -> ir.BooleanValue:
+    def re_search(self, pattern: str | StringValue | Deferred, /) -> ir.BooleanValue:
         """Return whether `self` contains the regex `pattern`.
 
         Returns `True` if the regex matches any part of a string and `False` otherwise.
@@ -1048,7 +1064,7 @@ class StringValue(Value):
         why="Different backends support different regular expression syntax."
     )
     def re_extract(
-        self, pattern: str | StringValue, index: int | ir.IntegerValue
+        self, pattern: str | StringValue | Deferred, index: int | ir.IntegerValue
     ) -> StringValue:
         """Return the specified match at `index` from a regex `pattern`.
 
@@ -1106,7 +1122,7 @@ class StringValue(Value):
     @util.backend_sensitive(
         why="Different backends support different regular expression syntax."
     )
-    def re_split(self, pattern: str | StringValue, /) -> ir.ArrayValue:
+    def re_split(self, pattern: str | StringValue | Deferred, /) -> ir.ArrayValue:
         r"""Split a string by a regular expression `pattern`.
 
         Parameters
@@ -1153,7 +1169,9 @@ class StringValue(Value):
         why="Different backends support different regular expression syntax."
     )
     def re_replace(
-        self, pattern: str | StringValue, replacement: str | StringValue
+        self,
+        pattern: str | StringValue | Deferred,
+        replacement: str | StringValue | Deferred,
     ) -> StringValue:
         r"""Replace all matches found by regex `pattern` with `replacement`.
 
@@ -1220,7 +1238,11 @@ class StringValue(Value):
         """
         return ops.RegexReplace(self, pattern, replacement).to_expr()
 
-    def replace(self, pattern: StringValue, replacement: StringValue) -> StringValue:
+    def replace(
+        self,
+        pattern: str | StringValue | Deferred,
+        replacement: str | StringValue | Deferred,
+    ) -> StringValue:
         """Replace each exact match of `pattern` with `replacement`.
 
         This method transforms strings to strings. For replacing arbitrary
@@ -1347,7 +1369,7 @@ class StringValue(Value):
         """
         return ops.StringToTime(self, format_str).to_expr()
 
-    def protocol(self):
+    def protocol(self) -> Self:
         """Parse a URL and extract protocol.
 
         Examples
@@ -1363,7 +1385,7 @@ class StringValue(Value):
         """
         return ops.ExtractProtocol(self).to_expr()
 
-    def authority(self):
+    def authority(self) -> Self:
         """Parse a URL and extract authority.
 
         Examples
@@ -1379,7 +1401,7 @@ class StringValue(Value):
         """
         return ops.ExtractAuthority(self).to_expr()
 
-    def userinfo(self):
+    def userinfo(self) -> Self:
         """Parse a URL and extract user info.
 
         Examples
@@ -1395,7 +1417,7 @@ class StringValue(Value):
         """
         return ops.ExtractUserInfo(self).to_expr()
 
-    def host(self):
+    def host(self) -> Self:
         """Parse a URL and extract host.
 
         Examples
@@ -1411,7 +1433,7 @@ class StringValue(Value):
         """
         return ops.ExtractHost(self).to_expr()
 
-    def file(self):
+    def file(self) -> Self:
         """Parse a URL and extract file.
 
         Examples
@@ -1429,7 +1451,7 @@ class StringValue(Value):
         """
         return ops.ExtractFile(self).to_expr()
 
-    def path(self):
+    def path(self) -> Self:
         """Parse a URL and extract path.
 
         Examples
@@ -1447,7 +1469,7 @@ class StringValue(Value):
         """
         return ops.ExtractPath(self).to_expr()
 
-    def query(self, key: str | StringValue | None = None, /):
+    def query(self, key: str | StringValue | Deferred | None = None, /):
         """Parse a URL and returns query string or query string parameter.
 
         If key is passed, return the value of the query string parameter named.
@@ -1474,7 +1496,7 @@ class StringValue(Value):
         """
         return ops.ExtractQuery(self, key).to_expr()
 
-    def fragment(self):
+    def fragment(self) -> Self:
         """Parse a URL and extract fragment identifier.
 
         Examples
@@ -1490,7 +1512,7 @@ class StringValue(Value):
         """
         return ops.ExtractFragment(self).to_expr()
 
-    def split(self, delimiter: str | StringValue, /) -> ir.ArrayValue:
+    def split(self, delimiter: str | StringValue | Deferred, /) -> ir.ArrayValue:
         """Split as string on `delimiter`.
 
         ::: {.callout-note}
@@ -1536,7 +1558,10 @@ class StringValue(Value):
         return ops.StringSplit(self, delimiter).to_expr()
 
     def concat(
-        self, other: str | StringValue, /, *args: str | StringValue
+        self,
+        other: str | StringValue | Deferred,
+        /,
+        *args: str | StringValue | Deferred,
     ) -> StringValue:
         """Concatenate strings.
 
@@ -1580,7 +1605,7 @@ class StringValue(Value):
         """
         return ops.StringConcat((self, other, *args)).to_expr()
 
-    def __add__(self, other: str | StringValue) -> StringValue:
+    def __add__(self, other: str | StringValue | Deferred) -> StringValue:
         """Concatenate strings.
 
         Parameters
@@ -1631,7 +1656,7 @@ class StringValue(Value):
         """
         return self.concat(other)
 
-    def __radd__(self, other: str | StringValue) -> StringValue:
+    def __radd__(self, other: str | StringValue | Deferred) -> StringValue:
         """Concatenate strings.
 
         Parameters
@@ -1696,7 +1721,7 @@ class StringValue(Value):
 
     __rmul__ = __mul__
 
-    def levenshtein(self, other: StringValue, /) -> ir.IntegerValue:
+    def levenshtein(self, other: str | StringValue | Deferred, /) -> ir.IntegerValue:
         """Return the Levenshtein distance between two strings.
 
         Parameters
@@ -1729,5 +1754,7 @@ class StringScalar(Scalar, StringValue):
 
 @public
 class StringColumn(Column, StringValue):
-    def __getitem__(self, key: slice | int | ir.IntegerScalar) -> StringColumn:
+    def __getitem__(
+        self, key: slice | int | ir.IntegerValue | Deferred
+    ) -> StringColumn:
         return StringValue.__getitem__(self, key)

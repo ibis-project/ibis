@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 import types
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 from typing import Any as AnyType
 
 from typing_extensions import Self
@@ -21,7 +21,7 @@ from ibis.common.patterns import pattern as ensure_pattern
 from ibis.common.typing import format_typehint, get_type_hints
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY
@@ -223,7 +223,7 @@ class Argument(Annotation):
         )
 
 
-def attribute(pattern=_any, default=EMPTY):
+def attribute(pattern=_any, default=EMPTY) -> Attribute:
     """Annotation to mark a field in a class."""
     if default is EMPTY and isinstance(pattern, (types.FunctionType, types.MethodType)):
         return Attribute(default=pattern)
@@ -231,12 +231,12 @@ def attribute(pattern=_any, default=EMPTY):
         return Attribute(pattern, default=default)
 
 
-def argument(pattern=_any, default=EMPTY, typehint=None):
+def argument(pattern=_any, default=EMPTY, typehint=None) -> Argument:
     """Annotation type for all fields which should be passed as arguments."""
     return Argument(pattern, default=default, typehint=typehint)
 
 
-def optional(pattern=_any, default=None, typehint=None):
+def optional(pattern=_any, default=None, typehint=None) -> Argument:
     """Annotation to allow and treat `None` values as missing arguments."""
     if pattern is None:
         pattern = Option(Any(), default=default)
@@ -260,7 +260,7 @@ class Parameter(inspect.Parameter):
 
     __slots__ = ()
 
-    def __str__(self):
+    def _format(self, **_):
         formatted = self._name
 
         if self._annotation is not EMPTY:
@@ -279,6 +279,8 @@ class Parameter(inspect.Parameter):
             formatted = "**" + formatted
 
         return formatted
+
+    __str__ = _format
 
     @classmethod
     def from_argument(cls, name: str, annotation: Argument) -> Self:

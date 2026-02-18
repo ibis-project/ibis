@@ -23,9 +23,69 @@ class Reduction(Value):
     shape = ds.scalar
 
 
-# TODO(kszucs): all reductions all filterable so we could remove Filterable
+# note: all Reductions in this file are Filterable, but ReductionVectorizedUDF
+# is a Reduction that is not Filterable, so cannot directly remove Filterable.
 class Filterable(Value):
     where: Optional[Value[dt.Boolean]] = None
+
+
+class Orderable(Filterable, Reduction):
+    """A Reduction with an `order_by` clause, e.g. `first`, `last`, `collect`."""
+
+    order_by: VarTuple[SortKey] = ()
+
+
+@public
+class First(Orderable):
+    """Retrieve the first element."""
+
+    arg: Column[dt.Any]
+    include_null: bool = False
+
+    dtype = rlz.dtype_like("arg")
+
+
+@public
+class Last(Orderable):
+    """Retrieve the last element."""
+
+    arg: Column[dt.Any]
+    include_null: bool = False
+
+    dtype = rlz.dtype_like("arg")
+
+
+@public
+class ArrayCollect(Orderable):
+    """Collect values into an array."""
+
+    arg: Column
+    include_null: bool = False
+    distinct: bool = False
+
+    def __init__(self, arg, order_by, distinct, **kwargs):
+        if distinct and order_by and [arg] != [key.arg for key in order_by]:
+            raise ValidationError(
+                "`collect` with `order_by` and `distinct=True` and may only "
+                "order by the collected column"
+            )
+        super().__init__(arg=arg, order_by=order_by, distinct=distinct, **kwargs)
+
+    @attribute
+    def dtype(self):
+        return dt.Array(self.arg.dtype)
+
+
+# TODO(NickCrews): This is the only Orderable without a include_null parameter,
+# should we add it and push that
+@public
+class GroupConcat(Orderable):
+    """Concatenate strings in a group with a given separator character."""
+
+    arg: Column
+    sep: Value[dt.String]
+
+    dtype = dt.string
 
 
 @public
@@ -71,28 +131,6 @@ class Arbitrary(Filterable, Reduction):
     """
 
     arg: Column[dt.Any]
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
-class First(Filterable, Reduction):
-    """Retrieve the first element."""
-
-    arg: Column[dt.Any]
-    order_by: VarTuple[SortKey] = ()
-    include_null: bool = False
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
-class Last(Filterable, Reduction):
-    """Retrieve the last element."""
-
-    arg: Column[dt.Any]
-    order_by: VarTuple[SortKey] = ()
-    include_null: bool = False
 
     dtype = rlz.dtype_like("arg")
 
@@ -360,17 +398,6 @@ class ArgMin(Filterable, Reduction):
 
 
 @public
-class GroupConcat(Filterable, Reduction):
-    """Concatenate strings in a group with a given separator character."""
-
-    arg: Column
-    sep: Value[dt.String]
-    order_by: VarTuple[SortKey] = ()
-
-    dtype = dt.string
-
-
-@public
 class CountDistinct(Filterable, Reduction):
     """Count the number of distinct values in a column."""
 
@@ -382,28 +409,6 @@ class CountDistinct(Filterable, Reduction):
 @public
 class ApproxCountDistinct(CountDistinct):
     """Approximate number of unique values."""
-
-
-@public
-class ArrayCollect(Filterable, Reduction):
-    """Collect values into an array."""
-
-    arg: Column
-    order_by: VarTuple[SortKey] = ()
-    include_null: bool = False
-    distinct: bool = False
-
-    def __init__(self, arg, order_by, distinct, **kwargs):
-        if distinct and order_by and [arg] != [key.expr for key in order_by]:
-            raise ValidationError(
-                "`collect` with `order_by` and `distinct=True` and may only "
-                "order by the collected column"
-            )
-        super().__init__(arg=arg, order_by=order_by, distinct=distinct, **kwargs)
-
-    @attribute
-    def dtype(self):
-        return dt.Array(self.arg.dtype)
 
 
 @public

@@ -83,10 +83,15 @@ def time_keyed_right(time_keyed_df2):
     ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
 )
 @pytest.mark.notyet(
+    "clickhouse",
+    reason="does not support asof joins that do not also have an equality predicate on the join.",
+)
+@pytest.mark.notyet(
     [
         "datafusion",
         "trino",
         "mysql",
+        "singlestoredb",
         "pyspark",
         "druid",
         "impala",
@@ -102,6 +107,51 @@ def time_keyed_right(time_keyed_df2):
 )
 def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op):
     on = op(time_left["time"], time_right["time"])
+    expr = time_left.asof_join(time_right, on)
+
+    result = con.execute(expr)
+    expected = pd.merge_asof(
+        time_df1.drop(columns=["group"]),
+        time_df2.drop(columns=["group"]),
+        on="time",
+        direction=direction,
+    )
+
+    result = result.sort_values(["time"]).reset_index(drop=True)
+    expected = expected.sort_values(["time"]).reset_index(drop=True)
+
+    # duckdb returns datetime64[us], pandas defaults to use datetime64[ns]
+    tm.assert_frame_equal(result[expected.columns], expected, check_dtype=False)
+    with pytest.raises(AssertionError):
+        tm.assert_series_equal(result["time"], result["time_right"])
+
+
+@pytest.mark.parametrize(
+    ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
+)
+@pytest.mark.notyet(
+    [
+        "datafusion",
+        "trino",
+        "mysql",
+        "singlestoredb",
+        "pyspark",
+        "druid",
+        "impala",
+        "bigquery",
+        "exasol",
+        "oracle",
+        "mssql",
+        "sqlite",
+        "flink",
+        "databricks",
+        "athena",
+    ]
+)
+def test_noop_keyed_asof_join(
+    con, time_left, time_right, time_df1, time_df2, direction, op
+):
+    on = op(time_left["time"], time_right["time"])
     expr = time_left.asof_join(time_right, on, "group")
 
     result = con.execute(expr)
@@ -109,8 +159,59 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
         time_df1, time_df2, on="time", by="group", direction=direction
     )
 
-    result = result.sort_values(["group", "time"]).reset_index(drop=True)
-    expected = expected.sort_values(["group", "time"]).reset_index(drop=True)
+    result = result.sort_values(["time"]).reset_index(drop=True)
+    expected = expected.sort_values(["time"]).reset_index(drop=True)
+
+    # duckdb returns datetime64[us], pandas defaults to use datetime64[ns]
+    tm.assert_frame_equal(result[expected.columns], expected, check_dtype=False)
+    with pytest.raises(AssertionError):
+        tm.assert_series_equal(result["time"], result["time_right"])
+
+
+@pytest.mark.parametrize(
+    ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
+)
+@pytest.mark.notimpl(
+    ["clickhouse"], raises=AssertionError, reason="`time` is truncated to seconds"
+)
+@pytest.mark.notyet(
+    [
+        "datafusion",
+        "trino",
+        "mysql",
+        "singlestoredb",
+        "pyspark",
+        "druid",
+        "impala",
+        "bigquery",
+        "exasol",
+        "oracle",
+        "mssql",
+        "sqlite",
+        "flink",
+        "databricks",
+        "athena",
+    ]
+)
+def test_keyed_asof_join(
+    con,
+    time_keyed_left,
+    time_keyed_right,
+    time_keyed_df1,
+    time_keyed_df2,
+    direction,
+    op,
+):
+    on = op(time_keyed_left["time"], time_keyed_right["time"])
+    expr = time_keyed_left.asof_join(time_keyed_right, on, "key")
+
+    result = con.execute(expr)
+    expected = pd.merge_asof(
+        time_keyed_df1, time_keyed_df2, on="time", by="key", direction=direction
+    )
+
+    result = result.sort_values(["key", "time"]).reset_index(drop=True)
+    expected = expected.sort_values(["key", "time"]).reset_index(drop=True)
 
     # duckdb returns datetime64[us], pandas defaults to use datetime64[ns]
     tm.assert_frame_equal(result[expected.columns], expected, check_dtype=False)
@@ -135,6 +236,7 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "oracle",
         "pyspark",
         "sqlite",

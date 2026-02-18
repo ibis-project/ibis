@@ -24,6 +24,7 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkArithmeticException,
     PySparkParseException,
+    SingleStoreDBOperationalError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -294,8 +295,10 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
         "clickhouse",
         "datafusion",
         "impala",
+        "materialize",
         "mssql",
         "mysql",
+        "singlestoredb",
         "oracle",
         "polars",
         "postgres",
@@ -369,7 +372,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
 
     awards_players.to_csv(outcsv)
 
-    df = pd.read_csv(outcsv, dtype=awards_players.schema().to_pandas())
+    df = pd.read_csv(outcsv, dtype=dict(awards_players.schema().to_pandas()))
 
     backend.assert_frame_equal(awards_players.to_pandas(), df)
 
@@ -385,8 +388,10 @@ def test_table_to_csv(tmp_path, backend, awards_players):
         "exasol",
         "flink",
         "impala",
+        "materialize",
         "mssql",
         "mysql",
+        "singlestoredb",
         "oracle",
         "polars",
         "postgres",
@@ -440,12 +445,20 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             marks=[
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
+                pytest.mark.notyet(
+                    ["materialize"],
+                    raises=Exception,
+                    reason="precision must be 1-39, not 76",
+                ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["mysql"], raises=MySQLOperationalError),
+                pytest.mark.notyet(
+                    ["singlestoredb"], raises=SingleStoreDBOperationalError
+                ),
                 pytest.mark.notyet(
                     ["pyspark"],
                     raises=(PySparkParseException, PySparkArithmeticException),
@@ -478,6 +491,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "flink",
         "impala",
         "mysql",
+        "singlestoredb",
         "oracle",
         "postgres",
         "risingwave",
@@ -489,6 +503,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "druid",
         "databricks",  # feels a bit weird given it's their format ¯\_(ツ)_/¯
         "athena",
+        "materialize",
     ],
     raises=NotImplementedError,
     reason="read_delta not yet implemented",
@@ -510,7 +525,10 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     dt = ibis.read_delta(path)
     result = dt.to_pandas()
 
-    backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(
+        result.sort_values(["id"]).reset_index(drop=True),
+        expected.sort_values(["id"]).reset_index(drop=True),
+    )
 
 
 @pytest.mark.notimpl(
@@ -646,11 +664,10 @@ def test_column_to_memory(limit, awards_players, output_format, expected_column_
     method = methodcaller(f"to_{output_format}", limit=limit)
     res = method(awards_players.awardID)
     assert isinstance(res, getattr(mod, expected_column_type))
-    assert (
-        (len(res) == limit)
-        if limit is not None
-        else len(res) == awards_players.count().execute()
-    )
+    if limit is not None:
+        assert len(res) == limit
+    else:
+        assert len(res) == awards_players.count().execute()
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
@@ -688,8 +705,10 @@ mark_notyet_nulls = pytest.mark.notyet(
         "exasol",
         "flink",
         "impala",
+        "materialize",
         "mssql",
         "mysql",
+        "singlestoredb",
         "oracle",
         "postgres",
         "risingwave",

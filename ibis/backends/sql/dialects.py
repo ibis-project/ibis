@@ -241,8 +241,9 @@ class Flink(Hive):
             sge.ArrayAgg: rename_func("array_agg"),
             sge.ArraySort: rename_func("array_sort"),
             sge.Length: rename_func("char_length"),
-            sge.TryCast: lambda self,
-            e: f"TRY_CAST({e.this.sql(self.dialect)} AS {e.to.sql(self.dialect)})",
+            sge.TryCast: lambda self, e: (
+                f"TRY_CAST({e.this.sql(self.dialect)} AS {e.to.sql(self.dialect)})"
+            ),
             sge.DayOfYear: rename_func("dayofyear"),
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.DayOfMonth: rename_func("dayofmonth"),

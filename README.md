@@ -16,7 +16,7 @@ Ibis is the portable Python dataframe library:
 - Lazy dataframe expressions
 - Interactive mode for iterative data exploration
 - [Compose Python dataframe and SQL code](#python--sql-better-together)
-- Use the same dataframe API for [nearly 20 backends](#backends)
+- Use the same dataframe API for [more than 20 backends](#backends)
 - Iterate locally and deploy remotely by [changing a single line of code](#portability)
 
 See the documentation on ["Why Ibis?"](https://ibis-project.org/why) to learn more.
@@ -135,26 +135,29 @@ This allows you to combine the flexibility of Python with the scale and performa
 
 ## Backends
 
-Ibis supports nearly 20 backends:
+Ibis supports more than 20 backends:
 
 - [Apache DataFusion](https://ibis-project.org/backends/datafusion/)
 - [Apache Druid](https://ibis-project.org/backends/druid/)
 - [Apache Flink](https://ibis-project.org/backends/flink)
 - [Apache Impala](https://ibis-project.org/backends/impala/)
 - [Apache PySpark](https://ibis-project.org/backends/pyspark/)
+- [Athena](https://ibis-project.org/backends/athena/)
 - [BigQuery](https://ibis-project.org/backends/bigquery/)
 - [ClickHouse](https://ibis-project.org/backends/clickhouse/)
+- [Databricks](https://ibis-project.org/backends/databricks/)
 - [DuckDB](https://ibis-project.org/backends/duckdb/)
 - [Exasol](https://ibis-project.org/backends/exasol)
+- [Materialize](https://ibis-project.org/backends/materialize/)
 - [MySQL](https://ibis-project.org/backends/mysql/)
 - [Oracle](https://ibis-project.org/backends/oracle/)
 - [Polars](https://ibis-project.org/backends/polars/)
 - [PostgreSQL](https://ibis-project.org/backends/postgresql/)
 - [RisingWave](https://ibis-project.org/backends/risingwave/)
+- [SingleStoreDB](https://ibis-project.org/backends/singlestoredb/)
 - [SQL Server](https://ibis-project.org/backends/mssql/)
 - [SQLite](https://ibis-project.org/backends/sqlite/)
 - [Snowflake](https://ibis-project.org/backends/snowflake)
-- [Theseus](https://voltrondata.com/start)
 - [Trino](https://ibis-project.org/backends/trino/)
 
 ## How it works

@@ -33,18 +33,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: install python
         uses: actions/setup-python@v6
         id: install_python
         with:
-          python-version: "3.13"
+          python-version: "3.14"
           cache: pip
           cache-dependency-path: requirements-dev.txt
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.1.0
+        uses: astral-sh/setup-uv@v7.3.0
 
       - name: update apt-get
         run: sudo apt-get update -y -q

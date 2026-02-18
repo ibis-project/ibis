@@ -12,19 +12,19 @@ jobs:
   lockfile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: install nix
-        uses: DeterminateSystems/nix-installer-action@v20
+        uses: DeterminateSystems/nix-installer-action@v21
 
-      - uses: actions/create-github-app-token@v2.1.4
+      - uses: actions/create-github-app-token@v2.2.1
         id: generate-token
         with:
           app-id: ${{ secrets.SQUAWK_BOT_APP_ID }}
           private-key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
 
       - name: update flake.lock
-        uses: DeterminateSystems/update-flake-lock@v27
+        uses: DeterminateSystems/update-flake-lock@v28
         with:
           token: ${{ steps.generate-token.outputs.token }}
           commit-msg: "chore(deps): update `flake.lock`"

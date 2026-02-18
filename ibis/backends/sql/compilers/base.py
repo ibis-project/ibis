@@ -7,7 +7,7 @@ import math
 import operator
 import string
 from functools import partial, reduce
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Literal
+from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -17,6 +17,7 @@ import ibis.common.exceptions as com
 import ibis.common.patterns as pats
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.sql.compilers._compat import WITH_ARG
 from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
@@ -51,7 +52,7 @@ except ImportError:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
@@ -579,7 +580,7 @@ class SQLGlotCompiler(abc.ABC):
         self,
         expr: ir.Expr,
         *,
-        limit: str | None = None,
+        limit: Literal["default"] | int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
     ):
         import ibis
@@ -648,8 +649,12 @@ class SQLGlotCompiler(abc.ABC):
             if node is op or not isinstance(node, ops.Relation):
                 return result
 
-            # alias ops.Views to their explicitly assigned name otherwise generate
-            alias = node.name if isinstance(node, ops.View) else f"t{next(counter)}"
+            # alias ops.AliasedRelations to their explicitly assigned name otherwise generate
+            alias = (
+                node.name
+                if isinstance(node, ops.AliasedRelation)
+                else f"t{next(counter)}"
+            )
             aliases[node] = alias
 
             alias = sg.to_identifier(alias, quoted=self.quoted)
@@ -659,7 +664,9 @@ class SQLGlotCompiler(abc.ABC):
                 try:
                     return result.subquery(alias, copy=False)
                 except AttributeError:
-                    return result.as_(alias, quoted=self.quoted)
+                    return result.as_(
+                        alias, quoted=self.quoted, table=isinstance(result, sge.Table)
+                    )
 
         # apply translate rules in topological order
         results = op.map(fn)
@@ -681,7 +688,7 @@ class SQLGlotCompiler(abc.ABC):
             )
             merged_ctes.append(modified_cte)
         merged_ctes.extend(out.ctes)
-        out.args.pop("with", None)
+        out.args.pop(WITH_ARG, None)
 
         out = reduce(
             lambda parsed, cte: parsed.with_(
@@ -792,6 +799,8 @@ class SQLGlotCompiler(abc.ABC):
             )
         elif dtype.is_boolean():
             return sge.Boolean(this=bool(value))
+        elif dtype.is_json():
+            return sge.JSON(this=sge.convert(str(value)))
         elif dtype.is_string():
             return sge.convert(value)
         elif dtype.is_inet() or dtype.is_macaddr():
@@ -890,7 +899,7 @@ class SQLGlotCompiler(abc.ABC):
     ### Dtype Dysmorphia
 
     def visit_TryCast(self, op, *, arg, to):
-        return sge.TryCast(this=arg, to=self.type_mapper.from_ibis(to))
+        return sge.TryCast(this=arg, to=self.type_mapper.from_ibis(to), safe=True)
 
     ### Comparator Conundrums
 
@@ -1170,8 +1179,8 @@ class SQLGlotCompiler(abc.ABC):
 
     ### Ordering and window functions
 
-    def visit_SortKey(self, op, *, expr, ascending: bool, nulls_first: bool):
-        return sge.Ordered(this=expr, desc=not ascending, nulls_first=nulls_first)
+    def visit_SortKey(self, op, *, arg, ascending: bool, nulls_first: bool):
+        return sge.Ordered(this=arg, desc=not ascending, nulls_first=nulls_first)
 
     def visit_ApproxMedian(self, op, *, arg, where):
         return self.agg.approx_quantile(arg, 0.5, where=where)
@@ -1545,21 +1554,21 @@ class SQLGlotCompiler(abc.ABC):
     def visit_CTE(self, op, *, parent):
         return sg.table(parent.alias_or_name, quoted=self.quoted)
 
-    def visit_View(self, op, *, child, name: str):
-        if isinstance(child, sge.Table):
-            child = sg.select(STAR, copy=False).from_(child, copy=False)
+    def visit_AliasedRelation(self, op, *, parent, name: str):
+        if isinstance(parent, sge.Table):
+            parent = sg.select(STAR, copy=False).from_(parent, copy=False)
         else:
-            child = child.copy()
+            parent = parent.copy()
 
-        if isinstance(child, sge.Subquery):
-            return child.as_(name, quoted=self.quoted)
+        if isinstance(parent, sge.Subquery):
+            return parent.as_(name, quoted=self.quoted)
         else:
             try:
-                return child.subquery(name, copy=False)
+                return parent.subquery(name, copy=False)
             except AttributeError:
-                return child.as_(name, quoted=self.quoted)
+                return parent.as_(name, quoted=self.quoted)
 
-    def visit_SQLStringView(self, op, *, query: str, child, schema):
+    def visit_SQLStringView(self, op, *, query: str, parent, schema):
         return sg.parse_one(query, read=self.dialect)
 
     def visit_SQLQueryResult(self, op, *, query, schema, source):
@@ -1613,8 +1622,8 @@ class SQLGlotCompiler(abc.ABC):
             ),
             *compiled_query.ctes,
         ]
-        compiled_ibis_expr.args.pop("with", None)
-        compiled_query.args.pop("with", None)
+        compiled_ibis_expr.args.pop(WITH_ARG, None)
+        compiled_query.args.pop(WITH_ARG, None)
 
         # pull existing CTEs from the compiled Ibis expression and combine them
         # with the new query

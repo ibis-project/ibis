@@ -9,7 +9,6 @@ from public import public
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.common.patterns import Coercible, CoercionError
@@ -403,6 +402,7 @@ class Expr(Immutable, Coercible):
         341  Chinstrap      Dream            49.6  ...       3775.0    male  2009
         342  Chinstrap      Dream            50.8  ...       4100.0    male  2009
         343  Chinstrap      Dream            50.2  ...       3775.0  female  2009
+        <BLANKLINE>
         [344 rows x 8 columns]
 
         Scalar parameters can be supplied dynamically during execution.
@@ -934,48 +934,56 @@ class Expr(Immutable, Coercible):
         return self.op().replace(rule).to_expr()
 
     def as_table(self) -> ir.Table:
-        """Convert an expression to a table."""
+        """Convert a Scalar, Column, or Table to a [Table](./expression-tables.qmd#ibis.expr.types.Table).
+
+        - Calling this on a Table is a no-op.
+        - Calling this on a Column will return a single-column table.
+        - Calling this on a Scalar will return a single-row, single-column table.
+
+        Returns
+        -------
+        Table
+            A table expression
+        """
         raise NotImplementedError(
             f"{type(self)} expressions cannot be converted into tables"
         )
 
     def as_scalar(self) -> ir.Scalar:
-        """Convert an expression to a scalar."""
+        """Tell ibis to treat the expression as a scalar.
+
+        Ibis cannot know until execution time whether a Column or Table expression
+        contains only one row or many rows,
+
+        This method is a way to explicitly tell ibis to trust you that
+        this expression will only contain one row at execution time.
+        This allows you to use this expression with other tables.
+
+        If the expression is a literal, it will be returned as is. If it depends
+        on a table, it will be turned to a scalar subquery.
+
+        Returns
+        -------
+        Scalar
+            A scalar subquery or a literal
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> max_gentoo_weight = t.filter(t.species == "Gentoo").body_mass_g.max()
+        >>> light_penguins = t.filter(t.body_mass_g < max_gentoo_weight / 2)
+        >>> light_penguins.species.value_counts().order_by("species")
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+        ┃ species   ┃ species_count ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+        │ string    │ int64         │
+        ├───────────┼───────────────┤
+        │ Adelie    │            15 │
+        │ Chinstrap │             2 │
+        └───────────┴───────────────┘
+        """
         raise NotImplementedError(
             f"{type(self)} expressions cannot be converted into scalars"
         )
-
-
-def _binop(op_class: type[ops.Binary], left: ir.Value, right: ir.Value) -> ir.Value:
-    """Try to construct a binary operation.
-
-    Parameters
-    ----------
-    op_class
-        The `ops.Binary` subclass for the operation
-    left
-        Left operand
-    right
-        Right operand
-
-    Returns
-    -------
-    ir.Value
-        A value expression
-
-    Examples
-    --------
-    >>> import ibis
-    >>> import ibis.expr.operations as ops
-    >>> expr = _binop(ops.TimeAdd, ibis.time("01:00"), ibis.interval(hours=1))
-    >>> expr
-    TimeAdd(datetime.time(1, 0), 1h): datetime.time(1, 0) + 1 h
-    >>> _binop(ops.TimeAdd, 1, ibis.interval(hours=1))
-    TimeAdd(datetime.time(0, 0, 1), 1h): datetime.time(0, 0, 1) + 1 h
-    """
-    try:
-        node = op_class(left, right)
-    except (ValidationError, NotImplementedError):
-        return NotImplemented
-    else:
-        return node.to_expr()

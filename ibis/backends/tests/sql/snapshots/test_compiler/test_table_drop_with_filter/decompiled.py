@@ -1,6 +1,5 @@
 import ibis
 
-
 lit = ibis.timestamp("2018-01-01 00:00:00")
 s = ibis.table(name="s", schema={"b": "string"})
 t = ibis.table(name="t", schema={"a": "int64", "b": "string", "c": "timestamp"})

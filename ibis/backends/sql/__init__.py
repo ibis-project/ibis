@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -16,13 +16,13 @@ from ibis import util
 from ibis.backends import BaseBackend
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     import pandas as pd
     import pyarrow as pa
 
     from ibis.backends.sql.compilers.base import SQLGlotCompiler
-    from ibis.expr.schema import SchemaLike
+    from ibis.expr.schema import IntoSchema
 
 
 class SQLBackend(BaseBackend):
@@ -95,7 +95,7 @@ class SQLBackend(BaseBackend):
         expr: ir.Expr,
         /,
         *,
-        limit: str | int | None = None,
+        limit: int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         pretty: bool = False,
     ) -> str:
@@ -118,7 +118,17 @@ class SQLBackend(BaseBackend):
             Compiled expression
         """
         query = self.compiler.to_sqlglot(expr, limit=limit, params=params)
-        sql = query.sql(dialect=self.dialect, pretty=pretty, copy=False)
+        try:
+            sql = query.sql(
+                dialect=self.dialect,
+                pretty=pretty,
+                copy=False,
+                unsupported_level=sg.ErrorLevel.RAISE,
+            )
+        except sg.UnsupportedError as e:
+            raise exc.UnsupportedOperationError(
+                f"Operation not supported in {self.name} backend: {e}\n\nexpression:\n{expr}\n\nsqlglot expression:\n{query}"
+            ) from e
         self._log(sql)
         return sql
 
@@ -137,7 +147,7 @@ class SQLBackend(BaseBackend):
         query: str,
         /,
         *,
-        schema: SchemaLike | None = None,
+        schema: IntoSchema | None = None,
         dialect: str | None = None,
     ) -> ir.Table:
         """Create an Ibis table expression from a SQL query.
@@ -423,7 +433,7 @@ class SQLBackend(BaseBackend):
         Parameters
         ----------
         name
-            The name of the table to which data needs will be inserted
+            The name of the table to which data will be inserted
         obj
             The source data or expression to insert
         database
@@ -453,20 +463,28 @@ class SQLBackend(BaseBackend):
         with self._safe_raw_sql(query):
             pass
 
-    def _build_insert_from_table(
+    def _get_columns_to_insert(
         self, *, target: str, source, db: str | None = None, catalog: str | None = None
     ):
-        compiler = self.compiler
-        quoted = compiler.quoted
         # Compare the columns between the target table and the object to be inserted
         # If source is a subset of target, use source columns for insert list
         # Otherwise, assume auto-generated column names and use positional ordering.
         target_cols = self.get_schema(target, catalog=catalog, database=db).keys()
 
-        columns = (
+        return (
             source_cols
             if (source_cols := source.schema().keys()) <= target_cols
             else target_cols
+        )
+
+    def _build_insert_from_table(
+        self, *, target: str, source, db: str | None = None, catalog: str | None = None
+    ):
+        compiler = self.compiler
+        quoted = compiler.quoted
+
+        columns = self._get_columns_to_insert(
+            target=target, source=source, db=db, catalog=catalog
         )
 
         query = sge.insert(
@@ -484,7 +502,7 @@ class SQLBackend(BaseBackend):
         schema: sch.Schema,
         catalog: str | None = None,
         columns: bool = False,
-        placeholder: str | Iterable[str] = "?",
+        placeholder: str = "?",
     ) -> str:
         """Builds an INSERT INTO table VALUES query string with placeholders.
 
@@ -526,14 +544,127 @@ class SQLBackend(BaseBackend):
             ),
         ).sql(self.dialect)
 
-    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
+    def upsert(
+        self,
+        name: str,
+        /,
+        obj: pd.DataFrame | ir.Table | list | dict,
+        on: str,
+        *,
+        database: str | None = None,
+    ) -> None:
+        """Upsert data into a table.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        name
+            The name of the table to which data will be upserted
+        obj
+            The source data or expression to upsert
+        on
+            Column name to join on
+        database
+            Name of the attached database that the table is located in.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
+        """
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        if not isinstance(obj, ir.Table):
+            obj = ibis.memtable(obj)
+
+        self._run_pre_execute_hooks(obj)
+
+        query = self._build_upsert_from_table(
+            target=name, source=obj, on=on, db=db, catalog=catalog
+        )
+
+        with self._safe_raw_sql(query):
+            pass
+
+    def _build_upsert_from_table(
+        self,
+        *,
+        target: str,
+        source,
+        on: str,
+        db: str | None = None,
+        catalog: str | None = None,
+    ):
+        compiler = self.compiler
+        quoted = compiler.quoted
+
+        columns = self._get_columns_to_insert(
+            target=target, source=source, db=db, catalog=catalog
+        )
+
+        source_alias = util.gen_name("source")
+        target_alias = util.gen_name("target")
+        query = sge.merge(
+            sge.When(
+                matched=True,
+                then=sge.Update(
+                    expressions=[
+                        sg.column(col, quoted=quoted).eq(
+                            sg.column(col, table=source_alias, quoted=quoted)
+                        )
+                        for col in columns
+                        if col != on
+                    ]
+                ),
+            ),
+            sge.When(
+                matched=False,
+                then=sge.Insert(
+                    this=sge.Tuple(
+                        expressions=[sg.column(col, quoted=quoted) for col in columns]
+                    ),
+                    expression=sge.Tuple(
+                        expressions=[
+                            sg.column(col, table=source_alias, quoted=quoted)
+                            for col in columns
+                        ]
+                    ),
+                ),
+            ),
+            into=sg.table(target, db=db, catalog=catalog, quoted=quoted).as_(
+                sg.to_identifier(target_alias, quoted=quoted), table=True
+            ),
+            using=f"({self.compile(source)}) AS {sg.to_identifier(source_alias, quoted=quoted)}",
+            on=sge.Paren(
+                this=sg.column(on, table=target_alias, quoted=quoted).eq(
+                    sg.column(on, table=source_alias, quoted=quoted)
+                )
+            ),
+            dialect=compiler.dialect,
+        )
+        return query
+
+    def truncate_table(
+        self, name: str, /, *, database: str | tuple[str, str] | None = None
+    ) -> None:
         """Delete all rows from a table.
 
         ::: {.callout-note}
         ## Ibis does not use the word `schema` to refer to database hierarchy.
 
-        A collection of tables is referred to as a `database`.
+        A collection of `table` is referred to as a `database`.
         A collection of `database` is referred to as a `catalog`.
+
         These terms are mapped onto the corresponding features in each
         backend (where available), regardless of whether the backend itself
         uses the same terminology.
@@ -584,20 +715,20 @@ class SQLBackend(BaseBackend):
     def _to_catalog_db_tuple(self, table_loc: sge.Table):
         if (sg_cat := table_loc.args["catalog"]) is not None:
             sg_cat.args["quoted"] = False
-            sg_cat = sg_cat.sql(self.name)
+            sg_cat = sg_cat.sql(self.dialect)
         if (sg_db := table_loc.args["db"]) is not None:
             sg_db.args["quoted"] = False
-            sg_db = sg_db.sql(self.name)
+            sg_db = sg_db.sql(self.dialect)
 
         return sg_cat, sg_db
 
-    def _to_sqlglot_table(self, database):
+    def _to_sqlglot_table(self, database: None | str | tuple[str, str]) -> sge.Table:
         quoted = self.compiler.quoted
         dialect = self.dialect
 
         if database is None:
             # Create "table" with empty catalog and db
-            database = sge.Table(catalog=None, db=None)
+            sgt = sge.Table(catalog=None, db=None)
         elif isinstance(database, (list, tuple)):
             if len(database) > 2:
                 raise ValueError(
@@ -616,7 +747,7 @@ class SQLBackend(BaseBackend):
                     '\n("catalog", "database")'
                     '\n("database",)'
                 )
-            database = sge.Table(
+            sgt = sge.Table(
                 catalog=sg.to_identifier(catalog, quoted=quoted),
                 db=sg.to_identifier(database, quoted=quoted),
             )
@@ -626,7 +757,7 @@ class SQLBackend(BaseBackend):
             # sqlglot parsing of the string will assume that it's a Table
             # so we unpack the arguments into a new sqlglot object, switching
             # table (this) -> database (db) and database (db) -> catalog
-            table = sg.parse_one(
+            sgt = sg.parse_one(
                 ".".join(
                     sg.to_identifier(part, quoted=quoted).sql(dialect)
                     for part in database.split(".")
@@ -634,20 +765,20 @@ class SQLBackend(BaseBackend):
                 into=sge.Table,
                 dialect=dialect,
             )
-            if table.args["catalog"] is not None:
+            if sgt.args["catalog"] is not None:
                 raise exc.IbisInputError(
-                    f"Overspecified table hierarchy provided: `{table.sql(dialect)}`"
+                    f"Overspecified table hierarchy provided: `{sgt.sql(dialect)}`"
                 )
-            catalog = table.args["db"]
-            db = table.args["this"]
-            database = sge.Table(catalog=catalog, db=db)
+            catalog = sgt.args["db"]
+            db = sgt.args["this"]
+            sgt = sge.Table(catalog=catalog, db=db)
         else:
             raise ValueError(
                 """Invalid database hierarchy format.  Please use either dotted
                 strings ('catalog.database') or tuples ('catalog', 'database')."""
             )
 
-        return database
+        return sgt
 
     def _register_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
         """No-op."""

@@ -16,6 +16,7 @@ from google.api_core.exceptions import Forbidden
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.client import bigquery_param
+from ibis.formats.pandas import _DEFAULT_DATETIME_RESOLUTION
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -73,7 +74,10 @@ def test_array_collect(struct_table):
         )
         .groupby("key")
         .apply(
-            lambda df: list(df.array_of_structs_col.apply(lambda x: x[0]["int_field"]))
+            lambda df, **_: list(
+                df.array_of_structs_col.apply(lambda x: x[0]["int_field"])
+            ),
+            include_groups=False,
         )
         .reset_index()
         .rename(columns={0: "foo"})
@@ -98,7 +102,7 @@ def test_cast_string_to_date(alltypes, df):
 
     result = (
         expr.execute()
-        .astype("datetime64[ns]")
+        .astype(f"datetime64[{_DEFAULT_DATETIME_RESOLUTION}]")
         .sort_values()
         .reset_index(drop=True)
         .rename("date_string_col")
@@ -223,8 +227,8 @@ def test_cross_project_query(public):
     df = expr.limit(n).execute()
     assert len(df) == n
     assert list(df.columns) == ["title", "tags"]
-    assert df.title.dtype == object
-    assert df.tags.dtype == object
+    assert df.title.dtype == pd.Series(dtype="str").dtype
+    assert df.tags.dtype == pd.Series(dtype="str").dtype
 
 
 def test_set_database(con2):

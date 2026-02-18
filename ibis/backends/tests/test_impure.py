@@ -7,7 +7,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 from ibis import _
-from ibis.backends.tests.errors import Py4JJavaError
+from ibis.backends.tests.errors import Py4JJavaError, SingleStoreDBOperationalError
 
 tm = pytest.importorskip("pandas.testing")
 
@@ -18,7 +18,13 @@ pytestmark = pytest.mark.xdist_group("impure")
 
 no_randoms = [
     pytest.mark.notimpl(
-        ["polars", "druid", "risingwave"], raises=com.OperationNotDefinedError
+        ["polars", "druid", "risingwave"],
+        raises=com.OperationNotDefinedError,
+    ),
+    pytest.mark.never(
+        ["materialize"],
+        raises=com.OperationNotDefinedError,
+        reason="Materialize will never support random() - nondeterministic functions can't be used in materialized views",
     ),
 ]
 
@@ -33,8 +39,10 @@ no_udfs = [
             "druid",
             "exasol",
             "impala",
+            "materialize",
             "mssql",
             "mysql",
+            "singlestoredb",
             "oracle",
             "trino",
             "risingwave",
@@ -50,8 +58,20 @@ no_udfs = [
 
 no_uuids = [
     pytest.mark.notimpl(
-        ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave"],
+        [
+            "druid",
+            "exasol",
+            "oracle",
+            "polars",
+            "pyspark",
+            "risingwave",
+        ],
         raises=com.OperationNotDefinedError,
+    ),
+    pytest.mark.never(
+        ["materialize"],
+        raises=com.OperationNotDefinedError,
+        reason="Materialize will never support UUID generation - nondeterministic functions can't be used in materialized views",
     ),
     pytest.mark.notyet("mssql", reason="Unrelated bug: Incorrect syntax near '('"),
 ]
@@ -144,7 +164,7 @@ impure_params_uncorrelated = pytest.mark.parametrize(
             marks=[
                 *no_uuids,
                 pytest.mark.notyet(
-                    ["mysql"],
+                    ["mysql", "singlestoredb"],
                     reason="instances are correlated; but sometimes this passes and it's not clear why",
                     strict=False,
                 ),
@@ -196,6 +216,7 @@ def test_impure_uncorrelated_same_id(alltypes, impure):
         "clickhouse",
         "datafusion",
         "mysql",
+        "singlestoredb",
         "impala",
         "mssql",
         "trino",
@@ -213,8 +234,26 @@ def test_impure_uncorrelated_same_id(alltypes, impure):
     strict=False,
 )
 @pytest.mark.notimpl(
-    ["polars", "risingwave", "druid", "exasol", "oracle", "pyspark"],
+    [
+        "polars",
+        "risingwave",
+        "druid",
+        "exasol",
+        "oracle",
+        "pyspark",
+    ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=SingleStoreDBOperationalError,
+    reason="SingleStoreDB doesn't allow temporary tables in CTEs",
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="Materialize will never support UUID generation - nondeterministic functions can't be used in materialized views",
+    # Ref: https://materialize.com/docs/sql/functions/#unmaterializable-functions
 )
 def test_self_join_with_generated_keys(con):
     # Even with CTEs in the generated SQL, the backends still

@@ -14,11 +14,13 @@ from typing import (
     Optional,
     TypeVar,
     Union,
+    get_args,
+    get_origin,
 )
 from typing import Any as AnyType
 
 import toolz
-from typing_extensions import GenericMeta, get_args, get_origin
+from typing_extensions import GenericMeta
 
 from ibis.common.bases import FrozenSlotted as Slotted
 from ibis.common.bases import Hashable, Singleton
@@ -1713,7 +1715,7 @@ def match(
     return NoMatch if result is NoMatch else result
 
 
-IsTruish = Check(lambda x: bool(x))
+IsTruish = Check(bool)
 IsNumber = InstanceOf(numbers.Number) & ~InstanceOf(bool)
 IsString = InstanceOf(str)
 

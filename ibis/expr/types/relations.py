@@ -5,9 +5,9 @@ import operator
 import re
 import warnings
 from collections import deque
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Any, Callable, Literal, NoReturn, overload
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
 
 import toolz
 from public import public
@@ -35,8 +35,9 @@ if TYPE_CHECKING:
 
     import ibis.expr.types as ir
     import ibis.selectors as s
+    from ibis.expr.datatypes import IntoDtype
     from ibis.expr.operations.relations import JoinKind, Set
-    from ibis.expr.schema import SchemaLike
+    from ibis.expr.schema import IntoSchema
     from ibis.expr.types import Table
     from ibis.expr.types.groupby import GroupedTable
     from ibis.expr.types.temporal_windows import WindowedTable
@@ -572,7 +573,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 
-    def __dataframe__(self, nan_as_null: bool = False, allow_copy: bool = True):
+    def __dataframe__(self, *, nan_as_null: bool = False, allow_copy: bool = True):
         from ibis.expr.types.dataframe_interchange import IbisDataFrame
 
         return IbisDataFrame(self, nan_as_null=nan_as_null, allow_copy=allow_copy)
@@ -583,6 +584,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def __pyarrow_result__(
         self,
         table: pa.Table,
+        /,
         *,
         schema: sch.Schema | None = None,
         data_mapper: type[PyArrowData] | None = None,
@@ -597,6 +599,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def __pandas_result__(
         self,
         df: pd.DataFrame,
+        /,
         *,
         schema: sch.Schema | None = None,
         data_mapper: type[PandasData] | None = None,
@@ -608,7 +611,7 @@ class Table(Expr, FixedTextJupyterMixin):
             df, self.schema() if schema is None else schema
         )
 
-    def __polars_result__(self, df: pl.DataFrame) -> Any:
+    def __polars_result__(self, df: pl.DataFrame, /) -> Any:
         from ibis.formats.polars import PolarsData
 
         return PolarsData.convert_table(df, self.schema())
@@ -671,7 +674,7 @@ class Table(Expr, FixedTextJupyterMixin):
         dm = DerefMap.from_targets(self.op())
 
         bound = self._fast_bind(*args, **kwargs)
-        return (
+        return tuple(
             derefed.to_expr().name(name) if original is not derefed else original
             for name, original, derefed in zip(
                 (expr.get_name() for expr in bound),
@@ -681,12 +684,16 @@ class Table(Expr, FixedTextJupyterMixin):
         )
 
     def as_scalar(self) -> ir.Scalar:
-        """Inform ibis that the table expression should be treated as a scalar.
+        """Tell ibis to treat this value as 1 row, 1 column table, referred to as a *scalar*.
 
-        Note that the table must have exactly one column and one row for this to
-        work. If the table has more than one column an error will be raised in
-        expression construction time. If the table has more than one row an
-        error will be raised by the backend when the expression is executed.
+        Ibis cannot know until execution time whether a table expression
+        contains only one row or many rows.
+
+        This method is a way to explicitly tell ibis to trust you that
+        this table expression will only contain one row at execution time.
+        This allows you to use this table expression with other tables.
+
+        Note that execution will fail if the table DOES contain more than one row.
 
         Returns
         -------
@@ -699,6 +706,21 @@ class Table(Expr, FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> heavy_gentoo = t.filter(t.species == "Gentoo", t.body_mass_g > 6200)
+
+        We know from domain knowledge that there is only one Gentoo penguin
+        with body mass greater than 6200g, so heavy_gentoo is a table with
+        exactly one row.
+
+        Say we want to get all penguins from the same island as that
+        heavy Gentoo penguin.
+
+        If we try to use `t.island == heavy_gentoo.select("island")` directly in a filter,
+        we won't get the result we expect because that will evaluate to a literal
+        `False` (since of course an ibis.Column is never equal to an ibis.Table).
+
+        Instead, we should use `as_scalar()` to tell ibis that we know
+        `heavy_gentoo.select("island")` contains exactly one row:
+
         >>> from_that_island = t.filter(t.island == heavy_gentoo.select("island").as_scalar())
         >>> from_that_island.species.value_counts().order_by("species")
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━┓
@@ -731,7 +753,7 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         return self
 
-    def __contains__(self, name: str) -> bool:
+    def __contains__(self, name: str, /) -> bool:
         """Return whether `name` is a column in the table.
 
         Parameters
@@ -754,7 +776,9 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         return name in self.schema()
 
-    def cast(self, schema: SchemaLike, /) -> Table:
+    def cast(
+        self, schema: IntoSchema | None = None, /, **overrides: IntoDtype
+    ) -> Table:
         """Cast the columns of a table.
 
         Similar to `pandas.DataFrame.astype`.
@@ -766,7 +790,10 @@ class Table(Expr, FixedTextJupyterMixin):
         Parameters
         ----------
         schema
-            Mapping, schema or iterable of pairs to use for casting
+            Mapping, schema or iterable of pairs to use for casting.
+            Anything that [`ibis.schema()`](./schemas.qmd#ibis.schema) can consume.
+        overrides
+            Named types to use for casting. Will override types from `schema`.
 
         Returns
         -------
@@ -776,51 +803,72 @@ class Table(Expr, FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.selectors as s
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch()
-        >>> t.schema()
+        >>> t = ibis.examples.penguins.fetch().select("species", "bill_length_mm", "year").limit(5)
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ species ┃ bill_length_mm ┃ year  ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━┩
+        │ string  │ float64        │ int64 │
+        ├─────────┼────────────────┼───────┤
+        │ Adelie  │           39.1 │  2007 │
+        │ Adelie  │           39.5 │  2007 │
+        │ Adelie  │           40.3 │  2007 │
+        │ Adelie  │           NULL │  2007 │
+        │ Adelie  │           36.7 │  2007 │
+        └─────────┴────────────────┴───────┘
+
+        Columns not present in the input schema will be passed through unchanged:
+
+        >>> t.cast({"year": "uint16", "bill_length_mm": "int"})
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━┓
+        ┃ species ┃ bill_length_mm ┃ year   ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━┩
+        │ string  │ int64          │ uint16 │
+        ├─────────┼────────────────┼────────┤
+        │ Adelie  │             39 │   2007 │
+        │ Adelie  │             40 │   2007 │
+        │ Adelie  │             40 │   2007 │
+        │ Adelie  │           NULL │   2007 │
+        │ Adelie  │             37 │   2007 │
+        └─────────┴────────────────┴────────┘
+
+        In addition to passing a schema-like as the first argument, you can also
+        pass column_name=<type> pairs as keyword arguments.
+        These will override any types specified in the `schema` argument.
+        See below where `bill_length_mm` is overridden to `int8`:
+
+        >>> t.cast({"year": "uint16", "bill_length_mm": "float32"}, bill_length_mm="int8")
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━┓
+        ┃ species ┃ bill_length_mm ┃ year   ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━┩
+        │ string  │ int8           │ uint16 │
+        ├─────────┼────────────────┼────────┤
+        │ Adelie  │             39 │   2007 │
+        │ Adelie  │             40 │   2007 │
+        │ Adelie  │             40 │   2007 │
+        │ Adelie  │           NULL │   2007 │
+        │ Adelie  │             37 │   2007 │
+        └─────────┴────────────────┴────────┘
+
+        If a value is not castable to the target type, since ibis doesn't know about the
+        data at this time, we can't know whether the cast will succeed or fail until execution time,
+        so we still create an expression:
+
+        >>> expr = t.cast(species="int")
+        >>> expr.schema()
         ibis.Schema {
-          species            string
-          island             string
-          bill_length_mm     float64
-          bill_depth_mm      float64
-          flipper_length_mm  int64
-          body_mass_g        int64
-          sex                string
-          year               int64
+            species         int64
+            bill_length_mm  float64
+            year            int64
         }
-        >>> cols = ["body_mass_g", "bill_length_mm"]
-        >>> t[cols].head()
-        ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-        ┃ body_mass_g ┃ bill_length_mm ┃
-        ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-        │ int64       │ float64        │
-        ├─────────────┼────────────────┤
-        │        3750 │           39.1 │
-        │        3800 │           39.5 │
-        │        3250 │           40.3 │
-        │        NULL │           NULL │
-        │        3450 │           36.7 │
-        └─────────────┴────────────────┘
 
-        Columns not present in the input schema will be passed through unchanged
+        But executing the expression will raise an error:
 
-        >>> t.columns
-        ('species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex', 'year')
-        >>> expr = t.cast({"body_mass_g": "float64", "bill_length_mm": "int"})
-        >>> expr.select(*cols).head()
-        ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-        ┃ body_mass_g ┃ bill_length_mm ┃
-        ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-        │ float64     │ int64          │
-        ├─────────────┼────────────────┤
-        │      3750.0 │             39 │
-        │      3800.0 │             40 │
-        │      3250.0 │             40 │
-        │        NULL │           NULL │
-        │      3450.0 │             37 │
-        └─────────────┴────────────────┘
+        >>> expr  # quartodoc: +EXPECTED_FAILURE
+        Traceback (most recent call last):
+            ...
+        _duckdb.ConversionException: Conversion Error: Could not convert string 'Adelie' to INT64 when casting from source column species
 
         Columns that are in the input `schema` but not in the table raise an error
 
@@ -829,10 +877,12 @@ class Table(Expr, FixedTextJupyterMixin):
             ...
         ibis.common.exceptions.IbisError: Cast schema has fields that are not in the table: ['foo']
         """
-        return self._cast(schema, cast_method="cast")
+        return self._cast(schema, overrides, cast_method="cast")
 
-    def try_cast(self, schema: SchemaLike, /) -> Table:
-        """Cast the columns of a table.
+    def try_cast(
+        self, schema: IntoSchema | None = None, /, **overrides: IntoDtype
+    ) -> Table:
+        """Cast the columns of a table, returning NULL/NaN on failure.
 
         If the cast fails for a row, the value is returned
         as `NULL` or `NaN` depending on backend behavior.
@@ -840,7 +890,10 @@ class Table(Expr, FixedTextJupyterMixin):
         Parameters
         ----------
         schema
-            Mapping, schema or iterable of pairs to use for casting
+            Mapping, schema or iterable of pairs to use for casting.
+            Anything that [`ibis.schema()`](./schemas.qmd#ibis.schema) can consume.
+        overrides
+            `column_name=<type>` overrides. Will override types from `schema`.
 
         Returns
         -------
@@ -852,7 +905,7 @@ class Table(Expr, FixedTextJupyterMixin):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"a": ["1", "2", "3"], "b": ["2.2", "3.3", "book"]})
-        >>> t.try_cast({"a": "int", "b": "float"})
+        >>> t.try_cast({"a": int}, b="float64")
         ┏━━━━━━━┳━━━━━━━━━┓
         ┃ a     ┃ b       ┃
         ┡━━━━━━━╇━━━━━━━━━┩
@@ -862,11 +915,23 @@ class Table(Expr, FixedTextJupyterMixin):
         │     2 │     3.3 │
         │     3 │    NULL │
         └───────┴─────────┘
-        """
-        return self._cast(schema, cast_method="try_cast")
 
-    def _cast(self, schema: SchemaLike, cast_method: str = "cast") -> Table:
+        See Also
+        --------
+        [`Table.cast`](#ibis.expr.types.relations.Table.cast) for more details and examples.
+        """
+        return self._cast(schema, overrides, cast_method="try_cast")
+
+    def _cast(
+        self,
+        schema: IntoSchema | None,
+        overrides: dict[str, IntoDtype],
+        cast_method: str = "cast",
+    ) -> Table:
+        if schema is None:
+            schema = {}
         schema = sch.schema(schema)
+        schema = sch.schema({**schema, **overrides})
 
         cols = []
 
@@ -953,12 +1018,12 @@ class Table(Expr, FixedTextJupyterMixin):
         )
 
     @overload
-    def __getitem__(self, what: str | int) -> ir.Column: ...
+    def __getitem__(self, what: str | int, /) -> ir.Column: ...
 
     @overload
-    def __getitem__(self, what: slice | Sequence[str | int]) -> Table: ...
+    def __getitem__(self, what: slice | Sequence[str | int], /) -> Table: ...
 
-    def __getitem__(self, what: str | int | slice | Sequence[str | int]):
+    def __getitem__(self, what: str | int | slice | Sequence[str | int], /):
         """Select one or more columns or rows from a table expression.
 
         Parameters
@@ -1098,7 +1163,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def __len__(self) -> NoReturn:
         raise com.ExpressionError("Use .count() instead")
 
-    def __getattr__(self, key: str) -> ir.Column:
+    def __getattr__(self, key: str, /) -> ir.Column:
         """Return the column name of a table.
 
         Parameters
@@ -1162,7 +1227,7 @@ class Table(Expr, FixedTextJupyterMixin):
         return sorted(out)
 
     def _ipython_key_completions_(self) -> list[str]:
-        return self.columns
+        return list(self.columns)
 
     @property
     def columns(self) -> tuple[str, ...]:
@@ -2851,7 +2916,11 @@ class Table(Expr, FixedTextJupyterMixin):
 
     def filter(
         self,
-        *predicates: ir.BooleanValue | Sequence[ir.BooleanValue] | IfAnyAll | Deferred,
+        *predicates: ir.BooleanValue
+        | bool
+        | Sequence[ir.BooleanValue | bool]
+        | IfAnyAll
+        | Deferred,
     ) -> Table:
         """Select rows from `table` based on `predicates`.
 
@@ -3930,7 +3999,7 @@ class Table(Expr, FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
-        return ops.View(child=self, name=alias).to_expr()
+        return ops.AliasedRelation(parent=self, name=alias).to_expr()
 
     def sql(self, query: str, /, *, dialect: str | None = None) -> ir.Table:
         '''Run a SQL query against a table expression.
@@ -4024,15 +4093,15 @@ class Table(Expr, FixedTextJupyterMixin):
             # only transpile if dialect was passed
             query = backend._transpile_sql(query, dialect=dialect)
 
-        if isinstance(op, ops.View):
+        if isinstance(op, ops.AliasedRelation):
             name = op.name
-            expr = op.child.to_expr()
+            expr = op.parent.to_expr()
         else:
             name = util.gen_name("sql_query")
             expr = self
 
         schema = backend._get_sql_string_view_schema(name=name, table=expr, query=query)
-        node = ops.SQLStringView(child=self.op(), query=query, schema=schema)
+        node = ops.SQLStringView(parent=self.op(), query=query, schema=schema)
         return node.to_expr()
 
     def to_pandas(
@@ -5162,7 +5231,7 @@ class Table(Expr, FixedTextJupyterMixin):
     def window_by(self, time_col: str | ir.Value, /) -> WindowedTable:
         from ibis.expr.types.temporal_windows import WindowedTable
 
-        time_col = next(self.bind(time_col))
+        (time_col,) = self.bind(time_col)
 
         # validate time_col is a timestamp column
         if not isinstance(time_col, TimestampColumn):

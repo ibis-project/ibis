@@ -14,6 +14,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     OracleDatabaseError,
     PsycoPg2InternalError,
+    PsycoPgInternalError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
 )
@@ -40,6 +41,7 @@ pd = pytest.importorskip("pandas")
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(6) NOT NULL",
                 "databricks": "string",
             },
@@ -58,6 +60,7 @@ pd = pytest.importorskip("pandas")
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(7) NOT NULL",
                 "databricks": "string",
             },
@@ -88,6 +91,7 @@ pd = pytest.importorskip("pandas")
                 "impala": "STRING",
                 "postgres": "text",
                 "risingwave": "text",
+                "materialize": "text",
                 "flink": "CHAR(7) NOT NULL",
                 "databricks": "string",
             },
@@ -374,7 +378,7 @@ def uses_java_re(t):
             id="re_replace_posix",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "exasol"],
+                    ["mysql", "singlestoredb", "mssql", "druid", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -385,7 +389,7 @@ def uses_java_re(t):
             id="re_replace",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "exasol"],
+                    ["mysql", "singlestoredb", "mssql", "druid", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.xfail_version(
@@ -409,8 +413,8 @@ def uses_java_re(t):
             id="repeat_left",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=OracleDatabaseError,
-                reason="ORA-00904: REPEAT invalid identifier",
+                raises=(OracleDatabaseError, com.ExpressionError),
+                reason="REPEAT function not supported",
             ),
         ),
         param(
@@ -419,8 +423,8 @@ def uses_java_re(t):
             id="repeat_right",
             marks=pytest.mark.notimpl(
                 ["oracle"],
-                raises=OracleDatabaseError,
-                reason="ORA-00904: REPEAT invalid identifier",
+                raises=(OracleDatabaseError, com.ExpressionError),
+                reason="REPEAT function not supported",
             ),
         ),
         param(
@@ -429,7 +433,8 @@ def uses_java_re(t):
             id="translate",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "polars", "druid"], raises=com.OperationNotDefinedError
+                    ["mysql", "singlestoredb", "polars", "druid"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
                     ["flink"],
@@ -593,6 +598,7 @@ def uses_java_re(t):
                 [
                     "impala",
                     "mysql",
+                    "singlestoredb",
                     "sqlite",
                     "mssql",
                     "druid",
@@ -632,6 +638,12 @@ def uses_java_re(t):
             id="replace",
         ),
     ],
+)
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
 )
 def test_string(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes).name("tmp")
@@ -699,6 +711,12 @@ def test_string(backend, alltypes, df, result_func, expected_func):
         ),
     ],
 )
+@pytest.mark.never(
+    ["materialize"],
+    raises=AssertionError,
+    reason="Streaming database does not guarantee row order without ORDER BY",
+    strict=False,
+)
 def test_substring(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes.date_string_col).name("tmp")
     result = expr.execute()
@@ -708,7 +726,8 @@ def test_substring(backend, alltypes, df, result_func, expected_func):
 
 
 @pytest.mark.notimpl(
-    ["mysql", "mssql", "druid", "exasol"], raises=com.OperationNotDefinedError
+    ["mysql", "singlestoredb", "mssql", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
 )
 def test_re_replace_global(con):
     expr = ibis.literal("aba").re_replace("a", "c")
@@ -806,6 +825,7 @@ def test_substr_with_null_values(backend, alltypes, df):
         "exasol",
         "mssql",
         "mysql",
+        "singlestoredb",
         "polars",
         "postgres",
         "risingwave",
@@ -815,6 +835,12 @@ def test_substr_with_null_values(backend, alltypes, df):
         "databricks",
     ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["materialize"],
+    raises=com.OperationNotDefinedError,
+    reason="URL parsing functions not yet implemented for Materialize",
+    # See: https://materialize.com/docs/sql/functions/#string
 )
 def test_parse_url(con, result_func, expected):
     url = "http://user:pass@example.com:80/docs/books/tutorial/index.html?name=networking#DOWNLOADING"
@@ -861,7 +887,16 @@ def test_capitalize(con, inp, expected):
 
 
 @pytest.mark.notyet(
-    ["exasol", "impala", "mssql", "mysql", "sqlite", "oracle", "flink"],
+    [
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "singlestoredb",
+        "sqlite",
+        "oracle",
+        "flink",
+    ],
     reason="Backend doesn't support arrays",
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
 )
@@ -876,7 +911,16 @@ def test_array_string_join(con):
 
 
 @pytest.mark.notyet(
-    ["exasol", "impala", "mssql", "mysql", "sqlite", "oracle", "flink"],
+    [
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "singlestoredb",
+        "sqlite",
+        "oracle",
+        "flink",
+    ],
     reason="Backend doesn't support arrays",
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
 )
@@ -889,11 +933,12 @@ def test_empty_array_string_join(con):
     t = ibis.memtable({"arr": [[], ["a", "b", "c"]]})
 
     expr = t.arr.join(",")
-    assert set(con.execute(expr)) == {None, "a,b,c"}
+    assert set(con.to_pyarrow(expr).to_pylist()) == {None, "a,b,c"}
 
 
 @pytest.mark.notimpl(
-    ["mssql", "mysql", "druid", "exasol"], raises=com.OperationNotDefinedError
+    ["mssql", "mysql", "singlestoredb", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
 )
 def test_subs_with_re_replace(con):
     expr = ibis.literal("hi").re_replace("i", "a").substitute({"d": "b"}, else_="k")
@@ -915,17 +960,24 @@ def test_multiple_subs(con):
         "impala",
         "mssql",
         "mysql",
+        "singlestoredb",
         "polars",
         "sqlite",
         "flink",
         "exasol",
+        "materialize",
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have levenshtein() function - backend limitation",
+)
+@pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
-    reason="function levenshtein(character varying, character varying) does not exist",
+    reason="Risingwave doesn't have levenshtein() function - backend limitation",
 )
 @pytest.mark.parametrize(
     "right", ["sitting", ibis.literal("sitting")], ids=["python", "ibis"]
@@ -960,6 +1012,7 @@ def test_non_match_regex_search_is_false(con):
     [
         "impala",
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "druid",
@@ -981,6 +1034,7 @@ def test_re_split(con):
     [
         "impala",
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "druid",
@@ -1002,6 +1056,7 @@ def test_re_split_column(alltypes):
     [
         "impala",
         "mysql",
+        "singlestoredb",
         "sqlite",
         "mssql",
         "druid",
@@ -1259,7 +1314,9 @@ def string_temp_table(backend, con):
                         "clickhouse",
                         "datafusion",
                         "duckdb",
+                        "materialize",
                         "mysql",
+                        "singlestoredb",
                         "postgres",
                         "risingwave",
                     ],

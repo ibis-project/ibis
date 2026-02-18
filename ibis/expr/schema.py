@@ -14,12 +14,14 @@ from ibis.common.patterns import Coercible
 from ibis.util import deprecated, indent
 
 if TYPE_CHECKING:
+    from typing import TypeAlias
+
     import numpy as np
     import pyarrow as pa
     import sqlglot as sg
     import sqlglot.expressions as sge
     from pandas.api.extensions import ExtensionDtype
-    from typing_extensions import Self, TypeAlias
+    from typing_extensions import Self
 
 
 class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
@@ -248,13 +250,13 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         """
         import sqlglot.expressions as sge
 
-        from ibis.backends.sql.datatypes import TYPE_MAPPERS, SqlglotType
+        from ibis.backends.sql.datatypes import SqlglotType, get_type_mapper
 
         expressions = schema.expressions
         if not expressions:
             return cls({})
 
-        type_mapper_class = TYPE_MAPPERS.get(dialect, SqlglotType)
+        type_mapper_class = SqlglotType if dialect is None else get_type_mapper(dialect)
         type_mapper = type_mapper_class()
         fields = {}
 
@@ -382,9 +384,9 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         import sqlglot as sg
         import sqlglot.expressions as sge
 
-        from ibis.backends.sql.datatypes import TYPE_MAPPERS as type_mappers
+        from ibis.backends.sql.datatypes import get_type_mapper
 
-        type_mapper = type_mappers[dialect]
+        type_mapper = get_type_mapper(dialect)
         return [
             sge.ColumnDef(
                 this=sg.to_identifier(name, quoted=True),
@@ -406,75 +408,102 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         return self.to_sqlglot_column_defs(dialect)
 
 
-SchemaLike: TypeAlias = Union[
+IntoSchema: TypeAlias = Union[
     Schema,
-    Mapping[str, Union[str, dt.DataType]],
-    Iterable[tuple[str, Union[str, dt.DataType]]],
+    Mapping[str, dt.IntoDtype],
+    Iterable[tuple[str, dt.IntoDtype]],
 ]
+"""Something that can be converted into a `Schema`."""
+SchemaLike = IntoSchema
+"""Deprecated, use `IntoSchema` instead."""
+
+
+def schema(value: IntoSchema, /) -> Schema:
+    """Construct ibis schema from schema-like python objects.
+
+    Parameters
+    ----------
+    value
+        One of the following:
+        - An existing `Schema` object
+        - A mapping of column names to data types
+        - An iterable of (column name, data type) pairs
+
+    Returns
+    -------
+    Schema
+        An ibis `Schema` object
+    """
+    return _schema(value)
+
+
+def infer(value: Any, /) -> Schema:
+    """Infer the corresponding ibis schema for a python object."""
+    return _infer(value)
 
 
 @lazy_singledispatch
-def schema(value: Any) -> Schema:
+def _schema(value: IntoSchema, /) -> Schema:
     """Construct ibis schema from schema-like python objects."""
     raise InputTypeError(value)
 
 
 @lazy_singledispatch
-def infer(value: Any) -> Schema:
+def _infer(value: Any, /) -> Schema:
     """Infer the corresponding ibis schema for a python object."""
     raise InputTypeError(value)
 
 
-@schema.register(Schema)
+@_schema.register(Schema)
 def from_schema(s):
     return s
 
 
-@schema.register(Mapping)
+@_schema.register(Mapping)
 def from_mapping(d):
     return Schema(d)
 
 
-@schema.register(Iterable)
+@_schema.register(Iterable)
 def from_pairs(lst):
     return Schema.from_tuples(lst)
 
 
-@schema.register(type)
+@_schema.register(type)
 def from_class(cls):
     return Schema(dt.dtype(cls))
 
 
-@schema.register("pandas.Series")
+@_schema.register("pandas.Series")
 def from_pandas_series(s):
     from ibis.formats.pandas import PandasSchema
 
     return PandasSchema.to_ibis(s)
 
 
-@schema.register("pyarrow.Schema")
+@_schema.register("pyarrow.Schema")
 def from_pyarrow_schema(schema):
     from ibis.formats.pyarrow import PyArrowSchema
 
     return PyArrowSchema.to_ibis(schema)
 
 
-@infer.register("pandas.DataFrame")
+@_infer.register("pandas.DataFrame")
 def infer_pandas_dataframe(df):
     from ibis.formats.pandas import PandasData
 
     return PandasData.infer_table(df)
 
 
-@infer.register("pyarrow.Table")
+@_infer.register("pyarrow.Table")
 def infer_pyarrow_table(table):
     from ibis.formats.pyarrow import PyArrowSchema
 
     return PyArrowSchema.to_ibis(table.schema)
 
 
-@infer.register("polars.DataFrame")
-@infer.register("polars.LazyFrame")
+@_infer.register("polars.DataFrame")
+@_infer.register("polars.LazyFrame")
 def infer_polars_dataframe(df):
     from ibis.formats.polars import PolarsSchema
 
@@ -482,5 +511,5 @@ def infer_polars_dataframe(df):
 
 
 # lock the dispatchers to avoid adding new implementations
-del infer.register
-del schema.register
+del _infer.register
+del _schema.register

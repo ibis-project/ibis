@@ -85,6 +85,8 @@ class DatabricksCompiler(PySparkCompiler):
                 return self.cast(str(value), dt.float64)
         elif dtype.is_uuid():
             return sge.convert(str(value))
+        elif dtype.is_json():
+            return self.f.parse_json(value)
         else:
             return None
 

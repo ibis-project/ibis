@@ -9,7 +9,7 @@ import ibis.expr.datatypes.core as dt
 from ibis.common.exceptions import IbisTypeError
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable
 
 
 @public
@@ -67,17 +67,25 @@ def castable(source: dt.DataType, target: dt.DataType, value: Any = None) -> boo
             return source.is_integer()
     elif target.is_decimal():
         if source.is_decimal():
-            upcast_precision = (
-                source.precision is not None
-                and target.precision is not None
-                and source.precision <= target.precision
+            return (
+                # If either sides precision and scale are both `None`, return `True`.
+                (target.precision is None and target.scale is None)
+                or (source.precision is None and source.scale is None)
+                # Otherwise, return `True` unless we are downcasting precision or scale.
+                or (
+                    (
+                        target.precision is None
+                        or (
+                            source.precision is not None
+                            and target.precision >= source.precision
+                        )
+                    )
+                    and (
+                        target.scale is None
+                        or (source.scale is not None and target.scale >= source.scale)
+                    )
+                )
             )
-            upcast_scale = (
-                source.scale is not None
-                and target.scale is not None
-                and source.scale <= target.scale
-            )
-            return upcast_precision and upcast_scale
         else:
             return source.is_numeric()
     elif target.is_string():
@@ -140,7 +148,7 @@ def higher_precedence(left: dt.DataType, right: dt.DataType) -> dt.DataType:
 
 
 @public
-def highest_precedence(dtypes: Iterator[dt.DataType]) -> dt.DataType:
+def highest_precedence(dtypes: Iterable[dt.DataType]) -> dt.DataType:
     """Compute the highest precedence of `dtypes`."""
     if collected := list(dtypes):
         return functools.reduce(higher_precedence, collected)
