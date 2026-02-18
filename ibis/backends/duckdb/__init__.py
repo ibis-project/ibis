@@ -565,7 +565,8 @@ class Backend(
         paths
             File or list of files
         table_name
-            Optional table name
+            An optional name to use for the created table. This defaults to a
+            sequentially generated name.
         columns
             Optional mapping from string column name to duckdb type string.
         **kwargs
@@ -637,13 +638,13 @@ class Backend(
         types
             An optional mapping of a **subset** of column names to their types.
         **kwargs
-            Additional keyword arguments passed to DuckDB loading function. See
-            https://duckdb.org/docs/data/csv for more information.
+            Additional keyword arguments passed to DuckDB loading function.
+            See https://duckdb.org/docs/data/csv for more information.
 
         Returns
         -------
         ir.Table
-            The just-registered table
+            The just-registered table.
 
         Examples
         --------
@@ -766,7 +767,7 @@ class Backend(
         Returns
         -------
         ir.Table
-            The just-registered table
+            The just-registered table.
         """
 
         if not table_name:
@@ -821,11 +822,12 @@ class Backend(
         Returns
         -------
         ir.Table
-            The just-registered table
+            The just-registered table.
         """
         paths = util.normalize_filenames(paths)
 
-        table_name = table_name or util.gen_name("read_parquet")
+        if not table_name:
+            table_name = util.gen_name("read_parquet")
 
         if any(path.startswith(("http://", "https://", "s3://")) for path in paths):
             self._load_extensions(["httpfs"])
@@ -865,7 +867,8 @@ class Backend(
         if path.startswith(("http://", "https://", "s3://")):
             extensions.append("httpfs")
 
-        table_name = table_name or util.gen_name("read_delta")
+        if not table_name:
+            table_name = util.gen_name("read_delta")
 
         options = [
             sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
@@ -1057,6 +1060,7 @@ class Backend(
         path: str | Path,
         /,
         *,
+        table_name: str | None = None,
         sheet: str | None = None,
         range: str | None = None,
         **kwargs,
@@ -1069,10 +1073,15 @@ class Backend(
             The path to the Excel file.
         sheet
             The name of the sheet to read, eg 'Sheet3'.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
         range
             The range of cells to read, eg 'A5:Z'.
-        kwargs
-            Additional args passed to the backend's read function.
+        **kwargs
+            Additional keyword arguments passed to DuckDB loading function.
+            See https://duckdb.org/docs/stable/core_extensions/excel#reading-xlsx-files
+            for more information.
 
         Returns
         -------
@@ -1095,7 +1104,8 @@ class Backend(
         >>> t.columns
         ('a', 'b')
         """
-        table_name = util.gen_name("read_xlsx")
+        if not table_name:
+            table_name = util.gen_name("read_xlsx")
 
         if sheet:
             kwargs["sheet"] = sheet
