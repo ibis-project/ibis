@@ -57,6 +57,18 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         return self.fields[name]
 
     @classmethod
+    def _create_without_validation(
+        cls, fields: FrozenOrderedDict[str, dt.DataType]
+    ) -> Self:
+        """Internal method to create a Schema without validating the fields.
+
+        This method should be used to avoid redundant validation of already validated fields.
+        """
+        schema = cls.__new__(cls)
+        schema.__init__(fields=fields)
+        return schema
+
+    @classmethod
     def __coerce__(cls, value) -> Schema:
         if isinstance(value, cls):
             return value
