@@ -5,7 +5,6 @@ from __future__ import annotations
 import contextlib
 import operator
 import os
-from collections.abc import Iterable
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -32,7 +31,7 @@ from ibis.backends.impala.udf import (
 from ibis.backends.sql import SQLBackend
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterable, Mapping
     from pathlib import Path
     from urllib.parse import ParseResult
 
