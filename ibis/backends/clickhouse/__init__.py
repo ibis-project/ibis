@@ -44,6 +44,8 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
 
+    from ibis.expr.api import IntoMemtable
+
 
 def _to_memtable(v):
     return ibis.memtable(v).op() if not isinstance(v, ops.InMemoryTable) else v
@@ -409,7 +411,7 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table,
+        obj: IntoMemtable | ir.Table,
         *,
         settings: Mapping[str, Any] | None = None,
         overwrite: bool = False,
@@ -428,11 +430,15 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
             )
         elif isinstance(obj, pd.DataFrame):
             return self.con.insert_df(name, obj, settings=settings, **kwargs)
-        elif not isinstance(obj, ir.Table):
-            obj = ibis.memtable(obj)
+        source_table = self._ensure_table_to_insert(
+            target_columns=self.get_schema(name, database=database),
+            data=obj,
+        )
 
-        query = self._build_insert_from_table(target=name, source=obj, db=database)
-        external_tables = self._collect_in_memory_tables(obj, {})
+        query = self._build_insert_from_table(
+            data=source_table, table_name=name, db=database
+        )
+        external_tables = self._collect_in_memory_tables(source_table, {})
         external_data = self._normalize_external_tables(external_tables)
         return self.con.command(query.sql(self.dialect), external_data=external_data)
 

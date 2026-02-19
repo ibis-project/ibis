@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 
 import ibis.expr.datatypes as dt
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
@@ -31,8 +35,16 @@ class Base(ABC):
     @abstractmethod
     def compile(self): ...
 
-    def quote(self, ident):
+    def quote(self, ident: str) -> str:
         return sg.to_identifier(ident, quoted=True).sql(dialect=self.dialect)
+
+    def format_literal(self, value: Any, type: dt.DataType | str) -> str:
+        type = dt.dtype(type)
+        if value is None:
+            return "NULL"
+        if type.is_string():
+            return f"'{value}'"
+        return str(value)
 
     def scoped_name(
         self, obj_name: str, database: str | None = None, catalog: str | None = None
@@ -55,25 +67,22 @@ class Base(ABC):
         ]
         return "({})".format(",\n ".join(elements))
 
-    def format_partition(self, partition, partition_schema):
-        def _format_partition_kv(k, v, type):
-            if type == dt.string:
-                value_formatted = f'"{v}"'
-            else:
-                value_formatted = str(v)
-
-            return f"{k}={value_formatted}"
+    def format_partition(
+        self,
+        partition: dict[str, Any] | Iterable[str],
+        partition_schema: dict[str, dt.DataType],
+    ) -> str:
+        def _format_partition_kv(k: str, v: Any, type: dt.DataType) -> str:
+            return f"{self.quote(k)}={self.format_literal(v, type)}"
 
         tokens = []
         if isinstance(partition, dict):
-            for name in partition_schema:
+            for name, dtype in partition_schema.items():
                 if name in partition:
-                    tok = _format_partition_kv(
-                        name, partition[name], partition_schema[name]
-                    )
+                    tok = _format_partition_kv(name, partition[name], dtype)
                 else:
                     # dynamic partitioning
-                    tok = name
+                    tok = self.quote(name)
                 tokens.append(tok)
         else:
             for name, value in zip(partition_schema, partition):
