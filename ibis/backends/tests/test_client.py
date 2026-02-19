@@ -675,9 +675,21 @@ def test_insert_overwrite_from_expr(
     reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
     # Ref: https://materialize.com/docs/sql/begin/
 )
-def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
+@pytest.mark.parametrize(
+    "row_format",
+    ["dict", "tuple", "list"],
+)
+def test_insert_overwrite_from_list(con, employee_data_1_temp_table, row_format):
     def _emp(a, b, c, d):
-        return dict(first_name=a, last_name=b, department_name=c, salary=d)
+        d = dict(first_name=a, last_name=b, department_name=c, salary=d)
+        if row_format == "dict":
+            return d
+        elif row_format == "tuple":
+            return tuple(d.values())
+        elif row_format == "list":
+            return list(d.values())
+        else:
+            raise ValueError(f"unexpected row_format: {row_format}")
 
     con.insert(
         employee_data_1_temp_table,
