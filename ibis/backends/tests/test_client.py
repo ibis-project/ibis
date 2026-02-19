@@ -33,6 +33,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     ImpalaHiveServer2Error,
     OracleDatabaseError,
+    PsycoPg2ActiveSqlTransaction,
     PsycoPg2InternalError,
     PsycoPgUndefinedObject,
     Py4JJavaError,
@@ -1864,6 +1865,11 @@ def test_insert_errors_on_unknown_columns(con, monkeypatch):
 )
 @pytest.mark.notyet(
     ["impala"], reason="can't handle the default value in the CREATE TABLE statement"
+)
+@pytest.mark.notimpl(
+    ["materialize"],
+    reason="INSERT INTO ibis_temp_table_e7tuqcnf7jdn5c5oycxxc5d4wy (a) SELECT * FROM ibis_pandas_memtable_vlcyrj2lwnhqthuevzf5ny2pxa cannot be run inside a transaction block",
+    raises=PsycoPg2ActiveSqlTransaction,
 )
 def test_insert_works_for_missing_columns(con: SQLBackend, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
