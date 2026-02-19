@@ -1876,6 +1876,11 @@ def test_insert_errors_on_unknown_columns(con, monkeypatch):
     reason="'Backend' object has no attribute 'raw_sql'",
     raises=AttributeError,
 )
+@pytest.mark.notimpl(
+    ["oracle"],
+    reason="The table is created in the default schema, but the oracle backend looks for it in the `self.con.username.upper()` schema during self.get_schema() that is called in insert()",
+    raises=com.TableNotFound,
+)
 def test_insert_works_for_missing_columns(con: SQLBackend, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     with temp_table(con) as table_name:
