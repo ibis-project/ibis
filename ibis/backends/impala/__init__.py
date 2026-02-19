@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import operator
 import os
+from collections.abc import Iterable
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -40,6 +41,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     import ibis.expr.operations as ops
+    from ibis.expr.api import IntoMemtable
 
 
 __all__ = (
@@ -708,14 +710,14 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
 
     def insert(
         self,
-        name,
+        name: str,
         /,
-        obj=None,
+        obj: ir.Table | IntoMemtable,
         *,
-        database=None,
-        overwrite=False,
-        partition=None,
-        validate=True,
+        database: str | tuple[str, str] | None = None,
+        overwrite: bool = False,
+        partition: Iterable[str] | dict[str, Any] | None = None,
+        validate: bool = True,
     ) -> None:
         """Insert into an Impala table.
 
@@ -733,8 +735,8 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
             For partitioned tables, indicate the partition that's being
             inserted into, either with an ordered list of partition keys or a
             dict of partition field name to value. For example for the
-            partition (year=2007, month=7), this can be either (2007, 7) or
-            {'year': 2007, 'month': 7}.
+            partition (year=2007, region='CA'), this can be either (2007, 'CA') or
+            {'year': 2007, 'region': 'CA'}.
         validate
             If True, do more rigorous validation that schema of table being
             inserted is compatible with the existing table

@@ -55,8 +55,7 @@ class CreateDatabase(ImpalaBase, CreateDDL):
     def compile(self):
         name = self.quote(self.name)
 
-        create_decl = "CREATE DATABASE"
-        create_line = f"{create_decl} {self._if_exists()}{name}"
+        create_line = f"CREATE DATABASE {self._if_exists()}{name}"
         if self.path is not None:
             create_line += f"\nLOCATION '{self.path}'"
 
@@ -409,7 +408,8 @@ class PartitionProperties(ImpalaBase, DDL):
 
     def __init__(
         self,
-        table,
+        # Must already be fully qualified, eg `my_db`.`my_table`
+        table_location: str,
         partition,
         partition_schema,
         location=None,
@@ -417,7 +417,7 @@ class PartitionProperties(ImpalaBase, DDL):
         tbl_properties=None,
         serde_properties=None,
     ):
-        self.table = table
+        self.table_location = table_location
         self.location = location
         self.format = self.sanitize_format(format)
         self.tbl_properties = tbl_properties
@@ -431,7 +431,7 @@ class PartitionProperties(ImpalaBase, DDL):
             part = f"{self._command} {part}"
 
         props = self._format_properties()
-        return f"ALTER TABLE {self.table} {part}{props}"
+        return f"ALTER TABLE {self.table_location} {part}{props}"
 
     def _format_properties(self):
         tokens = []
@@ -583,7 +583,7 @@ class InsertSelect(ImpalaBase, DML):
         else:
             partition = ""
 
-        columns_str = "(" + ", ".join(f'"{col}"' for col in self.columns) + ")"
+        columns_str = "(" + ", ".join(self.quote(col) for col in self.columns) + ")"
         select_query = self.select
         scoped_name = self.scoped_name(self.table_name, self.database)
         return f"{cmd} {scoped_name} {columns_str} {partition}\n{select_query}"

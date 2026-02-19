@@ -1,1 +1,1 @@
-ALTER TABLE tbl ADD PARTITION (year=2007, month=4)
+ALTER TABLE tbl ADD PARTITION (`year`=2007, `region`='CA')
