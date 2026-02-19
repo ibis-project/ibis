@@ -754,7 +754,7 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
         catalog, db = self._to_catalog_db_tuple(table_loc)
         source_table = self._ensure_table_to_insert(
             target_columns=self.get_schema(name, catalog=catalog, database=db),
-            tablish=obj,
+            data=obj,
         )
         self._run_pre_execute_hooks(source_table)
 

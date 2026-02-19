@@ -1165,7 +1165,7 @@ $$ {defn["source"]} $$"""
 
         source_table = self._ensure_table_to_insert(
             target_columns=self.get_schema(name, catalog=catalog, database=db),
-            tablish=obj,
+            data=obj,
         )
 
         self._run_pre_execute_hooks(source_table)

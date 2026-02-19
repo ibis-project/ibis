@@ -454,7 +454,7 @@ class SQLBackend(BaseBackend):
 
         source_table = self._ensure_table_to_insert(
             target_columns=self.get_schema(name, catalog=catalog, database=db),
-            tablish=obj,
+            data=obj,
         )
 
         self._run_pre_execute_hooks(source_table)
@@ -470,15 +470,15 @@ class SQLBackend(BaseBackend):
         self,
         *,
         target_columns: Iterable[str],
-        tablish: ir.Table | IntoMemtable,
+        data: ir.Table | IntoMemtable,
     ) -> ir.Table:
         target_col_names = tuple(target_columns)
-        if isinstance(tablish, ir.Table):
-            source_table = tablish
+        if isinstance(data, ir.Table):
+            source_table = data
         else:
             from ibis.expr.api import _memtable
 
-            is_named, source_table = _memtable(tablish)
+            is_named, source_table = _memtable(data)
             if not is_named:
                 if len(source_table.schema()) != len(target_col_names):
                     raise exc.IbisTypeError(
@@ -610,7 +610,7 @@ class SQLBackend(BaseBackend):
 
         source_table = self._ensure_table_to_insert(
             target_columns=self.get_schema(name, catalog=catalog, database=db),
-            tablish=obj,
+            data=obj,
         )
 
         self._run_pre_execute_hooks(source_table)

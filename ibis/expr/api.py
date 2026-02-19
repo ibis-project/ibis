@@ -10,7 +10,16 @@ import numbers
 import operator
 from collections import Counter
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Any, NoReturn, Protocol, TypeVar, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    NoReturn,
+    Protocol,
+    TypeAlias,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
@@ -55,7 +64,6 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
     import pyarrow.dataset as ds
-    from typing_extensions import TypeAlias
 
 
 __all__ = (
@@ -427,8 +435,8 @@ def memtable(
 
         schema = ibis.schema(schema)
 
-    result: _MemtableResult = _memtable(data, schema=schema, columns=columns)
-    return result[1]
+    _, table = _memtable(data, schema=schema, columns=columns)
+    return table
 
 
 _MemtableResult: TypeAlias = tuple[bool, Table]
@@ -498,7 +506,7 @@ def _memtable(
             # eg data = [(1, 2), (3, 4)] and we didn't get passed schema or columns,
             # so pandas makes default int column names (0, 1, ...)
             is_named = False
-    _is_named, table_expr = _memtable(data, columns=columns, schema=schema)
+    _, table_expr = _memtable(data, columns=columns, schema=schema)
     return is_named, table_expr
 
 

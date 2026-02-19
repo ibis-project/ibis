@@ -635,7 +635,7 @@ class Backend(
         """
         source_table = self._ensure_table_to_insert(
             target_columns=self.get_schema(name, catalog=database, database=database),
-            tablish=obj,
+            data=obj,
         )
 
         self._run_pre_execute_hooks(source_table)

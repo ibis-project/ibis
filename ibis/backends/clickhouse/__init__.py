@@ -432,7 +432,7 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
             return self.con.insert_df(name, obj, settings=settings, **kwargs)
         source_table = self._ensure_table_to_insert(
             target_columns=self.get_schema(name, database=database),
-            tablish=obj,
+            data=obj,
         )
 
         query = self._build_insert_from_table(
