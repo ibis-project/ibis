@@ -1862,6 +1862,9 @@ def test_insert_errors_on_unknown_columns(con, monkeypatch):
 @pytest.mark.notimpl(
     ["flink"], reason="Temp tables are implemented as views, which don't support insert"
 )
+@pytest.mark.notyet(
+    ["impala"], reason="can't handle the default value in the CREATE TABLE statement"
+)
 def test_insert_works_for_missing_columns(con: SQLBackend, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     with temp_table(con) as table_name:

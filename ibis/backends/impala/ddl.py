@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 import sqlglot as sg
 
 import ibis.expr.schema as sch
 from ibis.backends.sql.datatypes import ImpalaType
 from ibis.backends.sql.ddl import DDL, DML, CreateDDL, DropFunction, DropObject
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class ImpalaBase:
@@ -551,6 +555,7 @@ class InsertSelect(ImpalaBase, DML):
         self,
         table_name,
         select_expr,
+        columns: Iterable[str],
         database=None,
         partition=None,
         partition_schema=None,
@@ -559,6 +564,7 @@ class InsertSelect(ImpalaBase, DML):
         self.table_name = table_name
         self.database = database
         self.select = select_expr
+        self.columns = columns
 
         self.partition = partition
         self.partition_schema = partition_schema
@@ -577,6 +583,7 @@ class InsertSelect(ImpalaBase, DML):
         else:
             partition = ""
 
+        columns_str = "(" + ", ".join(f'"{col}"' for col in self.columns) + ")"
         select_query = self.select
         scoped_name = self.scoped_name(self.table_name, self.database)
-        return f"{cmd} {scoped_name}{partition}\n{select_query}"
+        return f"{cmd} {scoped_name} {columns_str} {partition}\n{select_query}"

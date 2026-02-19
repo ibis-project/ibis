@@ -33,11 +33,11 @@ def test_select_basics(t, snapshot):
     expr = t.limit(10)
 
     select = str(ibis.to_sql(expr, "impala"))
-    stmt = InsertSelect(name, select, database="foo")
+    stmt = InsertSelect(name, select, expr.columns, database="foo")
     result = stmt.compile()
     snapshot.assert_match(result, "out1.sql")
 
-    stmt = InsertSelect(name, select, database="foo", overwrite=True)
+    stmt = InsertSelect(name, select, expr.columns, database="foo", overwrite=True)
     result = stmt.compile()
     snapshot.assert_match(result, "out2.sql")
 

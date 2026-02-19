@@ -786,6 +786,7 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
         statement = ddl.InsertSelect(
             self._fully_qualified_name(name, database),
             self.compile(source_table),
+            source_table.columns,
             partition=partition,
             partition_schema=partition_schema,
             overwrite=overwrite,
