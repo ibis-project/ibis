@@ -57,7 +57,7 @@ marks = {
     "execute": pytest.param(SQLBackend, "execute"),
     "create_view": pytest.param(SQLBackend, "create_view"),
     "drop_view": pytest.param(SQLBackend, "drop_view"),
-    "insert": pytest.param(SQLBackend, "insert", marks=pytest.mark.notyet(["impala"])),
+    "insert": pytest.param(SQLBackend, "insert"),
     "list_databases": pytest.param(CanCreateDatabase, "list_databases"),
     "list_tables": pytest.param(BaseBackend, "list_tables"),
     "read_csv": pytest.param(
