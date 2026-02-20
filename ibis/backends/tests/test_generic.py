@@ -1823,7 +1823,6 @@ def test_hashbytes(backend, alltypes):
         "polars",
         "postgres",
         "risingwave",
-        "snowflake",
         "trino",
         "athena",
     ]
