@@ -4572,8 +4572,10 @@ class Table(Expr, FixedTextJupyterMixin):
             An explicit sequence of values to look for in columns matching
             `names_from`.
 
-            * When this value is `None`, the values will be computed from
-              `names_from`.
+            * When this value is `None`, the values will be computed by executing
+              a query against the backend to discover unique values
+              from `names_from`. This breaks lazy evaluation and may be slow
+              on large or remote datasets.
             * When this value is not `None`, each element's length must match
               the length of `names_from`.
 
@@ -4878,8 +4880,9 @@ class Table(Expr, FixedTextJupyterMixin):
         │     … │        … │        … │        … │
         └───────┴──────────┴──────────┴──────────┘
 
-        Select a subset of names. This call incurs no computation when
-        constructing the expression.
+        Select a subset of names. Unlike the previous call,
+        providing names explicitly avoids executing a query
+        to discover unique values, keeping expression construction lazy.
 
         >>> production.pivot_wider(
         ...     names_from=["product", "country"],
