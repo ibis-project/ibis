@@ -333,6 +333,16 @@ $$""",
     def visit_RegexSplit(self, op, *, arg, pattern):
         return self.f.udf.regexp_split(arg, pattern)
 
+    def visit_HexDigest(self, op, *, arg, how):
+        if how == "md5":
+            return self.f.md5(arg)
+        elif how == "sha256":
+            return self.f.sha2(arg, 256)
+        elif how == "sha512":
+            return self.f.sha2(arg, 512)
+        else:
+            raise NotImplementedError(f"No available hashing function for {how}")
+
     def visit_Map(self, op, *, keys, values):
         return self.if_(
             sg.and_(self.f.is_array(keys), self.f.is_array(values)),
