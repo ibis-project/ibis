@@ -1346,6 +1346,7 @@ class Backend(
         """
         self._run_pre_execute_hooks(expr)
         table_expr = expr.as_table()
+        table_expr = _cast_any_uuids_to_blob(table_expr)
         sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
         if table_expr.schema().geospatial:
             self._load_extensions(["spatial"])
@@ -1823,3 +1824,10 @@ def _pyarrow_rbr(source, table_name, _conn, **_: Any):
     # Ensure the reader isn't marked as started, in case the name is
     # being overwritten.
     _conn._record_batch_readers_consumed[table_name] = False
+
+
+def _cast_any_uuids_to_blob(t: ir.Table) -> ir.Table:
+    """When duckdb materializes UUIDs to arrow, by default it returns them as pa.string()s. This pre-converts them to BLOB."""
+    return t.mutate(
+        **{col: t[col].cast("binary") for col in t.columns if t[col].type().is_uuid()}
+    )
