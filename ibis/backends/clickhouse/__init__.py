@@ -90,6 +90,7 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
 
     def do_connect(
         self,
+        *,
         host: str = "localhost",
         port: int | None = None,
         database: str = "default",

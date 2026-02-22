@@ -39,7 +39,7 @@ class Backend(SupportsTempTables, BaseBackend, NoUrl, DirectExampleLoader):
         self._context = pl.SQLContext()
 
     def do_connect(
-        self, tables: Mapping[str, pl.LazyFrame | pl.DataFrame] | None = None
+        self, tables: Mapping[str, pl.LazyFrame | pl.DataFrame] | None = None, /
     ) -> None:
         """Construct a client from a dictionary of polars `LazyFrame`s and/or `DataFrame`s.
 
