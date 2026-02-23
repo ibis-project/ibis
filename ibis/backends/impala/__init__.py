@@ -40,7 +40,6 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     import ibis.expr.operations as ops
-    from ibis.expr.api import IntoMemtable
 
 
 __all__ = (
@@ -711,7 +710,7 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
         self,
         name: str,
         /,
-        obj: ir.Table | IntoMemtable,
+        obj: ir.Table | Any,
         *,
         database: str | tuple[str, str] | None = None,
         overwrite: bool = False,
