@@ -835,7 +835,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             id="timestamp-subtract-timestamp",
             marks=[
                 pytest.mark.notimpl(
-                    ["bigquery", "snowflake", "sqlite", "exasol", "mssql"],
+                    ["snowflake", "sqlite", "exasol", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
