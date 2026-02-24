@@ -130,7 +130,6 @@ class BigQueryCompiler(SQLGlotCompiler):
     }
 
     UNSUPPORTED_OPS = (
-        ops.DateDiff,
         ops.ExtractAuthority,
         ops.ExtractUserInfo,
         ops.FindInSet,
@@ -373,6 +372,9 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     def visit_DateDelta(self, op, *, left, right, part):
         return sge.DateDiff(this=left, expression=right, unit=self.v[part])
+
+    def visit_DateDiff(self, op, *, left, right):
+        return sge.DateDiff(this=left, expression=right, unit=self.v.DAY)
 
     def visit_TimestampDelta(self, op, *, left, right, part):
         left_tz = op.left.dtype.timezone
