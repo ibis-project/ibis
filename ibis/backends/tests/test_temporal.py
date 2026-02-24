@@ -879,7 +879,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             id="date-subtract-date",
             marks=[
                 pytest.mark.notimpl(
-                    ["bigquery", "druid", "flink", "mssql"],
+                    ["druid", "flink", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(

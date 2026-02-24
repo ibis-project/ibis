@@ -33,11 +33,11 @@ def test_select_basics(t, snapshot):
     expr = t.limit(10)
 
     select = str(ibis.to_sql(expr, "impala"))
-    stmt = InsertSelect(name, select, database="foo")
+    stmt = InsertSelect(name, select, expr.columns, database="foo")
     result = stmt.compile()
     snapshot.assert_match(result, "out1.sql")
 
-    stmt = InsertSelect(name, select, database="foo", overwrite=True)
+    stmt = InsertSelect(name, select, expr.columns, database="foo", overwrite=True)
     result = stmt.compile()
     snapshot.assert_match(result, "out2.sql")
 
@@ -54,7 +54,7 @@ def test_cache_table_pool_name(snapshot):
 
 @pytest.fixture
 def part_schema():
-    return ibis.schema([("year", "int32"), ("month", "int32")])
+    return ibis.schema([("year", "int32"), ("region", "string")])
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def table_name():
 
 
 def test_add_partition(part_schema, table_name, snapshot):
-    stmt = ddl.AddPartition(table_name, {"year": 2007, "month": 4}, part_schema)
+    stmt = ddl.AddPartition(table_name, {"year": 2007, "region": "CA"}, part_schema)
 
     result = stmt.compile()
     snapshot.assert_match(result, "out.sql")
@@ -78,7 +78,7 @@ def test_add_partition_string_key(snapshot):
 
 
 def test_drop_partition(part_schema, table_name, snapshot):
-    stmt = ddl.DropPartition(table_name, {"year": 2007, "month": 4}, part_schema)
+    stmt = ddl.DropPartition(table_name, {"year": 2007, "region": "CA"}, part_schema)
 
     result = stmt.compile()
     snapshot.assert_match(result, "out.sql")
@@ -87,7 +87,7 @@ def test_drop_partition(part_schema, table_name, snapshot):
 def test_add_partition_with_props(part_schema, table_name, snapshot):
     props = {"location": "/users/foo/my-data"}
     stmt = ddl.AddPartition(
-        table_name, {"year": 2007, "month": 4}, part_schema, **props
+        table_name, {"year": 2007, "region": "CA"}, part_schema, **props
     )
 
     result = stmt.compile()
@@ -95,7 +95,7 @@ def test_add_partition_with_props(part_schema, table_name, snapshot):
 
 
 def test_alter_partition_properties(part_schema, table_name, snapshot):
-    part = {"year": 2007, "month": 4}
+    part = {"year": 2007, "region": "CA"}
 
     def _get_ddl_string(props):
         stmt = ddl.AlterPartition(table_name, part, part_schema, **props)
@@ -115,7 +115,7 @@ def test_alter_partition_properties(part_schema, table_name, snapshot):
 
 
 def test_alter_table_properties(part_schema, table_name, snapshot):
-    part = {"year": 2007, "month": 4}
+    part = {"year": 2007, "region": "CA"}
 
     def _get_ddl_string(props):
         stmt = ddl.AlterPartition(table_name, part, part_schema, **props)
