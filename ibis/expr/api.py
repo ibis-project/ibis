@@ -9,7 +9,8 @@ import itertools
 import numbers
 import operator
 from collections import Counter
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from collections.abc import Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Protocol, TypeAlias, TypeVar, Union, overload
 
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
@@ -46,7 +47,7 @@ from ibis.util import experimental
 
 if TYPE_CHECKING:
     import uuid as pyuuid
-    from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Callable, Sequence
     from pathlib import Path
 
     import geopandas as gpd
@@ -336,7 +337,7 @@ def table(
 
 
 def memtable(
-    data,
+    data: IntoMemtable,
     /,
     *,
     columns: Iterable[str] | None = None,
@@ -426,6 +427,37 @@ def memtable(
         schema = ibis.schema(schema)
 
     return _memtable(data, schema=schema, columns=columns)
+
+
+class _HasArrowCStream(Protocol):
+    """Has https://arrow.apache.org/docs/dev/format/CDataInterface/PyCapsuleInterface.html."""
+
+    def __arrow_c_stream__(self, requested_schema: object | None = None) -> Any: ...
+
+
+IntoMemtable: TypeAlias = Union[
+    Iterable[Mapping[str, Any]],
+    Iterable[Iterable[Any]],
+    Mapping[str, Iterable[Any]],
+    "pd.DataFrame",
+    _HasArrowCStream,
+    "ds.Dataset",
+    "pl.DataFrame",
+    "pl.LazyFrame",
+    "gpd.GeoDataFrame",
+]
+"""An object that can be converted to an in-memory Table using `ibis.memtable()`.
+
+Supported types include:
+- Iterable of mappings, eg `[{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}]`
+- Mapping to iterables, eg `{"a": [1, 2], "b": ["foo", "baz"]}`
+- Iterable of iterables, eg `[(1, "foo"), (2, "baz")]`
+- `pandas.DataFrame`
+- `pyarrow.Table` (and any object supporting the Arrow C stream interface)
+- `pyarrow.dataset.Dataset`
+- `polars.DataFrame` and `polars.LazyFrame`
+- `geopandas.GeoDataFrame`
+"""
 
 
 @lazy_singledispatch
