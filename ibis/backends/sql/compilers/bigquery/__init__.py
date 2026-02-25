@@ -136,7 +136,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.Median,
         ops.RegexSplit,
         ops.RowID,
-        ops.TimestampDiff,
         ops.Kurtosis,
     )
 
@@ -389,6 +388,9 @@ class BigQueryCompiler(SQLGlotCompiler):
         raise com.UnsupportedOperationError(
             "timestamp difference with mixed timezone/timezoneless values is not implemented"
         )
+
+    def visit_TimestampDiff(self, op, *, left, right):
+        return sge.TimestampDiff(this=left, expression=right, unit=self.v.SECOND)
 
     def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
         if where is not None:

@@ -1118,7 +1118,7 @@ def test_interactive(alltypes, monkeypatch):
     expr = alltypes.mutate(
         str_col=_.string_col.replace("1", "").nullif("2"),
         date_col=_.timestamp_col.date(),
-        delta_col=lambda t: ibis.now() - t.timestamp_col,
+        delta_col=lambda t: ibis.now() - t.timestamp_col.cast("timestamp('UTC')"),
     )
 
     repr(expr)
