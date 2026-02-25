@@ -21,7 +21,6 @@ import sqlglot.expressions as sge
 import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -39,7 +38,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable, Iterator, Mapping
+    from collections.abc import Generator, Iterator, Mapping
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -536,7 +535,7 @@ $$ {defn["source"]} $$"""
         *,
         catalog: str | None = None,
         database: str | None = None,
-    ) -> Iterable[tuple[str, dt.DataType]]:
+    ) -> sch.Schema:
         import snowflake.connector
 
         # this will always show temp tables with the same name as a non-temp
