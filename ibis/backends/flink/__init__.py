@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from pyflink.table import Table, TableEnvironment
     from pyflink.table.table_result import TableResult
 
-    from ibis.expr.api import Watermark
+    from ibis.expr.api import IntoMemtable, Watermark
 
 _INPUT_TYPE_TO_FUNC_TYPE = {InputType.PYTHON: "general", InputType.PANDAS: "pandas"}
 
@@ -903,7 +903,7 @@ class Backend(
         self,
         name: str,
         /,
-        obj: pa.Table | pd.DataFrame | ir.Table | list | dict,
+        obj: ir.Table | IntoMemtable,
         *,
         database: str | None = None,
         catalog: str | None = None,

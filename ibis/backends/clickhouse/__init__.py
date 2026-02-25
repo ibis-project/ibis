@@ -44,6 +44,8 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
 
+    from ibis.expr.api import IntoMemtable
+
 
 def _to_memtable(v):
     return ibis.memtable(v).op() if not isinstance(v, ops.InMemoryTable) else v
@@ -409,7 +411,7 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table,
+        obj: IntoMemtable | ir.Table,
         *,
         settings: Mapping[str, Any] | None = None,
         overwrite: bool = False,

@@ -53,6 +53,8 @@ if TYPE_CHECKING:
     from google.cloud.bigquery.table import RowIterator
     from google.cloud.bigquery.table import TableListItem as BqTableListItem
 
+    from ibis.expr.api import IntoMemtable
+
 
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]
 EXTERNAL_DATA_SCOPES = [
@@ -856,7 +858,7 @@ class Backend(
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table | list | dict,
+        obj: ir.Table | IntoMemtable,
         *,
         database: str | None = None,
         overwrite: bool = False,
@@ -899,7 +901,7 @@ class Backend(
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table | list | dict,
+        obj: ir.Table | IntoMemtable,
         on: str,
         *,
         database: str | None = None,

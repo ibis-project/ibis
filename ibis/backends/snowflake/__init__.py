@@ -47,6 +47,8 @@ if TYPE_CHECKING:
     import snowflake.connector
     import snowflake.snowpark
 
+    from ibis.expr.api import IntoMemtable
+
 
 @contextlib.contextmanager
 def download_file(url: str) -> Generator[str]:
@@ -1128,7 +1130,7 @@ $$ {defn["source"]} $$"""
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table | list | dict,
+        obj: IntoMemtable | ir.Table,
         *,
         database: str | None = None,
         overwrite: bool = False,

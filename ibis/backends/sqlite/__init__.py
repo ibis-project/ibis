@@ -38,6 +38,8 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
 
+    from ibis.expr.api import IntoMemtable
+
 
 @functools.cache
 def _init_sqlite3():
@@ -606,7 +608,7 @@ class Backend(
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table | list | dict,
+        obj: ir.Table | IntoMemtable,
         *,
         database: str | None = None,
         overwrite: bool = False,

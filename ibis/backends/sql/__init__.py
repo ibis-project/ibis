@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     from ibis.backends.sql.compilers.base import SQLGlotCompiler
+    from ibis.expr.api import IntoMemtable
     from ibis.expr.schema import IntoSchema
 
 
@@ -412,7 +413,7 @@ class SQLBackend(BaseBackend):
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table | list | dict,
+        obj: ir.Table | IntoMemtable,
         *,
         database: str | None = None,
         overwrite: bool = False,
@@ -548,7 +549,7 @@ class SQLBackend(BaseBackend):
         self,
         name: str,
         /,
-        obj: pd.DataFrame | ir.Table | list | dict,
+        obj: ir.Table | IntoMemtable,
         on: str,
         *,
         database: str | None = None,
