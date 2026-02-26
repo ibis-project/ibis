@@ -35,12 +35,23 @@ class Orderable(Filterable, Reduction):
     order_by: VarTuple[SortKey] = ()
 
 
+def reduction_order_by(value: Reduction) -> VarTuple[SortKey]:
+    """Return reduction-level ordering keys used for window lowering."""
+    if isinstance(value, Orderable):
+        return value.order_by
+    return ()
+
+
 @public
 class First(Orderable):
     """Retrieve the first element."""
 
     arg: Column[dt.Any]
     include_null: bool = False
+
+    @attribute
+    def order_by_keys(self) -> VarTuple[SortKey]:
+        return reduction_order_by(self)
 
     dtype = rlz.dtype_like("arg")
 
@@ -51,6 +62,10 @@ class Last(Orderable):
 
     arg: Column[dt.Any]
     include_null: bool = False
+
+    @attribute
+    def order_by_keys(self) -> VarTuple[SortKey]:
+        return reduction_order_by(self)
 
     dtype = rlz.dtype_like("arg")
 

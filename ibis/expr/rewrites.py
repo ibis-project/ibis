@@ -261,7 +261,7 @@ def project_wrap_reduction(_, rel):
     if _.relations == {rel}:
         # The reduction is fully originating from the `rel`, so turn
         # it into a window function of `rel`
-        return ops.WindowFunction(_, order_by=getattr(_, "order_by", ()))
+        return ops.WindowFunction(_, order_by=_window_orderings(_, ()))
     else:
         # 1. The reduction doesn't depend on any table, constructed from
         #    scalar values, so turn it into a scalar subquery.
@@ -304,6 +304,13 @@ def rewrite_filter_input(value):
     )
 
 
+def _window_orderings(value: ops.Value, orderings) -> tuple[ops.SortKey, ...]:
+    reduction_orderings = tuple(
+        getattr(value, "order_by_keys", getattr(value, "order_by", ()))
+    )
+    return tuple(toolz.unique((*reduction_orderings, *orderings)))
+
+
 @replace(p.Analytic | p.Reduction)
 def window_wrap_reduction(_, window):
     # Wrap analytic and reduction functions in a window function. Used in the
@@ -314,7 +321,7 @@ def window_wrap_reduction(_, window):
         start=window.start,
         end=window.end,
         group_by=window.groupings,
-        order_by=window.orderings,
+        order_by=_window_orderings(_, window.orderings),
     )
 
 

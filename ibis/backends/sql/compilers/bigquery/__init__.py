@@ -436,6 +436,18 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     visit_ApproxMultiQuantile = visit_ApproxQuantile
 
+    def _compile_window_first_last_value(self, op, *, arg, name: str):
+        func = self.f[name](arg)
+        if not getattr(op, "include_null", False):
+            return sge.IgnoreNulls(this=func)
+        return func
+
+    def visit_FirstValue(self, op, *, arg):
+        return self._compile_window_first_last_value(op, arg=arg, name="first_value")
+
+    def visit_LastValue(self, op, *, arg):
+        return self._compile_window_first_last_value(op, arg=arg, name="last_value")
+
     def visit_FloorDivide(self, op, *, left, right):
         return self.cast(self.f.floor(self.f.ieee_divide(left, right)), op.dtype)
 

@@ -468,6 +468,35 @@ def test_window_function(alltypes, window, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
+def test_window_first_value_ignores_nulls_by_default(alltypes):
+    window = ibis.window(order_by=alltypes.year)
+    expr = alltypes.string_col.first().over(window).name("tmp")
+    sql = to_sql(expr)
+
+    assert "FIRST_VALUE(" in sql
+    assert "IGNORE NULLS" in sql
+
+
+def test_window_last_value_include_null_respected(alltypes):
+    window = ibis.window(order_by=alltypes.year)
+    expr = alltypes.string_col.last(include_null=True).over(window).name("tmp")
+    sql = to_sql(expr)
+
+    assert "LAST_VALUE(" in sql
+    assert "IGNORE NULLS" not in sql
+
+
+def test_window_first_value_uses_reduction_and_window_ordering(alltypes):
+    window = ibis.window(order_by=alltypes.year, preceding=1, following=0)
+    expr = alltypes.string_col.first(order_by=alltypes.month).over(window).name("tmp")
+    sql = to_sql(expr)
+
+    assert "FIRST_VALUE(" in sql
+    assert "ORDER BY" in sql
+    assert "month" in sql and "year" in sql
+    assert "ROWS BETWEEN" in sql
+
+
 @pytest.mark.parametrize(
     "window",
     [
