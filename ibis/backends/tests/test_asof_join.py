@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import operator
-
 import pytest
 
 import ibis
@@ -79,9 +77,17 @@ def time_keyed_right(time_keyed_df2):
     return ibis.memtable(time_keyed_df2)
 
 
-@pytest.mark.parametrize(
-    ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
+mark_direction_on = pytest.mark.parametrize(
+    ("direction", "on_func"),
+    [
+        pytest.param("backward", lambda left, right: left >= right, id="ge"),
+        pytest.param("forward", lambda left, right: left <= right, id="le"),
+        pytest.param("backward", lambda _left, _right: "time", id="string"),
+    ],
 )
+
+
+@mark_direction_on
 @pytest.mark.notyet(
     "clickhouse",
     reason="does not support asof joins that do not also have an equality predicate on the join.",
@@ -105,8 +111,8 @@ def time_keyed_right(time_keyed_df2):
         "athena",
     ]
 )
-def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op):
-    on = op(time_left["time"], time_right["time"])
+def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, on_func):
+    on = on_func(time_left["time"], time_right["time"])
     expr = time_left.asof_join(time_right, on)
 
     result = con.execute(expr)
@@ -126,9 +132,7 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
         tm.assert_series_equal(result["time"], result["time_right"])
 
 
-@pytest.mark.parametrize(
-    ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
-)
+@mark_direction_on
 @pytest.mark.notyet(
     [
         "datafusion",
@@ -149,9 +153,9 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
     ]
 )
 def test_noop_keyed_asof_join(
-    con, time_left, time_right, time_df1, time_df2, direction, op
+    con, time_left, time_right, time_df1, time_df2, direction, on_func
 ):
-    on = op(time_left["time"], time_right["time"])
+    on = on_func(time_left["time"], time_right["time"])
     expr = time_left.asof_join(time_right, on, "group")
 
     result = con.execute(expr)
@@ -168,9 +172,7 @@ def test_noop_keyed_asof_join(
         tm.assert_series_equal(result["time"], result["time_right"])
 
 
-@pytest.mark.parametrize(
-    ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
-)
+@mark_direction_on
 @pytest.mark.notimpl(
     ["clickhouse"], raises=AssertionError, reason="`time` is truncated to seconds"
 )
@@ -200,9 +202,9 @@ def test_keyed_asof_join(
     time_keyed_df1,
     time_keyed_df2,
     direction,
-    op,
+    on_func,
 ):
-    on = op(time_keyed_left["time"], time_keyed_right["time"])
+    on = on_func(time_keyed_left["time"], time_keyed_right["time"])
     expr = time_keyed_left.asof_join(time_keyed_right, on, "key")
 
     result = con.execute(expr)
@@ -219,9 +221,8 @@ def test_keyed_asof_join(
         tm.assert_series_equal(result["time"], result["time_right"])
 
 
-@pytest.mark.parametrize(
-    ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
-)
+@mark_direction_on
+@pytest.mark.parametrize("right_column_key", [None, "on_right_time"])
 @pytest.mark.notimpl(
     ["clickhouse"], raises=AssertionError, reason="`time` is truncated to seconds"
 )
@@ -254,9 +255,20 @@ def test_keyed_asof_join_with_tolerance(
     time_keyed_df1,
     time_keyed_df2,
     direction,
-    op,
+    on_func,
+    right_column_key,
 ):
-    on = op(time_keyed_left["time"], time_keyed_right["time"])
+    left_key = right_key = "time"
+    if right_column_key:
+        right_key = right_column_key
+        time_keyed_right = time_keyed_right.rename({right_column_key: "time"})
+        assert left_key != right_key
+
+    on = on_func(time_keyed_left[left_key], time_keyed_right[right_key])
+    if (right_column_key is not None) and isinstance(on, str) and on == "time":
+        pytest.xfail(
+            "The right column was renamed away from the original name of `time`."
+        )
     expr = time_keyed_left.asof_join(
         time_keyed_right, on, "key", tolerance=ibis.interval(days=2)
     )
