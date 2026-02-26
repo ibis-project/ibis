@@ -507,26 +507,23 @@ def add_one_to_nth_value_input(_, **kwargs):
     return _.copy(nth=nth)
 
 
-@replace(p.WindowFunction(order_by=()))
-def rewrite_empty_order_by_window(_, **kwargs):
-    return _.copy(order_by=(ops.NULL,))
-
-
 @replace(p.WindowFunction(p.RowNumber | p.NTile))
-def exclude_unsupported_window_frame_from_row_number(_, **kwargs):
-    return ops.Subtract(_.copy(start=None, end=0), 1)
+def row_number_one_to_zero_index(_, **kwargs):
+    return ops.Subtract(_, 1)
 
 
-@replace(p.WindowFunction(p.MinRank | p.DenseRank, start=None))
-def exclude_unsupported_window_frame_from_rank(_, **kwargs):
+@replace(p.WindowFunction(p.MinRank | p.DenseRank))
+def rank_one_to_zero_index(_, **kwargs):
     return ops.Subtract(
-        _.copy(start=None, end=0, order_by=_.order_by or (ops.NULL,)), 1
+        _, 1
     )
 
 
-@replace(p.WindowFunction(p.Lag | p.Lead | p.PercentRank | p.CumeDist, start=None))
+@replace(p.WindowFunction(p.Lag | p.Lead | p.PercentRank | p.CumeDist))
 def exclude_unsupported_window_frame_from_ops(_, **kwargs):
-    return _.copy(start=None, end=0, order_by=_.order_by or (ops.NULL,))
+    """ Some window functions don't make sense with a frame, e.g.
+    navigation functions, so set an unbounded frame. """
+    return _.copy(start=None, end=None)
 
 
 # Rewrite rules for lowering a high-level operation into one composed of more

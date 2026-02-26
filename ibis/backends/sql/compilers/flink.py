@@ -13,8 +13,8 @@ from ibis.backends.sql.datatypes import FlinkType
 from ibis.backends.sql.dialects import Flink
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
-    exclude_unsupported_window_frame_from_rank,
-    exclude_unsupported_window_frame_from_row_number,
+    rank_one_to_zero_index,
+    row_number_one_to_zero_index,
     split_select_distinct_with_order_by,
 )
 
@@ -61,9 +61,9 @@ class FlinkCompiler(SQLGlotCompiler):
     agg = FlinkAggGen()
 
     rewrites = (
-        exclude_unsupported_window_frame_from_row_number,
+        row_number_one_to_zero_index,
         exclude_unsupported_window_frame_from_ops,
-        exclude_unsupported_window_frame_from_rank,
+        rank_one_to_zero_index,
         *SQLGlotCompiler.rewrites,
     )
     post_rewrites = (split_select_distinct_with_order_by,)

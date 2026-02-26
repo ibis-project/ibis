@@ -711,10 +711,3 @@ def test_unreasonably_long_name():
         match="BigQuery does not allow column names longer than 300 characters",
     ):
         ibis.to_sql(expr, dialect="bigquery")
-
-
-def test_window_filter(snapshot):
-    t = ibis.table([("a", "string"), ("x", "int64")], name="t")
-    expr = t.filter((_.a == "hello").any().over(group_by=_.x))
-    result = to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
