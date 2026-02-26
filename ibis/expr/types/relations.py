@@ -25,6 +25,7 @@ from ibis.expr.types.core import Expr
 from ibis.expr.types.generic import Value, literal
 from ibis.expr.types.rich import FixedTextJupyterMixin, to_rich
 from ibis.expr.types.temporal import TimestampColumn
+from ibis.tstring import PTemplate
 from ibis.util import deprecated, experimental
 
 if TYPE_CHECKING:
@@ -483,6 +484,9 @@ def bind(table: Table, value) -> Iterator[ir.Value]:
         yield value.resolve(table)
     elif isinstance(value, Resolver):
         yield value.resolve({"_": table})
+    elif isinstance(value, PTemplate):
+        sql_value = ibis.sql_value(value)
+        yield from bind(table, sql_value)
     elif isinstance(value, Expandable):
         yield from value.expand(table)
     elif callable(value):
