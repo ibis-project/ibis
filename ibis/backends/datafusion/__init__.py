@@ -536,6 +536,7 @@ class Backend(
         self._register_in_memory_tables(expr)
 
         table_expr = expr.as_table()
+        table_expr = _cast_any_uuids_to_blob(table_expr)
         raw_sql = self.compile(table_expr, **kwargs)
 
         frame = self.con.sql(raw_sql)
@@ -808,3 +809,10 @@ def _pandas(source: pd.DataFrame, table_name, _conn, overwrite: bool = False):
     tmp_name = gen_name("pandas")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
         _conn.con.from_pandas(source, name=tmp_name)
+
+
+def _cast_any_uuids_to_blob(t: ir.Table) -> ir.Table:
+    """When duckdb materializes UUIDs to arrow, by default it returns them as pa.string()s. This pre-converts them to BLOB."""
+    return t.mutate(
+        **{col: t[col].cast("binary") for col in t.columns if t[col].type().is_uuid()}
+    )

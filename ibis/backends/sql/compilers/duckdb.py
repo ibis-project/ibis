@@ -422,17 +422,25 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.f[func](*args)
 
     def visit_Cast(self, op, *, arg, to):
-        dtype = op.arg.dtype
+        from_ = op.arg.dtype
         if to.is_interval():
             func = self.f[f"to_{_INTERVAL_SUFFIXES[to.unit.short]}"]
             return func(sg.cast(arg, to=self.type_mapper.from_ibis(dt.int32)))
-        elif to.is_timestamp() and dtype.is_numeric():
+        elif to.is_timestamp() and from_.is_numeric():
             return self.f.to_timestamp(arg)
         elif to.is_geospatial():
-            if dtype.is_binary():
+            if from_.is_binary():
                 return self.f.st_geomfromwkb(arg)
-            elif dtype.is_string():
+            elif from_.is_string():
                 return self.f.st_geomfromtext(arg)
+        elif from_.is_uuid() and to.is_binary():
+            # In duckdb <=1.3, must do cast(replace(cast(uuid_val AS VARCHAR), '-', '') AS BLOB)
+            # Once https://github.com/duckdb/duckdb/pull/18027 is released (duckdb 1.4??)
+            # this can be simplified to `CAST(uuid_val AS BLOB)`
+            hex_string = self.f.replace(
+                sg.cast(arg, to=self.type_mapper.from_ibis(dt.string)), "-", ""
+            )
+            return self.f.unhex(hex_string)
 
         return self.cast(arg, to)
 

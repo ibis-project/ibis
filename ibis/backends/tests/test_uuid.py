@@ -94,3 +94,29 @@ def test_uuid_unique_each_row(con):
         con.tables.functional_alltypes.mutate(uuid=ibis.uuid()).limit(2).uuid.nunique()
     )
     assert expr.execute() == 2
+
+
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=NotImplementedError,
+)
+def test_uuid_scalar_to_pyarrow(con):
+    expr = ibis.uuid(TEST_UUID)
+    result = con.to_pyarrow(expr)
+    assert result.type.extension_name == "arrow.uuid"
+    result_python = result.as_py()
+    assert result_python == TEST_UUID
+
+
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=NotImplementedError,
+)
+def test_uuid_column_to_pyarrow(con):
+    expr = con.tables.functional_alltypes.mutate(uuid=ibis.uuid()).limit(2).uuid
+    result = con.to_pyarrow(expr)
+    assert result.type.extension_name == "arrow.uuid"
+    result_python = result.to_pylist()
+    assert len(result_python) == 2
+    assert isinstance(result_python[0], uuid.UUID)
+    assert isinstance(result_python[1], uuid.UUID)

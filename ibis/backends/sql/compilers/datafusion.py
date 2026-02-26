@@ -145,6 +145,8 @@ class DataFusionCompiler(SQLGlotCompiler):
             from ibis.formats.pyarrow import PyArrowType
 
             return self.f.arrow_cast(arg, f"{PyArrowType.from_ibis(to)}".capitalize())
+        if from_.is_uuid() and to.is_binary():
+            return self.f.cast_uuid_to_binary(arg)
         return self.cast(arg, to)
 
     def visit_Arbitrary(self, op, *, arg, where):
