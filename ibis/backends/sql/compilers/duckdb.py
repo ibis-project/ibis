@@ -713,5 +713,19 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_StringToTime(self, op, *, arg, format_str):
         return self.cast(self.f.str_to_time(arg, format_str), to=dt.time)
 
+    def visit_LastValue(self, op, *, arg, include_null):
+        return (
+            self.f.last_value(arg)
+            if include_null
+            else sge.IgnoreNulls(this=self.f.last_value(arg))
+        )
+
+    def visit_FirstValue(self, op, *, arg, include_null):
+        return (
+            self.f.first_value(arg)
+            if include_null
+            else sge.IgnoreNulls(this=self.f.first_value(arg))
+        )
+
 
 compiler = DuckDBCompiler()
