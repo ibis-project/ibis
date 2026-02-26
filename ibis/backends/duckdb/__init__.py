@@ -1327,6 +1327,21 @@ class Backend(
 
         super()._run_pre_execute_hooks(expr)
 
+    def compile(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        limit: str | int | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+        pretty: bool = False,
+    ) -> str:
+        if isinstance(expr, ir.Table):
+            expr = expr.mutate(
+                **{col: expr[col].as_binary() for col in expr.schema().geospatial}
+            )
+        return super().compile(expr, limit=limit, params=params, pretty=pretty)
+
     def _to_duckdb_relation(
         self,
         expr: ir.Expr,
