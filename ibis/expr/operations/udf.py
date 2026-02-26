@@ -50,8 +50,16 @@ class InputType(enum.Enum):
     PYTHON = enum.auto()
 
 
+class _UDFMixin:
+    __input_type__: InputType
+    __func__: Callable
+    __func_name__: str
+    __config__: FrozenDict
+    __udf_namespace__: ops.Namespace
+
+
 @public
-class ScalarUDF(ops.Impure):
+class ScalarUDF(ops.Impure, _UDFMixin):
     @attribute
     def shape(self):
         if not (args := getattr(self, "args")):  # noqa: B009
@@ -65,7 +73,7 @@ class ScalarUDF(ops.Impure):
 
 
 @public
-class AggUDF(ops.Reduction, ops.Impure):
+class AggUDF(ops.Reduction, ops.Impure, _UDFMixin):
     where: Optional[ops.Value[dt.Boolean]] = None
 
 
@@ -479,7 +487,7 @@ class scalar(_UDF):
         ... def str_cap(x: str) -> str:
         ...     # note usage of pandas `str` method
         ...     return x.str.capitalize()
-        >>> str_cap(t.str_col)  # doctest: +SKIP
+        >>> str_cap(t.str_col)
         ┏━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ string_cap_0(str_col) ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━┩

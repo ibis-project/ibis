@@ -33,6 +33,7 @@ from ibis.backends import (
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
+from ibis.backends.sql.rewrites import convert_pandas_udf_to_pyarrow
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 
@@ -1764,20 +1765,22 @@ class Backend(
             if registration_func is not None:
                 registration_func(con)
 
-    def _register_udf(self, udf_node: ops.ScalarUDF):
+    def _register_udf(
+        self,
+        udf_node: ops.ScalarUDF,
+        *,
+        func: callable | None = None,
+        input_type: InputType | None = None,
+    ):
         type_mapper = self.compiler.type_mapper
-        input_types = [
-            type_mapper.to_string(param.annotation.pattern.dtype)
-            for param in udf_node.__signature__.parameters.values()
-        ]
 
         def register_udf(con):
             return con.create_function(
                 name=type(udf_node).__name__,
-                function=udf_node.__func__,
-                parameters=input_types,
+                function=func or udf_node.__func__,
+                parameters=[type_mapper.to_string(arg.dtype) for arg in udf_node.args],
                 return_type=type_mapper.to_string(udf_node.dtype),
-                type=_UDF_INPUT_TYPE_MAPPING[udf_node.__input_type__],
+                type=_UDF_INPUT_TYPE_MAPPING[input_type or udf_node.__input_type__],
                 **udf_node.__config__,
             )
 
@@ -1785,6 +1788,12 @@ class Backend(
 
     _register_python_udf = _register_udf
     _register_pyarrow_udf = _register_udf
+
+    def _register_pandas_udf(self, pandas_udf_node: ops.ScalarUDF) -> str:
+        pyarrow_function = convert_pandas_udf_to_pyarrow(pandas_udf_node.__func__)
+        return self._register_udf(
+            pandas_udf_node, func=pyarrow_function, input_type=InputType.PYARROW
+        )
 
     def _get_temp_view_definition(self, name: str, definition: str) -> str:
         return sge.Create(
