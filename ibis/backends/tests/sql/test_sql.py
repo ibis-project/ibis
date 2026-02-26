@@ -266,11 +266,22 @@ def test_aggregate(star1, expr_fn, snapshot):
 
 @pytest.mark.parametrize(
     "key",
-    ["f", ibis.random()],
-    ids=["column", "random"],
+    [
+        pytest.param("f", id="column"),
+        pytest.param(ibis._.f + 1, id="column_derived"),
+        pytest.param(ibis.random(), id="random"),
+        pytest.param(ibis.random() + 1, id="random_derived"),
+        pytest.param(ibis.literal(5), id="literal"),
+        pytest.param(ibis.literal(5) + 1, id="literal_derived"),
+        pytest.param((ibis.random(), "f"), id="random_and_column"),
+        pytest.param((ibis.random(), ibis.literal(5)), id="random_and_literal"),
+        pytest.param(("f", ibis.literal(5)), id="column_and_literal"),
+    ],
 )
 def test_order_by(star1, key, snapshot):
-    expr = star1.order_by(key)
+    # We are doing two order_bys to test that the rewrite that drops constant keys
+    # works at all levels of the expression tree.
+    expr = star1.order_by(key).select("f", "c").order_by(key)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
