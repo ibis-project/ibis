@@ -25,8 +25,8 @@ from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
     exclude_unsupported_window_frame_from_ops,
-    exclude_unsupported_window_frame_from_rank,
-    exclude_unsupported_window_frame_from_row_number,
+    rank_one_to_zero_index,
+    row_number_one_to_zero_index,
     lower_sample,
     split_select_distinct_with_order_by,
 )
@@ -42,8 +42,8 @@ class TrinoCompiler(SQLGlotCompiler):
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
     rewrites = (
-        exclude_unsupported_window_frame_from_row_number,
-        exclude_unsupported_window_frame_from_rank,
+        row_number_one_to_zero_index,
+        rank_one_to_zero_index,
         exclude_unsupported_window_frame_from_ops,
         *SQLGlotCompiler.rewrites,
     )

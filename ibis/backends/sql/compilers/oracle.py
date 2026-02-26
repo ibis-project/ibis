@@ -13,11 +13,11 @@ from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
     exclude_unsupported_window_frame_from_ops,
-    exclude_unsupported_window_frame_from_row_number,
+    row_number_one_to_zero_index,
     lower_log2,
     lower_log10,
     lower_sample,
-    rewrite_empty_order_by_window,
+    add_order_by_to_empty_ranking_window_functions,
     split_select_distinct_with_order_by,
 )
 
@@ -30,9 +30,9 @@ class OracleCompiler(SQLGlotCompiler):
     dialect = Oracle
     type_mapper = OracleType
     rewrites = (
-        exclude_unsupported_window_frame_from_row_number,
+        row_number_one_to_zero_index,
         exclude_unsupported_window_frame_from_ops,
-        rewrite_empty_order_by_window,
+        add_order_by_to_empty_ranking_window_functions,
         *SQLGlotCompiler.rewrites,
     )
 
@@ -419,7 +419,7 @@ class OracleCompiler(SQLGlotCompiler):
 
         if type(op.func) in (
             # TODO: figure out REGR_* functions and also manage this list better
-            # Allowed windowing clause functions
+            # Allowed windowing clause functions. 
             ops.Mean,  # "avg",
             ops.Correlation,  # "corr",
             ops.Count,  # "count",
@@ -432,6 +432,8 @@ class OracleCompiler(SQLGlotCompiler):
             ops.StandardDev,  # "stddev","stddev_pop","stddev_samp",
             ops.Sum,  # "sum",
             ops.Variance,  # "var_pop","var_samp","variance",
+            ops.Any,  # uses "max"
+            ops.All   # uses "min"
         ):
             if start is None:
                 start = {}

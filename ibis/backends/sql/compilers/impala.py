@@ -16,7 +16,7 @@ from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
     lower_sample,
-    rewrite_empty_order_by_window,
+    add_order_by_to_empty_ranking_window_functions,
     split_select_distinct_with_order_by,
 )
 
@@ -27,7 +27,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     dialect = Impala
     type_mapper = ImpalaType
     rewrites = (
-        rewrite_empty_order_by_window,
+        add_order_by_to_empty_ranking_window_functions,
         *SQLGlotCompiler.rewrites,
     )
     post_rewrites = (split_select_distinct_with_order_by,)
