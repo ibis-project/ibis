@@ -1163,13 +1163,15 @@ $$ {defn["source"]} $$"""
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        if not isinstance(obj, ir.Table):
-            obj = ibis.memtable(obj)
+        source_table = self._ensure_table_to_insert(
+            target_columns=self.get_schema(name, catalog=catalog, database=db),
+            data=obj,
+        )
 
-        self._run_pre_execute_hooks(obj)
+        self._run_pre_execute_hooks(source_table)
 
         query = self._build_insert_from_table(
-            target=name, source=obj, db=db, catalog=catalog
+            data=source_table, table_name=name, db=db, catalog=catalog
         )
         table = sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted)
 

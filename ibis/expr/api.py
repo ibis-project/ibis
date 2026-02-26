@@ -10,7 +10,16 @@ import numbers
 import operator
 from collections import Counter
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Any, Protocol, TypeAlias, TypeVar, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    NoReturn,
+    Protocol,
+    TypeAlias,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
@@ -426,7 +435,20 @@ def memtable(
 
         schema = ibis.schema(schema)
 
-    return _memtable(data, schema=schema, columns=columns)
+    _, table = _memtable(data, schema=schema, columns=columns)
+    return table
+
+
+_MemtableResult: TypeAlias = tuple[bool, Table]
+"""
+- Was the input named, eg [{"a": 1}, {"a": 2}] would be True, but [(1, 2), (3, 4)] would be False.
+- The resulting Table expression.
+
+It's useful to know if the input was named so that you can do
+`con.insert("my_table", [(1,2), (3,4)])` and the implementation can
+understand that the user didn't provide column names,
+and thus make them match the target table automatically.
+"""
 
 
 class _HasArrowCStream(Protocol):
@@ -466,8 +488,10 @@ def _memtable(
     *,
     columns: Iterable[str] | None = None,
     schema: IntoSchema | None = None,
-) -> Table:
+) -> _MemtableResult:
     import ibis
+
+    is_named = True
 
     if hasattr(data, "__arrow_c_stream__"):
         # Support objects exposing arrow's PyCapsule interface
@@ -485,7 +509,16 @@ def _memtable(
             columns=columns
             or (ibis.schema(schema).names if schema is not None else None),
         )
-    return _memtable(data, columns=columns, schema=schema)
+        if (
+            data.columns.inferred_type != "string"
+            and schema is None
+            and columns is None
+        ):
+            # eg data = [(1, 2), (3, 4)] and we didn't get passed schema or columns,
+            # so pandas makes default int column names (0, 1, ...)
+            is_named = False
+    _, table_expr = _memtable(data, columns=columns, schema=schema)
+    return is_named, table_expr
 
 
 @_memtable.register("pandas.DataFrame")
@@ -494,7 +527,7 @@ def _memtable_from_pandas_dataframe(
     *,
     columns: Iterable[str] | None = None,
     schema: IntoSchema | None = None,
-) -> Table:
+) -> _MemtableResult:
     from ibis.formats.pandas import PandasDataFrameProxy
 
     if data.columns.inferred_type != "string":
@@ -529,7 +562,7 @@ def _memtable_from_pandas_dataframe(
         schema=sch.infer(data) if schema is None else schema,
         data=PandasDataFrameProxy(data),
     )
-    return op.to_expr()
+    return True, op.to_expr()
 
 
 @_memtable.register("pyarrow.Table")
@@ -538,13 +571,13 @@ def _memtable_from_pyarrow_table(
     *,
     schema: IntoSchema | None = None,
     columns: Iterable[str] | None = None,
-):
+) -> _MemtableResult:
     from ibis.formats.pyarrow import PyArrowTableProxy
 
     if columns is not None:
         assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
         schema = sch.Schema(dict(zip(columns, sch.infer(data).values())))
-    return ops.InMemoryTable(
+    return True, ops.InMemoryTable(
         name=util.gen_name("pyarrow_memtable"),
         schema=sch.infer(data) if schema is None else schema,
         data=PyArrowTableProxy(data),
@@ -557,10 +590,10 @@ def _memtable_from_pyarrow_dataset(
     *,
     schema: IntoSchema | None = None,
     columns: Iterable[str] | None = None,
-):
+) -> _MemtableResult:
     from ibis.formats.pyarrow import PyArrowDatasetProxy
 
-    return ops.InMemoryTable(
+    return True, ops.InMemoryTable(
         name=util.gen_name("pyarrow_dataset_memtable"),
         schema=Schema.from_pyarrow(data.schema),
         data=PyArrowDatasetProxy(data),
@@ -573,7 +606,7 @@ def _memtable_from_pyarrow_RecordBatchReader(
     *,
     schema: IntoSchema | None = None,
     columns: Iterable[str] | None = None,
-):
+) -> NoReturn:
     raise TypeError(
         "Creating an `ibis.memtable` from a `pyarrow.RecordBatchReader` would "
         "load _all_ data into memory. If you want to do this, please do so "
@@ -582,7 +615,7 @@ def _memtable_from_pyarrow_RecordBatchReader(
 
 
 @_memtable.register("polars.LazyFrame")
-def _memtable_from_polars_lazyframe(data: pl.LazyFrame, **kwargs):
+def _memtable_from_polars_lazyframe(data: pl.LazyFrame, **kwargs) -> _MemtableResult:
     return _memtable_from_polars_dataframe(data.collect(), **kwargs)
 
 
@@ -592,13 +625,13 @@ def _memtable_from_polars_dataframe(
     *,
     schema: IntoSchema | None = None,
     columns: Iterable[str] | None = None,
-):
+) -> _MemtableResult:
     from ibis.formats.polars import PolarsDataFrameProxy
 
     if columns is not None:
         assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
         schema = sch.Schema(dict(zip(columns, sch.infer(data).values())))
-    return ops.InMemoryTable(
+    return True, ops.InMemoryTable(
         name=util.gen_name("polars_memtable"),
         schema=sch.infer(data) if schema is None else schema,
         data=PolarsDataFrameProxy(data),
@@ -611,7 +644,7 @@ def _memtable_from_geopandas_geodataframe(
     *,
     schema: IntoSchema | None = None,
     columns: Iterable[str] | None = None,
-):
+) -> _MemtableResult:
     # The Pandas data proxy and the `to_arrow` method on it can't handle
     # geopandas geometry columns. But if we first make the geometry columns WKB,
     # then the geo column gets treated (correctly) as just a binary blob, and
