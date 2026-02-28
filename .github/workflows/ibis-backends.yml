@@ -140,7 +140,8 @@ jobs:
               - --extra polars
             sys-deps:
               - libgeos-dev
-              - default-libmysqlclient-dev
+            adbc-drivers:
+              - mysql
           - name: singlestoredb
             title: SingleStoreDB
             serial: true
@@ -322,7 +323,8 @@ jobs:
                 - mysql
               sys-deps:
                 - libgeos-dev
-                - default-libmysqlclient-dev
+              adbc-drivers:
+                - mysql
           - os: windows-latest
             backend:
               name: singlestoredb
@@ -499,6 +501,16 @@ jobs:
 
           sudo apt-get update -qq -y
           sudo apt-get install -qq -y build-essential ${{ join(matrix.backend.sys-deps, ' ') }}
+
+      - name: install adbc drivers
+        if: matrix.backend.adbc-drivers != null
+        run: |
+          set -euo pipefail
+
+          pipx install dbc
+          for driver in ${{ join(matrix.backend.adbc-drivers, ' ') }}; do
+            dbc install "$driver"
+          done
 
       - name: install sqlite
         if: matrix.os == 'windows-latest' && matrix.backend.name == 'sqlite'
