@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -29,36 +30,45 @@ class TestConf(ServiceBackendTest):
     supports_structs = False
     rounding_method = "half_to_even"
     service_name = "mysql"
-    deps = ("MySQLdb",)
+    deps = ("adbc_driver_manager",)
 
     @property
     def test_files(self) -> Iterable[Path]:
         return self.data_dir.joinpath("csv").glob("*.csv")
 
     def _load_data(self, **kwargs: Any) -> None:
-        """Load test data into a MySql backend instance.
-
-        Parameters
-        ----------
-        data_dir
-            Location of testdata
-        script_dir
-            Location of scripts defining schemas
-        """
+        """Load test data into a MySQL backend instance."""
         super()._load_data(**kwargs)
 
-        with self.connection.begin() as cur:
+        batch_size = 1000
+        with self.connection.con.cursor() as cur:
             for table in TEST_TABLES:
                 csv_path = self.data_dir / "csv" / f"{table}.csv"
-                lines = [
-                    f"LOAD DATA LOCAL INFILE {str(csv_path)!r}",
-                    f"INTO TABLE {table}",
-                    "COLUMNS TERMINATED BY ','",
-                    """OPTIONALLY ENCLOSED BY '"'""",
-                    "LINES TERMINATED BY '\\n'",
-                    "IGNORE 1 LINES",
-                ]
-                cur.execute("\n".join(lines))
+                with open(csv_path, newline="") as f:
+                    reader = csv.reader(f)
+                    header = next(reader)  # skip header
+                    columns = ", ".join(f"`{col}`" for col in header)
+                    batch = []
+                    for row in reader:
+                        parts = []
+                        for v in row:
+                            if v == "":
+                                parts.append("NULL")
+                            else:
+                                escaped = v.replace("\\", "\\\\").replace("'", "\\'")
+                                parts.append(f"'{escaped}'")
+                        batch.append(f"({', '.join(parts)})")
+                        if len(batch) >= batch_size:
+                            values_sql = ", ".join(batch)
+                            cur.execute(
+                                f"INSERT INTO `{table}` ({columns}) VALUES {values_sql}"
+                            )
+                            batch = []
+                    if batch:
+                        values_sql = ", ".join(batch)
+                        cur.execute(
+                            f"INSERT INTO `{table}` ({columns}) VALUES {values_sql}"
+                        )
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
@@ -68,8 +78,6 @@ class TestConf(ServiceBackendTest):
             password=MYSQL_PASS,
             database=IBIS_TEST_MYSQL_DB,
             port=MYSQL_PORT,
-            local_infile=1,
-            autocommit=True,
             **kw,
         )
 

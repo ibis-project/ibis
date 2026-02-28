@@ -4,17 +4,15 @@ from __future__ import annotations
 
 import contextlib
 import getpass
+import math
 import warnings
 from functools import cached_property
-from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
-import MySQLdb
 import sqlglot as sg
 import sqlglot.expressions as sge
-from MySQLdb import ProgrammingError
-from MySQLdb.constants import ER
+from adbc_driver_manager import dbapi as adbc_dbapi
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -30,7 +28,7 @@ from ibis.backends import (
     SupportsTempTables,
 )
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import STAR, TRUE, C, RenameTable
+from ibis.backends.sql.compilers.base import TRUE, C, RenameTable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -70,7 +68,10 @@ class Backend(
 
     @cached_property
     def version(self):
-        return ".".join(map(str, self.con._server_version))
+        with self.con.cursor() as cur:
+            cur.execute("SELECT VERSION()")
+            result = cur.fetch_arrow_table()
+        return result.column(0)[0].as_py()
 
     def do_connect(
         self,
@@ -78,7 +79,7 @@ class Backend(
         user: str | None = None,
         password: str | None = None,
         port: int = 3306,
-        autocommit: bool = True,
+        database: str | None = None,
         **kwargs,
     ) -> None:
         """Create an Ibis client using the passed connection parameters.
@@ -93,10 +94,10 @@ class Backend(
             Password
         port
             Port
-        autocommit
-            Autocommit mode
+        database
+            Database to connect to
         kwargs
-            Additional keyword arguments passed to `MySQLdb.connect`
+            Additional keyword arguments
 
         Examples
         --------
@@ -126,32 +127,22 @@ class Backend(
           year            int32
           month           int32
         """
-        self.con = MySQLdb.connect(
-            user=user or getpass.getuser(),
-            host="127.0.0.1" if host == "localhost" else host,
-            port=port,
-            password=password or "",
-            autocommit=autocommit,
-            **kwargs,
-        )
+        user = user or getpass.getuser()
+        host = "127.0.0.1" if host == "localhost" else host
+        password = password or ""
+
+        # Also accept database/db from kwargs for backwards compat
+        if database is None:
+            database = kwargs.pop("database", kwargs.pop("db", None))
+
+        uri = f"{user}:{password}@tcp({host}:{port})/{database or ''}"
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.con = adbc_dbapi.connect(
+                driver="mysql", db_kwargs={"uri": uri}, autocommit=True
+            )
 
         self._post_connect()
-
-    @util.experimental
-    @classmethod
-    def from_connection(cls, con: MySQLdb.Connection, /) -> Backend:
-        """Create an Ibis client from an existing connection to a MySQL database.
-
-        Parameters
-        ----------
-        con
-            An existing connection to a MySQL database.
-        """
-        new_backend = cls()
-        new_backend._can_reconnect = False
-        new_backend.con = con
-        new_backend._post_connect()
-        return new_backend
 
     def _post_connect(self) -> None:
         with self.con.cursor() as cur:
@@ -160,52 +151,53 @@ class Backend(
             except Exception as e:  # noqa: BLE001
                 warnings.warn(f"Unable to set session timezone to UTC: {e}")
 
+    def disconnect(self) -> None:
+        self.con.close()
+
     @property
     def current_database(self) -> str:
-        with self._safe_raw_sql(sg.select(self.compiler.f.database())) as cur:
-            [(database,)] = cur.fetchall()
-        return database
+        sql = sg.select(self.compiler.f.database()).sql(self.dialect)
+        with self.con.cursor() as cur:
+            cur.execute(sql)
+            table = cur.fetch_arrow_table()
+        return table.column(0)[0].as_py()
 
     def list_databases(self, *, like: str | None = None) -> list[str]:
         # In MySQL, "database" and "schema" are synonymous
-        with self._safe_raw_sql("SHOW DATABASES") as cur:
-            databases = list(map(itemgetter(0), cur.fetchall()))
+        with self.con.cursor() as cur:
+            cur.execute("SHOW DATABASES")
+            table = cur.fetch_arrow_table()
+        databases = table.column(0).to_pylist()
         return self._filter_with_like(databases, like)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        from ibis.backends.mysql.datatypes import _type_from_cursor_info
-
-        char_set_info = self.con.get_character_set_info()
-        multi_byte_maximum_length = char_set_info["mbmaxlen"]
-
-        sql = (
-            sg.select(STAR)
-            .from_(
-                sg.parse_one(query, dialect=self.dialect).subquery(
-                    sg.to_identifier(
-                        util.gen_name("query_schema"), quoted=self.compiler.quoted
-                    )
-                )
-            )
-            .limit(0)
-            .sql(self.dialect)
+        tmp_name = util.gen_name("mysql_schema")
+        quoted_tmp = sg.to_identifier(tmp_name, quoted=self.compiler.quoted).sql(
+            self.dialect
         )
-        with self.begin() as cur:
-            cur.execute(sql)
-            descr, flags = cur.description, cur.description_flags
+        create_sql = f"CREATE TEMPORARY TABLE {quoted_tmp} AS {query} LIMIT 0"
+        describe_sql = f"DESCRIBE {quoted_tmp}"
+        drop_sql = f"DROP TEMPORARY TABLE IF EXISTS {quoted_tmp}"
 
-        items = {}
-        for (name, type_code, _, _, field_length, scale, _), raw_flags in zip(
-            descr, flags
-        ):
-            items[name] = _type_from_cursor_info(
-                flags=raw_flags,
-                type_code=type_code,
-                field_length=field_length,
-                scale=scale,
-                multi_byte_maximum_length=multi_byte_maximum_length,
+        type_mapper = self.compiler.type_mapper
+        with self.con.cursor() as cur:
+            try:
+                cur.execute(create_sql)
+                cur.execute(describe_sql)
+                result = cur.fetch_arrow_table()
+            finally:
+                cur.execute(drop_sql)
+
+        fields = {}
+        for i in range(result.num_rows):
+            col_name = result.column(0)[i].as_py()
+            type_string = result.column(1)[i].as_py()
+            is_nullable = result.column(2)[i].as_py()
+            fields[col_name] = type_mapper.from_string(
+                type_string, nullable=is_nullable == "YES"
             )
-        return sch.Schema(items)
+
+        return sch.Schema(fields)
 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
@@ -214,20 +206,25 @@ class Backend(
             name, db=database, catalog=catalog, quoted=self.compiler.quoted
         ).sql(self.dialect)
 
-        with self.begin() as cur:
+        describe_sql = sge.Describe(this=table).sql(self.dialect)
+        with self.con.cursor() as cur:
             try:
-                cur.execute(sge.Describe(this=table).sql(self.dialect))
-            except ProgrammingError as e:
-                if e.args[0] == ER.NO_SUCH_TABLE:
+                cur.execute(describe_sql)
+                result = cur.fetch_arrow_table()
+            except Exception as e:
+                if "doesn't exist" in str(e):
                     raise com.TableNotFound(name) from e
-            else:
-                result = cur.fetchall()
+                raise
 
         type_mapper = self.compiler.type_mapper
-        fields = {
-            name: type_mapper.from_string(type_string, nullable=is_nullable == "YES")
-            for name, type_string, is_nullable, *_ in result
-        }
+        fields = {}
+        for i in range(result.num_rows):
+            col_name = result.column(0)[i].as_py()
+            type_string = result.column(1)[i].as_py()
+            is_nullable = result.column(2)[i].as_py()
+            fields[col_name] = type_mapper.from_string(
+                type_string, nullable=is_nullable == "YES"
+            )
 
         return sch.Schema(fields)
 
@@ -235,7 +232,7 @@ class Backend(
         sql = sge.Create(
             kind="DATABASE", exists=force, this=sg.to_identifier(name)
         ).sql(self.name)
-        with self.begin() as cur:
+        with self.con.cursor() as cur:
             cur.execute(sql)
 
     def drop_database(
@@ -244,32 +241,17 @@ class Backend(
         sql = sge.Drop(
             kind="DATABASE", exists=force, this=sg.table(name, catalog=catalog)
         ).sql(self.name)
-        with self.begin() as cur:
+        with self.con.cursor() as cur:
             cur.execute(sql)
 
     @contextlib.contextmanager
     def begin(self):
-        con = self.con
-        cur = con.cursor()
-        autocommit = con.get_autocommit()
-
-        if not autocommit:
-            con.begin()
-
+        cur = self.con.cursor()
         try:
             yield cur
-        except Exception:
-            if not autocommit:
-                con.rollback()
-            raise
-        else:
-            if not autocommit:
-                con.commit()
         finally:
             cur.close()
 
-    # TODO(kszucs): should make it an abstract method or remove the use of it
-    # from .execute()
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
         with self.raw_sql(*args, **kwargs) as result:
@@ -279,24 +261,13 @@ class Backend(
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
 
-        con = self.con
-        autocommit = con.get_autocommit()
-
-        cursor = con.cursor()
-
-        if not autocommit:
-            con.begin()
-
+        cursor = self.con.cursor()
         try:
             cursor.execute(query, **kwargs)
         except Exception:
-            if not autocommit:
-                con.rollback()
             cursor.close()
             raise
         else:
-            if not autocommit:
-                con.commit()
             return cursor
 
     # TODO: disable positional arguments
@@ -331,10 +302,11 @@ class Backend(
             .sql(self.name)
         )
 
-        with self._safe_raw_sql(sql) as cur:
-            out = cur.fetchall()
+        with self.con.cursor() as cur:
+            cur.execute(sql)
+            table = cur.fetch_arrow_table()
 
-        return self._filter_with_like(map(itemgetter(0), out), like)
+        return self._filter_with_like(table.column(0).to_pylist(), like)
 
     def execute(
         self,
@@ -366,8 +338,20 @@ class Backend(
 
         schema = table.schema()
 
-        with self._safe_raw_sql(sql) as cur:
-            result = self._fetch_from_cursor(cur, schema)
+        with self.con.cursor() as cur:
+            cur.execute(sql)
+            arrow_table = cur.fetch_arrow_table()
+
+        import pandas as pd
+
+        from ibis.formats.pandas import PandasData
+
+        df = arrow_table.to_pandas(timestamp_as_object=False)
+        if df.empty:
+            df = pd.DataFrame(columns=schema.names)
+        else:
+            df.columns = list(schema.names)
+        result = PandasData.convert_table(df, schema)
         return expr.__pandas_result__(result)
 
     def create_table(
@@ -478,15 +462,22 @@ class Backend(
         # nan can not be used with MySQL
         df = df.replace(float("nan"), None)
 
-        data = df.itertuples(index=False)
-        sql = self._build_insert_template(
-            name, schema=schema, columns=True, placeholder="%s"
+        insert_sql = self._build_insert_template(
+            name, schema=schema, columns=True, placeholder="?"
         )
-        with self.begin() as cur:
+        with self.con.cursor() as cur:
             cur.execute(create_stmt_sql)
 
             if not df.empty:
-                cur.executemany(sql, data)
+                for row in df.itertuples(index=False):
+                    # Convert values: replace NaN/None with None, handle types
+                    values = []
+                    for v in row:
+                        if v is None or (isinstance(v, float) and math.isnan(v)):
+                            values.append(None)
+                        else:
+                            values.append(v)
+                    cur.execute(insert_sql, values)
 
     @util.experimental
     def to_pyarrow_batches(
@@ -499,26 +490,9 @@ class Backend(
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
-        import pyarrow as pa
-
         self._run_pre_execute_hooks(expr)
 
-        schema = expr.as_table().schema()
-        with self._safe_raw_sql(
-            self.compile(expr, limit=limit, params=params)
-        ) as cursor:
-            df = self._fetch_from_cursor(cursor, schema)
-        table = pa.Table.from_pandas(
-            df, schema=schema.to_pyarrow(), preserve_index=False
-        )
-        return table.to_reader(max_chunksize=chunk_size)
-
-    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
-        import pandas as pd
-
-        from ibis.backends.mysql.converter import MySQLPandasData
-
-        df = pd.DataFrame.from_records(
-            cursor.fetchall(), columns=schema.names, coerce_float=True
-        )
-        return MySQLPandasData.convert_table(df, schema)
+        sql = self.compile(expr, limit=limit, params=params)
+        cur = self.con.cursor()
+        cur.execute(sql)
+        return cur.fetch_record_batch()
