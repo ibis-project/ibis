@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import getpass
-import math
 import warnings
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
@@ -17,6 +16,7 @@ from adbc_driver_manager import dbapi as adbc_dbapi
 import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -136,11 +136,9 @@ class Backend(
             database = kwargs.pop("database", kwargs.pop("db", None))
 
         uri = f"{user}:{password}@tcp({host}:{port})/{database or ''}"
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            self.con = adbc_dbapi.connect(
-                driver="mysql", db_kwargs={"uri": uri}, autocommit=True
-            )
+        self.con = adbc_dbapi.connect(
+            driver="mysql", db_kwargs={"uri": uri}, autocommit=True
+        )
 
         self._post_connect()
 
@@ -150,6 +148,14 @@ class Backend(
                 cur.execute("SET @@session.time_zone = 'UTC'")
             except Exception as e:  # noqa: BLE001
                 warnings.warn(f"Unable to set session timezone to UTC: {e}")
+
+    @classmethod
+    def from_connection(cls, con, /, **kwargs):
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
 
     def disconnect(self) -> None:
         self.con.close()
@@ -175,7 +181,7 @@ class Backend(
         quoted_tmp = sg.to_identifier(tmp_name, quoted=self.compiler.quoted).sql(
             self.dialect
         )
-        create_sql = f"CREATE TEMPORARY TABLE {quoted_tmp} AS {query} LIMIT 0"
+        create_sql = f"CREATE TEMPORARY TABLE {quoted_tmp} AS SELECT * FROM ({query}) AS _t LIMIT 0"
         describe_sql = f"DESCRIBE {quoted_tmp}"
         drop_sql = f"DROP TEMPORARY TABLE IF EXISTS {quoted_tmp}"
 
@@ -337,10 +343,13 @@ class Backend(
         sql = self.compile(table, limit=limit, params=params, **kwargs)
 
         schema = table.schema()
+        target_schema = schema.to_pyarrow()
 
         with self.con.cursor() as cur:
             cur.execute(sql)
             arrow_table = cur.fetch_arrow_table()
+
+        arrow_table = self._cast_adbc_table(arrow_table, target_schema)
 
         import pandas as pd
 
@@ -349,8 +358,6 @@ class Backend(
         df = arrow_table.to_pandas(timestamp_as_object=False)
         if df.empty:
             df = pd.DataFrame(columns=schema.names)
-        else:
-            df.columns = list(schema.names)
         result = PandasData.convert_table(df, schema)
         return expr.__pandas_result__(result)
 
@@ -439,45 +446,138 @@ class Backend(
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := schema.null_fields:
-            raise com.IbisTypeError(
-                "MySQL cannot yet reliably handle `null` typed columns; "
-                f"got null typed columns: {null_columns}"
+            schema = ibis.schema(
+                {
+                    name: dt.string if name in null_columns else typ
+                    for name, typ in schema.items()
+                }
             )
+
+        arrow_table = op.data.to_pyarrow(schema)
 
         name = op.name
         quoted = self.compiler.quoted
         dialect = self.dialect
 
-        create_stmt = sg.exp.Create(
+        # ADBC's adbc_ingest temporary=True doesn't actually create
+        # TEMPORARY tables in MySQL. Create the temp table with DDL first,
+        # then use adbc_ingest in append mode to insert data.
+        create_stmt = sge.Create(
             kind="TABLE",
-            this=sg.exp.Schema(
+            this=sge.Schema(
                 this=sg.to_identifier(name, quoted=quoted),
                 expressions=schema.to_sqlglot_column_defs(dialect),
             ),
-            properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         )
-        create_stmt_sql = create_stmt.sql(dialect)
 
-        df = op.data.to_frame()
-        # nan can not be used with MySQL
-        df = df.replace(float("nan"), None)
+        ncols = len(schema)
+        # MySQL has a 65535 prepared statement placeholder limit.
+        # Set batch size to stay under it.
+        batch_size = max(1, 65535 // max(ncols, 1) - 1)
 
-        insert_sql = self._build_insert_template(
-            name, schema=schema, columns=True, placeholder="?"
-        )
         with self.con.cursor() as cur:
-            cur.execute(create_stmt_sql)
+            cur.execute(create_stmt.sql(dialect))
+            if arrow_table.num_rows > 0:
+                cur.adbc_statement.set_options(
+                    **{"adbc.statement.ingest.batch_size": str(batch_size)}
+                )
+                cur.adbc_ingest(name, arrow_table, mode="append")
 
-            if not df.empty:
-                for row in df.itertuples(index=False):
-                    # Convert values: replace NaN/None with None, handle types
-                    values = []
-                    for v in row:
-                        if v is None or (isinstance(v, float) and math.isnan(v)):
-                            values.append(None)
-                        else:
-                            values.append(v)
-                    cur.execute(insert_sql, values)
+    @staticmethod
+    def _decode_opaque_storage(storage):
+        """Decode ADBC opaque extension type storage to a string array.
+
+        The ADBC MySQL driver stores some values (e.g., UNSIGNED BIGINT) as
+        bracket-delimited ASCII byte sequences like ``"[52 50]"`` for ``"42"``.
+        Other values are stored as plain strings.  This normalizes both forms
+        into a plain string array.
+        """
+        import pyarrow as pa
+
+        decoded = []
+        for val in storage:
+            raw = val.as_py()
+            if raw is None:
+                decoded.append(None)
+            elif raw.startswith("[") and raw.endswith("]"):
+                byte_values = [int(x) for x in raw[1:-1].split()]
+                decoded.append(bytes(byte_values).decode("ascii"))
+            else:
+                decoded.append(raw)
+        return pa.array(decoded, type=pa.string())
+
+    @staticmethod
+    def _cast_adbc_column(col, target_type):
+        """Cast a single ADBC-returned Arrow column to the target type.
+
+        ADBC MySQL returns opaque extension types for some MySQL types (NULL,
+        unsigned integers, etc.) that PyArrow cannot cast directly. This method
+        handles those by extracting the storage array first.
+        """
+        import pyarrow as pa
+        import pyarrow.compute as pc
+
+        if col.type == target_type:
+            return col
+        elif target_type == pa.null():
+            return pa.nulls(len(col))
+        elif isinstance(col.type, pa.BaseExtensionType):
+            storage = (
+                col.storage
+                if isinstance(col, pa.Array)
+                else col.combine_chunks().storage
+            )
+            # All-null opaque columns (e.g., type_name=NULL) can't be cast
+            # meaningfully; return typed nulls directly.
+            if storage.null_count == len(storage):
+                return pa.nulls(len(storage), type=target_type)
+            if storage.type in (pa.string(), pa.utf8()):
+                decoded = Backend._decode_opaque_storage(storage)
+                # For unsigned integer types that overflow the target signed
+                # type (e.g., MySQL ~x returns UNSIGNED BIGINT), parse as
+                # uint64 first and let the overflow wrap via two's complement.
+                if pa.types.is_integer(target_type):
+                    arr = decoded.cast(pa.uint64())
+                    return arr.cast(target_type, safe=False)
+                return decoded.cast(target_type)
+            return storage.cast(target_type)
+        else:
+            try:
+                return col.cast(target_type)
+            except (pa.ArrowNotImplementedError, pa.ArrowInvalid):
+                # Some casts aren't directly supported (e.g., decimal ->
+                # float16); try going through float64 as an intermediate.
+                try:
+                    return col.cast(pa.float64()).cast(target_type)
+                except (pa.ArrowNotImplementedError, pa.ArrowInvalid):
+                    # If that also fails (e.g., double -> interval), leave
+                    # as-is and let PandasData.convert_table handle it.
+                    return col
+
+    @classmethod
+    def _cast_adbc_table(cls, table, target_schema):
+        """Cast an ADBC-returned Arrow Table to match the target schema."""
+        import pyarrow as pa
+
+        columns = [
+            cls._cast_adbc_column(table.column(i), field.type)
+            for i, field in enumerate(target_schema)
+        ]
+        return pa.table(
+            dict(zip(target_schema.names, columns)),
+        )
+
+    @classmethod
+    def _cast_adbc_batch(cls, batch, target_schema):
+        """Cast an ADBC-returned Arrow RecordBatch to match the target schema."""
+        import pyarrow as pa
+
+        columns = [
+            cls._cast_adbc_column(batch.column(i), field.type)
+            for i, field in enumerate(target_schema)
+        ]
+        return pa.record_batch(columns, schema=target_schema)
 
     @util.experimental
     def to_pyarrow_batches(
@@ -490,9 +590,26 @@ class Backend(
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
+        import pyarrow as pa
+
         self._run_pre_execute_hooks(expr)
 
-        sql = self.compile(expr, limit=limit, params=params)
-        cur = self.con.cursor()
-        cur.execute(sql)
-        return cur.fetch_record_batch()
+        table_expr = expr.as_table()
+        sql = self.compile(table_expr, limit=limit, params=params)
+        target_schema = table_expr.schema().to_pyarrow()
+
+        cur = self.raw_sql(sql)
+        reader = cur.fetch_record_batch()
+
+        def batch_producer():
+            try:
+                for batch in reader:
+                    yield self._cast_adbc_batch(
+                        batch.rename_columns(target_schema.names), target_schema
+                    )
+            finally:
+                cur.close()
+
+        return pa.ipc.RecordBatchReader.from_batches(
+            target_schema, batch_producer()
+        )

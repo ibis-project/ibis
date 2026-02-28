@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -38,37 +37,28 @@ class TestConf(ServiceBackendTest):
 
     def _load_data(self, **kwargs: Any) -> None:
         """Load test data into a MySQL backend instance."""
+        import pyarrow as pa
+        import pyarrow.csv as pcsv
+
         super()._load_data(**kwargs)
 
-        batch_size = 1000
         with self.connection.con.cursor() as cur:
-            for table in TEST_TABLES:
+            for table, schema in TEST_TABLES.items():
                 csv_path = self.data_dir / "csv" / f"{table}.csv"
-                with open(csv_path, newline="") as f:
-                    reader = csv.reader(f)
-                    header = next(reader)  # skip header
-                    columns = ", ".join(f"`{col}`" for col in header)
-                    batch = []
-                    for row in reader:
-                        parts = []
-                        for v in row:
-                            if v == "":
-                                parts.append("NULL")
-                            else:
-                                escaped = v.replace("\\", "\\\\").replace("'", "\\'")
-                                parts.append(f"'{escaped}'")
-                        batch.append(f"({', '.join(parts)})")
-                        if len(batch) >= batch_size:
-                            values_sql = ", ".join(batch)
-                            cur.execute(
-                                f"INSERT INTO `{table}` ({columns}) VALUES {values_sql}"
-                            )
-                            batch = []
-                    if batch:
-                        values_sql = ", ".join(batch)
-                        cur.execute(
-                            f"INSERT INTO `{table}` ({columns}) VALUES {values_sql}"
-                        )
+                arrow_schema = schema.to_pyarrow()
+                arrow_table = pcsv.read_csv(
+                    csv_path,
+                    convert_options=pcsv.ConvertOptions(
+                        column_types=arrow_schema,
+                        strings_can_be_null=True,
+                    ),
+                )
+                ncols = len(arrow_schema)
+                batch_size = max(1, 65535 // max(ncols, 1) - 1)
+                cur.adbc_statement.set_options(
+                    **{"adbc.statement.ingest.batch_size": str(batch_size)}
+                )
+                cur.adbc_ingest(table, arrow_table, mode="append")
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004

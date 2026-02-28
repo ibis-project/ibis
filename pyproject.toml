@@ -407,6 +407,8 @@ filterwarnings = [
   "ignore:is_categorical_dtype is deprecated .+:DeprecationWarning",
   # pyspark and impala leave sockets open
   "ignore:Exception ignored in:",
+  # adbc driver manager may warn about unclosed connections
+  "ignore:A adbc_driver_manager:ResourceWarning",
   # pandas
   "ignore:Boolean Series key will be reindexed:UserWarning",
   'ignore:Using \.astype to convert from timezone-(naive|aware) dtype:FutureWarning',
