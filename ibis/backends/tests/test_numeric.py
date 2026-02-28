@@ -769,7 +769,8 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     ["flink"], raises=(com.OperationNotDefinedError, NotImplementedError)
 )
 @pytest.mark.notimpl(
-    ["mysql"], raises=(MySQLOperationalError, MySQLProgrammingError, NotImplementedError)
+    ["mysql"],
+    raises=(MySQLOperationalError, MySQLProgrammingError, NotImplementedError),
 )
 @pytest.mark.notimpl(
     ["singlestoredb"], raises=(SingleStoreDBOperationalError, NotImplementedError)

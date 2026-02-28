@@ -18,7 +18,6 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
-    MySQLNotSupportedError,
     MySQLProgrammingError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
