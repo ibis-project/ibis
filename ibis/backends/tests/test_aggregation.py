@@ -19,6 +19,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLNotSupportedError,
+    MySQLProgrammingError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
     PsycoPg2InternalError,
@@ -1769,7 +1770,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
-@pytest.mark.notyet(["mysql"], raises=MySQLNotSupportedError)
+@pytest.mark.notyet(["mysql"], raises=MySQLProgrammingError)
 @pytest.mark.notyet(["singlestoredb"], raises=SingleStoreDBOperationalError)
 @pytest.mark.notyet(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
