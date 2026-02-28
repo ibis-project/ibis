@@ -159,9 +159,9 @@ except ImportError:
     ) = PsycoPgUndefinedObject = PsycoPgArraySubscriptError = None
 
 try:
-    from MySQLdb import NotSupportedError as MySQLNotSupportedError
-    from MySQLdb import OperationalError as MySQLOperationalError
-    from MySQLdb import ProgrammingError as MySQLProgrammingError
+    from adbc_driver_manager import NotSupportedError as MySQLNotSupportedError
+    from adbc_driver_manager import OperationalError as MySQLOperationalError
+    from adbc_driver_manager import ProgrammingError as MySQLProgrammingError
 except ImportError:
     MySQLNotSupportedError = MySQLProgrammingError = MySQLOperationalError = None
 

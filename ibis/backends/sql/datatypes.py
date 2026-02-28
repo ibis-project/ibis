@@ -673,6 +673,11 @@ class MySQLType(SqlglotType):
     unknown_type_strings = FrozenDict({"year(4)": dt.uint8, "inet6": dt.inet})
 
     @classmethod
+    def _from_ibis_Binary(cls, dtype: dt.Binary) -> sge.DataType:
+        # MySQL VARBINARY requires a length; use BLOB for arbitrary binary data
+        return sge.DataType(this=typecode.BLOB)
+
+    @classmethod
     def _from_sqlglot_BIT(
         cls, nbits: sge.DataTypeParam, nullable: bool | None = None
     ) -> dt.Integer:
