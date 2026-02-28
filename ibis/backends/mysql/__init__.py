@@ -181,7 +181,7 @@ class Backend(
         quoted_tmp = sg.to_identifier(tmp_name, quoted=self.compiler.quoted).sql(
             self.dialect
         )
-        create_sql = f"CREATE TEMPORARY TABLE {quoted_tmp} AS SELECT * FROM ({query}) AS _t LIMIT 0"
+        create_sql = f"CREATE TEMPORARY TABLE {quoted_tmp} AS SELECT * FROM ({query}) AS _t LIMIT 0"  # noqa: S608
         describe_sql = f"DESCRIBE {quoted_tmp}"
         drop_sql = f"DROP TEMPORARY TABLE IF EXISTS {quoted_tmp}"
 
@@ -516,7 +516,6 @@ class Backend(
         handles those by extracting the storage array first.
         """
         import pyarrow as pa
-        import pyarrow.compute as pc
 
         if col.type == target_type:
             return col
@@ -610,6 +609,4 @@ class Backend(
             finally:
                 cur.close()
 
-        return pa.ipc.RecordBatchReader.from_batches(
-            target_schema, batch_producer()
-        )
+        return pa.ipc.RecordBatchReader.from_batches(target_schema, batch_producer())

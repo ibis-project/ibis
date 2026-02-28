@@ -37,7 +37,6 @@ class TestConf(ServiceBackendTest):
 
     def _load_data(self, **kwargs: Any) -> None:
         """Load test data into a MySQL backend instance."""
-        import pyarrow as pa
         import pyarrow.csv as pcsv
 
         super()._load_data(**kwargs)

@@ -15,7 +15,6 @@ from ibis.backends.tests.errors import (
     DuckDBNotImplementedException,
     DuckDBParserException,
     ExaQueryError,
-    MySQLOperationalError,
     MySQLProgrammingError,
     OracleDatabaseError,
     Py4JJavaError,
