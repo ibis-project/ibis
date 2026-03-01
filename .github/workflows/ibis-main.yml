@@ -62,7 +62,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.3.0
+        uses: astral-sh/setup-uv@v7.3.1
 
       - name: install ${{ matrix.os }} system dependencies
         if: matrix.os != 'windows-latest'
@@ -123,7 +123,7 @@ jobs:
           python-version: "3.13"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.3.0
+        uses: astral-sh/setup-uv@v7.3.1
 
       - uses: extractions/setup-just@v3
         env:
