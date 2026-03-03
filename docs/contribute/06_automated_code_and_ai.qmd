@@ -1,7 +1,7 @@
 # Automated Code and AI
 
 ::: {.callout-note}
-The wording and general tone of this policy is taken from [FastAPI](https://fastapi.tiangolo.com/contributing/#automated-code-and-ai)
+The wording and general tone of this policy is taken from [FastAPI](https://fastapi.tiangolo.com/contributing/#automated-code-and-ai) and [pip-tools](https://github.com/jazzband/pip-tools/pull/2318/changes)
 :::
 
 You are encouraged to use all the tools you want to do your work and contribute
@@ -9,11 +9,32 @@ as efficiently as possible, this includes AI (LLM) tools, etc. Nevertheless,
 contributions should have meaningful human intervention, judgement, context,
 etc.
 
-If the *human effort* put in a PR, e.g. writing LLM prompts, is *less* than *the
-effort we would need to put to review it*, please don't submit the PR.
+When interacting in Ibis spaces (issues, pull requests, Zulip, etc.), do not use
+LLMs to speak for you, except for translation or grammar edits.  This includes
+the creation of changelogs and PR descriptions.
 
-Think of it this way: we can already write LLM prompts or run automated tools
-ourselves, and that would be faster than reviewing external PRs.
+Human-to-human communication is foundational to open source communities.
+
+## Responsibility
+
+Remember that you, not the LLM, are responsible for your contributions.
+
+Be ready to discuss your changes.
+
+Do not submit code you have not reviewed.
+
+Do your best to follow the conventions and standards of the project.
+
+Make sure your code really works.
+
+Be thoughtful about testing and documentation.
+
+Try to make your code brief, and recognize when less is more.
+
+## Autonomous Code Submissions
+
+The use of agents which write code and submit pull requests without human review
+is not permitted.
 
 ## Closing Automated and AI PRs
 
