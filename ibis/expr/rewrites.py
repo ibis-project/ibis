@@ -272,13 +272,17 @@ def project_wrap_reduction(_, rel):
         return ops.ScalarSubquery(_.to_expr().as_table())
 
 
+_wrap_analytic_or_project_wrap_reduction = wrap_analytic | project_wrap_reduction
+_value_and_not_window_function = p.Value & ~p.WindowFunction
+
+
 def rewrite_project_input(value, relation):
     # we need to detect reductions which are either turned into window functions
     # or scalar subqueries depending on whether they are originating from the
     # relation
     return value.replace(
-        wrap_analytic | project_wrap_reduction,
-        filter=p.Value & ~p.WindowFunction,
+        _wrap_analytic_or_project_wrap_reduction,
+        filter=_value_and_not_window_function,
         context={"rel": relation},
     )
 
@@ -300,7 +304,7 @@ def filter_wrap_reduction(_):
 
 def rewrite_filter_input(value):
     return value.replace(
-        wrap_analytic | filter_wrap_reduction, filter=p.Value & ~p.WindowFunction
+        wrap_analytic | filter_wrap_reduction, filter=_value_and_not_window_function
     )
 
 
@@ -352,7 +356,7 @@ def rewrite_window_input(value, window):
     # if self is a reduction or analytic function, wrap it in a window function
     node = value.replace(
         window_wrap_reduction,
-        filter=p.Value & ~p.WindowFunction,
+        filter=_value_and_not_window_function,
         context=context,
     )
     # if self is already a window function, merge the existing window frame
