@@ -21,6 +21,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
+    MySQLProgrammingError,
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPgDivisionByZero,
@@ -324,6 +325,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason="precision must be specified; clickhouse doesn't have a default",
                     raises=NotImplementedError,
                 ),
+                pytest.mark.notyet(
+                    ["mysql"],
+                    raises=(MySQLOperationalError, OSError),
+                    reason="ADBC MySQL driver maps DECIMAL(n,0) to int64 but fails to parse the text-protocol value",
+                ),
             ],
             id="default",
         ),
@@ -399,7 +405,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-                pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError),
+                pytest.mark.notimpl(["mysql"], raises=MySQLProgrammingError),
                 pytest.mark.notimpl(
                     ["singlestoredb"], raises=SingleStoreDBOperationalError
                 ),
@@ -762,7 +768,10 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
 @pytest.mark.notimpl(
     ["flink"], raises=(com.OperationNotDefinedError, NotImplementedError)
 )
-@pytest.mark.notimpl(["mysql"], raises=(MySQLOperationalError, NotImplementedError))
+@pytest.mark.notimpl(
+    ["mysql"],
+    raises=(MySQLOperationalError, MySQLProgrammingError, NotImplementedError),
+)
 @pytest.mark.notimpl(
     ["singlestoredb"], raises=(SingleStoreDBOperationalError, NotImplementedError)
 )

@@ -29,36 +29,35 @@ class TestConf(ServiceBackendTest):
     supports_structs = False
     rounding_method = "half_to_even"
     service_name = "mysql"
-    deps = ("MySQLdb",)
+    deps = ("adbc_driver_manager",)
 
     @property
     def test_files(self) -> Iterable[Path]:
         return self.data_dir.joinpath("csv").glob("*.csv")
 
     def _load_data(self, **kwargs: Any) -> None:
-        """Load test data into a MySql backend instance.
+        """Load test data into a MySQL backend instance."""
+        import pyarrow.csv as pcsv
 
-        Parameters
-        ----------
-        data_dir
-            Location of testdata
-        script_dir
-            Location of scripts defining schemas
-        """
         super()._load_data(**kwargs)
 
-        with self.connection.begin() as cur:
-            for table in TEST_TABLES:
+        with self.connection.con.cursor() as cur:
+            for table, schema in TEST_TABLES.items():
                 csv_path = self.data_dir / "csv" / f"{table}.csv"
-                lines = [
-                    f"LOAD DATA LOCAL INFILE {str(csv_path)!r}",
-                    f"INTO TABLE {table}",
-                    "COLUMNS TERMINATED BY ','",
-                    """OPTIONALLY ENCLOSED BY '"'""",
-                    "LINES TERMINATED BY '\\n'",
-                    "IGNORE 1 LINES",
-                ]
-                cur.execute("\n".join(lines))
+                arrow_schema = schema.to_pyarrow()
+                arrow_table = pcsv.read_csv(
+                    csv_path,
+                    convert_options=pcsv.ConvertOptions(
+                        column_types=arrow_schema,
+                        strings_can_be_null=True,
+                    ),
+                )
+                ncols = len(arrow_schema)
+                batch_size = max(1, 65535 // max(ncols, 1) - 1)
+                cur.adbc_statement.set_options(
+                    **{"adbc.statement.ingest.batch_size": str(batch_size)}
+                )
+                cur.adbc_ingest(table, arrow_table, mode="append")
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
@@ -68,8 +67,6 @@ class TestConf(ServiceBackendTest):
             password=MYSQL_PASS,
             database=IBIS_TEST_MYSQL_DB,
             port=MYSQL_PORT,
-            local_infile=1,
-            autocommit=True,
             **kw,
         )
 

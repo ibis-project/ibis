@@ -15,7 +15,7 @@ from ibis.backends.tests.errors import (
     DuckDBNotImplementedException,
     DuckDBParserException,
     ExaQueryError,
-    MySQLOperationalError,
+    MySQLProgrammingError,
     OracleDatabaseError,
     Py4JJavaError,
     PyAthenaOperationalError,
@@ -455,7 +455,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.notyet(["mysql"], raises=MySQLOperationalError),
+                pytest.mark.notyet(["mysql"], raises=MySQLProgrammingError),
                 pytest.mark.notyet(
                     ["singlestoredb"], raises=SingleStoreDBOperationalError
                 ),
@@ -707,7 +707,6 @@ mark_notyet_nulls = pytest.mark.notyet(
         "impala",
         "materialize",
         "mssql",
-        "mysql",
         "singlestoredb",
         "oracle",
         "postgres",

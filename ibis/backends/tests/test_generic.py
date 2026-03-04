@@ -24,6 +24,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
+    MySQLOperationalError,
     MySQLProgrammingError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
@@ -1406,7 +1407,7 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 
 
 @pytest.mark.notyet(
-    ["mssql", "mysql", "exasol", "impala"],
+    ["mssql", "exasol", "impala"],
     reason="various syntax errors reported",
 )
 @pytest.mark.notyet(
@@ -2817,6 +2818,11 @@ def test_table_describe_with_multiple_decimal_columns(con):
         # With Python 3.10, the same code raises a different exception type :(
         sqlite3.InterfaceError,
     ),
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=(MySQLOperationalError, OSError),
+    reason="ADBC MySQL driver maps DECIMAL(n,0) to int64 but fails to parse the text-protocol value",
 )
 def test_comparison_with_decimal_literal(con):
     t = ibis.memtable(

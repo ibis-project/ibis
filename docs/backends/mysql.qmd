@@ -18,6 +18,14 @@ Install with the `mysql` extra:
 pip install 'ibis-framework[mysql]'
 ```
 
+The MySQL backend uses the [ADBC MySQL driver](https://github.com/apache/arrow-adbc).
+You must also install the driver binary:
+
+```{.bash}
+pipx install dbc
+dbc install mysql
+```
+
 And connect:
 
 ```{.python}
@@ -36,6 +44,13 @@ Install for MySQL:
 conda install -c conda-forge ibis-mysql
 ```
 
+You must also install the ADBC MySQL driver binary:
+
+```{.bash}
+pipx install dbc
+dbc install mysql
+```
+
 And connect:
 
 ```{.python}
@@ -52,6 +67,13 @@ Install for MySQL:
 
 ```{.bash}
 mamba install -c conda-forge ibis-mysql
+```
+
+You must also install the ADBC MySQL driver binary:
+
+```{.bash}
+pipx install dbc
+dbc install mysql
 ```
 
 And connect:
