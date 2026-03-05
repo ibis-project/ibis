@@ -407,9 +407,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
             staging_allowed_local_path=staging_allowed_local_path,
             **config,
         )
+        if memtable_volume is None:
+            short_version = "".join(map(str, sys.version_info[:3]))
+            memtable_volume = (
+                f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
+            )
+        self._memtable_volume = memtable_volume
+        self._memtable_volume_created = False
         self._memtable_catalog = self.current_catalog
         self._memtable_database = self.current_database
-        self._post_connect(memtable_volume=memtable_volume)
 
     @contextlib.contextmanager
     def begin(self):
@@ -431,39 +437,30 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         new_backend = cls()
         new_backend._can_reconnect = False
         new_backend.con = con
-        new_backend._post_connect(memtable_volume=memtable_volume)
         return new_backend
 
-    def _post_connect(self, *, memtable_volume: str) -> None:
-        if memtable_volume is None:
-            short_version = "".join(map(str, sys.version_info[:3]))
-            memtable_volume = (
-                f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
-            )
-        self._memtable_volume = memtable_volume
-        self._memtable_volume_created = False
-
-    def _ensure_memtable_volume(self) -> None:
-        if self._memtable_volume_created:
-            return
-        sql = f"CREATE VOLUME IF NOT EXISTS `{self._memtable_volume}` COMMENT 'Ibis memtable storage volume'"
-        with self.con.cursor() as cur:
-            cur.execute(sql)
-        self._memtable_volume_created = True
+    def _ensure_memtable_volume(self, memtable_volume: str | None = None) -> str:
+        if not self._memtable_volume_created:
+            if memtable_volume is not None:
+                self._memtable_volume = memtable_volume
+            sql = f"CREATE VOLUME IF NOT EXISTS `{self._memtable_volume}` COMMENT 'Ibis memtable storage volume'"
+            with self.con.cursor() as cur:
+                cur.execute(sql)
+            self._memtable_volume_created = True
+        return self._memtable_volume_path
 
     @functools.cached_property
     def _memtable_volume_path(self) -> str:
         return f"/Volumes/{self._memtable_catalog}/{self._memtable_database}/{self._memtable_volume}"
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        self._ensure_memtable_volume()
         import pyarrow.parquet as pq
 
         quoted = self.compiler.quoted
         name = op.name
         stem = f"{name}.parquet"
 
-        upstream_path = f"{self._memtable_volume_path}/{stem}"
+        upstream_path = f"{self._ensure_memtable_volume()}/{stem}"
         sql = sge.Create(
             kind="VIEW",
             this=sg.table(name, quoted=quoted),

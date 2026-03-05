@@ -85,7 +85,33 @@ class TestConf(BackendTest):
         )
 
 
+class TestConfReadonly(BackendTest):
+    supports_map = True
+    driver_supports_multiple_statements = False
+    deps = ("databricks.sql",)
+
+    @staticmethod
+    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:  # noqa: ARG004
+        return ibis.databricks.connect(
+            server_hostname=env["DATABRICKS_SERVER_HOSTNAME"],
+            http_path=env["DATABRICKS_HTTP_PATH"],
+            access_token=env["DATABRICKS_TOKEN"],
+            catalog=DATABRICKS_CATALOG,
+            schema="default",
+            **kw,
+        )
+
+
 @pytest.fixture(scope="session")
 def con(tmp_path_factory, data_dir, worker_id):
     with TestConf.load_data(data_dir, tmp_path_factory, worker_id) as be:
         yield be.connection
+
+
+@pytest.fixture(scope="session")
+def con_readonly(tmp_path_factory, worker_id):
+    """Read-only connection — no data loading, just connect and query."""
+    yield TestConfReadonly.connect(
+        tmpdir=tmp_path_factory,
+        worker_id=worker_id,
+    )
