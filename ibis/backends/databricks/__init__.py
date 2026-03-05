@@ -413,9 +413,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
                 f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
             )
         self._memtable_volume = memtable_volume
+        self._memtable_volume_created = False
         self._memtable_catalog = self.current_catalog
         self._memtable_database = self.current_database
-        self._post_connect(memtable_volume=memtable_volume)
 
     @contextlib.contextmanager
     def begin(self):
@@ -437,13 +437,17 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         new_backend = cls()
         new_backend._can_reconnect = False
         new_backend.con = con
-        new_backend._post_connect(memtable_volume=memtable_volume)
         return new_backend
 
-    def _post_connect(self, *, memtable_volume: str) -> None:
-        sql = f"CREATE VOLUME IF NOT EXISTS `{memtable_volume}` COMMENT 'Ibis memtable storage volume'"
-        with self.con.cursor() as cur:
-            cur.execute(sql)
+    def _ensure_memtable_volume(self, memtable_volume: str | None = None) -> str:
+        if not self._memtable_volume_created:
+            if memtable_volume is not None:
+                self._memtable_volume = memtable_volume
+            sql = f"CREATE VOLUME IF NOT EXISTS `{self._memtable_volume}` COMMENT 'Ibis memtable storage volume'"
+            with self.con.cursor() as cur:
+                cur.execute(sql)
+            self._memtable_volume_created = True
+        return self._memtable_volume_path
 
     @functools.cached_property
     def _memtable_volume_path(self) -> str:
@@ -456,7 +460,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         name = op.name
         stem = f"{name}.parquet"
 
-        upstream_path = f"{self._memtable_volume_path}/{stem}"
+        upstream_path = f"{self._ensure_memtable_volume()}/{stem}"
         sql = sge.Create(
             kind="VIEW",
             this=sg.table(name, quoted=quoted),
