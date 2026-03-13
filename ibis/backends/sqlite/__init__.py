@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import sqlite3
+import uuid
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow as pa
+    from typing_extensions import Self
 
     from ibis.expr.api import IntoMemtable
 
@@ -155,7 +157,7 @@ class Backend(
         register_all(self.con)
         self.con.execute("PRAGMA case_sensitive_like = ON")
 
-    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
+    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> sqlite3.Cursor:
         if not isinstance(query, str):
             query = query.sql(dialect=self.name)
         return self.con.execute(query, **kwargs)
@@ -347,17 +349,34 @@ class Backend(
     ) -> pa.ipc.RecordBatchReader:
         import pyarrow as pa
 
+        raw_schema = expr.as_table().schema()
+
+        def _batches(*, query: str):
+            with self._safe_raw_sql(query) as cursor:
+                while batch := cursor.fetchmany(chunk_size):
+                    columns = []
+                    names = []
+                    for i, (name, typ) in enumerate(raw_schema.items()):
+                        col = [row[i] for row in batch]
+                        if typ.is_uuid():
+                            col = [
+                                uuid.UUID(v).bytes if v is not None else None
+                                for v in col
+                            ]
+                        columns.append(pa.array(col, type=typ.to_pyarrow()))
+                        names.append(name)
+                    # pa.array(batch, raw_schema.as_struct().to_pyarrow())
+                    # is not implemented for extension types (eg UUID)
+                    # so we have to create individual arrays for each column.
+                    yield pa.RecordBatch.from_arrays(columns, names=names)
+
         self._run_pre_execute_hooks(expr)
 
-        schema = expr.as_table().schema()
-        with self._safe_raw_sql(
-            self.compile(expr, limit=limit, params=params)
-        ) as cursor:
-            df = self._fetch_from_cursor(cursor, schema)
-        table = pa.Table.from_pandas(
-            df, schema=schema.to_pyarrow(), preserve_index=False
+        query = self.compile(expr, limit=limit, params=params)
+        return pa.RecordBatchReader.from_batches(
+            raw_schema.to_pyarrow(),
+            _batches(query=query),
         )
-        return table.to_reader(max_chunksize=chunk_size)
 
     def _generate_create_table(self, table: sge.Table, schema: sch.Schema):
         target = sge.Schema(
