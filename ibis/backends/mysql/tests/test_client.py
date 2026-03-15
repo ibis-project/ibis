@@ -63,6 +63,12 @@ MYSQL_TYPES = [
     param("int unsigned", dt.uint32, id="int-unsigned"),
     param("smallint unsigned", dt.uint16, id="smallint-unsigned"),
     param("tinyint unsigned", dt.uint8, id="tinyint-unsigned"),
+    param("json", dt.string, id="json"),
+    param("inet6", dt.inet, id="inet"),
+    param("uuid", dt.uuid, id="uuid"),
+    param("enum('small', 'medium', 'large')", dt.string, id="enum"),
+    param("mediumtext", dt.string, id="mediumtext"),
+    param("text", dt.string, id="text"),
 ] + [
     param(
         f"datetime({scale:d})",
@@ -75,34 +81,6 @@ MYSQL_TYPES = [
 
 @pytest.mark.parametrize(("mysql_type", "expected_type"), MYSQL_TYPES)
 def test_get_schema_from_query(con, mysql_type, expected_type):
-    raw_name = ibis.util.guid()
-    name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
-    expected_schema = ibis.schema(dict(x=expected_type))
-
-    # temporary tables get cleaned up by the db when the session ends, so we
-    # don't need to explicitly drop the table
-    with con.begin() as c:
-        c.execute(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
-
-    result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
-    assert result_schema == expected_schema
-
-    t = con.table(raw_name)
-    assert t.schema() == expected_schema
-
-
-@pytest.mark.parametrize(
-    ("mysql_type", "expected_type"),
-    [
-        param("json", dt.string, id="json"),
-        param("inet6", dt.inet, id="inet"),
-        param("uuid", dt.uuid, id="uuid"),
-        param("enum('small', 'medium', 'large')", dt.string, id="enum"),
-        param("mediumtext", dt.string, id="mediumtext"),
-        param("text", dt.string, id="text"),
-    ],
-)
-def test_get_schema_from_query_special_cases(con, mysql_type, expected_type):
     raw_name = ibis.util.guid()
     name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
     expected_schema = ibis.schema(dict(x=expected_type))
@@ -142,6 +120,11 @@ def test_get_schema_from_query_other_schema(con, tmp_t):
     assert t.schema() == ibis.schema({"x": dt.inet})
 
 
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=Exception,
+    reason="ADBC MySQL driver cannot parse zero timestamps ('0000-00-00 00:00:00')",
+)
 def test_zero_timestamp_data(con):
     sql = """
     CREATE TEMPORARY TABLE ztmp_date_issue
@@ -156,9 +139,9 @@ def test_zero_timestamp_data(con):
         c.execute(
             """
             INSERT INTO ztmp_date_issue VALUES
-                ('C', '2018-10-22', NULL),
-                ('B', '2017-06-07', NULL),
-                ('C', '2022-12-21', NULL)
+                ('C', '2018-10-22', 0),
+                ('B', '2017-06-07', 0),
+                ('C', '2022-12-21', 0)
             """
         )
     t = con.table("ztmp_date_issue")
@@ -168,11 +151,11 @@ def test_zero_timestamp_data(con):
             "name": ["C", "B", "C"],
             "tradedate": pd.to_datetime(
                 [date(2018, 10, 22), date(2017, 6, 7), date(2022, 12, 21)]
-            ),
-            "date": [pd.NaT, pd.NaT, pd.NaT],
+            ).as_unit("s"),
+            "date": pd.array([pd.NaT, pd.NaT, pd.NaT], dtype="datetime64[s]"),
         }
     )
-    tm.assert_frame_equal(result, expected, check_dtype=False)
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.fixture(scope="module")
@@ -245,7 +228,7 @@ def test_list_tables(con):
 def test_invalid_port():
     port = 4000
     url = f"mysql://{MYSQL_USER}:{MYSQL_PASS}@{MYSQL_HOST}:{port}/{IBIS_TEST_MYSQL_DB}"
-    with pytest.raises(Exception, match=r"connect|connection refused|ping"):
+    with pytest.raises(MySQLOperationalError):
         ibis.connect(url)
 
 

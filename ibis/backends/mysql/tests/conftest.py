@@ -52,11 +52,6 @@ class TestConf(ServiceBackendTest):
                         strings_can_be_null=True,
                     ),
                 )
-                ncols = len(arrow_schema)
-                batch_size = max(1, 65535 // max(ncols, 1) - 1)
-                cur.adbc_statement.set_options(
-                    **{"adbc.statement.ingest.batch_size": str(batch_size)}
-                )
                 cur.adbc_ingest(table, arrow_table, mode="append")
 
     @staticmethod
