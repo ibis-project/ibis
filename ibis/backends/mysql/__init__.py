@@ -218,7 +218,7 @@ class Backend(
                 cur.execute(describe_sql)
                 result = cur.fetch_arrow_table()
             except Exception as e:
-                if "doesn't exist" in str(e):
+                if getattr(e, "sqlstate", None) == "42S02":
                     raise com.TableNotFound(name) from e
                 raise
 
@@ -455,34 +455,8 @@ class Backend(
 
         arrow_table = op.data.to_pyarrow(schema)
 
-        name = op.name
-        quoted = self.compiler.quoted
-        dialect = self.dialect
-
-        # ADBC's adbc_ingest temporary=True doesn't actually create
-        # TEMPORARY tables in MySQL. Create the temp table with DDL first,
-        # then use adbc_ingest in append mode to insert data.
-        create_stmt = sge.Create(
-            kind="TABLE",
-            this=sge.Schema(
-                this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot_column_defs(dialect),
-            ),
-            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-        )
-
-        ncols = len(schema)
-        # MySQL has a 65535 prepared statement placeholder limit.
-        # Set batch size to stay under it.
-        batch_size = max(1, 65535 // max(ncols, 1) - 1)
-
         with self.con.cursor() as cur:
-            cur.execute(create_stmt.sql(dialect))
-            if arrow_table.num_rows > 0:
-                cur.adbc_statement.set_options(
-                    **{"adbc.statement.ingest.batch_size": str(batch_size)}
-                )
-                cur.adbc_ingest(name, arrow_table, mode="append")
+            cur.adbc_ingest(op.name, arrow_table, mode="create", temporary=True)
 
     @staticmethod
     def _decode_opaque_storage(storage):
@@ -550,9 +524,11 @@ class Backend(
                 try:
                     return col.cast(pa.float64()).cast(target_type)
                 except (pa.ArrowNotImplementedError, pa.ArrowInvalid):
-                    # If that also fails (e.g., double -> interval), leave
-                    # as-is and let PandasData.convert_table handle it.
-                    return col
+                    # Arrow can't cast to interval types; leave as-is
+                    # and let PandasData.convert_table handle it.
+                    if pa.types.is_interval(target_type):
+                        return col
+                    raise
 
     @classmethod
     def _cast_adbc_table(cls, table, target_schema):
