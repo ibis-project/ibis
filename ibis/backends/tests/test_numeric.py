@@ -1655,6 +1655,11 @@ def test_bitwise_scalars(con, op, left, right):
     reason="Streaming database does not guarantee row order without ORDER BY",
     strict=False,
 )
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=AssertionError,
+    reason="ADBC MySQL driver returns UNSIGNED BIGINT as opaque extension type",
+)
 @flink_no_bitwise
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
@@ -1670,6 +1675,11 @@ def test_bitwise_not_scalar(con):
     raises=AssertionError,
     reason="Streaming database does not guarantee row order without ORDER BY",
     strict=False,
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=AssertionError,
+    reason="ADBC MySQL driver returns UNSIGNED BIGINT as opaque extension type",
 )
 @flink_no_bitwise
 def test_bitwise_not_col(backend, alltypes, df):

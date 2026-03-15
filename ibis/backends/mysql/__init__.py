@@ -176,6 +176,18 @@ class Backend(
         databases = table.column(0).to_pylist()
         return self._filter_with_like(databases, like)
 
+    def _schema_from_describe(self, result) -> sch.Schema:
+        type_mapper = self.compiler.type_mapper
+        fields = {}
+        for i in range(result.num_rows):
+            col_name = result.column(0)[i].as_py()
+            type_string = result.column(1)[i].as_py()
+            is_nullable = result.column(2)[i].as_py()
+            fields[col_name] = type_mapper.from_string(
+                type_string, nullable=is_nullable == "YES"
+            )
+        return sch.Schema(fields)
+
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         tmp_name = util.gen_name("mysql_schema")
         quoted_tmp = sg.to_identifier(tmp_name, quoted=self.compiler.quoted).sql(
@@ -185,7 +197,6 @@ class Backend(
         describe_sql = f"DESCRIBE {quoted_tmp}"
         drop_sql = f"DROP TEMPORARY TABLE IF EXISTS {quoted_tmp}"
 
-        type_mapper = self.compiler.type_mapper
         with self.con.cursor() as cur:
             try:
                 cur.execute(create_sql)
@@ -194,16 +205,7 @@ class Backend(
             finally:
                 cur.execute(drop_sql)
 
-        fields = {}
-        for i in range(result.num_rows):
-            col_name = result.column(0)[i].as_py()
-            type_string = result.column(1)[i].as_py()
-            is_nullable = result.column(2)[i].as_py()
-            fields[col_name] = type_mapper.from_string(
-                type_string, nullable=is_nullable == "YES"
-            )
-
-        return sch.Schema(fields)
+        return self._schema_from_describe(result)
 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
@@ -222,17 +224,7 @@ class Backend(
                     raise com.TableNotFound(name) from e
                 raise
 
-        type_mapper = self.compiler.type_mapper
-        fields = {}
-        for i in range(result.num_rows):
-            col_name = result.column(0)[i].as_py()
-            type_string = result.column(1)[i].as_py()
-            is_nullable = result.column(2)[i].as_py()
-            fields[col_name] = type_mapper.from_string(
-                type_string, nullable=is_nullable == "YES"
-            )
-
-        return sch.Schema(fields)
+        return self._schema_from_describe(result)
 
     def create_database(self, name: str, force: bool = False) -> None:
         sql = sge.Create(
@@ -459,76 +451,17 @@ class Backend(
             cur.adbc_ingest(op.name, arrow_table, mode="create", temporary=True)
 
     @staticmethod
-    def _decode_opaque_storage(storage):
-        """Decode ADBC opaque extension type storage to a string array.
-
-        The ADBC MySQL driver stores some values (e.g., UNSIGNED BIGINT) as
-        bracket-delimited ASCII byte sequences like ``"[52 50]"`` for ``"42"``.
-        Other values are stored as plain strings.  This normalizes both forms
-        into a plain string array.
-        """
-        import pyarrow as pa
-
-        decoded = []
-        for val in storage:
-            raw = val.as_py()
-            if raw is None:
-                decoded.append(None)
-            elif raw.startswith("[") and raw.endswith("]"):
-                byte_values = [int(x) for x in raw[1:-1].split()]
-                decoded.append(bytes(byte_values).decode("ascii"))
-            else:
-                decoded.append(raw)
-        return pa.array(decoded, type=pa.string())
-
-    @staticmethod
     def _cast_adbc_column(col, target_type):
         """Cast a single ADBC-returned Arrow column to the target type.
 
-        ADBC MySQL returns opaque extension types for some MySQL types (NULL,
-        unsigned integers, etc.) that PyArrow cannot cast directly. This method
-        handles those by extracting the storage array first.
+        The ADBC MySQL driver returns opaque extension types for NULL columns
+        that PyArrow cannot cast directly.
         """
         import pyarrow as pa
 
-        if col.type == target_type:
-            return col
-        elif target_type == pa.null():
+        if target_type == pa.null():
             return pa.nulls(len(col))
-        elif isinstance(col.type, pa.BaseExtensionType):
-            storage = (
-                col.storage
-                if isinstance(col, pa.Array)
-                else col.combine_chunks().storage
-            )
-            # All-null opaque columns (e.g., type_name=NULL) can't be cast
-            # meaningfully; return typed nulls directly.
-            if storage.null_count == len(storage):
-                return pa.nulls(len(storage), type=target_type)
-            if storage.type in (pa.string(), pa.utf8()):
-                decoded = Backend._decode_opaque_storage(storage)
-                # For unsigned integer types that overflow the target signed
-                # type (e.g., MySQL ~x returns UNSIGNED BIGINT), parse as
-                # uint64 first and let the overflow wrap via two's complement.
-                if pa.types.is_integer(target_type):
-                    arr = decoded.cast(pa.uint64())
-                    return arr.cast(target_type, safe=False)
-                return decoded.cast(target_type)
-            return storage.cast(target_type)
-        else:
-            try:
-                return col.cast(target_type)
-            except (pa.ArrowNotImplementedError, pa.ArrowInvalid):
-                # Some casts aren't directly supported (e.g., decimal ->
-                # float16); try going through float64 as an intermediate.
-                try:
-                    return col.cast(pa.float64()).cast(target_type)
-                except (pa.ArrowNotImplementedError, pa.ArrowInvalid):
-                    # Arrow can't cast to interval types; leave as-is
-                    # and let PandasData.convert_table handle it.
-                    if pa.types.is_interval(target_type):
-                        return col
-                    raise
+        return col
 
     @classmethod
     def _cast_adbc_table(cls, table, target_schema):
