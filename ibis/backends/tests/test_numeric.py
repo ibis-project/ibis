@@ -328,7 +328,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["mysql"],
                     raises=(MySQLOperationalError, OSError),
-                    reason="ADBC MySQL driver maps DECIMAL(n,0) to int64 but fails to parse the text-protocol value",
+                    reason="ADBC MySQL driver maps DECIMAL(n,0) to int64 but fails to parse the text-protocol value; see https://github.com/adbc-drivers/driverbase-go/issues/129",
                 ),
             ],
             id="default",
@@ -1658,7 +1658,7 @@ def test_bitwise_scalars(con, op, left, right):
 @pytest.mark.notyet(
     ["mysql"],
     raises=AssertionError,
-    reason="ADBC MySQL driver returns UNSIGNED BIGINT as opaque extension type",
+    reason="ADBC MySQL driver returns UNSIGNED BIGINT as opaque extension type; fixed upstream in https://github.com/adbc-drivers/mysql/pull/80",
 )
 @flink_no_bitwise
 def test_bitwise_not_scalar(con):
@@ -1679,7 +1679,7 @@ def test_bitwise_not_scalar(con):
 @pytest.mark.notyet(
     ["mysql"],
     raises=AssertionError,
-    reason="ADBC MySQL driver returns UNSIGNED BIGINT as opaque extension type",
+    reason="ADBC MySQL driver returns UNSIGNED BIGINT as opaque extension type; fixed upstream in https://github.com/adbc-drivers/mysql/pull/80",
 )
 @flink_no_bitwise
 def test_bitwise_not_col(backend, alltypes, df):

@@ -2822,7 +2822,7 @@ def test_table_describe_with_multiple_decimal_columns(con):
 @pytest.mark.notyet(
     ["mysql"],
     raises=(MySQLOperationalError, OSError),
-    reason="ADBC MySQL driver maps DECIMAL(n,0) to int64 but fails to parse the text-protocol value",
+    reason="ADBC MySQL driver maps DECIMAL(n,0) to int64 but fails to parse the text-protocol value; see https://github.com/adbc-drivers/driverbase-go/issues/129",
 )
 def test_comparison_with_decimal_literal(con):
     t = ibis.memtable(
