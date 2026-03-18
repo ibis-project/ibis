@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 import ibis
 from ibis import _
 
