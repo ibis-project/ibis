@@ -18,12 +18,16 @@ Install with the `mysql` extra:
 pip install 'ibis-framework[mysql]'
 ```
 
-The MySQL backend uses the [ADBC MySQL driver](https://github.com/apache/arrow-adbc).
-You must also install the driver binary:
+The MySQL backend uses the [ADBC MySQL driver](https://docs.adbc-drivers.org/drivers/mysql/index.html),
+which sends and receives data using the efficient columnar Apache Arrow format
+instead of the traditional row-wise protocol.
+
+You must also install the MySQL ADBC driver binary.
+[There are several installation options](https://docs.adbc-drivers.org/drivers/mysql/index.html)
+(e.g. pipx, Homebrew, a bash installer, etc.), but if you have `uv` installed:
 
 ```{.bash}
-pipx install dbc
-dbc install mysql
+uvx dbc install mysql
 ```
 
 And connect:
@@ -44,11 +48,12 @@ Install for MySQL:
 conda install -c conda-forge ibis-mysql
 ```
 
-You must also install the ADBC MySQL driver binary:
+You must also install the MySQL ADBC driver binary.
+[There are several installation options](https://docs.adbc-drivers.org/drivers/mysql/index.html)
+(e.g. pipx, Homebrew, a bash installer, etc.), but if you have `uv` installed:
 
 ```{.bash}
-pipx install dbc
-dbc install mysql
+uvx dbc install mysql
 ```
 
 And connect:
@@ -69,11 +74,12 @@ Install for MySQL:
 mamba install -c conda-forge ibis-mysql
 ```
 
-You must also install the ADBC MySQL driver binary:
+You must also install the MySQL ADBC driver binary.
+[There are several installation options](https://docs.adbc-drivers.org/drivers/mysql/index.html)
+(e.g. pipx, Homebrew, a bash installer, etc.), but if you have `uv` installed:
 
 ```{.bash}
-pipx install dbc
-dbc install mysql
+uvx dbc install mysql
 ```
 
 And connect:
