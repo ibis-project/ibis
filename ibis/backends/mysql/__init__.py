@@ -6,7 +6,7 @@ import contextlib
 import getpass
 import warnings
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import unquote_plus
 
 import sqlglot as sg
@@ -80,6 +80,7 @@ class Backend(
         password: str | None = None,
         port: int = 3306,
         database: str | None = None,
+        autocommit: Literal[True] = True,
         **kwargs,
     ) -> None:
         """Create an Ibis client using the passed connection parameters.
@@ -96,6 +97,9 @@ class Backend(
             Port
         database
             Database to connect to
+        autocommit
+            Whether to use autocommit mode. Only ``True`` is supported at this
+            time due to a limitation of the ADBC MySQL driver.
         kwargs
             Additional keyword arguments
 
@@ -131,13 +135,27 @@ class Backend(
         host = "127.0.0.1" if host == "localhost" else host
         password = password or ""
 
-        # Also accept database/db from kwargs for backwards compat
+        # Also accept db from kwargs for backwards compat
         if database is None:
-            database = kwargs.pop("database", kwargs.pop("db", None))
+            db = kwargs.pop("db", None)
+            if db is not None:
+                warnings.warn(
+                    "Passing `db` is deprecated, use `database` instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                database = db
+
+        autocommit = bool(autocommit)
+        if not autocommit:
+            raise ValueError(
+                "The MySQL backend only supports `autocommit=True` at this time. "
+                "See https://github.com/ibis-project/ibis/pull/11958 for details."
+            )
 
         uri = f"{user}:{password}@tcp({host}:{port})/{database or ''}"
         self.con = adbc_dbapi.connect(
-            driver="mysql", db_kwargs={"uri": uri}, autocommit=True
+            driver="mysql", db_kwargs={"uri": uri}, autocommit=autocommit
         )
 
         self._post_connect()
@@ -150,7 +168,7 @@ class Backend(
                 warnings.warn(f"Unable to set session timezone to UTC: {e}")
 
     @classmethod
-    def from_connection(cls, con, /, **kwargs):
+    def from_connection(cls, con: adbc_dbapi.Connection, /, **kwargs) -> Backend:
         new_backend = cls()
         new_backend._can_reconnect = False
         new_backend.con = con

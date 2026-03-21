@@ -2029,13 +2029,17 @@ def test_stateful_data_is_loaded_once(
 
     spy = mocker.spy(TestConf, "stateless_load")
 
+    instances = []
     for _ in range(5):
-        with TestConf.load_data(data_dir, tmp_path_factory, worker_id):
-            pass
+        instances.append(TestConf.load_data(data_dir, tmp_path_factory, worker_id))
 
     # also verify that it's been called once, by checking that there's at least
     # one table
     assert con.list_tables()
+
+    # clean up connections after assertions to avoid resource leaks
+    for inst in instances:
+        inst.__exit__(None, None, None)
 
     # Ensure that the stateful load is called only once the one time it is
     # called is from the `con` input, which *should* work across processes
