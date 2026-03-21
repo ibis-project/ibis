@@ -2029,9 +2029,9 @@ def test_stateful_data_is_loaded_once(
 
     spy = mocker.spy(TestConf, "stateless_load")
 
-    instances = []
-    for _ in range(5):
-        instances.append(TestConf.load_data(data_dir, tmp_path_factory, worker_id))
+    instances = [
+        TestConf.load_data(data_dir, tmp_path_factory, worker_id) for _ in range(5)
+    ]
 
     # also verify that it's been called once, by checking that there's at least
     # one table
