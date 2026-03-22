@@ -1309,36 +1309,26 @@ class Backend(
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        table_loc = self._to_sqlglot_table(database)
-        catalog, db = self._to_catalog_db_tuple(table_loc)
+        project_id, dataset = self._parse_project_and_dataset(database)
 
         stmt = sge.Create(
             kind="VIEW",
-            this=sg.table(
-                name,
-                db=db or self.current_database,
-                catalog=catalog or self.billing_project,
-            ),
+            this=sg.table(name, db=dataset, catalog=project_id),
             expression=self.compile(obj),
             replace=overwrite,
         )
         self._run_pre_execute_hooks(obj)
         self.raw_sql(stmt.sql(self.name))
-        return self.table(name, database=(catalog, database))
+        return self.table(name, database=(project_id, dataset))
 
     def drop_view(
         self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
-        table_loc = self._to_sqlglot_table(database)
-        catalog, db = self._to_catalog_db_tuple(table_loc)
+        project_id, dataset = self._parse_project_and_dataset(database)
 
         stmt = sge.Drop(
             kind="VIEW",
-            this=sg.table(
-                name,
-                db=db or self.current_database,
-                catalog=catalog or self.billing_project,
-            ),
+            this=sg.table(name, db=dataset, catalog=project_id),
             exists=force,
         )
         self.raw_sql(stmt.sql(self.name))
