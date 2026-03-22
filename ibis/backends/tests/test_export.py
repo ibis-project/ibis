@@ -104,6 +104,11 @@ def test_empty_column_to_pyarrow(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", no_limit)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=pa.ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_empty_scalar_to_pyarrow(limit, awards_players):
     expr = awards_players.filter(awards_players.awardID == "DEADBEEF").yearID.sum()
     array = expr.to_pyarrow(limit=limit)
@@ -111,6 +116,11 @@ def test_empty_scalar_to_pyarrow(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", no_limit)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=pa.ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_scalar_to_pyarrow_scalar(limit, awards_players):
     scalar = awards_players.yearID.sum().to_pyarrow(limit=limit)
     assert isinstance(scalar, pa.Scalar)
@@ -540,6 +550,11 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     ["databricks"], raises=AssertionError, reason="Only the devil knows"
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=pa.ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_arrow_timestamp_with_time_zone(alltypes):
     from ibis.formats.pyarrow import PyArrowType
 
@@ -707,6 +722,7 @@ mark_notyet_nulls = pytest.mark.notyet(
         "impala",
         "materialize",
         "mssql",
+        "mysql",
         "singlestoredb",
         "oracle",
         "postgres",
@@ -745,12 +761,22 @@ def test_all_null_column(con):
     ["snowflake", "bigquery", "databricks"], raises=pa.ArrowNotImplementedError
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=pa.ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_all_null_scalar(con):
     e = ibis.literal(None)
     result = con.to_pyarrow(e)
     assert pat.is_null(result.type)
 
 
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=pa.ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_cast_non_null(con):
     new_ids = ibis.memtable({"id": ["my_id"]}).cast({"id": "!string"})
     assert not new_ids.schema()["id"].nullable

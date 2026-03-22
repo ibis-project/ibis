@@ -28,7 +28,7 @@ from ibis.backends import (
     SupportsTempTables,
 )
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import TRUE, C, RenameTable
+from ibis.backends.sql.compilers.base import RenameTable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -188,61 +188,61 @@ class Backend(
 
     def list_databases(self, *, like: str | None = None) -> list[str]:
         # In MySQL, "database" and "schema" are synonymous
-        with self.con.cursor() as cur:
-            cur.execute("SHOW DATABASES")
-            table = cur.fetch_arrow_table()
-        databases = table.column(0).to_pylist()
+        result = self.con.adbc_get_objects(depth="catalogs").read_all()
+        databases = result.column("catalog_name").to_pylist()
         return self._filter_with_like(databases, like)
 
-    def _schema_from_describe(self, result) -> sch.Schema:
-        type_mapper = self.compiler.type_mapper
+    @staticmethod
+    def _schema_from_adbc_execute_schema(pyarrow_schema) -> sch.Schema:
+        from ibis.formats.pyarrow import PyArrowType
+
         fields = {}
-        for i in range(result.num_rows):
-            col_name = result.column(0)[i].as_py()
-            type_string = result.column(1)[i].as_py()
-            is_nullable = result.column(2)[i].as_py()
-            fields[col_name] = type_mapper.from_string(
-                type_string, nullable=is_nullable == "YES"
-            )
+        for field in pyarrow_schema:
+            meta = {k.decode(): v.decode() for k, v in (field.metadata or {}).items()}
+            db_type = meta.get("sql.database_type_name", "")
+
+            if db_type.startswith("UNSIGNED"):
+                base = db_type.removeprefix("UNSIGNED ").lower()
+                fields[field.name] = sc.mysql.MySQLType.from_string(
+                    f"{base} unsigned", nullable=field.nullable
+                )
+            elif db_type == "DECIMAL":
+                p = int(meta["sql.precision"])
+                s = int(meta["sql.scale"])
+                fields[field.name] = dt.Decimal(p, s, nullable=field.nullable)
+            elif db_type in ("DATETIME", "TIMESTAMP"):
+                scale = int(meta.get("sql.fractional_seconds_precision", 0))
+                tz = "UTC" if db_type == "TIMESTAMP" else None
+                fields[field.name] = dt.Timestamp(
+                    timezone=tz, scale=scale or None, nullable=field.nullable
+                )
+            elif db_type == "YEAR":
+                fields[field.name] = dt.UInt8(nullable=field.nullable)
+            elif db_type == "SET":
+                fields[field.name] = dt.Array(dt.string, nullable=field.nullable)
+            else:
+                fields[field.name] = PyArrowType.to_ibis(field.type, field.nullable)
+
         return sch.Schema(fields)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        tmp_name = util.gen_name("mysql_schema")
-        quoted_tmp = sg.to_identifier(tmp_name, quoted=self.compiler.quoted).sql(
-            self.dialect
-        )
-        create_sql = f"CREATE TEMPORARY TABLE {quoted_tmp} AS SELECT * FROM ({query}) AS _t LIMIT 0"  # noqa: S608
-        describe_sql = f"DESCRIBE {quoted_tmp}"
-        drop_sql = f"DROP TEMPORARY TABLE IF EXISTS {quoted_tmp}"
-
         with self.con.cursor() as cur:
-            try:
-                cur.execute(create_sql)
-                cur.execute(describe_sql)
-                result = cur.fetch_arrow_table()
-            finally:
-                cur.execute(drop_sql)
-
-        return self._schema_from_describe(result)
+            pyarrow_schema = cur.adbc_execute_schema(str(query))
+        return self._schema_from_adbc_execute_schema(pyarrow_schema)
 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
         table = sg.table(
             name, db=database, catalog=catalog, quoted=self.compiler.quoted
-        ).sql(self.dialect)
-
-        describe_sql = sge.Describe(this=table).sql(self.dialect)
-        with self.con.cursor() as cur:
-            try:
-                cur.execute(describe_sql)
-                result = cur.fetch_arrow_table()
-            except Exception as e:
-                if getattr(e, "sqlstate", None) == "42S02":
-                    raise com.TableNotFound(name) from e
-                raise
-
-        return self._schema_from_describe(result)
+        )
+        query = sg.select("*").from_(table).sql(self.dialect)
+        try:
+            return self._get_schema_using_query(query)
+        except Exception as e:
+            if getattr(e, "sqlstate", None) == "42S02":
+                raise com.TableNotFound(name) from e
+            raise
 
     def create_database(self, name: str, force: bool = False) -> None:
         sql = sge.Create(
@@ -294,35 +294,24 @@ class Backend(
     ) -> list[str]:
         if database is not None:
             table_loc = self._to_sqlglot_table(database)
+            # In MySQL, catalog and db are both "database"
+            catalog = table_loc.catalog or table_loc.db
         else:
-            table_loc = sge.Table(
-                db=sg.to_identifier(self.current_database, quoted=self.compiler.quoted),
-                catalog=None,
-            )
+            catalog = self.current_database
 
-        conditions = [TRUE]
+        result = self.con.adbc_get_objects(
+            depth="tables", catalog_filter=catalog
+        ).read_all()
+        catalogs = result.to_pydict()
+        tables = [
+            table["table_name"]
+            for schemas in catalogs.get("catalog_db_schemas", [])
+            if schemas is not None
+            for schema in schemas
+            for table in schema.get("db_schema_tables") or []
+        ]
 
-        if (sg_cat := table_loc.args["catalog"]) is not None:
-            sg_cat.args["quoted"] = False
-        if (sg_db := table_loc.args["db"]) is not None:
-            sg_db.args["quoted"] = False
-        if table_loc.catalog or table_loc.db:
-            conditions = [C.table_schema.eq(sge.convert(table_loc.sql(self.name)))]
-
-        col = "table_name"
-        sql = (
-            sg.select(col)
-            .from_(sg.table("tables", db="information_schema"))
-            .distinct()
-            .where(*conditions)
-            .sql(self.name)
-        )
-
-        with self.con.cursor() as cur:
-            cur.execute(sql)
-            table = cur.fetch_arrow_table()
-
-        return self._filter_with_like(table.column(0).to_pylist(), like)
+        return self._filter_with_like(tables, like)
 
     def execute(
         self,
@@ -353,13 +342,10 @@ class Backend(
         sql = self.compile(table, limit=limit, params=params, **kwargs)
 
         schema = table.schema()
-        target_schema = schema.to_pyarrow()
 
         with self.con.cursor() as cur:
             cur.execute(sql)
             arrow_table = cur.fetch_arrow_table()
-
-        arrow_table = self._cast_adbc_table(arrow_table, target_schema)
 
         import pandas as pd
 
@@ -456,54 +442,15 @@ class Backend(
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := schema.null_fields:
-            schema = ibis.schema(
-                {
-                    name: dt.string if name in null_columns else typ
-                    for name, typ in schema.items()
-                }
+            raise com.IbisTypeError(
+                "MySQL cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
             )
 
         arrow_table = op.data.to_pyarrow(schema)
 
         with self.con.cursor() as cur:
             cur.adbc_ingest(op.name, arrow_table, mode="create", temporary=True)
-
-    @staticmethod
-    def _cast_adbc_column(col, target_type):
-        """Cast a single ADBC-returned Arrow column to the target type.
-
-        The ADBC MySQL driver returns opaque extension types for NULL columns
-        that PyArrow cannot cast directly.
-        """
-        import pyarrow as pa
-
-        if target_type == pa.null():
-            return pa.nulls(len(col))
-        return col
-
-    @classmethod
-    def _cast_adbc_table(cls, table, target_schema):
-        """Cast an ADBC-returned Arrow Table to match the target schema."""
-        import pyarrow as pa
-
-        columns = [
-            cls._cast_adbc_column(table.column(i), field.type)
-            for i, field in enumerate(target_schema)
-        ]
-        return pa.table(
-            dict(zip(target_schema.names, columns)),
-        )
-
-    @classmethod
-    def _cast_adbc_batch(cls, batch, target_schema):
-        """Cast an ADBC-returned Arrow RecordBatch to match the target schema."""
-        import pyarrow as pa
-
-        columns = [
-            cls._cast_adbc_column(batch.column(i), field.type)
-            for i, field in enumerate(target_schema)
-        ]
-        return pa.record_batch(columns, schema=target_schema)
 
     @util.experimental
     def to_pyarrow_batches(
@@ -530,9 +477,7 @@ class Backend(
         def batch_producer():
             try:
                 for batch in reader:
-                    yield self._cast_adbc_batch(
-                        batch.rename_columns(target_schema.names), target_schema
-                    )
+                    yield batch.rename_columns(target_schema.names)
             finally:
                 cur.close()
 

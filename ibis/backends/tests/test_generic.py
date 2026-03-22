@@ -1113,6 +1113,11 @@ def test_between(backend, alltypes, df):
 
 
 @pytest.mark.notyet(["flink"], reason="timestamp subtraction doesn't work")
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_interactive(alltypes, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
 
@@ -1201,6 +1206,11 @@ def test_typeof(con):
     ["mssql"],
     raises=PyODBCProgrammingError,
     reason="naked IN queries are not supported",
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
 )
 def test_isin_uncorrelated_simple(con):
     u1 = ibis.memtable({"id": [1, 2, 3]})
@@ -2635,6 +2645,11 @@ def test_select_sort_sort_deferred(backend, alltypes, df):
     ["druid", "athena"],
     raises=AttributeError,
     reason="not yet added the data for this backend",
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
 )
 def test_topk_counts_null(con):
     t = con.tables.topk
