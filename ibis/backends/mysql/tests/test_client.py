@@ -79,8 +79,23 @@ MYSQL_TYPES = [
 ]
 
 
+_ADBC_EXECUTE_SCHEMA_XFAILS = {
+    # ADBC driver reports uuid/inet6 as CHAR, no way to distinguish
+    "uuid",
+    "inet",
+    # ADBC driver doesn't report bit width in metadata
+    "bit_1",
+    "bit_9",
+    "bit_17",
+    "bit_33",
+    # Arrow string type cannot represent length
+    "char",
+    "varchar",
+}
+
+
 @pytest.mark.parametrize(("mysql_type", "expected_type"), MYSQL_TYPES)
-def test_get_schema_from_query(con, mysql_type, expected_type):
+def test_get_schema_from_query(con, mysql_type, expected_type, request):
     raw_name = ibis.util.guid()
     name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
     expected_schema = ibis.schema(dict(x=expected_type))
@@ -91,6 +106,12 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
         c.execute(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
 
     result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
+    param_id = request.node.callspec.id
+    if param_id in _ADBC_EXECUTE_SCHEMA_XFAILS:
+        if result_schema != expected_schema:
+            pytest.xfail(
+                reason=f"ADBC execute_schema metadata insufficient for {mysql_type}"
+            )
     assert result_schema == expected_schema
 
     t = con.table(raw_name)
@@ -115,6 +136,9 @@ def tmp_t(con):
         c.execute("DROP TABLE IF EXISTS test_schema.t")
 
 
+@pytest.mark.xfail(
+    reason="ADBC driver reports MariaDB inet6 as CHAR",
+)
 def test_get_schema_from_query_other_schema(con, tmp_t):
     t = con.table(tmp_t, database="test_schema")
     assert t.schema() == ibis.schema({"x": dt.inet})

@@ -10,6 +10,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
+    ArrowInvalid,
     ClickHouseDatabaseError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
@@ -1298,6 +1299,11 @@ def test_windowed_order_by_sequence_is_preserved(con):
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="Window function with empty PARTITION BY is not supported due to performance issues",
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
 )
 def test_duplicate_ordered_sum(con):
     expr = (
