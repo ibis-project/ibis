@@ -4,13 +4,13 @@ import contextlib
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
-
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
 from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
-from ibis.util import V
+from ibis.util import V, apply_pyarrow_hotfix
+
+apply_pyarrow_hotfix()
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

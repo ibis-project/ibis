@@ -11,7 +11,6 @@ from urllib.parse import unquote_plus
 
 import clickhouse_connect as cc
 import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
@@ -26,6 +25,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
+from ibis.util import apply_pyarrow_hotfix
 from ibis.backends import (
     BaseBackend,
     CanCreateDatabase,
@@ -35,6 +35,8 @@ from ibis.backends import (
 from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
+
+apply_pyarrow_hotfix()
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping

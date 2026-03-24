@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import fsspec
-import pyarrow_hotfix  # noqa: F401
 import pyathena
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -25,8 +24,11 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, NoExampleLoader, UrlFromPath
+from ibis.util import apply_pyarrow_hotfix
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import AlterTable, RenameTable
+
+apply_pyarrow_hotfix()
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping

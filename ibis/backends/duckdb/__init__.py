@@ -35,6 +35,9 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
+from ibis.util import apply_pyarrow_hotfix
+
+apply_pyarrow_hotfix()
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, MutableMapping, Sequence
@@ -42,7 +45,6 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow as pa
-    import pyarrow_hotfix  # noqa: F401
     import torch
     from fsspec import AbstractFileSystem
 
@@ -1380,7 +1382,8 @@ class Backend(
             The number of rows to fetch per batch
         """
         import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
+        from ibis.util import apply_pyarrow_hotfix
+        apply_pyarrow_hotfix()
 
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
@@ -1422,7 +1425,8 @@ class Backend(
         """Execute an expression."""
         import pandas as pd
         import pyarrow.types as pat
-        import pyarrow_hotfix  # noqa: F401
+        from ibis.util import apply_pyarrow_hotfix
+        apply_pyarrow_hotfix()
 
         from ibis.backends.duckdb.converter import DuckDBPandasData
 
