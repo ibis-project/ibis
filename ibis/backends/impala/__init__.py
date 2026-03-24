@@ -1334,7 +1334,9 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
         **kwargs: Any,
     ) -> pa.Table:
         import pyarrow as pa
+
         from ibis.util import apply_pyarrow_hotfix
+
         apply_pyarrow_hotfix()
 
         from ibis.formats.pyarrow import PyArrowData

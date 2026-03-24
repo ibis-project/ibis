@@ -4,6 +4,7 @@ import contextlib
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
+
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema

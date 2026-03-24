@@ -26,10 +26,10 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, PyArrowExampleLoader, UrlFromPath
-from ibis.util import apply_pyarrow_hotfix
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, RenameTable
 from ibis.backends.sql.datatypes import DatabricksType
+from ibis.util import apply_pyarrow_hotfix
 
 apply_pyarrow_hotfix()
 
