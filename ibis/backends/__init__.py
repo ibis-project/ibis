@@ -102,6 +102,7 @@ class _FileIOHandler:
             )
         else:
             from ibis.util import apply_pyarrow_hotfix
+
             apply_pyarrow_hotfix()
 
             return pyarrow
@@ -1609,6 +1610,7 @@ class PyArrowExampleLoader(ExampleLoader):
 
     def _load_parquet(self, *, path: str | Path, table_name: str) -> ir.Table:
         from ibis.util import apply_pyarrow_hotfix
+
         apply_pyarrow_hotfix()
         import pyarrow.parquet as pq
 
@@ -1622,6 +1624,7 @@ class PyArrowExampleLoader(ExampleLoader):
 
     def _load_csv(self, *, path: str | Path, table_name: str) -> ir.Table:
         from ibis.util import apply_pyarrow_hotfix
+
         apply_pyarrow_hotfix()
         import pyarrow as pa
         import pyarrow.csv

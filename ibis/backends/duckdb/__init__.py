@@ -1378,7 +1378,9 @@ class Backend(
             The number of rows to fetch per batch
         """
         import pyarrow as pa
+
         from ibis.util import apply_pyarrow_hotfix
+
         apply_pyarrow_hotfix()
 
         self._run_pre_execute_hooks(expr)
@@ -1421,7 +1423,9 @@ class Backend(
         """Execute an expression."""
         import pandas as pd
         import pyarrow.types as pat
+
         from ibis.util import apply_pyarrow_hotfix
+
         apply_pyarrow_hotfix()
 
         from ibis.backends.duckdb.converter import DuckDBPandasData

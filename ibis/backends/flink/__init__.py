@@ -493,7 +493,9 @@ class Backend(
         """
         import pandas as pd
         import pyarrow as pa
+
         from ibis.util import apply_pyarrow_hotfix
+
         apply_pyarrow_hotfix()
 
         import ibis.expr.types as ir
@@ -938,7 +940,9 @@ class Backend(
         """
         import pandas as pd
         import pyarrow as pa
+
         from ibis.util import apply_pyarrow_hotfix
+
         apply_pyarrow_hotfix()
 
         if isinstance(obj, ir.Table):
@@ -984,7 +988,9 @@ class Backend(
         **kwargs: Any,
     ) -> pa.Table:
         import pyarrow as pa
+
         from ibis.util import apply_pyarrow_hotfix
+
         apply_pyarrow_hotfix()
 
         pyarrow_batches = iter(
@@ -1012,7 +1018,9 @@ class Backend(
         **kwargs: Any,
     ):
         import pyarrow as pa
+
         from ibis.util import apply_pyarrow_hotfix
+
         apply_pyarrow_hotfix()
 
         ibis_table = expr.as_table()
@@ -1063,7 +1071,9 @@ class Backend(
         chunk_size: int | None = None,
     ):
         import pyarrow as pa
+
         from ibis.util import apply_pyarrow_hotfix
+
         apply_pyarrow_hotfix()
         from pyflink.java_gateway import get_gateway
         from pyflink.table.serializers import ArrowSerializer

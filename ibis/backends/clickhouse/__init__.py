@@ -25,7 +25,6 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.util import apply_pyarrow_hotfix
 from ibis.backends import (
     BaseBackend,
     CanCreateDatabase,
@@ -35,6 +34,7 @@ from ibis.backends import (
 from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
+from ibis.util import apply_pyarrow_hotfix
 
 apply_pyarrow_hotfix()
 
