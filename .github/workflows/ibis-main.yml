@@ -52,6 +52,9 @@ jobs:
           - none
           - latest
           - old
+        exclude:
+          - python-version: "3.14"
+            pyarrow: old
     steps:
       - name: checkout
         uses: actions/checkout@v6
@@ -83,7 +86,7 @@ jobs:
 
       - name: install numpy/pandas/pyarrow (old)
         if: matrix.pyarrow == 'old'
-        run: pip install numpy pandas pyarrow==10.0.1 pyarrow-hotfix
+        run: pip install "numpy<2" pandas pyarrow==10.0.1 pyarrow-hotfix
 
       - uses: extractions/setup-just@v3
         env:
