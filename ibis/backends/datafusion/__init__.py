@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any
 
 import datafusion as df
 import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 
@@ -35,7 +34,9 @@ from ibis.backends.sql.compilers.base import C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
-from ibis.util import gen_name, normalize_filename, normalize_filenames, warn_deprecated
+from ibis.util import apply_pyarrow_hotfix, gen_name, normalize_filename, normalize_filenames, warn_deprecated
+
+apply_pyarrow_hotfix()
 
 try:
     from datafusion import ExecutionContext as SessionContext

@@ -433,7 +433,8 @@ class PandasDataFrameProxy(TableProxy[pd.DataFrame]):
         from decimal import Decimal
 
         import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
+        from ibis.util import apply_pyarrow_hotfix
+        apply_pyarrow_hotfix()
 
         pyarrow_schema = PyArrowSchema.from_ibis(schema)
 

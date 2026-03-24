@@ -101,7 +101,8 @@ class _FileIOHandler:
                 "Exporting to arrow formats requires `pyarrow` but it is not installed"
             )
         else:
-            import pyarrow_hotfix  # noqa: F401
+            from ibis.util import apply_pyarrow_hotfix
+            apply_pyarrow_hotfix()
 
             return pyarrow
 
@@ -1607,7 +1608,8 @@ class PyArrowExampleLoader(ExampleLoader):
     temporary_example: bool = True
 
     def _load_parquet(self, *, path: str | Path, table_name: str) -> ir.Table:
-        import pyarrow_hotfix  # noqa: F401, I001
+        from ibis.util import apply_pyarrow_hotfix
+        apply_pyarrow_hotfix()
         import pyarrow.parquet as pq
 
         table = pq.read_table(path)
@@ -1619,7 +1621,8 @@ class PyArrowExampleLoader(ExampleLoader):
         )
 
     def _load_csv(self, *, path: str | Path, table_name: str) -> ir.Table:
-        import pyarrow_hotfix  # noqa: F401, I001
+        from ibis.util import apply_pyarrow_hotfix
+        apply_pyarrow_hotfix()
         import pyarrow as pa
         import pyarrow.csv
 

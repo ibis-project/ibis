@@ -10,7 +10,6 @@ from urllib.parse import parse_qs, urlparse
 from urllib.request import urlretrieve
 
 import pyarrow.parquet as pq
-import pyarrow_hotfix  # noqa: F401
 import pytest
 import snowflake.connector as sc
 import sqlglot as sg

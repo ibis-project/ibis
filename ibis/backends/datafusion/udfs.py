@@ -5,10 +5,12 @@ from urllib.parse import parse_qs, urlsplit
 
 import pyarrow as pa
 import pyarrow.compute as pc
-import pyarrow_hotfix  # noqa: F401
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.util import apply_pyarrow_hotfix
+
+apply_pyarrow_hotfix()
 
 
 def _extract_epoch_seconds(array) -> dt.int32:

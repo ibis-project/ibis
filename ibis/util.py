@@ -42,6 +42,14 @@ VERTICAL_ELLIPSIS = "⋮"
 HORIZONTAL_ELLIPSIS = "…"
 
 
+def apply_pyarrow_hotfix():
+    """Apply pyarrow hotfix for CVE-2023-47248 on pyarrow < 14.0.1."""
+    import pyarrow as pa
+
+    if tuple(int(x) for x in pa.__version__.split(".")[:3]) < (14, 0, 1):
+        import pyarrow_hotfix  # noqa: F401
+
+
 def guid() -> str:
     """Return a uuid4 hexadecimal value."""
     return uuid4().hex
