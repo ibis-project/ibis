@@ -31,18 +31,16 @@ from ibis.backends import (
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
+from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
 from ibis.util import (
-    apply_pyarrow_hotfix,
     gen_name,
     normalize_filename,
     normalize_filenames,
     warn_deprecated,
 )
-
-apply_pyarrow_hotfix()
 
 try:
     from datafusion import ExecutionContext as SessionContext
