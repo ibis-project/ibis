@@ -19,9 +19,12 @@ from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.sql.datatypes import SnowflakeType
 from ibis.backends.tests.base import BackendTest
 from ibis.formats.pyarrow import PyArrowSchema
+from ibis.util import apply_pyarrow_hotfix
 
 if TYPE_CHECKING:
     from ibis.backends import BaseBackend
+
+apply_pyarrow_hotfix()
 
 
 def _get_url():
