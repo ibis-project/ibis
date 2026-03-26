@@ -494,11 +494,8 @@ class Backend(
         import pandas as pd
         import pyarrow as pa
 
-        from ibis.util import apply_pyarrow_hotfix
-
-        apply_pyarrow_hotfix()
-
         import ibis.expr.types as ir
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
         if obj is None and schema is None:
             raise exc.IbisError("`schema` or `obj` is required")
@@ -941,9 +938,7 @@ class Backend(
         import pandas as pd
         import pyarrow as pa
 
-        from ibis.util import apply_pyarrow_hotfix
-
-        apply_pyarrow_hotfix()
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
         if isinstance(obj, ir.Table):
             statement = InsertSelect(
@@ -989,9 +984,7 @@ class Backend(
     ) -> pa.Table:
         import pyarrow as pa
 
-        from ibis.util import apply_pyarrow_hotfix
-
-        apply_pyarrow_hotfix()
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
         pyarrow_batches = iter(
             self.to_pyarrow_batches(expr, params=params, limit=limit, **kwargs)
@@ -1019,9 +1012,7 @@ class Backend(
     ):
         import pyarrow as pa
 
-        from ibis.util import apply_pyarrow_hotfix
-
-        apply_pyarrow_hotfix()
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
         ibis_table = expr.as_table()
 
@@ -1071,15 +1062,12 @@ class Backend(
         chunk_size: int | None = None,
     ):
         import pyarrow as pa
-
-        from ibis.util import apply_pyarrow_hotfix
-
-        apply_pyarrow_hotfix()
         from pyflink.java_gateway import get_gateway
         from pyflink.table.serializers import ArrowSerializer
         from pyflink.table.types import create_arrow_schema
 
         from ibis.backends.flink.datatypes import get_field_data_types
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
         # Note (mehmet): Implementation of this is based on
         # pyflink/table/table.py: to_pandas().
 

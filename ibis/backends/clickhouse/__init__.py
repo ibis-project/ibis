@@ -34,9 +34,7 @@ from ibis.backends import (
 from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
-from ibis.util import apply_pyarrow_hotfix
-
-apply_pyarrow_hotfix()
+from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping

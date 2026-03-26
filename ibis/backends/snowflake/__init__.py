@@ -35,9 +35,7 @@ from ibis.backends import (
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR
-from ibis.util import apply_pyarrow_hotfix
-
-apply_pyarrow_hotfix()
+from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator, Mapping

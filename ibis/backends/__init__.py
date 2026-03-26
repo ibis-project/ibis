@@ -101,9 +101,7 @@ class _FileIOHandler:
                 "Exporting to arrow formats requires `pyarrow` but it is not installed"
             )
         else:
-            from ibis.util import apply_pyarrow_hotfix
-
-            apply_pyarrow_hotfix()
+            from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
             return pyarrow
 
@@ -1609,10 +1607,9 @@ class PyArrowExampleLoader(ExampleLoader):
     temporary_example: bool = True
 
     def _load_parquet(self, *, path: str | Path, table_name: str) -> ir.Table:
-        from ibis.util import apply_pyarrow_hotfix
-
-        apply_pyarrow_hotfix()
         import pyarrow.parquet as pq
+
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
         table = pq.read_table(path)
         return self.create_table(
@@ -1623,11 +1620,11 @@ class PyArrowExampleLoader(ExampleLoader):
         )
 
     def _load_csv(self, *, path: str | Path, table_name: str) -> ir.Table:
-        from ibis.util import apply_pyarrow_hotfix
 
-        apply_pyarrow_hotfix()
         import pyarrow as pa
         import pyarrow.csv
+
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
         # The convert options lets pyarrow treat empty strings as null for
         # string columns, but not quoted empty strings.

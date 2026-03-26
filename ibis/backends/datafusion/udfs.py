@@ -8,9 +8,7 @@ import pyarrow.compute as pc
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.util import apply_pyarrow_hotfix
-
-apply_pyarrow_hotfix()
+from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
 
 def _extract_epoch_seconds(array) -> dt.int32:

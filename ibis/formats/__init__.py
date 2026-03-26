@@ -254,9 +254,7 @@ class TableProxy(PseudoHashable[T]):
     def to_pyarrow_bytes(self, schema: Schema) -> bytes:
         import pyarrow as pa
 
-        from ibis.util import apply_pyarrow_hotfix
-
-        apply_pyarrow_hotfix()
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
         data = self.to_pyarrow(schema=schema)
         out = pa.BufferOutputStream()

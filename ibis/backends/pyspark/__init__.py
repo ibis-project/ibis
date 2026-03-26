@@ -1043,10 +1043,7 @@ class Backend(
             )
         import pyarrow as pa
 
-        from ibis.util import apply_pyarrow_hotfix
-
-        apply_pyarrow_hotfix()
-
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
         from ibis.formats.pyarrow import PyArrowData
 
         table_expr = expr.as_table()

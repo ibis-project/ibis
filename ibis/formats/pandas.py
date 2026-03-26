@@ -434,9 +434,7 @@ class PandasDataFrameProxy(TableProxy[pd.DataFrame]):
 
         import pyarrow as pa
 
-        from ibis.util import apply_pyarrow_hotfix
-
-        apply_pyarrow_hotfix()
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
         pyarrow_schema = PyArrowSchema.from_ibis(schema)
 
