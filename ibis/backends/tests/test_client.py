@@ -1855,6 +1855,7 @@ def test_table_not_found(con):
         con.table(gen_name("table_not_found"))
 
 
+@pytest.mark.parametrize("overwrite", [True, False])
 @pytest.mark.notimpl(
     ["flink"], raises=com.IbisError, reason="not yet implemented for Flink"
 )
@@ -1863,7 +1864,7 @@ def test_table_not_found(con):
     raises=AssertionError,
     reason="Schema resolution issue with cross-database table loading in Materialize (needs investigation).",
 )
-def test_no_accidental_cross_database_table_load(con_create_database):
+def test_no_accidental_cross_database_table_load(con_create_database, overwrite):
     con = con_create_database
 
     # Create an extra database
@@ -1874,7 +1875,9 @@ def test_no_accidental_cross_database_table_load(con_create_database):
         table := gen_name("table"), schema=(sch1 := ibis.schema({"a": "int"}))
     )
 
-    con.create_table(table, schema=ibis.schema({"b": "string"}), database=dbname)
+    con.create_table(
+        table, schema=ibis.schema({"b": "string"}), database=dbname, overwrite=overwrite
+    )
 
     # Can grab table object from current db:
     t = con.table(table)
