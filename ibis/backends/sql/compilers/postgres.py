@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import math
 import string
 import textwrap
 from functools import partial, reduce
@@ -649,7 +650,9 @@ $$""".format(
         return self.f.right(arg, self.f.length(end)).eq(end)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
-        if dtype.is_binary():
+        if dtype.is_floating() and math.isfinite(value):
+            return self.cast(sge.convert(value), dtype)
+        elif dtype.is_binary():
             return self.cast("".join(map(r"\x{:0>2x}".format, value)), dt.binary)
         elif dtype.is_time():
             to_int32 = partial(self.cast, to=dt.int32)

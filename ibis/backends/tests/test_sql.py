@@ -49,6 +49,20 @@ def test_literal(backend, expr):
     assert "432" in ibis.to_sql(expr, dialect=backend.name())
 
 
+def test_float_literal_has_cast_on_postgres():
+    """Float literals should have an explicit CAST on postgres.
+
+    Without the CAST, postgres interprets bare float values like 0.5518
+    as numeric/decimal, which causes errors when converting to pyarrow.
+
+    Regression test for https://github.com/ibis-project/ibis/issues/11947
+    """
+    expr = ibis.literal(0.5518, type="double")
+    sql = ibis.to_sql(expr, dialect="postgres")
+    assert "DOUBLE PRECISION" in sql
+    assert "CAST" in sql
+
+
 @pytest.mark.never(["polars"], reason="not SQL", raises=ValueError)
 def test_group_by_has_index(backend, snapshot):
     countries = ibis.table(
