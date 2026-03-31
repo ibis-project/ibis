@@ -22,6 +22,7 @@ from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
     GoogleBadRequest,
     MySQLOperationalError,
+    MySQLProgrammingError,
     PolarsComputeError,
     PsycoPg2IndeterminateDatatype,
     PsycoPg2InternalError,
@@ -233,6 +234,7 @@ builtin_array = toolz.compose(
         raises=(
             com.OperationNotDefinedError,
             MySQLOperationalError,
+            MySQLProgrammingError,
             SingleStoreDBProgrammingError,
             com.UnsupportedBackendType,
             com.TableNotFound,

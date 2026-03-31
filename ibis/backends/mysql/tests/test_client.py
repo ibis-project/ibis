@@ -63,6 +63,12 @@ MYSQL_TYPES = [
     param("int unsigned", dt.uint32, id="int-unsigned"),
     param("smallint unsigned", dt.uint16, id="smallint-unsigned"),
     param("tinyint unsigned", dt.uint8, id="tinyint-unsigned"),
+    param("json", dt.string, id="json"),
+    param("inet6", dt.inet, id="inet"),
+    param("uuid", dt.uuid, id="uuid"),
+    param("enum('small', 'medium', 'large')", dt.string, id="enum"),
+    param("mediumtext", dt.string, id="mediumtext"),
+    param("text", dt.string, id="text"),
 ] + [
     param(
         f"datetime({scale:d})",
@@ -73,8 +79,23 @@ MYSQL_TYPES = [
 ]
 
 
+_ADBC_EXECUTE_SCHEMA_XFAILS = {
+    # ADBC driver reports uuid/inet6 as CHAR, no way to distinguish
+    "uuid",
+    "inet",
+    # ADBC driver doesn't report bit width in metadata
+    "bit_1",
+    "bit_9",
+    "bit_17",
+    "bit_33",
+    # Arrow string type cannot represent length
+    "char",
+    "varchar",
+}
+
+
 @pytest.mark.parametrize(("mysql_type", "expected_type"), MYSQL_TYPES)
-def test_get_schema_from_query(con, mysql_type, expected_type):
+def test_get_schema_from_query(con, mysql_type, expected_type, request):
     raw_name = ibis.util.guid()
     name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
     expected_schema = ibis.schema(dict(x=expected_type))
@@ -85,46 +106,16 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
         c.execute(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
 
     result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
+    param_id = request.node.callspec.id
+    if param_id in _ADBC_EXECUTE_SCHEMA_XFAILS:
+        if result_schema != expected_schema:
+            pytest.xfail(
+                reason=f"ADBC execute_schema metadata insufficient for {mysql_type}"
+            )
     assert result_schema == expected_schema
 
     t = con.table(raw_name)
     assert t.schema() == expected_schema
-
-
-@pytest.mark.parametrize(
-    ("mysql_type", "get_schema_expected_type", "table_expected_type"),
-    [
-        param("json", dt.binary, dt.string, id="json"),
-        param("inet6", dt.binary, dt.inet, id="inet"),
-        param("uuid", dt.binary, dt.uuid, id="uuid"),
-        param(
-            "enum('small', 'medium', 'large')",
-            dt.String(length=6),
-            dt.string,
-            id="enum",
-        ),
-        param("mediumtext", dt.String(length=2**24 - 1), dt.string, id="mediumtext"),
-        param("text", dt.String(length=2**16 - 1), dt.string, id="text"),
-    ],
-)
-def test_get_schema_from_query_special_cases(
-    con, mysql_type, get_schema_expected_type, table_expected_type
-):
-    raw_name = ibis.util.guid()
-    name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
-    get_schema_expected_schema = ibis.schema(dict(x=get_schema_expected_type))
-    table_expected_schema = ibis.schema(dict(x=table_expected_type))
-
-    # temporary tables get cleaned up by the db when the session ends, so we
-    # don't need to explicitly drop the table
-    with con.begin() as c:
-        c.execute(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
-
-    result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
-    assert result_schema == get_schema_expected_schema
-
-    t = con.table(raw_name)
-    assert t.schema() == table_expected_schema
 
 
 @pytest.mark.parametrize("coltype", ["TINYBLOB", "MEDIUMBLOB", "BLOB", "LONGBLOB"])
@@ -145,11 +136,19 @@ def tmp_t(con):
         c.execute("DROP TABLE IF EXISTS test_schema.t")
 
 
+@pytest.mark.xfail(
+    reason="ADBC driver reports MariaDB inet6 as CHAR",
+)
 def test_get_schema_from_query_other_schema(con, tmp_t):
     t = con.table(tmp_t, database="test_schema")
     assert t.schema() == ibis.schema({"x": dt.inet})
 
 
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=Exception,
+    reason="ADBC MySQL driver cannot parse zero timestamps ('0000-00-00 00:00:00')",
+)
 def test_zero_timestamp_data(con):
     sql = """
     CREATE TEMPORARY TABLE ztmp_date_issue
@@ -176,8 +175,8 @@ def test_zero_timestamp_data(con):
             "name": ["C", "B", "C"],
             "tradedate": pd.to_datetime(
                 [date(2018, 10, 22), date(2017, 6, 7), date(2022, 12, 21)]
-            ),
-            "date": [pd.NaT, pd.NaT, pd.NaT],
+            ).as_unit("s"),
+            "date": pd.array([pd.NaT, pd.NaT, pd.NaT], dtype="datetime64[s]"),
         }
     )
     tm.assert_frame_equal(result, expected)

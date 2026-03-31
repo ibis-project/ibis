@@ -24,6 +24,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
+    MySQLOperationalError,
     MySQLProgrammingError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
@@ -1112,6 +1113,11 @@ def test_between(backend, alltypes, df):
 
 
 @pytest.mark.notyet(["flink"], reason="timestamp subtraction doesn't work")
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_interactive(alltypes, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
 
@@ -1200,6 +1206,11 @@ def test_typeof(con):
     ["mssql"],
     raises=PyODBCProgrammingError,
     reason="naked IN queries are not supported",
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
 )
 def test_isin_uncorrelated_simple(con):
     u1 = ibis.memtable({"id": [1, 2, 3]})
@@ -1406,7 +1417,7 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 
 
 @pytest.mark.notyet(
-    ["mssql", "mysql", "exasol", "impala"],
+    ["mssql", "exasol", "impala"],
     reason="various syntax errors reported",
 )
 @pytest.mark.notyet(
@@ -2635,6 +2646,11 @@ def test_select_sort_sort_deferred(backend, alltypes, df):
     raises=AttributeError,
     reason="not yet added the data for this backend",
 )
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_topk_counts_null(con):
     t = con.tables.topk
     tk = t.x.topk(10)
@@ -2817,6 +2833,11 @@ def test_table_describe_with_multiple_decimal_columns(con):
         # With Python 3.10, the same code raises a different exception type :(
         sqlite3.InterfaceError,
     ),
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=(MySQLOperationalError, OSError),
+    reason="ADBC MySQL driver maps DECIMAL(n,0) to int64 but fails to parse the text-protocol value; see https://github.com/adbc-drivers/driverbase-go/issues/129",
 )
 def test_comparison_with_decimal_literal(con):
     t = ibis.memtable(

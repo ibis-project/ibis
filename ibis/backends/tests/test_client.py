@@ -27,6 +27,7 @@ import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.conftest import NO_MERGE_SUPPORT
 from ibis.backends.tests.errors import (
+    ArrowInvalid,
     ArrowTypeError,
     DatabricksServerOperationError,
     ExaQueryError,
@@ -1317,6 +1318,11 @@ def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
 
 
 @pytest.mark.parametrize("is_jupyter", [True, False])
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
     pytest.importorskip("rich")
 
@@ -1984,6 +1990,12 @@ def test_insert_into_table_missing_columns(con, temp_table):
     reason="Memtables not visible in list_tables() due to transaction block restrictions.",
     # Related to: https://materialize.com/docs/sql/begin/
 )
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=AssertionError,
+    reason="ADBC get_objects doesn't see temporary tables",
+    # https://github.com/adbc-drivers/driverbase-go/issues/137
+)
 def test_memtable_cleanup(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": list("def")})
 
@@ -2020,6 +2032,7 @@ def test_memtable_registered_exactly_once(con, mocker):
     spy.assert_called_once_with(t.op())
 
 
+@pytest.mark.filterwarnings("ignore::ResourceWarning")
 def test_stateful_data_is_loaded_once(
     con, data_dir, tmp_path_factory, worker_id, mocker
 ):

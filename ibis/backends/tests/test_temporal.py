@@ -2140,7 +2140,11 @@ def test_large_timestamp(con):
                 pytest.mark.notyet(
                     ["mysql", "singlestoredb"],
                     reason="doesn't support nanoseconds",
-                    raises=(MySQLOperationalError, SingleStoreDBOperationalError),
+                    raises=(
+                        MySQLOperationalError,
+                        MySQLProgrammingError,
+                        SingleStoreDBOperationalError,
+                    ),
                 ),
                 pytest.mark.notyet(
                     ["bigquery"],
