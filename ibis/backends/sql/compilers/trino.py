@@ -585,9 +585,21 @@ class TrinoCompiler(SQLGlotCompiler):
             if from_.is_integer():
                 return self.f.from_unixtime(arg, tz)
             else:
-                return self.f.from_unixtime_nanos(
+                out = self.f.from_unixtime_nanos(
                     self.cast(arg, dt.Decimal(38, 9)) * 1_000_000_000
                 )
+                return self.f.at_timezone(out, tz)
+
+        if to.is_timestamp() and (timezone := to.timezone) is not None:
+            if from_.is_string() or from_.is_date():
+                arg = self.cast(arg, dt.Timestamp(scale=to.scale))
+                from_ = dt.Timestamp(scale=to.scale)
+
+            if from_.is_timestamp():
+                if from_.timezone is None:
+                    arg = self.f.with_timezone(arg, "UTC")
+                return self.f.at_timezone(arg, timezone)
+
         return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_CountDistinctStar(self, op, *, arg, where):

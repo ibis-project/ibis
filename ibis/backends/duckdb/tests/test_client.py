@@ -4,7 +4,7 @@ import os
 import random
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 import duckdb
 import numpy as np
@@ -14,6 +14,7 @@ import pytest
 from pytest import param
 
 import ibis
+from ibis import _
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.conftest import LINUX, SANDBOXED, not_windows
@@ -199,6 +200,59 @@ def test_to_other_sql(con, snapshot):
 
     sql = ibis.to_sql(t, dialect="snowflake")
     snapshot.assert_match(sql, "out.sql")
+
+
+def test_timezone_cast_extracts_and_time():
+    con = ibis.duckdb.connect()
+    t = ibis.memtable(
+        {"x": [datetime(2023, 1, 2, 0, 0, tzinfo=timezone.utc)]},
+        schema=ibis.schema({"x": "timestamp('UTC')"}),
+    )
+    expr = t.select(
+        ams_hour=t.x.cast("timestamp('Europe/Amsterdam')").hour(),
+        utc_hour=t.x.cast("timestamp('UTC')").hour(),
+        ams_time=t.x.cast("timestamp('Europe/Amsterdam')").time(),
+        utc_time=t.x.cast("timestamp('UTC')").time(),
+    )
+
+    result = con.execute(expr)
+
+    assert result.ams_hour.iat[0] == 1
+    assert result.utc_hour.iat[0] == 0
+    assert str(result.ams_time.iat[0]) == "01:00:00"
+    assert str(result.utc_time.iat[0]) == "00:00:00"
+
+
+def test_timezone_cast_epoch_seconds_uses_timezone_instant():
+    con = ibis.duckdb.connect()
+    t = ibis.memtable({"a": [1]})
+    expr = t.select(var=ibis.literal("2023-01-02")).mutate(
+        es_ams=ibis.timestamp(_.var, timezone="Europe/Amsterdam").epoch_seconds(),
+        es_utc=ibis.timestamp(_.var, timezone="UTC").epoch_seconds(),
+        es_ams2=_.var.cast("timestamp('Europe/Amsterdam')").epoch_seconds(),
+        es_utc2=_.var.cast("timestamp('UTC')").epoch_seconds(),
+    )
+
+    result = con.execute(expr).iloc[0]
+
+    assert result.es_ams == 1672614000
+    assert result.es_utc == 1672617600
+    assert result.es_ams2 == 1672614000
+    assert result.es_utc2 == 1672617600
+
+
+def test_to_trino_sql_timezone_cast_uses_timezone_functions():
+    t = ibis.memtable({"x": ["2023-01-02"]})
+    expr = t.select(
+        casted=t.x.cast("timestamp('Europe/Paris')"),
+        hour=t.x.cast("timestamp('Europe/Paris')").hour(),
+        time=t.x.cast("timestamp('Europe/Paris')").time(),
+    )
+
+    sql = ibis.to_sql(expr, dialect="trino")
+
+    assert "AT_TIMEZONE(" in sql
+    assert "WITH_TIMEZONE(" in sql
 
 
 def test_insert_preserves_column_case(con):
