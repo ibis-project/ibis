@@ -694,6 +694,7 @@ class SQLGlotCompiler(abc.ABC):
             lambda parsed, cte: parsed.with_(
                 cte.args["alias"],
                 as_=cte.args["this"],
+                recursive=isinstance(cte.parent, sge.With) and cte.parent.recursive,
                 dialect=self.dialect,
                 copy=False,
             ),
