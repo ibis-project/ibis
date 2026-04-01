@@ -841,6 +841,59 @@ class Backend(
         )
         return self.table(table_name)
 
+    @util.experimental
+    def read_vortex(
+        self,
+        path: str | Path,
+        /,
+        *,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a vortex file as a table in the current database.
+
+        :: {.callout-note}
+        ## This feature requires duckdb>=1.4.2
+        :::
+
+        Parameters
+        ----------
+        path
+            The data source(s). May be a path to a file or a glob pattern
+            for vortex files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to DuckDB's `read_vortex`
+            function. See https://duckdb.org/docs/stable/core_extensions/vortex
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table.
+        """
+        path = util.normalize_filename(path)
+
+        if not table_name:
+            table_name = util.gen_name("read_vortex")
+
+        extensions = ["vortex"]
+        if path.startswith(("http://", "https://", "s3://")):
+            extensions.append("httpfs")
+
+        self._load_extensions(extensions)
+
+        options = [
+            sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
+        ]
+        self._create_temp_view(
+            table_name,
+            sg.select(STAR).from_(self.compiler.f.read_vortex(path, *options)),
+        )
+        return self.table(table_name)
+
     def read_delta(
         self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
@@ -1535,6 +1588,47 @@ class Backend(
         self._run_pre_execute_hooks(expr)
         query = self.compile(expr, params=params)
         args = ["FORMAT 'parquet'", *(f"{k.upper()} {v!r}" for k, v in kwargs.items())]
+        copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
+        with self._safe_raw_sql(copy_cmd):
+            pass
+
+    @util.experimental
+    def to_vortex(
+        self,
+        expr: ir.Table,
+        /,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a vortex file.
+
+        :: {.callout-note}
+        ## This feature requires duckdb>=1.4.2
+        :::
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to a vortex file.
+        path
+            The data source. A string or Path to the vortex file.
+        params
+            Mapping of scalar parameter expressions to value.
+        **kwargs
+            DuckDB Vortex writer arguments. See https://duckdb.org/docs/stable/core_extensions/vortex
+            for more information.
+
+        """
+
+        self._run_pre_execute_hooks(expr)
+        self._load_extensions(["vortex"])
+        query = self.compile(expr, params=params)
+        args = ["FORMAT vortex", *(f"{k.upper()} {v!r}" for k, v in kwargs.items())]
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
         with self._safe_raw_sql(copy_cmd):
             pass
