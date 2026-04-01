@@ -33,7 +33,6 @@ from ibis.backends import (
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
-from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 
 if TYPE_CHECKING:
@@ -1798,28 +1797,3 @@ class Backend(
     def _create_temp_view(self, table_name, source):
         with self._safe_raw_sql(self._get_temp_view_definition(table_name, source)):
             pass
-
-
-@lazy_singledispatch
-def _read_in_memory(source: Any, table_name: str, _conn: Backend, **_: Any):
-    raise NotImplementedError(
-        f"The `{_conn.name}` backend currently does not support "
-        f"reading data of {type(source)!r}"
-    )
-
-
-@_read_in_memory.register("polars.DataFrame")
-@_read_in_memory.register("polars.LazyFrame")
-@_read_in_memory.register("pyarrow.Table")
-@_read_in_memory.register("pandas.DataFrame")
-@_read_in_memory.register("pyarrow.dataset.Dataset")
-def _default(source, table_name, _conn, **_: Any):
-    _conn.con.register(table_name, source)
-
-
-@_read_in_memory.register("pyarrow.RecordBatchReader")
-def _pyarrow_rbr(source, table_name, _conn, **_: Any):
-    _conn.con.register(table_name, source)
-    # Ensure the reader isn't marked as started, in case the name is
-    # being overwritten.
-    _conn._record_batch_readers_consumed[table_name] = False
