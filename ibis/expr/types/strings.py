@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.types as ir
     from ibis.common.deferred import Deferred
+    from ibis.expr.datatypes import InferrableToString
 
 
 @public
@@ -1605,7 +1606,39 @@ class StringValue(Value):
         """
         return ops.StringConcat((self, other, *args)).to_expr()
 
-    def __add__(self, other: str | StringValue | Deferred) -> StringValue:
+    def __eq__(
+        self, other: InferrableToString | StringValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__eq__(other)
+
+    def __ne__(
+        self, other: InferrableToString | StringValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__ne__(other)
+
+    def __ge__(
+        self, other: InferrableToString | StringValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__ge__(other)
+
+    def __gt__(
+        self, other: InferrableToString | StringValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__gt__(other)
+
+    def __le__(
+        self, other: InferrableToString | StringValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__le__(other)
+
+    def __lt__(
+        self, other: InferrableToString | StringValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__lt__(other)
+
+    def __add__(
+        self, other: InferrableToString | StringValue | Deferred
+    ) -> StringValue:
         """Concatenate strings.
 
         Parameters
