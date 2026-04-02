@@ -2868,7 +2868,7 @@ requires-dist = [
     { name = "pyexasol", marker = "extra == 'exasol'", specifier = ">=0.25.2" },
     { name = "pyodbc", marker = "extra == 'mssql'", specifier = ">=4.0.39" },
     { name = "pyproj", marker = "extra == 'geospatial'", specifier = ">=3.3.0" },
-    { name = "pyspark", marker = "extra == 'pyspark'", specifier = ">=3.5,<4.1" },
+    { name = "pyspark", marker = "extra == 'pyspark'", specifier = ">=3.5,<4.2" },
     { name = "python-dateutil", specifier = ">=2.8.2" },
     { name = "regex", marker = "extra == 'sqlite'", specifier = ">=2021.7.6" },
     { name = "rich", marker = "extra == 'athena'", specifier = ">=12.4.4" },
@@ -5785,12 +5785,12 @@ wheels = [
 
 [[package]]
 name = "pyspark"
-version = "4.0.1"
+version = "4.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "py4j" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/40/1414582f16c1d7b051c668c2e19c62d21a18bd181d944cb24f5ddbb2423f/pyspark-4.0.1.tar.gz", hash = "sha256:9d1f22d994f60369228397e3479003ffe2dd736ba79165003246ff7bd48e2c73", size = 434204896, upload-time = "2025-09-06T07:15:57.091Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/19/bf/58ee13add151469c25825b7125bbf62c3bdcec05eec4d458fcb5c5516066/pyspark-4.1.1.tar.gz", hash = "sha256:77f78984aa84fbe865c717dd37b49913b4e5c97d76ef6824f932f1aefa6621ec", size = 455359625, upload-time = "2026-01-09T09:38:38.28Z" }
 
 [[package]]
 name = "pystack"
