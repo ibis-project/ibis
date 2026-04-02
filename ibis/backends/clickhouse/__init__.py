@@ -11,7 +11,6 @@ from urllib.parse import unquote_plus
 
 import clickhouse_connect as cc
 import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
@@ -35,6 +34,7 @@ from ibis.backends import (
 from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
+from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping

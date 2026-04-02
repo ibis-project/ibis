@@ -10,7 +10,6 @@ from urllib.parse import parse_qs, urlparse
 from urllib.request import urlretrieve
 
 import pyarrow.parquet as pq
-import pyarrow_hotfix  # noqa: F401
 import pytest
 import snowflake.connector as sc
 import sqlglot as sg
@@ -19,6 +18,7 @@ import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.sql.datatypes import SnowflakeType
 from ibis.backends.tests.base import BackendTest
+from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 from ibis.formats.pyarrow import PyArrowSchema
 
 if TYPE_CHECKING:

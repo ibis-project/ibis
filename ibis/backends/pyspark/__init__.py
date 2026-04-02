@@ -1042,8 +1042,8 @@ class Backend(
                 "PySpark in streaming mode does not support to_pyarrow"
             )
         import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
 
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
         from ibis.formats.pyarrow import PyArrowData
 
         table_expr = expr.as_table()
