@@ -1324,7 +1324,7 @@ class Backend(
         )
         self._run_pre_execute_hooks(obj)
         self.raw_sql(stmt.sql(self.name))
-        return self.table(name, database=(catalog, database))
+        return self.table(name, database=(catalog, db))
 
     def drop_view(
         self, name: str, /, *, database: str | None = None, force: bool = False
