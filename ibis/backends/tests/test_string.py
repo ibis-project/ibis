@@ -1144,8 +1144,9 @@ def string_temp_table(backend, con):
                 "aBc",
                 "🐍",
                 "ÉéÈèêç",
+                "fluff",
             ],
-            "index_col": [0, 1, 2, 3, 4, 5, 6],
+            "index_col": [0, 1, 2, 3, 4, 5, 6, 7],
         }
     )
 
