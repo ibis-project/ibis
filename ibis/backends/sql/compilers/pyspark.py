@@ -85,6 +85,7 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.EndsWith: "endswith",
         ops.Hash: "hash",
         ops.Log10: "log10",
+        ops.Strip: "trim",
         ops.LStrip: "ltrim",
         ops.RStrip: "rtrim",
         ops.MapLength: "size",
