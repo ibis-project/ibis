@@ -45,6 +45,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.ArgMin,
         ops.Covariance,
         ops.ExtractDayOfYear,
+        ops.Kurtosis,
         ops.Levenshtein,
         ops.Map,
         ops.Median,
@@ -59,7 +60,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.TimestampBucket,
         ops.TimestampDelta,
         ops.Unnest,
-        ops.Kurtosis,
     )
 
     SIMPLE_OPS = {
@@ -77,9 +77,12 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.DayOfWeekName: "dayname",
         ops.ExtractEpochSeconds: "unix_timestamp",
         ops.Hash: "fnv_hash",
+        ops.LStrip: "ltrim",
         ops.Ln: "ln",
-        ops.TypeOf: "typeof",
+        ops.RStrip: "rtrim",
         ops.RegexReplace: "regexp_replace",
+        ops.Strip: "trim",
+        ops.TypeOf: "typeof",
     }
 
     @staticmethod
