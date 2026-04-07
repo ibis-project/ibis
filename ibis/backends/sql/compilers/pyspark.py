@@ -4,7 +4,6 @@ import calendar
 import itertools
 import operator
 import re
-from string import whitespace as WHITESPACE
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -684,13 +683,13 @@ class PySparkCompiler(SQLGlotCompiler):
         return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)
 
     def visit_LStrip(self, op, *, arg):
-        return self.f.regexp_replace(arg, rf"^[{WHITESPACE}]+", "")
+        return self.f.regexp_replace(arg, r"^\s+", "")
 
     def visit_RStrip(self, op, *, arg):
-        return self.f.regexp_replace(arg, rf"[{WHITESPACE}]+$", "")
+        return self.f.regexp_replace(arg, r"\s+$", "")
 
     def visit_Strip(self, op, *, arg):
-        return self.visit_RStrip(self.visit_LStrip(op, arg=arg), arg=arg)
+        return self.f.regexp_replace(arg, r"^\s+|\s+$", "")
 
 
 compiler = PySparkCompiler()
