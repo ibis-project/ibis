@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 class Backend(SupportsTempTables, BaseBackend, NoUrl, DirectExampleLoader):
     name = "polars"
     dialect = Polars
+    supports_temporary_tables = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -70,7 +71,7 @@ class Backend(SupportsTempTables, BaseBackend, NoUrl, DirectExampleLoader):
         if tables is not None and not isinstance(tables, Mapping):
             raise TypeError("Input to ibis.polars.connect must be a mapping")
 
-        # tables are ephemeral
+        # tables are emphemeral
         self._tables.clear()
 
         for name, table in (tables or {}).items():
@@ -374,7 +375,7 @@ class Backend(SupportsTempTables, BaseBackend, NoUrl, DirectExampleLoader):
             del self._tables[name]
             self._context.unregister(name)
         elif not force:
-            raise com.TableNotFound(name)
+            raise com.IbisError(f"Table {name!r} does not exist")
 
     def drop_view(self, name: str, /, *, force: bool = False) -> None:
         self.drop_table(name, force=force)
@@ -440,7 +441,7 @@ class Backend(SupportsTempTables, BaseBackend, NoUrl, DirectExampleLoader):
         self,
         expr: ir.Expr,
         params: Mapping[ir.Expr, object] | None = None,
-        limit: int | str | None = None,
+        limit: int | None = None,
         engine: Literal["cpu", "gpu", "streaming"] | pl.GPUEngine = "cpu",
         **kwargs: Any,
     ) -> pl.DataFrame:
@@ -464,7 +465,7 @@ class Backend(SupportsTempTables, BaseBackend, NoUrl, DirectExampleLoader):
         expr: ir.Expr,
         /,
         *,
-        params: Mapping[ir.Scalar, Any] | None = None,
+        params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         engine: Literal["cpu", "gpu", "streaming"] | pl.GPUEngine = "cpu",
         **kwargs: Any,
