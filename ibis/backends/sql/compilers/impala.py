@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from string import whitespace as WHITESPACE
+from string import whitespace
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -19,6 +19,8 @@ from ibis.backends.sql.rewrites import (
     rewrite_empty_order_by_window,
     split_select_distinct_with_order_by,
 )
+
+WHITESPACE = whitespace.encode("unicode-escape").decode()
 
 
 class ImpalaCompiler(SQLGlotCompiler):
@@ -325,18 +327,16 @@ class ImpalaCompiler(SQLGlotCompiler):
         return self.f.datediff(left, right)
 
     def visit_LStrip(self, op, *, arg):
-        return self.f.anon.ltrim(arg, repr(WHITESPACE))
+        return self.f.anon.ltrim(arg, WHITESPACE)
 
     def visit_RStrip(self, op, *, arg):
-        return self.f.anon.rtrim(arg, repr(WHITESPACE))
+        return self.f.anon.rtrim(arg, WHITESPACE)
 
     def visit_Strip(self, op, *, arg):
         # Impala's `TRIM` doesn't allow specifying characters to trim off, unlike
         # Impala's `RTRIM` and `LTRIM` which accept a set of characters to
         # remove.
-        return self.f.anon.rtrim(
-            self.f.anon.ltrim(arg, repr(WHITESPACE)), repr(WHITESPACE)
-        )
+        return self.f.anon.rtrim(self.f.anon.ltrim(arg, WHITESPACE), WHITESPACE)
 
 
 compiler = ImpalaCompiler()
