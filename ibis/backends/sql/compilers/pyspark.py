@@ -4,6 +4,7 @@ import calendar
 import itertools
 import operator
 import re
+from string import whitespace as WHITESPACE
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -85,9 +86,6 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.EndsWith: "endswith",
         ops.Hash: "hash",
         ops.Log10: "log10",
-        ops.Strip: "trim",
-        ops.LStrip: "ltrim",
-        ops.RStrip: "rtrim",
         ops.MapLength: "size",
         ops.MapContains: "map_contains_key",
         ops.MapMerge: "map_concat",
@@ -684,6 +682,20 @@ class PySparkCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)
+
+    def visit_LStrip(self, op, *, arg):
+        return self.f.anon.ltrim(arg, repr(WHITESPACE))
+
+    def visit_RStrip(self, op, *, arg):
+        return self.f.anon.rtrim(arg, repr(WHITESPACE))
+
+    def visit_Strip(self, op, *, arg):
+        # PySpark's `TRIM` didn't allow specifying characters to trim off, unlike
+        # PySpark's `RTRIM` and `LTRIM` which accept a set of characters to
+        # remove.
+        return self.f.anon.rtrim(
+            self.f.anon.ltrim(arg, repr(WHITESPACE)), repr(WHITESPACE)
+        )
 
 
 compiler = PySparkCompiler()
