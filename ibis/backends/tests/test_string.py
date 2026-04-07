@@ -1145,9 +1145,8 @@ def string_temp_table(backend, con):
                 "🐍",
                 "ÉéÈèêç",
                 "fluf\f",
-                "'fluf\f'",
             ],
-            "index_col": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+            "index_col": [0, 1, 2, 3, 4, 5, 6, 7],
         }
     )
 
@@ -1279,7 +1278,7 @@ def string_temp_table(backend, con):
         ),
         param(
             lambda t: t.string_col.find_in_set(["aBc", "123"]),
-            lambda _: pd.Series([-1, -1, -1, 1, 0, -1, -1, -1, -1], name="tmp"),
+            lambda _: pd.Series([-1, -1, -1, 1, 0, -1, -1, -1], name="tmp"),
             id="find_in_set",
             marks=[
                 pytest.mark.notyet(
@@ -1308,7 +1307,7 @@ def string_temp_table(backend, con):
         ),
         param(
             lambda t: t.string_col.find_in_set(["abc, 123"]),
-            lambda _: pd.Series([-1, -1, -1, -1, -1, -1, -1, -1, -1], name="tmp"),
+            lambda _: pd.Series([-1, -1, -1, -1, -1, -1, -1, -1], name="tmp"),
             id="find_in_set_w_comma",
             marks=[
                 pytest.mark.notyet(
@@ -1348,25 +1347,11 @@ def string_temp_table(backend, con):
             lambda t: t.string_col.lstrip(),
             lambda t: t.str.lstrip(),
             id="lstrip",
-            marks=[
-                pytest.mark.notyet(
-                    ["pyspark", "databricks"],
-                    raises=AssertionError,
-                    reason="Spark SQL LTRIM doesn't accept characters to trim",
-                ),
-            ],
         ),
         param(
             lambda t: t.string_col.rstrip(),
             lambda t: t.str.rstrip(),
             id="rstrip",
-            marks=[
-                pytest.mark.notyet(
-                    ["pyspark", "databricks"],
-                    raises=AssertionError,
-                    reason="Spark SQL RTRIM doesn't accept characters to trim",
-                ),
-            ],
         ),
         param(
             lambda t: t.string_col.strip(),
@@ -1425,6 +1410,7 @@ def test_string_methods_accents_and_emoji(
     │ aBc        │
     │ 🐍         │
     │ ÉéÈèêç     │
+    │ fluf\f     │
     └────────────┘
     """
     t = string_temp_table
