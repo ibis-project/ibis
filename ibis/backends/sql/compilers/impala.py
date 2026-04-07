@@ -77,8 +77,11 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.DayOfWeekName: "dayname",
         ops.ExtractEpochSeconds: "unix_timestamp",
         ops.Hash: "fnv_hash",
+        ops.LStrip: "ltrim",
         ops.Ln: "ln",
+        ops.RStrip: "rtrim",
         ops.RegexReplace: "regexp_replace",
+        ops.Strip: "trim",
         ops.TypeOf: "typeof",
     }
 
@@ -325,13 +328,16 @@ class ImpalaCompiler(SQLGlotCompiler):
         return self.f.datediff(left, right)
 
     def visit_LStrip(self, op, *, arg):
-        return self.f.regexp_replace(arg, rf"^[{WHITESPACE}]+", "")
+        return self.f.anon.ltrim(arg, WHITESPACE)
 
     def visit_RStrip(self, op, *, arg):
-        return self.f.regexp_replace(arg, rf"[{WHITESPACE}]+$", "")
+        return self.f.anon.rtrim(arg, WHITESPACE)
 
     def visit_Strip(self, op, *, arg):
-        return self.visit_RStrip(self.visit_LStrip(op, arg=arg), arg=arg)
+        # Impala's `TRIM` doesn't allow specifying characters to trim off, unlike
+        # Impala's `RTRIM` and `LTRIM` which accept a set of characters to
+        # remove.
+        return self.f.anon.rtrim(self.f.anon.ltrim(arg, WHITESPACE), WHITESPACE)
 
 
 compiler = ImpalaCompiler()
