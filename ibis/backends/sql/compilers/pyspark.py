@@ -4,7 +4,6 @@ import calendar
 import itertools
 import operator
 import re
-from string import whitespace
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -27,8 +26,6 @@ from ibis.common.patterns import replace
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.util import gen_name
-
-WHITESPACE = whitespace.encode("unicode-escape").decode()
 
 
 @replace(p.Limit)
@@ -686,13 +683,13 @@ class PySparkCompiler(SQLGlotCompiler):
         return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)
 
     def visit_LStrip(self, op, *, arg):
-        return self.f.anon.ltrim(arg, WHITESPACE)
+        return self.f.regexp_replace(arg, r"^\s+", "")
 
     def visit_RStrip(self, op, *, arg):
-        return self.f.anon.rtrim(arg, WHITESPACE)
+        return self.f.regexp_replace(arg, r"\s+$", "")
 
     def visit_Strip(self, op, *, arg):
-        return self.f.anon.trim(arg, WHITESPACE)
+        return self.f.regexp_replace(arg, r"^\s+|\s+$", "")
 
 
 compiler = PySparkCompiler()
