@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from string import whitespace as WHITESPACE
+
 import sqlglot as sg
 import sqlglot.expressions as sge
 
@@ -323,13 +325,13 @@ class ImpalaCompiler(SQLGlotCompiler):
         return self.f.datediff(left, right)
 
     def visit_LStrip(self, op, *, arg):
-        return self.f.regexp_replace(arg, r"^\s+", "")
+        return self.f.regexp_replace(arg, rf"^[{WHITESPACE}]+", "")
 
     def visit_RStrip(self, op, *, arg):
-        return self.f.regexp_replace(arg, r"\s+$", "")
+        return self.f.regexp_replace(arg, rf"[{WHITESPACE}]+$", "")
 
     def visit_Strip(self, op, *, arg):
-        return self.f.regexp_replace(arg, r"^\s+|\s+$", "")
+        return self.visit_RStrip(self.visit_LStrip(op, arg=arg), arg=arg)
 
 
 compiler = ImpalaCompiler()
