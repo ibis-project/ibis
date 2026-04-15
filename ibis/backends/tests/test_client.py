@@ -827,6 +827,91 @@ def test_insert_from_memtable(con, temp_table):
     assert con.tables[table_name].schema() == ibis.schema({"x": "int64"})
 
 
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_with_where(backend, con, employee_data_1_temp_table):
+    temporary = con.table(employee_data_1_temp_table)
+
+    con.delete(employee_data_1_temp_table, ibis._.salary > 200)
+
+    result = temporary.execute()
+    assert len(result) == 2
+    backend.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        pd.DataFrame(
+            {
+                "first_name": ["A", "B"],
+                "last_name": ["D", "E"],
+                "department_name": ["AA", "BB"],
+                "salary": [100.0, 200.0],
+            }
+        ),
+    )
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_with_callable(backend, con, employee_data_1_temp_table):
+    temporary = con.table(employee_data_1_temp_table)
+
+    con.delete(employee_data_1_temp_table, lambda t: t.salary > 200)
+
+    result = temporary.execute()
+    assert len(result) == 2
+    backend.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        pd.DataFrame(
+            {
+                "first_name": ["A", "B"],
+                "last_name": ["D", "E"],
+                "department_name": ["AA", "BB"],
+                "salary": [100.0, 200.0],
+            }
+        ),
+    )
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_no_matching_rows(con, employee_data_1_temp_table):
+    temporary = con.table(employee_data_1_temp_table)
+
+    con.delete(employee_data_1_temp_table, ibis._.salary > 1000)
+
+    result = temporary.execute()
+    assert len(result) == 3
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+def test_delete_where_none_raises(con, employee_data_1_temp_table):
+    with pytest.raises(com.IbisInputError, match="truncate_table"):
+        con.delete(employee_data_1_temp_table, where=None)
+
+
 @pytest.mark.notyet(
     [
         "bigquery",
