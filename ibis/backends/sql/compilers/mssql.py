@@ -406,7 +406,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         return self.f.log(arg, 2)
 
     def visit_Log(self, op, *, arg, base):
-        if base is None:
+        if op.base is None:
             return self.f.log(arg)
         return self.f.log(arg, base)
 

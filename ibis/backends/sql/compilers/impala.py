@@ -147,7 +147,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         return self.f[how](arg)
 
     def visit_Log(self, op, *, arg, base):
-        if base is None:
+        if op.base is None:
             return self.f.ln(arg)
         return self.f.log(base, arg)
 
