@@ -415,6 +415,8 @@ class TrinoCompiler(SQLGlotCompiler):
             return None
 
     def visit_Log(self, op, *, arg, base):
+        if op.base is None:
+            return self.f.ln(arg)
         return self.f.log(base, arg)
 
     def visit_MapGet(self, op, *, arg, key, default):
