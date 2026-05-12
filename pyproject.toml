@@ -98,6 +98,7 @@ clickhouse = [
 ]
 db2 = [
   "ibm_db>=3.0.0",
+  "db2-sqlglot-dialect>=1.0.0",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",

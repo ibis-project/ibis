@@ -187,12 +187,19 @@ class Backend(SQLBackend):
         Returns
         -------
         Any
-            Query results
+            Query results (cursor)
         """
-        if isinstance(query, sg.Expression):
+        if isinstance(query, sg.exp.Expression):
             query = query.sql(dialect=self.compiler.dialect)
 
-        with self._safe_raw_sql(query, **kwargs) as cursor:
+        # Don't use context manager as it closes the cursor
+        cursor = self._connection.cursor()
+        try:
+            cursor.execute(query, **kwargs)
+        except Exception:
+            cursor.close()
+            raise
+        else:
             return cursor
 
     def list_tables(
