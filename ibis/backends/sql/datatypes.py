@@ -147,9 +147,8 @@ class SqlglotType(TypeMapper):
             )
             typecode = typ.this
 
-        nullable = typ.args.get(
-            "nullable", nullable if nullable is not None else cls.default_nullable
-        )
+        if nullable is None:
+            nullable = typ.args.get("nullable", cls.default_nullable)
         if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
             if typecode == sge.DataType.Type.ARRAY:
                 dtype = method(
@@ -1475,11 +1474,13 @@ class SingleStoreDBType(MySQLType):
     dialect = "singlestore"
 
     @classmethod
-    def to_ibis(cls, typ, nullable=True):
+    def to_ibis(cls, typ: sge.DataType, nullable: bool | None = None) -> dt.DataType:
         """Convert SingleStoreDB type to Ibis type.
 
         Handles both standard MySQL types and SingleStoreDB-specific extensions.
         """
+        if nullable is None:
+            nullable = cls.default_nullable
         if hasattr(typ, "this"):
             type_name = str(typ.this).upper()
 
