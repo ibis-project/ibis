@@ -325,15 +325,15 @@ class Backend(
         ).sql(self.dialect)
 
         try:
-            result = self.con.sql(query)
+            relation = self.con.sql(query)
         except duckdb.CatalogException:
             raise exc.TableNotFound(table_name)
         else:
-            meta = result.fetch_arrow_table()
+            pa_table = relation.to_arrow_table()
 
-        names = meta["column_name"].to_pylist()
-        types = meta["column_type"].to_pylist()
-        nullables = meta["null"].to_pylist()
+        names = pa_table["column_name"].to_pylist()
+        types = pa_table["column_type"].to_pylist()
+        nullables = pa_table["null"].to_pylist()
 
         type_mapper = self.compiler.type_mapper
         return sch.Schema(
@@ -352,10 +352,8 @@ class Backend(
         query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
             sg.table("schemata", db="information_schema")
         )
-        with self._safe_raw_sql(query) as cur:
-            result = cur.fetch_arrow_table()
-        dbs = result[col]
-        return self._filter_with_like(dbs.to_pylist(), like)
+        pa_table = self.con.sql(query.sql(self.dialect)).to_arrow_table()
+        return self._filter_with_like(pa_table[col].to_pylist(), like)
 
     def list_databases(
         self, *, like: str | None = None, catalog: str | None = None
@@ -368,9 +366,8 @@ class Backend(
         if catalog is not None:
             query = query.where(sg.column("catalog_name").eq(sge.convert(catalog)))
 
-        with self._safe_raw_sql(query) as cur:
-            out = cur.fetch_arrow_table()
-        return self._filter_with_like(out[col].to_pylist(), like=like)
+        pa_table = self.con.sql(query.sql(self.dialect)).to_arrow_table()
+        return self._filter_with_like(pa_table[col].to_pylist(), like=like)
 
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:
@@ -901,8 +898,7 @@ class Backend(
             )
             .sql(self.dialect)
         )
-        out = self.con.execute(sql).fetch_arrow_table()
-
+        out = self.con.sql(sql).to_arrow_table()
         return self._filter_with_like(out[col].to_pylist(), like)
 
     def read_postgres(
@@ -1334,7 +1330,7 @@ class Backend(
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
-    ):
+    ) -> duckdb.DuckDBPyRelation:
         """Preprocess the expr, and return a `duckdb.DuckDBPyRelation` object.
 
         When retrieving in-memory results, it's faster to use `duckdb_con.sql`
@@ -1724,11 +1720,7 @@ class Backend(
         self.raw_sql(f"COPY ({self.compile(expr)}) TO '{path!s}' ({options})")
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        with self._safe_raw_sql(f"DESCRIBE {query}") as cur:
-            rows = cur.fetch_arrow_table()
-
-        rows = rows.to_pydict()
-
+        rows = self.con.sql(f"DESCRIBE {query}").to_arrow_table().to_pydict()
         type_mapper = self.compiler.type_mapper
         return sch.Schema(
             {
