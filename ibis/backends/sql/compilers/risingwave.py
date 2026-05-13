@@ -85,6 +85,11 @@ class RisingWaveCompiler(PostgresCompiler):
     def visit_DateNow(self, op):
         return self.cast(sge.CurrentTimestamp(), dt.date)
 
+    def visit_Log(self, op, *, arg, base):
+        if op.base is None:
+            return self.f.ln(arg)
+        return super().visit_Log(op, arg=arg, base=base)
+
     def visit_Cast(self, op, *, arg, to):
         if to.is_json():
             return self.f.to_jsonb(arg)
