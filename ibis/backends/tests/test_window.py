@@ -1138,6 +1138,65 @@ def test_first_last(backend):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.notimpl(
+    [
+        "risingwave",
+        "clickhouse",
+        "bigquery",
+        "oracle",
+        "snowflake",
+        "databricks",
+        "pyspark",
+    ],
+    raises=AssertionError,
+)
+@pytest.mark.notyet(
+    ["polars"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=NotImplementedError,
+)
+@pytest.mark.notyet(
+    [
+        "mysql",
+        "sqlite",
+        "postgres",
+        "datafusion",
+        "druid",
+        "athena",
+        "impala",
+        "mssql",
+        "trino",
+        "exasol",
+    ],
+    raises=Exception,
+)
+def test_first_last_include_nulls(backend):
+    t = ibis.memtable({"a": (2, 2, 1, 1), "b": (None, 3, 5, None), "c": list(range(4))})
+    w = ibis.window(group_by=t.a, order_by=t.c)
+    expr = t.select(
+        "a",
+        b_first_null=t.b.first(include_null=True).over(w),
+        b_last_null=t.b.last(include_null=True).over(w),
+        b_first=t.b.first(include_null=False).over(w),
+        b_last=t.b.last(include_null=False).over(w),
+    )
+    con = backend.connection
+    # execute the expr, and ensure the columns are sorted by column "a"
+    result = con.execute(expr).sort_values("a").set_index("a").reset_index(drop=True)
+    expected = pd.DataFrame(
+        {
+            "b_first_null": [5, 5, None, None],
+            "b_last_null": [None, None, 3, 3],
+            "b_first": [5, 5, 3, 3],
+            "b_last": [5, 5, 3, 3],
+        }
+    )
+    backend.assert_frame_equal(result, expected, check_dtype=False)
+
+
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="not supported by BigQuery"
 )
