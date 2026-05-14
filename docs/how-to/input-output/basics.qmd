@@ -1,18 +1,297 @@
 # Basic input/output
 
-If you don't have your own data, you can load example data from the `ibis.examples` module:
+Ibis tries to provide consistent APIs for reading and writing data to and from various formats:
+- Backend-native tables, such as tables in SQL databases
+- Files, such as CSV and Parquet files, on either local or remote (S3, GCS, etc) filesystems
+- In-memory data formats, such as PyArrow tables, pandas and polars dataframes, etc
 
 ```{python}
 import ibis
-import ibis.selectors as s
 
+# Configure ibis so that when we display an expression,
+# it doesn't just print the abstract expression tree,
+# but it actually compiles the expression to SQL and executes it,
+# showing us the resulting data.
 ibis.options.interactive = True
-
-t = ibis.examples.penguins.fetch()
 ```
 
-## Overview
+## Reading/Writing backend-native tables
 
-Ibis is typically used with a backend that already contains tables, but can import and export data in various formats.
+Most backends store data in their own native format.
+Ibis provides APIs to read and write tables to these backends,
+eg `CREATE TABLE` and `SELECT * FROM mytable` in SQL databases.
 
-{{< include /_code/input_output_penguins.qmd >}}
+```{python}
+# | code-fold: true
+
+# Setup code to download an existing duckdb database file
+import urllib.request
+url = "https://www.timestored.com/sqlnotebook/files/duckdb-demo.duckdb"
+urllib.request.urlretrieve(url, "demo.duckdb")
+```
+
+Here, we attach to an existing DuckDB database,
+create an expression that references an existing table,
+and then display the expression, which then actually
+compiles the expression to SQL and executes it:
+
+```{python}
+con = ibis.duckdb.connect("demo.duckdb")
+t = con.table("bank_failures")
+t.head(3)
+```
+
+We can also write back to the database:
+
+```{python}
+grouped = (
+    t.group_by("State", ibis._.Date.year().name("year"))
+    .aggregate(
+        ibis._.count().name("n"),
+        total_assets=ibis._["Assets ($mil.)"].sum()
+    )
+    .order_by(ibis._.total_assets.desc())
+)
+created = con.create_table("worst_failures", grouped, overwrite=True)
+created.head(3)
+```
+
+## Reading/Writing Files
+
+Ibis provides a consistent API for reading and writing file formats such
+as CSV and Parquet. Some backends support local files, and others
+also support remote/cloud filesystems such as S3 and GCS.
+
+BUT, be warned, the amount of backend support is mixed.
+Local backends like DuckDB often have the best support, and are able to handle
+local and remote CSVs, parquets, json, and more.
+That is the backend used in the examples here.
+
+However, most other backends have more limited support for file reading/writing,
+and some have no support at all.
+For example, sqlite doesn't support reading/writing csv/parquet/json files at all.
+To load data from/into these backends, you will need to go through
+an in-memory format like pyarrow. See the following sections for more details.
+
+::: {.panel-tabset}
+
+## CSV
+
+```{python}
+t.to_csv("bank_failures.csv")
+con.read_csv("bank_failures.csv").head(3)
+```
+
+## Parquet
+
+See the [parquet example](duckdb-parquet.qmd) for more detailed examples.
+
+
+```{python}
+t.to_parquet("bank_failures.parquet")
+con.read_parquet("bank_failures.parquet").head(3)
+```
+
+## JSON
+
+Write/read a `[{"col1": "value1", "col2": "value2"}, ...]` format:
+
+```{python}
+t.to_json("bank_failures.json")
+con.read_json("bank_failures.json").head(3)
+```
+
+## Delta Lake
+
+```{python}
+t.to_delta("bank_failures.delta", mode="overwrite")
+con.read_delta("bank_failures.delta").head(3)
+```
+
+:::
+
+## Reading/Writing in-memory data
+
+Ibis also provides APIs for converting to and from in-memory data formats,
+such as PyArrow tables, pandas dataframes, and Polars dataframes.
+We prioritize Apache Arrow as our best-supported format, since it is the most neutral and well-adopted.
+
+::: {.panel-tabset}
+
+## `pyarrow`
+
+You can convert Ibis tables to PyArrow tables.
+
+```bash
+pip install pyarrow
+```
+
+```{python}
+t.to_pyarrow()
+```
+
+Or PyArrow batches:
+
+```{python}
+t.to_pyarrow_batches()
+```
+
+And you can convert PyArrow tables to Ibis tables.
+
+```{python}
+ibis.memtable(t.to_pyarrow()).head(3)
+```
+
+## `pandas`
+
+You can convert Ibis tables to pandas dataframes.
+
+```bash
+pip install pandas
+```
+
+```{python}
+df = t.to_pandas()
+df.head(3)
+```
+
+Or you can convert pandas dataframes to Ibis tables.
+
+```{python}
+t = ibis.memtable(df)
+t.head(3)
+```
+
+## `polars`
+
+You can convert Ibis tables to Polars dataframes.
+
+```bash
+pip install polars
+```
+
+```{python}
+import polars as pl
+
+df = pl.from_arrow(t.to_pyarrow())
+df.head(3)
+```
+
+Or Polars dataframes to Ibis tables.
+
+```{python}
+t = ibis.memtable(df)
+t.head(3)
+```
+
+## `torch`
+
+You can convert Ibis tables to torch tensors.
+
+```bash
+pip install torch
+```
+
+```python
+t.select("Assets ($mil.)").limit(3).to_torch()
+```
+
+```
+{'Assets ($mil.)': tensor([5.8500e+01, 1.8700e+01, 3.9500e+05], dtype=torch.float64)}
+```
+
+## `__dataframe__`
+
+Ibis uses [Apache Arrow](https://arrow.apache.org/) for efficient data transfer
+to and from other libraries. Ibis `Table`s implement the `__dataframe__` protocol,
+so other libraries can efficiently convert Ibis tables to their native formats.
+You can directly call the `__dataframe__` protocol on Ibis tables,
+though this is typically handled by the library you're using.
+
+```{python}
+t.__dataframe__()
+```
+
+## `__array__`
+
+Ibis uses [Apache Arrow](https://arrow.apache.org/) for efficient data transfer
+to and from other libraries. Ibis `Table`s implement the `__array__` protocol,
+so other libraries can efficiently convert Ibis tables to their native formats.
+You can directly call the `__array__` protocol on Ibis tables,
+though this is typically handled by the library you're using.
+
+```{python}
+t.__array__()
+```
+
+:::
+
+## Multiple backends
+
+Say you need to load some parquet data into a sqlite database.
+Sqlite doesn't natively support parquet files.
+So, we can use duckdb as an intermediary to read the parquet and convert to pyarrow:
+
+```{python}
+d = ibis.duckdb.connect(":memory:")
+s = ibis.sqlite.connect("demo.sqlite")
+pq = d.read_parquet("bank_failures.parquet")
+s.create_table("bank_failures", pq.to_pyarrow(), schema=pq.schema(), overwrite=True)
+s.table("bank_failures").head(3)
+```
+
+### Gotchas
+
+Note how we explicitly converted the table to a pyarrow table using .py_arrow().
+Look what happens if we try to pass the table directly:
+
+```{python}
+try:
+    s.create_table("bank_failures", pq, overwrite=True)
+except Exception as e:
+    print(e) # no such table: ibis_read_parquet_d2zvtursivayjhb3fl6m4kb6im
+```
+
+We get an error, because we read the parquet file into the duckdb backend,
+and the sqlite backend doesn't know how to read from the duckdb backend.
+We as users need to be explicit about how we want to transfer the data,
+because if we aren't careful this could mean transferring huge amounts of
+data across a network boundary.
+
+There is another common gotcha here. Check out this example:
+
+```{python}
+s = ibis.sqlite.connect("demo.sqlite")
+pq = ibis.read_parquet("bank_failures.parquet")
+try:
+    s.create_table("bank_failures", pq, overwrite=True)
+except Exception as e:
+    print(e) # no such table: ibis_read_parquet_d2zvtursivayjhb3fl6m4kb6im
+```
+
+The same thing happens. This is because when you do `ibis.read_parquet()`,
+we spin up a temporary duckdb backend under the hood to read the parquet file,
+and that duckdb instance is where the table lives.
+
+The solution is the same: be explicit about how you want to transfer the data, and convert to an in-memory format like pyarrow before trying to move it across backends:
+
+```{python}
+s = ibis.sqlite.connect("demo.sqlite")
+pq = ibis.read_parquet("bank_failures.parquet")
+s.create_table("bank_failures", pq.to_pyarrow(), schema=pq.schema(), overwrite=True)
+s.table("bank_failures").head(3)
+```
+
+The lesson here is: **Really think about WHICH BACKEND your data is in.**
+
+### Streaming large files
+
+For large files that can't fit in memory, we could instead stream the data in batches.
+First create the empty table with the right schema, and then insert the data batch by batch.
+
+```{python}
+s.create_table("bank_failures", schema=pq.schema(), overwrite=True)
+for batch in pq.to_pyarrow_batches():
+    s.insert("bank_failures", batch)
+s.table("bank_failures").head(3)
+```
