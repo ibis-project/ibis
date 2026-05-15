@@ -84,6 +84,10 @@ else:
         def convert_Struct(cls, s, dtype, pandas_type):
             raw_json_objects = cls.convert_JSON(s, dtype, pandas_type)
             return super().convert_Struct(raw_json_objects, dtype, pandas_type)
+        @classmethod
+        def convert_Decimal(cls, s, dtype, pandas_type):
+            result = s.astype("float64")
+            return result
 
 
 try:

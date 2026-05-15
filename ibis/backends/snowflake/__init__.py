@@ -477,6 +477,16 @@ $$ {defn["source"]} $$"""
         df = table.to_pandas(timestamp_as_object=True)
         df.columns = list(schema.names)
         return SnowflakePandasData.convert_table(df, schema)
+    
+    def execute(self, expr, /, *, params=None, limit=None, **kwargs):
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        sql = self.compile(table, params=params, limit=limit, **kwargs)
+        schema = table.schema()
+
+        with self._safe_raw_sql(sql) as cur:
+            result = self._fetch_from_cursor(cur, schema)
+        return expr.__pandas_result__(result, data_mapper=SnowflakePandasData)
 
     def to_pandas_batches(
         self,
