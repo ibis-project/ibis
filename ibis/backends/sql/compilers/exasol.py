@@ -13,9 +13,9 @@ from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
     exclude_unsupported_window_frame_from_ops,
-    exclude_unsupported_window_frame_from_rank,
-    exclude_unsupported_window_frame_from_row_number,
-    rewrite_empty_order_by_window,
+    rank_one_to_zero_index,
+    row_number_one_to_zero_index,
+    add_order_by_to_empty_ranking_window_functions,
     split_select_distinct_with_order_by,
 )
 
@@ -27,9 +27,9 @@ class ExasolCompiler(SQLGlotCompiler):
     type_mapper = ExasolType
     rewrites = (
         exclude_unsupported_window_frame_from_ops,
-        exclude_unsupported_window_frame_from_rank,
-        exclude_unsupported_window_frame_from_row_number,
-        rewrite_empty_order_by_window,
+        rank_one_to_zero_index,
+        row_number_one_to_zero_index,
+        add_order_by_to_empty_ranking_window_functions,
         *SQLGlotCompiler.rewrites,
     )
 
