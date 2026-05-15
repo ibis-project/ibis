@@ -726,7 +726,7 @@ GO"""
                     sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
                 )
                 old = raw_table.sql(self.dialect)
-                new = raw_this.sql(self.dialect)
+                new = raw_this.name
                 cur.execute(f"EXEC sp_rename '{old}', '{new}'")
 
         if temp:
