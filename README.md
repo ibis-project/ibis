@@ -150,6 +150,7 @@ Ibis supports more than 20 backends:
 - [Exasol](https://ibis-project.org/backends/exasol)
 - [Materialize](https://ibis-project.org/backends/materialize/)
 - [MySQL](https://ibis-project.org/backends/mysql/)
+- [MariaDB](https://ibis-project.org/backends/mysql/)
 - [Oracle](https://ibis-project.org/backends/oracle/)
 - [Polars](https://ibis-project.org/backends/polars/)
 - [PostgreSQL](https://ibis-project.org/backends/postgresql/)
