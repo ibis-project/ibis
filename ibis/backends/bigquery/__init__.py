@@ -944,6 +944,50 @@ class Backend(
 
         return super().upsert(name, obj, on, database=(catalog, db))
 
+    def delete(
+        self,
+        name: str,
+        /,
+        where,
+        *,
+        database: str | None = None,
+    ) -> None:
+        """Delete rows from a table.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        name
+            Table name
+        where
+            Boolean predicate specifying which rows to delete. Required.
+            Accepts `ir.BooleanValue`, `Deferred` (`ibis._.col > val`),
+            or callable (`lambda t: ...`).
+
+            To delete all rows, use `truncate_table()` instead.
+        database
+            Name of the attached database that the table is located in.
+        """
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        if catalog is None:
+            catalog = self.current_catalog
+        if db is None:
+            db = self.current_database
+
+        return super().delete(name, where, database=(catalog, db))
+
     def _to_query(
         self,
         table_expr: ir.Table,
