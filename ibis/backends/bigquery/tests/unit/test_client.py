@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 import sqlglot as sg
 
-from ibis.backends.bigquery import _force_quote_table, client
+from ibis.backends.bigquery import Backend, _force_quote_table, client
 
 
 @pytest.mark.parametrize(
@@ -55,3 +55,28 @@ def test_force_quoting(bq_path_str, expected):
     table = _force_quote_table(table)
 
     assert table.sql("bigquery") == expected
+
+
+def test_create_view_project_dataset_database_uses_parsed_database():
+    backend = Backend.__new__(Backend)
+    backend.billing_project = "billing-project"
+    backend.data_project = "billing-project"
+    backend.dataset = "default_dataset"
+
+    captured = {}
+
+    backend._run_pre_execute_hooks = lambda _: None
+    backend.compile = lambda _: sg.select(1)
+    backend.raw_sql = lambda sql: captured.setdefault("sql", sql)
+    backend.table = lambda name, /, *, database=None: captured.setdefault(
+        "table", (name, database)
+    )
+
+    backend.create_view(
+        "my_view",
+        object(),
+        database="my-project.my_dataset",
+        overwrite=True,
+    )
+
+    assert captured["table"] == ("my_view", ("my-project", "my_dataset"))
