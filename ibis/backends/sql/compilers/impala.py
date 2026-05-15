@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from string import whitespace as WHITESPACE
-
 import sqlglot as sg
 import sqlglot.expressions as sge
 
@@ -45,6 +43,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.ArgMin,
         ops.Covariance,
         ops.ExtractDayOfYear,
+        ops.Kurtosis,
         ops.Levenshtein,
         ops.Map,
         ops.Median,
@@ -59,7 +58,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.TimestampBucket,
         ops.TimestampDelta,
         ops.Unnest,
-        ops.Kurtosis,
     )
 
     SIMPLE_OPS = {
@@ -78,8 +76,8 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.ExtractEpochSeconds: "unix_timestamp",
         ops.Hash: "fnv_hash",
         ops.Ln: "ln",
-        ops.TypeOf: "typeof",
         ops.RegexReplace: "regexp_replace",
+        ops.TypeOf: "typeof",
     }
 
     @staticmethod
@@ -325,16 +323,13 @@ class ImpalaCompiler(SQLGlotCompiler):
         return self.f.datediff(left, right)
 
     def visit_LStrip(self, op, *, arg):
-        return self.f.anon.ltrim(arg, WHITESPACE)
+        return self.f.regexp_replace(arg, r"^\s+", "")
 
     def visit_RStrip(self, op, *, arg):
-        return self.f.anon.rtrim(arg, WHITESPACE)
+        return self.f.regexp_replace(arg, r"\s+$", "")
 
     def visit_Strip(self, op, *, arg):
-        # Impala's `TRIM` doesn't allow specifying characters to trim off, unlike
-        # Impala's `RTRIM` and `LTRIM` which accept a set of characters to
-        # remove.
-        return self.f.anon.rtrim(self.f.anon.ltrim(arg, WHITESPACE), WHITESPACE)
+        return self.f.regexp_replace(arg, r"^\s+|\s+$", "")
 
 
 compiler = ImpalaCompiler()
