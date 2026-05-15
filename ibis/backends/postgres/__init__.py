@@ -735,9 +735,18 @@ ORDER BY a.attnum ASC"""
             ):
                 cur = cursor.execute(query)
                 while batch := cur.fetchmany(chunk_size):
-                    yield pa.RecordBatch.from_struct_array(
-                        pa.array(batch, type=struct_type)
-                    )
+                    columns = []
+                    names = []
+                    for i, (name, typ) in enumerate(raw_schema.items()):
+                        col = [row[i] for row in batch]
+                        if typ.is_uuid():
+                            col = [v.bytes if v is not None else None for v in col]
+                        columns.append(pa.array(col, type=typ.to_pyarrow()))
+                        names.append(name)
+                    # pa.array(batch, raw_schema.as_struct().to_pyarrow())
+                    # is not implemented for extension types (eg UUID)
+                    # so we have to create individual arrays for each column.
+                    yield pa.RecordBatch.from_arrays(columns, names=names)
 
         self._run_pre_execute_hooks(expr)
 
