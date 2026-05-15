@@ -104,6 +104,7 @@ db2 = [
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
   "rich>=12.4.4",
+  "packaging>=21.3"
 ]
 databricks = [
   "databricks-sql-connector>=4",

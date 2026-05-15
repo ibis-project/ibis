@@ -14,7 +14,7 @@ from sqlglot.dialects.dialect import Dialect
 from sqlglot.generator import Generator
 
 
-from sqlglot.dialects.db2 import Db2 as DB2BaseDialect
+from db2_sqlglot import Db2 as DB2BaseDialect
 
 # Import type mapper from local datatypes module
 from ibis.backends.db2.datatypes import ibis_type_to_db2_type
