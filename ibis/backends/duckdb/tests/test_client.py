@@ -104,8 +104,12 @@ def test_attach_detach(tmpdir):
     name = "test1"
     assert name not in con2.list_catalogs()
 
-    con2.attach(path1)
+    name_returned = con2.attach(path1)
+    assert name_returned == name
     assert name in con2.list_catalogs()
+    con2.attach(path1, name=name_returned, on_exists="ignore")
+    with pytest.raises(com.CatalogExistsError):
+        con2.attach(path1, name=name_returned)
 
     con2.detach(name)
     assert name not in con2.list_catalogs()
@@ -114,13 +118,21 @@ def test_attach_detach(tmpdir):
     name = "test_foo"
     assert name not in con2.list_catalogs()
 
-    con2.attach(path1, name=name)
+    name_returned = con2.attach(
+        path1,
+        name=name,
+        type="duckdb",
+        read_only=True,
+        options={"block_size": 262144},
+    )
+    assert name_returned == name
     assert name in con2.list_catalogs()
 
     con2.detach(name)
     assert name not in con2.list_catalogs()
 
-    with pytest.raises(duckdb.BinderException):
+    con2.detach(name, on_missing="ignore")
+    with pytest.raises(com.CatalogNotFoundError):
         con2.detach(name)
 
 
