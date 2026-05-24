@@ -1145,8 +1145,9 @@ def string_temp_table(backend, con):
                 "🐍",
                 "ÉéÈèêç",
                 "fluf\f",
+                "\vvv\v",
             ],
-            "index_col": [0, 1, 2, 3, 4, 5, 6, 7],
+            "index_col": [0, 1, 2, 3, 4, 5, 6, 7, 8],
         }
     )
 
@@ -1411,6 +1412,7 @@ def test_string_methods_accents_and_emoji(
     │ 🐍         │
     │ ÉéÈèêç     │
     │ fluf\f     │
+    │ \vvv\v     │
     └────────────┘
     """
     t = string_temp_table
