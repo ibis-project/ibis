@@ -20,8 +20,6 @@ from ibis.backends.sql.rewrites import (
     split_select_distinct_with_order_by,
 )
 
-WHITESPACE = whitespace[:-1].encode("unicode-escape").decode()
-
 
 class ImpalaCompiler(SQLGlotCompiler):
     __slots__ = ()
@@ -330,7 +328,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         return self.f.anon.ltrim(
             arg,
             self.f.concat(
-                WHITESPACE,
+                whitespace[:-1],
                 sge.Chr(expressions=[sge.Literal.number(ord(whitespace[-1]))]),
             ),
         )
@@ -339,7 +337,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         return self.f.anon.rtrim(
             arg,
             self.f.concat(
-                WHITESPACE,
+                whitespace[:-1],
                 sge.Chr(expressions=[sge.Literal.number(ord(whitespace[-1]))]),
             ),
         )
@@ -352,12 +350,12 @@ class ImpalaCompiler(SQLGlotCompiler):
             self.f.anon.ltrim(
                 arg,
                 self.f.concat(
-                    WHITESPACE,
+                    whitespace[:-1],
                     sge.Chr(expressions=[sge.Literal.number(ord(whitespace[-1]))]),
                 ),
             ),
             self.f.concat(
-                WHITESPACE,
+                whitespace[:-1],
                 sge.Chr(expressions=[sge.Literal.number(ord(whitespace[-1]))]),
             ),
         )
