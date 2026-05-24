@@ -20,7 +20,7 @@ from ibis.backends.sql.rewrites import (
     split_select_distinct_with_order_by,
 )
 
-WHITESPACE = whitespace.encode("unicode-escape").decode()
+WHITESPACE = whitespace[:-1].encode("unicode-escape").decode()
 
 
 class ImpalaCompiler(SQLGlotCompiler):
@@ -327,16 +327,40 @@ class ImpalaCompiler(SQLGlotCompiler):
         return self.f.datediff(left, right)
 
     def visit_LStrip(self, op, *, arg):
-        return self.f.anon.ltrim(arg, WHITESPACE)
+        return self.f.anon.ltrim(
+            arg,
+            self.f.concat(
+                WHITESPACE,
+                sge.Chr(expressions=[sge.Literal.number(ord(whitespace[-1]))]),
+            ),
+        )
 
     def visit_RStrip(self, op, *, arg):
-        return self.f.anon.rtrim(arg, WHITESPACE)
+        return self.f.anon.rtrim(
+            arg,
+            self.f.concat(
+                WHITESPACE,
+                sge.Chr(expressions=[sge.Literal.number(ord(whitespace[-1]))]),
+            ),
+        )
 
     def visit_Strip(self, op, *, arg):
         # Impala's `TRIM` doesn't allow specifying characters to trim off, unlike
         # Impala's `RTRIM` and `LTRIM` which accept a set of characters to
         # remove.
-        return self.f.anon.rtrim(self.f.anon.ltrim(arg, WHITESPACE), WHITESPACE)
+        return self.f.anon.rtrim(
+            self.f.anon.ltrim(
+                arg,
+                self.f.concat(
+                    WHITESPACE,
+                    sge.Chr(expressions=[sge.Literal.number(ord(whitespace[-1]))]),
+                ),
+            ),
+            self.f.concat(
+                WHITESPACE,
+                sge.Chr(expressions=[sge.Literal.number(ord(whitespace[-1]))]),
+            ),
+        )
 
 
 compiler = ImpalaCompiler()
