@@ -4,6 +4,7 @@ import calendar
 import itertools
 import operator
 import re
+import string
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -438,6 +439,39 @@ class PySparkCompiler(SQLGlotCompiler):
             arg = sge.Distinct(expressions=[arg])
         return self.agg.array_agg(arg, order_by=order_by)
 
+    def visit_Strip(self, op, *, arg):
+        return self.f.trim(
+            arg,
+            sge.DPipe(
+                this=sge.Literal.string(string.whitespace[:-1]),
+                expression=sge.Chr(
+                    expressions=[sge.Literal.number(ord(string.whitespace[-1]))]
+                ),
+            ),
+        )
+
+    def visit_RStrip(self, op, *, arg):
+        return self.f.rtrim(
+            sge.DPipe(
+                this=sge.Literal.string(string.whitespace[:-1]),
+                expression=sge.Chr(
+                    expressions=[sge.Literal.number(ord(string.whitespace[-1]))]
+                ),
+            ),
+            arg,
+        )
+
+    def visit_LStrip(self, op, *, arg):
+        return self.f.ltrim(
+            sge.DPipe(
+                this=sge.Literal.string(string.whitespace[:-1]),
+                expression=sge.Chr(
+                    expressions=[sge.Literal.number(ord(string.whitespace[-1]))]
+                ),
+            ),
+            arg,
+        )
+
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
             raise com.UnsupportedOperationError(
@@ -681,15 +715,6 @@ class PySparkCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)
-
-    def visit_LStrip(self, op, *, arg):
-        return self.f.regexp_replace(arg, r"^\s+", "")
-
-    def visit_RStrip(self, op, *, arg):
-        return self.f.regexp_replace(arg, r"\s+$", "")
-
-    def visit_Strip(self, op, *, arg):
-        return self.f.regexp_replace(arg, r"^\s+|\s+$", "")
 
 
 compiler = PySparkCompiler()
