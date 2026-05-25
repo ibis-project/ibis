@@ -451,7 +451,7 @@ class PySparkCompiler(SQLGlotCompiler):
         return self.f.rtrim(self.f.concat(string.whitespace[:-2], VT, FF), arg)
 
     def visit_LStrip(self, op, *, arg):
-        return self.f.ltrim(self.f.concat(string.whitesapce[:-2], VT, FF), arg)
+        return self.f.ltrim(self.f.concat(string.whitespace[:-2], VT, FF), arg)
 
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
