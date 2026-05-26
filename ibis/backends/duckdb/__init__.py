@@ -33,7 +33,6 @@ from ibis.backends import (
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
-from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 
@@ -1377,6 +1376,8 @@ class Backend(
         """
         import pyarrow as pa
 
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
+
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
@@ -1419,6 +1420,7 @@ class Backend(
         import pyarrow.types as pat
 
         from ibis.backends.duckdb.converter import DuckDBPandasData
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
         rel = self._to_duckdb_relation(expr, params=params, limit=limit, **kwargs)
         table = rel.to_arrow_table()
