@@ -357,7 +357,17 @@ class SqlglotType(TypeMapper):
         nullable: bool | None = None,
     ) -> sge.DataType:
         if arg is not None:
-            typeclass = _geotypes[arg.this.this]
+            arg_value = arg.this.this
+            if arg_value in _geotypes:
+                typeclass = _geotypes[arg_value]
+            else:
+                # DuckDB 1.5.3+ reports SRID as the first positional arg,
+                # e.g. GEOMETRY('EPSG:2263')
+                typeclass = dt.GeoSpatial
+                if srid is None and arg_value.startswith("EPSG:"):
+                    srid = sge.DataTypeParam(
+                        this=sge.Literal.number(arg_value.split(":")[1])
+                    )
         else:
             typeclass = dt.GeoSpatial
         if srid is not None:
@@ -372,7 +382,15 @@ class SqlglotType(TypeMapper):
         nullable: bool | None = None,
     ) -> sge.DataType:
         if arg is not None:
-            typeclass = _geotypes[arg.this.this]
+            arg_value = arg.this.this
+            if arg_value in _geotypes:
+                typeclass = _geotypes[arg_value]
+            else:
+                typeclass = dt.GeoSpatial
+                if srid is None and arg_value.startswith("EPSG:"):
+                    srid = sge.DataTypeParam(
+                        this=sge.Literal.number(arg_value.split(":")[1])
+                    )
         else:
             typeclass = dt.GeoSpatial
         if srid is not None:
