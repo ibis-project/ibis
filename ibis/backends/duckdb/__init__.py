@@ -1417,8 +1417,6 @@ class Backend(
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
-        import pyarrow_hotfix  # noqa: F401
-
         from ibis.backends.duckdb.converter import DuckDBPyArrowData
 
         rel = self._to_duckdb_relation(expr, params=params, limit=limit, **kwargs)
