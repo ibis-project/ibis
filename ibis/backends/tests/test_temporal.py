@@ -1411,6 +1411,15 @@ def test_string_as_date(alltypes, fmt):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
+@pytest.mark.pyspark
+def test_string_as_date_single_digit_pyspark(con):
+    # Regression test for https://github.com/ibis-project/ibis/issues/12004
+    # Spark's MM/dd require leading zeros; M/d accept single-digit values.
+    t = con.sql("SELECT '1/1/2026' AS raw_date")
+    result = t.mutate(parsed=t.raw_date.as_date("%m/%d/%Y")).execute()
+    assert result["parsed"][0].date() == datetime.date(2026, 1, 1)
+
+
 @pytest.mark.notyet(
     [
         "pyspark",

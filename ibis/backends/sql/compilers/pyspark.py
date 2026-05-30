@@ -440,6 +440,14 @@ class PySparkCompiler(SQLGlotCompiler):
             arg = sge.Distinct(expressions=[arg])
         return self.agg.array_agg(arg, order_by=order_by)
 
+    def visit_StringToDate(self, op, *, arg, format_str):
+        # Remap %m/%d to %-m/%-d so sqlglot emits Spark's M/d (lenient)
+        # instead of MM/dd (strict 2-digit), allowing single-digit values.
+        if isinstance(format_str, sge.Literal) and "%" in format_str.this:
+            fmt = format_str.this.replace("%m", "%-m").replace("%d", "%-d")
+            format_str = sge.Literal.string(fmt)
+        return sge.StrToDate(this=arg, format=format_str)
+
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
             raise com.UnsupportedOperationError(
