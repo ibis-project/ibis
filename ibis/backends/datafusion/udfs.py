@@ -129,3 +129,11 @@ def regex_split(s: str, pattern: str) -> list[str]:
         )
     pattern = patterns[0].as_py()
     return pc.split_pattern_regex(s, pattern)
+
+
+def cast_uuid_to_binary(string_array: dt.string) -> dt.binary:
+    without_dashes = pc.replace_substring(string_array, "-", "")
+    with_leading_0x = pc.binary_join_element_wise("0x", without_dashes, "")
+    # WIP: pa can cast from hex string to ints, but not binary :(
+    # https://github.com/apache/arrow/commit/012248a7aca9373a39d5ac8ce9e496b8df0f10e6
+    return pc.cast(with_leading_0x, pa.binary(16))
