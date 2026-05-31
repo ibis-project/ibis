@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import functools
 import operator
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from functools import reduce
 from typing import TYPE_CHECKING, Any
 
@@ -670,3 +671,31 @@ def subtract_one_from_array_map_filter_index(_, **kwargs):
         return ops.Subtract(y, 1)
 
     return _.copy(body=_.body.replace(argument_replacer))
+
+
+def convert_pandas_udf_to_pyarrow(pandas_udf: Callable) -> Callable:
+    """Convert a pandas UDF to a PyArrow UDF.
+
+    This is useful for backends that support PyArrow UDFs but not pandas UDFs.
+
+    Parameters
+    ----------
+    pandas_udf
+        The pandas UDF to convert.
+
+    Returns
+    -------
+    A PyArrow UDF that wraps the original pandas UDF.
+    """
+
+    @functools.wraps(pandas_udf)
+    def pyarrow_udf(*pa_args, **pa_kwargs):
+        import pyarrow as pa
+
+        pandas_args = [arg.to_pandas() for arg in pa_args]
+        pandas_kwargs = {k: v.to_pandas() for k, v in pa_kwargs.items()}
+        pandas_result = pandas_udf(*pandas_args, **pandas_kwargs)
+        pa_result = pa.Array.from_pandas(pandas_result)
+        return pa_result
+
+    return pyarrow_udf

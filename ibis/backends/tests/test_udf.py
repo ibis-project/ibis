@@ -173,7 +173,7 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
             add_one_pandas,
             marks=[
                 mark.notyet(
-                    ["duckdb", "datafusion", "polars", "sqlite"],
+                    ["polars", "sqlite"],
                     raises=NotImplementedError,
                     reason="backend doesn't support pandas UDFs",
                 ),
