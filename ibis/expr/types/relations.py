@@ -4130,7 +4130,7 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         return self.execute(params=params, limit=limit, **kwargs)
 
-    def cache(self) -> Table:
+    def cache(self) -> "CachedTable":
         """Cache the provided expression.
 
         All subsequent operations on the returned expression will be performed

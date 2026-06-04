@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pickle
 import re
+from typing import get_type_hints
 
 import pytest
 from pytest import param
@@ -20,7 +21,7 @@ from ibis.common.exceptions import ExpressionError, IntegrityError, RelationErro
 from ibis.expr import api
 from ibis.expr.rewrites import simplify
 from ibis.expr.tests.test_newrels import join_tables
-from ibis.expr.types import Column, Table
+from ibis.expr.types import CachedTable, Column, Table
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
 
@@ -52,6 +53,10 @@ def setops_table_baz(set_ops_schema_bottom):
 @pytest.fixture
 def setops_relation_error_message():
     return "Table schemas must be equal for set operations"
+
+
+def test_cache_return_annotation():
+    assert get_type_hints(Table.cache)["return"] is CachedTable
 
 
 def test_empty_schema():
