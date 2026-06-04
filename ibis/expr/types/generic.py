@@ -3185,7 +3185,7 @@ def _binop(op_class: type[ops.Value], left: Value | Any, right: Value | Any) -> 
     assert issubclass(op_class, ops.Value)
     try:
         node = op_class(left, right)
-    except (ValidationError, NotImplementedError):
+    except (ValidationError, NotImplementedError, com.InputTypeError):
         return NotImplemented
     else:
         return node.to_expr()

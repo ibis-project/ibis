@@ -693,6 +693,24 @@ def test_chained_comparisons_not_allowed(table):
         0 < table.f < 1  # noqa: B015
 
 
+def test_deferred_reverse_numeric_literal_arithmetic():
+    table = ibis.table({"value": "int64"})
+
+    expr = table.select(result=ibis.literal(5) + _["value"])
+    expected = table.select(result=ibis.literal(5) + table.value)
+
+    assert_equal(expr, expected)
+
+
+def test_deferred_reverse_string_literal_concat():
+    table = ibis.table({"value": "string"})
+
+    expr = table.select(result=ibis.literal("prefix-") + _["value"])
+    expected = table.select(result=ibis.literal("prefix-") + table.value)
+
+    assert_equal(expr, expected)
+
+
 @pytest.mark.parametrize(
     "operation",
     [operator.add, operator.sub, operator.truediv],
