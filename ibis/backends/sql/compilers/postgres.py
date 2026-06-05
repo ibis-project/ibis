@@ -451,7 +451,7 @@ $$""".format(
         )
 
     def visit_Log(self, op, *, arg, base):
-        if base is not None:
+        if op.base is not None:
             if not op.base.dtype.is_decimal():
                 base = self.cast(base, dt.decimal)
         else:

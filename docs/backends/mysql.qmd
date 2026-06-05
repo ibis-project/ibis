@@ -1,4 +1,4 @@
-# MySQL
+# MySQL/MariaDB
 
 [https://www.mysql.com](https://www.mysql.com)
 
@@ -102,6 +102,12 @@ passing a properly-formatted MySQL connection URL to `ibis.connect`:
 ```python
 con = ibis.connect(f"mysql://{user}:{password}@{host}:{port}/{database}")
 ```
+
+### MariaDB
+
+The MySQL backend also works with [MariaDB](https://mariadb.org). Use the same
+`ibis.mysql.connect()` API or a `mysql://` connection URL. Ibis development and
+CI use a MariaDB image in `compose.yaml`.
 
 ```{python}
 #| echo: false

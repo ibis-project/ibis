@@ -99,7 +99,7 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     def visit_Log(self, op, *, arg, base):
         func = self.f.anon.log
-        if base is None:
+        if op.base is None:
             base = math.e
         return func(base, arg)
 
