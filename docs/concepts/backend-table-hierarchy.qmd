@@ -90,4 +90,5 @@ use the terms `catalog` and `database` and map them onto the appropriate fields.
 | risingwave | database       | schema     |
 | sqlite     |                | schema     |
 | snowflake  | database       | schema     |
+| starrocks  |                | database   |
 | trino      | catalog        | schema     |

@@ -718,6 +718,10 @@ class MySQLType(SqlglotType):
         return sge.DataType(this=typecode.TEXT)
 
 
+class StarRocksType(MySQLType):
+    dialect = "starrocks"
+
+
 class DuckDBType(SqlglotType):
     dialect = "duckdb"
     default_decimal_precision = 18
