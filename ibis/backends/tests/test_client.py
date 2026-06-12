@@ -1676,6 +1676,21 @@ def create_and_destroy_db(con):
         con.drop_database(dbname)
 
 
+@contextlib.contextmanager
+def create_and_destroy_catalog_db(con):
+    catalog = gen_name("test_catalog")
+    con.create_catalog(catalog)
+    try:
+        database = gen_name("test_database")
+        con.create_database(database, catalog=catalog)
+        try:
+            yield catalog, database
+        finally:
+            con.drop_database(database, catalog=catalog)
+    finally:
+        con.drop_catalog(catalog)
+
+
 # TODO: move this to something like `test_ddl.py`
 @pytest.mark.notyet(
     ["flink"],
@@ -1705,6 +1720,26 @@ def test_insert_with_database_specified(con_create_database):
             assert con.table(table_name, database=dbname).count().to_pandas() == 6
         finally:
             con.drop_table(table_name, database=dbname)
+
+
+@pytest.mark.notyet(["datafusion"], reason="cannot list or drop catalogs")
+def test_create_table_with_database_tuple(con_create_catalog_database):
+    con = con_create_catalog_database
+    t = ibis.memtable({"a": [1, 2, 3]})
+
+    with create_and_destroy_catalog_db(con) as (catalog, database):
+        con.create_table(
+            table_name := gen_name("table"),
+            obj=t,
+            database=(catalog, database),
+        )
+        try:
+            assert (
+                con.table(table_name, database=(catalog, database)).count().execute()
+                == 3
+            )
+        finally:
+            con.drop_table(table_name, database=(catalog, database))
 
 
 @pytest.mark.notyet(["datafusion"], reason="cannot list or drop catalogs")
