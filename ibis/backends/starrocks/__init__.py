@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
@@ -100,6 +101,11 @@ class Backend(MySQLBackend):
             ]
         )
         return properties
+
+    @contextlib.contextmanager
+    def begin(self):
+        with self.con.cursor() as cur:
+            yield cur
 
     def create_table(
         self,

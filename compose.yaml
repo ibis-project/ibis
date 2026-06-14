@@ -66,7 +66,7 @@ services:
       - $PWD/docker/singlestoredb/init.sql:/init.sql:ro
 
   starrocks:
-    image: starrocks/allin1-ubuntu:3.5.18
+    image: starrocks/allin1-ubuntu:4.0.11
     ports:
       - 8030:8030 # http port
       - 8040:8040 # be http port
