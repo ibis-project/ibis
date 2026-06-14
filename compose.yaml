@@ -65,6 +65,21 @@ services:
       - singlestoredb:/data
       - $PWD/docker/singlestoredb/init.sql:/init.sql:ro
 
+  starrocks:
+    image: starrocks/allin1-ubuntu:3.5.18
+    ports:
+      - 8030:8030 # http port
+      - 8040:8040 # be http port
+      - 9030:9030 # mysql protocol port
+    healthcheck:
+      interval: 2s
+      retries: 60
+      test:
+        - CMD-SHELL
+        - mysql -h 127.0.0.1 -P 9030 -u root -e 'CREATE DATABASE IF NOT EXISTS ibis_testing; SHOW BACKENDS;' | grep -F 9050
+    networks:
+      - starrocks
+
   postgres:
     environment:
       POSTGRES_PASSWORD: postgres
@@ -668,6 +683,7 @@ networks:
   clickhouse:
   postgres:
   singlestoredb:
+  starrocks:
   trino:
   druid:
   oracle:
