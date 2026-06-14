@@ -1411,13 +1411,27 @@ def test_string_as_date(alltypes, fmt):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
-@pytest.mark.pyspark
-def test_string_as_date_single_digit_pyspark(con):
-    # Regression test for https://github.com/ibis-project/ibis/issues/12004
-    # Spark's MM/dd require leading zeros; M/d accept single-digit values.
-    t = con.sql("SELECT '1/1/2026' AS raw_date")
-    result = t.mutate(parsed=t.raw_date.as_date("%m/%d/%Y")).execute()
-    assert result["parsed"][0].date() == datetime.date(2026, 1, 1)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have to_date() function - backend limitation",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["flink", "impala"],
+    raises=AssertionError,
+    reason="Java SimpleDateFormat MM/dd is strict; single-digit values return wrong results",
+)
+def test_string_as_date_single_digit(con):
+    expr = ibis.literal("1/1/2026").as_date("%m/%d/%Y")
+    result = con.execute(expr)
+    if isinstance(result, datetime.datetime):
+        result = result.date()
+    assert result == datetime.date(2026, 1, 1)
 
 
 @pytest.mark.notyet(
