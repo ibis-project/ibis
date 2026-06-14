@@ -338,6 +338,17 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         **config: Any,
     ) -> None:
         """Create an Ibis client connected to an Amazon Athena instance."""
+        from botocore.config import Config
+
+        # advertise Ibis in the user agent sent to AWS, preserving any
+        # user-supplied botocore Config and its existing user_agent_extra
+        boto_config = config.get("config") or Config()
+        config["config"] = boto_config.merge(
+            Config(
+                user_agent_extra=f"ibis/{ibis.__version__} {boto_config.user_agent_extra or ''}".strip()
+            )
+        )
+
         self.con = pyathena.connect(
             s3_staging_dir=s3_staging_dir,
             cursor_class=cursor_class,

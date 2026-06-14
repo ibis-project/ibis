@@ -1,3 +1,3 @@
 SELECT
-  RTRIM(`t0`.`string_col`, ' \t\n\r\v\f') AS `RStrip(string_col)`
+  RTRIM(`t0`.`string_col`, CONCAT(' \t\n\r', CHR(  11), CHR(  12))) AS `RStrip(string_col)`
 FROM `functional_alltypes` AS `t0`
