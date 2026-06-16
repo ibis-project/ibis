@@ -1416,6 +1416,39 @@ def test_string_as_date(alltypes, fmt):
 
 
 @pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have to_date() function - backend limitation",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.never(
+    ["flink"],
+    raises=ValueError,
+    reason="Flink does not support strftime-style format strings",
+)
+@pytest.mark.notyet(
+    ["pyspark", "databricks"],
+    raises=AssertionError,
+    reason="PySpark translates %m/%d to MM/dd (requiring 2 digits), rejecting single-digit values; see https://github.com/ibis-project/ibis/issues/12004",
+)
+def test_string_as_date_single_digit_month_day(con):
+    # https://github.com/ibis-project/ibis/issues/12004
+    # Python's %m/%d accepts single-digit values in strptime and most SQL
+    # backends, but PySpark maps %m->MM (2-digit mandatory) so "1/2/2021"
+    # silently returns NULL.
+    expr = ibis.literal("1/2/2021").as_date("%m/%d/%Y")
+    result = con.execute(expr)
+    expected = datetime.date(2021, 1, 2)
+    if isinstance(result, (pd.Timestamp, datetime.datetime)):
+        result = result.date()
+    assert result == expected
+
+
+@pytest.mark.notyet(
     [
         "pyspark",
         "exasol",
