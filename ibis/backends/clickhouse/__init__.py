@@ -152,6 +152,7 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
             query_limit=0,
             compress=compression,
             settings=settings,
+            secure=bool(secure),
             **kwargs,
         )
 
