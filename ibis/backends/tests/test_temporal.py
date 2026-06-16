@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import logging
 import operator
 import sqlite3
 import sys
@@ -18,6 +19,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends import _get_backend_names
+from ibis.backends.sql import SQLBackend
 from ibis.backends.tests.errors import (
     ArrowInvalid,
     DuckDBInvalidInputException,
@@ -45,6 +47,8 @@ from ibis.common.annotations import ValidationError
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
+
+logger = logging.getLogger(__name__)
 
 sqlite_without_ymd_intervals = pytest.mark.notyet(
     ["sqlite"],
@@ -1977,6 +1981,49 @@ def test_subsecond_cast_to_timestamp(con, dtype):
     result = con.execute(expr)
     expected = pd.Timestamp("2023-11-04 14:47:18.5")
     assert expected == result
+
+
+@pytest.mark.parametrize(
+    ("date_str", "expected"),
+    [
+        param("2021-1-2", datetime.date(2021, 1, 2), id="single_digit_month_and_day"),
+        param("2021-01-2", datetime.date(2021, 1, 2), id="single_digit_day"),
+        param("2021-1-02", datetime.date(2021, 1, 2), id="single_digit_month"),
+    ],
+)
+def test_string_cast_to_date_single_digit_month_day(con, date_str, expected):
+    # https://github.com/ibis-project/ibis/issues/12004
+    # Verify ibis passes the literal string as-is through SQLGlot without
+    # zero-padding month/day before the backend sees it.
+    expr = ibis.literal(date_str).cast("date")
+    if isinstance(con, SQLBackend):
+        sql = ibis.to_sql(expr, dialect=con.name)
+        logger.info("[gh12004] backend=%r  input=%r  sql=%s", con.name, date_str, sql)
+    result = con.execute(expr)
+    # Backends may return Timestamp or datetime for DATE; normalize to date.
+    if isinstance(result, (pd.Timestamp, datetime.datetime)):
+        result = result.date()
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("ts_str", "expected"),
+    [
+        param(
+            "2021-1-2 3:4:5",
+            datetime.datetime(2021, 1, 2, 3, 4, 5),
+            id="single_digit_all",
+        ),
+    ],
+)
+def test_string_cast_to_timestamp_single_digit_month_day(con, ts_str, expected):
+    # https://github.com/ibis-project/ibis/issues/12004
+    expr = ibis.literal(ts_str).cast("timestamp")
+    if isinstance(con, SQLBackend):
+        sql = ibis.to_sql(expr, dialect=con.name)
+        logger.info("[gh12004] backend=%r  input=%r  sql=%s", con.name, ts_str, sql)
+    result = con.execute(expr)
+    assert result == expected
 
 
 @pytest.mark.notimpl(
