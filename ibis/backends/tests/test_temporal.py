@@ -1425,21 +1425,18 @@ def test_string_as_date(alltypes, fmt):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.never(
+@pytest.mark.notyet(
     ["flink"],
-    raises=ValueError,
-    reason="Flink does not support strftime-style format strings",
+    raises=AssertionError,
+    reason="Flink misinterprets strftime-style format strings, producing a wrong date",
 )
 @pytest.mark.notyet(
-    ["pyspark", "databricks"],
+    ["impala"],
     raises=AssertionError,
-    reason="PySpark translates %m/%d to MM/dd (requiring 2 digits), rejecting single-digit values; see https://github.com/ibis-project/ibis/issues/12004",
+    reason="Impala returns NULL for single-digit month/day with %m/%d format; see https://github.com/ibis-project/ibis/issues/12004",
 )
 def test_string_as_date_single_digit_month_day(con):
     # https://github.com/ibis-project/ibis/issues/12004
-    # Python's %m/%d accepts single-digit values in strptime and most SQL
-    # backends, but PySpark maps %m->MM (2-digit mandatory) so "1/2/2021"
-    # silently returns NULL.
     expr = ibis.literal("1/2/2021").as_date("%m/%d/%Y")
     result = con.execute(expr)
     expected = datetime.date(2021, 1, 2)
@@ -1458,15 +1455,15 @@ def test_string_as_date_single_digit_month_day(con):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.never(
+@pytest.mark.notyet(
     ["flink"],
-    raises=ValueError,
-    reason="Flink does not support strftime-style format strings",
+    raises=AssertionError,
+    reason="Flink misinterprets strftime-style format strings, producing a wrong date",
 )
 @pytest.mark.notyet(
-    ["pyspark", "databricks"],
+    ["impala"],
     raises=AssertionError,
-    reason="PySpark translates %m/%d to MM/dd (requiring 2 digits), rejecting single-digit values; see https://github.com/ibis-project/ibis/issues/12004",
+    reason="Impala returns NULL for single-digit month/day with %m/%d format; see https://github.com/ibis-project/ibis/issues/12004",
 )
 def test_string_as_date_single_digit_month_day_column(con):
     # Mirrors the exact reproducer from https://github.com/ibis-project/ibis/issues/12004:
