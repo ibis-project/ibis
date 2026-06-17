@@ -17,6 +17,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
+from ibis.backends.tests.conftest import NO_ARRAY_SUPPORT
 from ibis.backends.tests.errors import (
     ArrowInvalid,
     ArrowTypeError,
@@ -2641,6 +2642,34 @@ def test_topk_counts_null(con):
     tkf = tk.filter(_.x.isnull())[1]
     result = con.to_pyarrow(tkf)
     assert result[0].as_py() == 1
+
+
+@NO_ARRAY_SUPPORT
+def test_topk_unnest_count(con: ibis.BaseBackend):
+    t = ibis.memtable({"x": [[1, 2, 3], [1, 2, None], []]})
+    tk = t.x.unnest().topk(name="n")
+    n_1s = tk.filter(_.x == 1)["n"].as_scalar()
+    result = con.to_pyarrow(n_1s).as_py()
+    assert result == 2
+
+    tk = t.x.unnest().topk()
+    n_1s = tk.filter(_.x == 1)["x_count"].as_scalar()
+    result = con.to_pyarrow(n_1s).as_py()
+    assert result == 2
+
+
+@pytest.mark.xfail(reason="The unnest is not placed in the right place in the query")
+def test_topk_unnest_max(con: ibis.BaseBackend):
+    t = con.create_table(
+        ibis.util.gen_name("topk_counts_unnest"),
+        {"x": [[1, 2, 3], [1, 2, None], []]},
+        temp=True,
+    )
+    v = t.x.unnest()
+    tk = v.topk(by=v.max(), name="n")
+    n_1s = tk.filter(_.x == 1)["n"].as_scalar()
+    result = con.to_pyarrow(n_1s).as_py()
+    assert result == 1
 
 
 @pytest.mark.notyet(
