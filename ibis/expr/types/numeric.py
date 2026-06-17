@@ -11,14 +11,10 @@ from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.generic import Column, Scalar, Value, _binop
 
 if TYPE_CHECKING:
-    from decimal import Decimal
-    from typing import Union
-
     from typing_extensions import Self
 
     import ibis.expr.types as ir
-
-    Number = Union[int, float, Decimal]
+    from ibis.expr.datatypes.value import InferrableToNumeric
 
 
 @public
@@ -170,8 +166,8 @@ class NumericValue(Value):
 
     def clip(
         self,
-        lower: Number | NumericValue | ibis.Deferred | None = None,
-        upper: Number | NumericValue | ibis.Deferred | None = None,
+        lower: InferrableToNumeric | NumericValue | ibis.Deferred | None = None,
+        upper: InferrableToNumeric | NumericValue | ibis.Deferred | None = None,
     ) -> Self:
         """Trim values outside of `lower` and `upper` bounds.
 
@@ -537,7 +533,9 @@ class NumericValue(Value):
         """
         return ops.Atan(self).to_expr()
 
-    def atan2(self, other: Number | NumericValue | ibis.Deferred, /) -> NumericValue:
+    def atan2(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred, /
+    ) -> NumericValue:
         """Compute the two-argument version of arc tangent.
 
         Examples
@@ -642,38 +640,78 @@ class NumericValue(Value):
         """
         return ops.Tan(self).to_expr()
 
-    def __add__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
+    def __eq__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> ir.BooleanValue:
+        return super().__eq__(other)
+
+    def __ne__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> ir.BooleanValue:
+        return super().__ne__(other)
+
+    def __ge__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> ir.BooleanValue:
+        return super().__ge__(other)
+
+    def __gt__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> ir.BooleanValue:
+        return super().__gt__(other)
+
+    def __le__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> ir.BooleanValue:
+        return super().__le__(other)
+
+    def __lt__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> ir.BooleanValue:
+        return super().__lt__(other)
+
+    def __add__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> NumericValue:
         """Add `self` with `other`."""
         return _binop(ops.Add, self, other)
 
     add = radd = __radd__ = __add__
 
-    def __sub__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
+    def __sub__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> NumericValue:
         """Subtract `other` from `self`."""
         return _binop(ops.Subtract, self, other)
 
     sub = __sub__
 
-    def __rsub__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
+    def __rsub__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> NumericValue:
         """Subtract `self` from `other`."""
         return _binop(ops.Subtract, other, self)
 
     rsub = __rsub__
 
-    def __mul__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
+    def __mul__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> NumericValue:
         """Multiply `self` and `other`."""
         return _binop(ops.Multiply, self, other)
 
     mul = rmul = __rmul__ = __mul__
 
-    def __truediv__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
+    def __truediv__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> NumericValue:
         """Divide `self` by `other`."""
         return _binop(ops.Divide, self, other)
 
     div = __div__ = __truediv__
 
     def __rtruediv__(
-        self, other: Number | NumericValue | ibis.Deferred
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
     ) -> NumericValue:
         """Perform `other` / `self`."""
         return _binop(ops.Divide, other, self)
@@ -682,7 +720,7 @@ class NumericValue(Value):
 
     def __floordiv__(
         self,
-        other: Number | NumericValue | ibis.Deferred,
+        other: InferrableToNumeric | NumericValue | ibis.Deferred,
     ) -> IntegerValue:
         """Perform `self` // `other`."""
         return _binop(ops.FloorDivide, self, other)
@@ -691,32 +729,40 @@ class NumericValue(Value):
 
     def __rfloordiv__(
         self,
-        other: Number | NumericValue | ibis.Deferred,
+        other: InferrableToNumeric | NumericValue | ibis.Deferred,
     ) -> IntegerValue:
         """Perform `other` // `self`."""
         return _binop(ops.FloorDivide, other, self)
 
     rfloordiv = __rfloordiv__
 
-    def __pow__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
+    def __pow__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> NumericValue:
         """Raise `self` to the `other`th power."""
         return _binop(ops.Power, self, other)
 
     pow = __pow__
 
-    def __rpow__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
+    def __rpow__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> NumericValue:
         """Raise `other` to the `self`th power."""
         return _binop(ops.Power, other, self)
 
     rpow = __rpow__
 
-    def __mod__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
+    def __mod__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> NumericValue:
         """Compute `self` modulo `other`."""
         return _binop(ops.Modulus, self, other)
 
     mod = __mod__
 
-    def __rmod__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
+    def __rmod__(
+        self, other: InferrableToNumeric | NumericValue | ibis.Deferred
+    ) -> NumericValue:
         """Compute `other` modulo `self`."""
 
         return _binop(ops.Modulus, other, self)
