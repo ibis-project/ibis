@@ -227,7 +227,7 @@ mark_notyet_risingwave_14670 = pytest.mark.notyet(
             id="day_of_week_index",
             marks=[
                 pytest.mark.notimpl(
-                    ["druid", "oracle", "exasol"], raises=com.OperationNotDefinedError
+                    ["druid", "oracle"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -1450,24 +1450,34 @@ def test_string_as_time(backend, alltypes):
 
 
 @pytest.mark.parametrize(
-    ("date", "expected_index", "expected_day"),
+    ("date", "expected_index", "expected_iso_index", "expected_day"),
     [
-        param("2017-01-01", 6, "Sunday", id="sunday"),
-        param("2017-01-02", 0, "Monday", id="monday"),
-        param("2017-01-03", 1, "Tuesday", id="tuesday"),
-        param("2017-01-04", 2, "Wednesday", id="wednesday"),
-        param("2017-01-05", 3, "Thursday", id="thursday"),
-        param("2017-01-06", 4, "Friday", id="friday"),
-        param("2017-01-07", 5, "Saturday", id="saturday"),
+        param("2017-01-01", 6, 7, "Sunday", id="sunday"),
+        param("2017-01-02", 0, 1, "Monday", id="monday"),
+        param("2017-01-03", 1, 2, "Tuesday", id="tuesday"),
+        param("2017-01-04", 2, 3, "Wednesday", id="wednesday"),
+        param("2017-01-05", 3, 4, "Thursday", id="thursday"),
+        param("2017-01-06", 4, 5, "Friday", id="friday"),
+        param("2017-01-07", 5, 6, "Saturday", id="saturday"),
     ],
 )
 @pytest.mark.notimpl(["druid", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @mark_notyet_risingwave_14670
-def test_day_of_week_scalar(con, date, expected_index, expected_day):
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=AssertionError,
+    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
+)
+def test_day_of_week_scalar(
+    con, date, expected_index, expected_iso_index, expected_day
+):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index().name("tmp"))
     assert result_index == expected_index
+
+    result_iso_index = con.execute(expr.day_of_week.iso_index().name("tmp"))
+    assert result_iso_index == expected_iso_index
 
     result_day = con.execute(expr.day_of_week.full_name().name("tmp"))
     assert result_day.lower() == expected_day.lower()
@@ -1489,6 +1499,11 @@ def test_day_of_week_column(backend, alltypes, df):
 
     backend.assert_series_equal(result_index, expected_index, check_names=False)
 
+    result_iso_index = expr.iso_index().name("tmp").execute()
+    expected_iso_index = df.timestamp_col.dt.isocalendar().day.astype("int16")
+
+    backend.assert_series_equal(result_iso_index, expected_iso_index, check_names=False)
+
     result_day = expr.full_name().name("tmp").execute()
     expected_day = df.timestamp_col.dt.day_name()
 
@@ -1502,9 +1517,6 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda t: t.timestamp_col.day_of_week.index().count(),
             lambda s: s.dt.dayofweek.count(),
             id="day_of_week_index",
-            marks=[
-                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-            ],
         ),
         param(
             lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
