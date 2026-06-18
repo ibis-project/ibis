@@ -39,7 +39,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: compute ibis version
+      - name: bump ibis version
         id: get-version
         run: echo "value=$(just bump-version)" | tee -a "$GITHUB_OUTPUT"
 
