@@ -1435,8 +1435,17 @@ def test_string_as_date(alltypes, fmt):
     raises=AssertionError,
     reason="Impala returns NULL for single-digit month/day with %m/%d format; see https://github.com/ibis-project/ibis/issues/12004",
 )
+@pytest.mark.notyet(
+    ["pyspark", "databricks"],
+    raises=AssertionError,
+    strict=False,
+    reason="PySpark maps %m->MM (2-digit mandatory) in non-legacy mode, returning NULL for single-digit values; ibis CI uses spark.sql.legacy.timeParserPolicy=LEGACY which masks this; see https://github.com/ibis-project/ibis/issues/12004",
+)
 def test_string_as_date_single_digit_month_day(con):
     # https://github.com/ibis-project/ibis/issues/12004
+    # %m/%d/%Y is translated to MM/dd/yyyy for Spark, which in the default
+    # EXCEPTION/CORRECTED timeParserPolicy requires two-digit month/day and
+    # silently returns NULL for inputs like "1/2/2021".
     expr = ibis.literal("1/2/2021").as_date("%m/%d/%Y")
     result = con.execute(expr)
     expected = datetime.date(2021, 1, 2)
@@ -1464,6 +1473,12 @@ def test_string_as_date_single_digit_month_day(con):
     ["impala"],
     raises=AssertionError,
     reason="Impala returns NULL for single-digit month/day with %m/%d format; see https://github.com/ibis-project/ibis/issues/12004",
+)
+@pytest.mark.notyet(
+    ["pyspark", "databricks"],
+    raises=AssertionError,
+    strict=False,
+    reason="PySpark maps %m->MM (2-digit mandatory) in non-legacy mode, returning NULL for single-digit values; ibis CI uses spark.sql.legacy.timeParserPolicy=LEGACY which masks this; see https://github.com/ibis-project/ibis/issues/12004",
 )
 def test_string_as_date_single_digit_month_day_column(con):
     # Mirrors the exact reproducer from https://github.com/ibis-project/ibis/issues/12004:
