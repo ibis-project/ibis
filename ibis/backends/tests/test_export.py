@@ -761,11 +761,6 @@ def test_all_null_column(con):
     ["snowflake", "bigquery", "databricks"], raises=pa.ArrowNotImplementedError
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
-@pytest.mark.notyet(
-    ["mysql"],
-    raises=pa.ArrowInvalid,
-    reason="ADBC MySQL driver returns opaque type for NULL",
-)
 def test_all_null_scalar(con):
     e = ibis.literal(None)
     result = con.to_pyarrow(e)
