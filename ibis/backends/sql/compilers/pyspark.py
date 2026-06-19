@@ -10,6 +10,28 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.datatypes import PySparkType
+from ibis.backends.sql.dialects import PySpark
+from ibis.backends.sql.rewrites import (
+    FirstValue,
+    LastValue,
+    lower_sample,
+    p,
+    split_select_distinct_with_order_by,
+)
+from ibis.common.patterns import replace
+from ibis.config import options
+from ibis.expr.operations.udf import InputType
+from ibis.util import gen_name
+
+# String escaping inside SQL string literals is dialect-sensitive; using
+# the `CHR()` function fixes issues with specific whitespace characters.
+VT = sge.Chr(expressions=[sge.Literal.number(ord("\v"))])
+FF = sge.Chr(expressions=[sge.Literal.number(ord("\f"))])
 
 # SQLGlot maps Python strftime %m→MM and %d→dd (strict 2-digit) for Spark.
 # Python's strptime is lenient (accepts "1" for %m), so we use the single-
@@ -48,28 +70,6 @@ _PYTHON_FORMAT_RE = re.compile(
         re.escape(k) for k in sorted(_PYTHON_TO_SPARK_FORMAT, key=len, reverse=True)
     )
 )
-import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
-from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, SQLGlotCompiler
-from ibis.backends.sql.datatypes import PySparkType
-from ibis.backends.sql.dialects import PySpark
-from ibis.backends.sql.rewrites import (
-    FirstValue,
-    LastValue,
-    lower_sample,
-    p,
-    split_select_distinct_with_order_by,
-)
-from ibis.common.patterns import replace
-from ibis.config import options
-from ibis.expr.operations.udf import InputType
-from ibis.util import gen_name
-
-# String escaping inside SQL string literals is dialect-sensitive; using
-# the `CHR()` function fixes issues with specific whitespace characters.
-VT = sge.Chr(expressions=[sge.Literal.number(ord("\v"))])
-FF = sge.Chr(expressions=[sge.Literal.number(ord("\f"))])
 
 
 @replace(p.Limit)
