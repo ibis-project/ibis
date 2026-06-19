@@ -10,6 +10,44 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+
+# SQLGlot maps Python strftime %m→MM and %d→dd (strict 2-digit) for Spark.
+# Python's strptime is lenient (accepts "1" for %m), so we use the single-
+# letter Spark equivalents (M, d, H, …) which accept both 1- and 2-digit
+# values.  This mapping is applied in visit_StringToDate/StringToTimestamp
+# instead of letting SQLGlot do the conversion.
+_PYTHON_TO_SPARK_FORMAT: dict[str, str] = {
+    "%-m": "M",
+    "%m": "M",
+    "%-d": "d",
+    "%d": "d",
+    "%-H": "H",
+    "%H": "H",
+    "%-I": "h",
+    "%I": "h",
+    "%-M": "m",
+    "%M": "m",
+    "%-S": "s",
+    "%S": "s",
+    "%-j": "D",
+    "%j": "D",
+    "%Y": "yyyy",
+    "%y": "yy",
+    "%B": "MMMM",
+    "%b": "MMM",
+    "%f": "SSSSSS",
+    "%p": "a",
+    "%a": "EEE",
+    "%A": "EEEE",
+    "%Z": "z",
+    "%z": "Z",
+}
+# Build a regex that tries longer tokens first so that e.g. "%-m" wins over "%m"
+_PYTHON_FORMAT_RE = re.compile(
+    "|".join(
+        re.escape(k) for k in sorted(_PYTHON_TO_SPARK_FORMAT, key=len, reverse=True)
+    )
+)
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -146,6 +184,24 @@ class PySparkCompiler(SQLGlotCompiler):
                 return self.f.to_json(arg)
         else:
             return self.cast(arg, to)
+
+    def _to_spark_format(self, python_fmt: str) -> sge.Expression:
+        """Convert a Python strftime format string to a lenient Spark format.
+
+        SQLGlot maps %m→MM and %d→dd (strict 2-digit) for Spark.  Python's
+        strptime accepts single-digit values for %m, %d, etc., so we use the
+        single-letter Spark equivalents (M, d, …) which accept both widths.
+        """
+        spark_fmt = _PYTHON_FORMAT_RE.sub(
+            lambda m: _PYTHON_TO_SPARK_FORMAT[m.group()], python_fmt
+        )
+        return sge.convert(spark_fmt)
+
+    def visit_StringToDate(self, op, *, arg, format_str):
+        return self.f.to_date(arg, self._to_spark_format(format_str.this))
+
+    def visit_StringToTimestamp(self, op, *, arg, format_str):
+        return self.f.to_timestamp(arg, self._to_spark_format(format_str.this))
 
     def visit_IsNull(self, op, *, arg):
         is_null = arg.is_(NULL)
