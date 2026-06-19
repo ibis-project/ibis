@@ -2025,12 +2025,6 @@ def test_insert_into_table_missing_columns(con, temp_table):
     reason="Memtables not visible in list_tables() due to transaction block restrictions.",
     # Related to: https://materialize.com/docs/sql/begin/
 )
-@pytest.mark.notyet(
-    ["mysql"],
-    raises=AssertionError,
-    reason="ADBC get_objects doesn't see temporary tables",
-    # https://github.com/adbc-drivers/driverbase-go/issues/137
-)
 def test_memtable_cleanup(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": list("def")})
 
