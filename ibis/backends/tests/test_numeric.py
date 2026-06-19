@@ -830,6 +830,11 @@ def test_isnan_isinf(
             ],
         ),
         param(
+            L(5.556).log(),
+            math.log(5.556),
+            id="log-natural",
+        ),
+        param(
             L(5.556).ln(),
             math.log(5.556),
             id="ln",

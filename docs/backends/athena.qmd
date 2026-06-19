@@ -27,8 +27,8 @@ con = ibis.athena.connect(s3_staging_dir="s3://...")  # <1>
 ::: {.callout-note}
 ## At a **minimum**, the `s3_staging_dir` argument must be provided.
 
-This argument tells the underlying driver library--`pyathena`--and ultimately
-Athena itself where to dump query results.
+This argument tells the underlying driver library, [`pyathena`](https://pyathena.dev/),
+and ultimately Athena itself where to dump query results.
 :::
 
 1. Adjust other connection parameters as needed.
@@ -50,8 +50,8 @@ con = ibis.athena.connect(s3_staging_dir="s3://...")  # <1>
 ::: {.callout-note}
 ## At a **minimum**, the `s3_staging_dir` argument must be provided.
 
-This argument tells the underlying driver library--`pyathena`--and ultimately
-Athena itself where to dump query results.
+This argument tells the underlying driver library, [`pyathena`](https://pyathena.dev/),
+and ultimately Athena itself where to dump query results.
 :::
 
 1. Adjust other connection parameters as needed.
@@ -73,8 +73,8 @@ con = ibis.athena.connect(s3_staging_dir="s3://my-bucket/")  # <1>
 ::: {.callout-note}
 ## At a **minimum**, the `s3_staging_dir` argument must be provided.
 
-This argument tells the underlying driver library--`pyathena`--and ultimately
-Athena itself where to dump query results.
+This argument tells the underlying driver library, [`pyathena`](https://pyathena.dev/),
+and ultimately Athena itself where to dump query results.
 :::
 
 1. Adjust other connection parameters as needed.
@@ -94,9 +94,8 @@ con = ibis.athena.connect(
 ::: {.callout-note}
 ## At a **minimum**, the `s3_staging_dir` argument must be provided.
 
-This argument tells the underlying driver
-library--[`pyathena`](https://laughingman7743.github.io/PyAthena/)--and
-ultimately Athena itself where to dump query results.
+This argument tells the underlying driver library, [`pyathena`](https://pyathena.dev/),
+and ultimately Athena itself where to dump query results.
 :::
 
 ### Connection Parameters

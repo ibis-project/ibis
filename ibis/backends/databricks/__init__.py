@@ -9,7 +9,6 @@ import json
 import os
 import sys
 import tempfile
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import databricks.sql
@@ -91,6 +90,12 @@ def _databricks_schema_to_ibis(schema: Iterable[Mapping[str, Any]]) -> sch.Schem
 class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
     name = "databricks"
     compiler = sc.databricks.compiler
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        return self._memtable_manager.register_in_memory_table(op)
+
+    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        return self._memtable_manager.make_memtable_finalizer(name)
 
     @property
     def current_catalog(self) -> str:
@@ -407,20 +412,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
             staging_allowed_local_path=staging_allowed_local_path,
             **config,
         )
-        if memtable_volume is None:
-            short_version = "".join(map(str, sys.version_info[:3]))
-            memtable_volume = (
-                f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
-            )
-        self._memtable_volume = memtable_volume
-        self._memtable_catalog = self.current_catalog
-        self._memtable_database = self.current_database
-        self._post_connect(memtable_volume=memtable_volume)
-
-    @contextlib.contextmanager
-    def begin(self):
-        with self.con.cursor() as cur:
-            yield cur
+        self._memtable_manager = MemtableManager(self, memtable_volume)
 
     @util.experimental
     @classmethod
@@ -432,70 +424,16 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         con
             An existing connection to a Databricks database.
         memtable_volume
-            The volume to use for Ibis memtables.
+            When working with in-memory data such as pandas dataframes or pyarrow tables,
+            Ibis creates temporary Parquet files in Databricks to store the data.
+            This parameter specifies the volume to use for that storage, e.g. "/Volumes/my_volume".
+            If not provided, a unique volume path will be generated using the current user's username, Python version, and process ID the first time an in-memory table is executed.
         """
         new_backend = cls()
         new_backend._can_reconnect = False
         new_backend.con = con
-        new_backend._post_connect(memtable_volume=memtable_volume)
+        new_backend._memtable_manager = MemtableManager(new_backend, memtable_volume)
         return new_backend
-
-    def _post_connect(self, *, memtable_volume: str) -> None:
-        sql = f"CREATE VOLUME IF NOT EXISTS `{memtable_volume}` COMMENT 'Ibis memtable storage volume'"
-        with self.con.cursor() as cur:
-            cur.execute(sql)
-
-    @functools.cached_property
-    def _memtable_volume_path(self) -> str:
-        return f"/Volumes/{self._memtable_catalog}/{self._memtable_database}/{self._memtable_volume}"
-
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        import pyarrow.parquet as pq
-
-        quoted = self.compiler.quoted
-        name = op.name
-        stem = f"{name}.parquet"
-
-        upstream_path = f"{self._memtable_volume_path}/{stem}"
-        sql = sge.Create(
-            kind="VIEW",
-            this=sg.table(name, quoted=quoted),
-            expression=sg.select(STAR).from_(
-                sg.table(upstream_path, db="parquet", quoted=quoted)
-            ),
-            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-        ).sql(self.dialect)
-        data = op.data.to_pyarrow(schema=op.schema)
-        with util.mktempd() as tmpdir:
-            path = Path(tmpdir, stem)
-            put_into = f"PUT '{path}' INTO '{upstream_path}' OVERWRITE"
-            # optimize for bandwidth so use zstd which typically compresses
-            # better than the other options without much loss in speed
-            pq.write_table(data, path, compression="zstd")
-            with self.con.cursor() as cur:
-                cur.execute(put_into)
-                cur.execute(sql)
-
-    def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
-        path = f"{self._memtable_volume_path}/{name}.parquet"
-
-        def finalizer(path: str = path, con=self.con) -> None:
-            """Finalizer for in-memory tables.
-
-            The view that references the storage is temporary and will be
-            automatically removed, so remove only the backing file.
-
-            It's not ideal that you can remove the data out from under the
-            view but in our case we're assuming that if this is invoked, the
-            view is no longer needed because the process is shutting down and
-            therefore if the file is removed, it won't be long before the view
-            is also removed (automatically by databricks).
-            """
-
-            with con.cursor() as cur:
-                cur.execute(f"REMOVE '{path}'")
-
-        return finalizer
 
     def create_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
@@ -629,3 +567,82 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         )
         with self._safe_raw_sql(query):
             pass
+
+
+class MemtableManager:
+    """If `volume_path` is not provided, a unique volume path will be generated the first time an in-memory table is registered using the current user's username, Python version, and process ID ."""
+
+    def __init__(self, backend: Backend, volume_path: str | None):
+        self._backend = backend
+        self._volume_path = volume_path
+        self._is_volume_created = False
+
+    def register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        import pyarrow.parquet as pq
+
+        quoted = self._backend.compiler.quoted
+
+        upstream_path = self._ensure_path_for_memtable(op.name)
+        sql = sge.Create(
+            kind="VIEW",
+            this=sg.table(op.name, quoted=quoted),
+            expression=sg.select(STAR).from_(
+                sg.table(upstream_path, db="parquet", quoted=quoted)
+            ),
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+        ).sql(self._backend.dialect)
+        data = op.data.to_pyarrow(schema=op.schema)
+        with tempfile.NamedTemporaryFile(suffix=".parquet") as tmp:
+            put_into = f"PUT '{tmp.name}' INTO '{upstream_path}' OVERWRITE"
+            # optimize for bandwidth so use zstd which typically compresses
+            # better than the other options without much loss in speed
+            pq.write_table(data, tmp.name, compression="zstd")
+            with self._backend.con.cursor() as cur:
+                cur.execute(put_into)
+                cur.execute(sql)
+
+    def make_memtable_finalizer(self, name: str) -> Callable[..., None]:
+        def finalizer(
+            path: str = self._ensure_path_for_memtable(name), con=self._backend.con
+        ) -> None:
+            """Finalizer for in-memory tables.
+
+            The view that references the storage is temporary and will be
+            automatically removed, so remove only the backing file.
+
+            It's not ideal that you can remove the data out from under the
+            view but in our case we're assuming that if this is invoked, the
+            view is no longer needed because the process is shutting down and
+            therefore if the file is removed, it won't be long before the view
+            is also removed (automatically by databricks).
+            """
+            with con.cursor() as cur:
+                cur.execute(f"REMOVE '{path}'")
+
+        return finalizer
+
+    def get_volume_path(self) -> str:
+        if not self._volume_path:
+            self._volume_path = self._generate_volume_path()
+        return self._volume_path
+
+    def _ensure_path_for_memtable(self, name: str) -> str:
+        # If someone deletes/modifies the volume under us,
+        # we are going to be in a bad state, but there's not much we can do about that.
+        if not self._volume_path:
+            self._volume_path = self._generate_volume_path()
+        if not self._is_volume_created:
+            self._create_volume(self._volume_path)
+            self._is_volume_created = True
+        return f"{self._volume_path}/{name}.parquet"
+
+    def _generate_volume_path(self) -> str:
+        """Has runtime effects: prompts the user for a password, and fetches the current database and catalog from the backend."""
+        short_version = "".join(map(str, sys.version_info[:3]))
+        volume_name = f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
+        return f"/Volumes/{self._backend.current_catalog}/{self._backend.current_database}/{volume_name}"
+
+    def _create_volume(self, path: str) -> None:
+        sql = f"CREATE VOLUME IF NOT EXISTS `{path}` COMMENT 'Ibis memtable storage volume'"
+        with self._backend.con.cursor() as cur:
+            cur.execute(sql)

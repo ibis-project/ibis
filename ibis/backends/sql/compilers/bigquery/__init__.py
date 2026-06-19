@@ -443,7 +443,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.f.log(arg, 2)
 
     def visit_Log(self, op, *, arg, base):
-        if base is None:
+        if op.base is None:
             return self.f.ln(arg)
         return self.f.log(arg, base)
 

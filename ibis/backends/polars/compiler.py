@@ -704,6 +704,8 @@ def clip(op, **kw):
 @translate.register(ops.Log)
 def log(op, **kw):
     arg = translate(op.arg, **kw)
+    if op.base is None:
+        return arg.log()
     return arg.log(base=_literal_value(op.base))
 
 
