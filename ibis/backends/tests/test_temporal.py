@@ -1500,6 +1500,73 @@ def test_string_as_date_single_digit_month_day_column(con):
     assert result == expected
 
 
+# Proactive execution probe for sqlglot's per-dialect strftime->format translation.
+# The danger is not just errors but *silently wrong* values (e.g. Flink turned
+# "1/2/2021" into date(5471, 9, 27)), so each case asserts the exact expected
+# value and logs the compiled SQL. Unmarked on purpose: this is a diagnostic to
+# surface which dialects mis-execute the format strings sqlglot produces.
+@pytest.mark.parametrize(
+    ("string", "format", "expected"),
+    [
+        param("01/02/2021", "%m/%d/%Y", datetime.date(2021, 1, 2), id="padded_slash"),
+        param("1/2/2021", "%m/%d/%Y", datetime.date(2021, 1, 2), id="single_slash"),
+        param("2021-01-02", "%Y-%m-%d", datetime.date(2021, 1, 2), id="padded_iso"),
+        param("2021-1-2", "%Y-%m-%d", datetime.date(2021, 1, 2), id="single_iso"),
+    ],
+)
+def test_string_as_date_format_execution(con, string, format, expected):
+    expr = ibis.literal(string).as_date(format)
+    if isinstance(con, SQLBackend):
+        logger.info(
+            "[gh12004] backend=%r input=%r format=%r sql=%s",
+            con.name,
+            string,
+            format,
+            ibis.to_sql(expr, dialect=con.name),
+        )
+    result = con.execute(expr)
+    if isinstance(result, (pd.Timestamp, datetime.datetime)):
+        result = result.date()
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("string", "format", "expected"),
+    [
+        param(
+            "2021-01-02 03:04:05",
+            "%Y-%m-%d %H:%M:%S",
+            datetime.datetime(2021, 1, 2, 3, 4, 5),
+            id="padded",
+        ),
+        param(
+            "2021-1-2 3:4:5",
+            "%Y-%m-%d %H:%M:%S",
+            datetime.datetime(2021, 1, 2, 3, 4, 5),
+            id="single_digit",
+        ),
+    ],
+)
+def test_string_as_timestamp_format_execution(con, string, format, expected):
+    expr = ibis.literal(string).as_timestamp(format)
+    if isinstance(con, SQLBackend):
+        logger.info(
+            "[gh12004] backend=%r input=%r format=%r sql=%s",
+            con.name,
+            string,
+            format,
+            ibis.to_sql(expr, dialect=con.name),
+        )
+    result = con.execute(expr)
+    if isinstance(result, pd.Timestamp):
+        result = result.to_pydatetime()
+    # normalize tz-aware results to naive wall-clock: this probe is about whether
+    # the parsed value is correct, not about timezone semantics
+    if isinstance(result, datetime.datetime) and result.tzinfo is not None:
+        result = result.replace(tzinfo=None)
+    assert result == expected
+
+
 @pytest.mark.notyet(
     [
         "pyspark",
