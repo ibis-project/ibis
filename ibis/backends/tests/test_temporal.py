@@ -22,6 +22,7 @@ from ibis.backends import _get_backend_names
 from ibis.backends.sql import SQLBackend
 from ibis.backends.tests.errors import (
     ArrowInvalid,
+    DatabricksServerOperationError,
     DuckDBInvalidInputException,
     ExaQueryError,
     GoogleBadRequest,
@@ -38,6 +39,7 @@ from ibis.backends.tests.errors import (
     PyDruidProgrammingError,
     PyODBCDataError,
     PyODBCProgrammingError,
+    PySparkException,
     SingleStoreDBOperationalError,
     SingleStoreDBProgrammingError,
     SnowflakeProgrammingError,
@@ -1436,9 +1438,14 @@ def test_string_as_date(alltypes, fmt):
     reason="Impala returns NULL for single-digit month/day with %m/%d format; see https://github.com/ibis-project/ibis/issues/12004",
 )
 @pytest.mark.notyet(
-    ["pyspark", "databricks"],
-    raises=AssertionError,
-    reason="Spark 3+ parses %m/%d as strict MM/dd and returns NULL for single-digit values; fixed upstream by https://github.com/tobymao/sqlglot/pull/7773 (remove this marker once the sqlglot lower bound is bumped). See https://github.com/ibis-project/ibis/issues/12004",
+    ["pyspark"],
+    raises=PySparkException,
+    reason="Spark 3+ parses %m/%d as strict MM/dd and raises on single-digit values (SparkUpgradeException on 3.5, DateTimeException on 4.0); fixed upstream by https://github.com/tobymao/sqlglot/pull/7773 (remove this marker once the sqlglot lower bound is bumped). See https://github.com/ibis-project/ibis/issues/12004",
+)
+@pytest.mark.notyet(
+    ["databricks"],
+    raises=DatabricksServerOperationError,
+    reason="Spark parses %m/%d as strict MM/dd and raises on single-digit values; fixed upstream by https://github.com/tobymao/sqlglot/pull/7773 (remove this marker once the sqlglot lower bound is bumped). See https://github.com/ibis-project/ibis/issues/12004",
 )
 def test_string_as_date_single_digit_month_day(con):
     # https://github.com/ibis-project/ibis/issues/12004
@@ -1471,9 +1478,14 @@ def test_string_as_date_single_digit_month_day(con):
     reason="Impala returns NULL for single-digit month/day with %m/%d format; see https://github.com/ibis-project/ibis/issues/12004",
 )
 @pytest.mark.notyet(
-    ["pyspark", "databricks"],
-    raises=AssertionError,
-    reason="Spark 3+ parses %m/%d as strict MM/dd and returns NULL for single-digit values; fixed upstream by https://github.com/tobymao/sqlglot/pull/7773 (remove this marker once the sqlglot lower bound is bumped). See https://github.com/ibis-project/ibis/issues/12004",
+    ["pyspark"],
+    raises=PySparkException,
+    reason="Spark 3+ parses %m/%d as strict MM/dd and raises on single-digit values (SparkUpgradeException on 3.5, DateTimeException on 4.0); fixed upstream by https://github.com/tobymao/sqlglot/pull/7773 (remove this marker once the sqlglot lower bound is bumped). See https://github.com/ibis-project/ibis/issues/12004",
+)
+@pytest.mark.notyet(
+    ["databricks"],
+    raises=DatabricksServerOperationError,
+    reason="Spark parses %m/%d as strict MM/dd and raises on single-digit values; fixed upstream by https://github.com/tobymao/sqlglot/pull/7773 (remove this marker once the sqlglot lower bound is bumped). See https://github.com/ibis-project/ibis/issues/12004",
 )
 def test_string_as_date_single_digit_month_day_column(con):
     # Mirrors the exact reproducer from https://github.com/ibis-project/ibis/issues/12004:
