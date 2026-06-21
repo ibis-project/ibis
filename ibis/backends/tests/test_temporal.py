@@ -1340,6 +1340,27 @@ def test_string_as_timestamp(alltypes, fmt):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't support to_date(text, format) - backend limitation",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+def test_string_as_date_with_format(con):
+    # Regression test: Flink translated the strftime format incorrectly when
+    # building TO_DATE (e.g. "%Y-%m-%d" became "%yyyy-%m-%d"), silently producing
+    # wrong dates even for zero-padded input.
+    expr = ibis.literal("2021-01-02").as_date("%Y-%m-%d")
+    result = con.execute(expr)
+    if isinstance(result, (pd.Timestamp, datetime.datetime)):
+        result = result.date()
+    assert result == datetime.date(2021, 1, 2)
+
+
 @pytest.mark.parametrize(
     "fmt",
     [
