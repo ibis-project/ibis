@@ -1340,6 +1340,32 @@ def test_string_as_timestamp(alltypes, fmt):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't support to_timestamp(text, format) - backend limitation",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+def test_string_as_timestamp_with_time(con):
+    # Regression test: a format with a time component exercises ``%M`` (minutes),
+    # which collides with the month-name token in MySQL/Trino-family format codes
+    # (minutes is ``%i``).  Previously MySQL/Trino/SingleStoreDB read the minutes
+    # field as a month name and silently returned NULL (or errored on Trino).
+    expr = ibis.literal("2021-01-02 03:04:05").as_timestamp("%Y-%m-%d %H:%M:%S")
+    result = con.execute(expr)
+    if isinstance(result, pd.Timestamp):
+        result = result.to_pydatetime()
+    # normalize tz-aware results to naive wall-clock; this checks parse
+    # correctness, not timezone semantics
+    if isinstance(result, datetime.datetime) and result.tzinfo is not None:
+        result = result.replace(tzinfo=None)
+    assert result == datetime.datetime(2021, 1, 2, 3, 4, 5)
+
+
 @pytest.mark.parametrize(
     "fmt",
     [

@@ -305,8 +305,19 @@ class SingleStoreDBCompiler(MySQLCompiler):
 
         Use TIMESTAMP() function instead of STR_TO_DATE to get proper timestamp type.
         """
+        # Convert Python strftime format to MySQL/SingleStoreDB format: %M is
+        # minutes in Python but the month *name* in MySQL (minutes is %i); %S is
+        # seconds in Python but %s in MySQL.  Without this, STR_TO_DATE reads the
+        # minutes field as a month name and returns NULL.
+        if hasattr(format_str, "this") and isinstance(format_str.this, str):
+            mysql_format = format_str.this.replace("%M", "%i").replace("%S", "%s")
+        else:
+            mysql_format = str(format_str).replace("%M", "%i").replace("%S", "%s")
+
         # Use STR_TO_DATE to parse the string with the format, then wrap in TIMESTAMP()
-        parsed_date = sge.Anonymous(this="STR_TO_DATE", expressions=[arg, format_str])
+        parsed_date = sge.Anonymous(
+            this="STR_TO_DATE", expressions=[arg, sge.convert(mysql_format)]
+        )
         return sge.Anonymous(this="TIMESTAMP", expressions=[parsed_date])
 
     def visit_StringToTime(self, op, *, arg, format_str):
