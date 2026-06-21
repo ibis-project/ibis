@@ -41,7 +41,10 @@ jobs:
 
       - name: bump ibis version
         id: get-version
-        run: echo "value=$(just bump-version)" | tee -a "$GITHUB_OUTPUT"
+        run: |
+          set -euo pipefail
+          version="$(just bump-version)"
+          echo "value=$version" >> "$GITHUB_OUTPUT"
 
       - name: build wheel and source dist
         run: uv build
