@@ -1365,6 +1365,24 @@ def test_string_as_timestamp_with_time(con):
     assert result.replace(tzinfo=None) == datetime.datetime(2021, 1, 2, 3, 4, 5)
 
 
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have to_date() function",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
+)
+def test_string_as_date_with_format(con):
+    # Flink mangled the format and returned a wrong date for padded input.
+    expr = ibis.literal("2021-01-02").as_date("%Y-%m-%d")
+    result = con.execute(expr)
+    if isinstance(result, (pd.Timestamp, datetime.datetime)):
+        result = result.date()
+    assert result == datetime.date(2021, 1, 2)
+
+
 @pytest.mark.parametrize(
     "fmt",
     [
