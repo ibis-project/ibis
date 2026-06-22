@@ -239,7 +239,8 @@ class FlinkCompiler(SQLGlotCompiler):
 
     def visit_StringToDate(self, op, *, arg, format_str):
         return sge.Anonymous(
-            this="TO_DATE", expressions=[arg, self._to_flink_datetime_format(format_str)]
+            this="TO_DATE",
+            expressions=[arg, self._to_flink_datetime_format(format_str)],
         )
 
     def visit_StringToTimestamp(self, op, *, arg, format_str):
