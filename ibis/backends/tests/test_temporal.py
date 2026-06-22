@@ -1357,13 +1357,7 @@ def test_string_as_timestamp_with_time(con):
     # field as a month name and silently returned NULL (or errored on Trino).
     expr = ibis.literal("2021-01-02 03:04:05").as_timestamp("%Y-%m-%d %H:%M:%S")
     result = con.execute(expr)
-    if isinstance(result, pd.Timestamp):
-        result = result.to_pydatetime()
-    # normalize tz-aware results to naive wall-clock; this checks parse
-    # correctness, not timezone semantics
-    if isinstance(result, datetime.datetime) and result.tzinfo is not None:
-        result = result.replace(tzinfo=None)
-    assert result == datetime.datetime(2021, 1, 2, 3, 4, 5)
+    assert result.replace(tzinfo=None) == datetime.datetime(2021, 1, 2, 3, 4, 5)
 
 
 @pytest.mark.parametrize(
