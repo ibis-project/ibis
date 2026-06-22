@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlglot as sg
 import sqlglot.expressions as sge
+from sqlglot.time import format_time
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -110,8 +111,6 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.RegexSearch: "regexp",
         ops.StrRight: "right",
         ops.StringLength: "char_length",
-        ops.StringToDate: "to_date",
-        ops.StringToTimestamp: "to_timestamp",
         ops.TypeOf: "typeof",
     }
 
@@ -224,6 +223,31 @@ class FlinkCompiler(SQLGlotCompiler):
 
         expr = sge.Values(expressions=expressions, alias=alias)
         return sg.select(*columns).from_(expr)
+
+    def _to_flink_datetime_format(self, format_str) -> sge.Expression:
+        # Flink's TO_DATE/TO_TIMESTAMP expect a Java (SimpleDateFormat-style)
+        # pattern, e.g. ``yyyy-MM-dd``.  Translate the canonical Python strftime
+        # format to that via the dialect's inverse time mapping.  Routing the
+        # format through ``self.f.to_date(..., dialect=Flink)`` instead re-parses
+        # it as if already Flink-native and mangles it (``%Y`` -> ``%yyyy``).
+        pattern = format_time(
+            format_str.this,
+            self.dialect.INVERSE_TIME_MAPPING,
+            self.dialect.INVERSE_TIME_TRIE,
+        )
+        return sge.convert(pattern)
+
+    def visit_StringToDate(self, op, *, arg, format_str):
+        return sge.Anonymous(
+            this="TO_DATE",
+            expressions=[arg, self._to_flink_datetime_format(format_str)],
+        )
+
+    def visit_StringToTimestamp(self, op, *, arg, format_str):
+        return sge.Anonymous(
+            this="TO_TIMESTAMP",
+            expressions=[arg, self._to_flink_datetime_format(format_str)],
+        )
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():
