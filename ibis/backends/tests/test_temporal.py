@@ -1275,11 +1275,6 @@ def test_integer_to_timestamp(backend, con, unit):
                     ),
                     raises=SnowflakeProgrammingError,
                 ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=ValueError,
-                    reason="Datetime formatting style is not supported.",
-                ),
             ],
         ),
         param(
@@ -1368,11 +1363,6 @@ def test_string_as_date_with_format(con):
         param(
             "%m/%d/%y",
             id="mysql_format",
-            marks=pytest.mark.never(
-                ["flink"],
-                raises=ValueError,
-                reason="Datetime formatting style is not supported.",
-            ),
         ),
         param(
             "MM/dd/yy",
