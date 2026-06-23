@@ -359,19 +359,6 @@ bump-version:
     #!/usr/bin/env bash
     set -euo pipefail
     ibis_dev_version="$(just compute-version)"
-    python - "$ibis_dev_version" <<'PY'
-import re
-import sys
-
-v = sys.argv[1]
-for p, n in [("pyproject.toml", "version"), ("ibis/__init__.py", "__version__")]:
-    with open(p) as f:
-        t = f.read()
-    t, count = re.subn(rf"(?m)^{n} = .+", f'{n} = "{v}"', t)
-    if count != 1:
-        raise SystemExit(f"expected exactly 1 {n} assignment in {p}, found {count}")
-    with open(p, "w") as f:
-        f.write(t)
-PY
+    python -c 'import re, sys; v=sys.argv[1]; [open(p,"w").write(t) for p,n in [("pyproject.toml","version"),("ibis/__init__.py","__version__")] for t,c in [re.subn(rf"(?m)^{n} = .+", f"{n} = \"{v}\"", open(p).read())] if c==1 or sys.exit(f"expected exactly 1 {n} assignment in {p}, found {c}")]' "$ibis_dev_version"
     just lock > /dev/null
     echo "$ibis_dev_version"
