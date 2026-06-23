@@ -1292,9 +1292,14 @@ def test_integer_to_timestamp(backend, con, unit):
                     raises=GoogleBadRequest,
                 ),
                 pytest.mark.never(
-                    ["mysql", "singlestoredb"],
+                    ["mysql"],
                     reason="NaTType does not support strftime",
                     raises=ValueError,
+                ),
+                pytest.mark.never(
+                    ["singlestoredb"],
+                    reason="TO_TIMESTAMP rejects the Java-style format string",
+                    raises=SingleStoreDBOperationalError,
                 ),
                 pytest.mark.never(
                     ["trino"],
