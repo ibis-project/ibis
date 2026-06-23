@@ -1298,7 +1298,7 @@ def test_integer_to_timestamp(backend, con, unit):
                 ),
                 pytest.mark.never(
                     ["singlestoredb"],
-                    reason="TO_TIMESTAMP rejects the Java-style format string",
+                    reason="datetime formatting style not supported",
                     raises=SingleStoreDBOperationalError,
                 ),
                 pytest.mark.never(
