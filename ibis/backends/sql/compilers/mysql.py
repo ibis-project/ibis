@@ -97,7 +97,6 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.ExtractWeekOfYear: "weekofyear",
         ops.ExtractEpochSeconds: "unix_timestamp",
         ops.ExtractDayOfYear: "dayofyear",
-        ops.Strftime: "date_format",
         ops.StringToTimestamp: "str_to_date",
         ops.Log2: "log2",
     }
