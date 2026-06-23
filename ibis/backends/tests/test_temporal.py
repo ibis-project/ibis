@@ -1151,6 +1151,16 @@ def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.notimpl(["druid", "exasol"], raises=com.OperationNotDefinedError)
+def test_strftime_with_time(con):
+    # Regression test: a format with a time component exercises ``%M`` (minutes),
+    # which collides with the month-name token in MySQL/Trino-family format codes
+    # (minutes is ``%i``).  Previously MySQL/Trino/SingleStoreDB emitted the month
+    # name in the minutes position (e.g. "03:January:05").
+    expr = ibis.timestamp("2021-01-02 03:04:05").strftime("%Y-%m-%d %H:%M:%S")
+    assert con.execute(expr) == "2021-01-02 03:04:05"
+
+
 unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
 
 
