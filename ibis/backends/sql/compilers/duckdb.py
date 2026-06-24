@@ -392,12 +392,41 @@ class DuckDBCompiler(SQLGlotCompiler):
         )
         return self.agg.count(sge.Distinct(expressions=[row]), where=where)
 
+    def _localize_timestamp_for_extract(self, op, *, arg):
+        if op.arg.dtype.is_timestamp() and (timezone := op.arg.dtype.timezone) is not None:
+            return self.f.timezone(timezone, arg)
+        return arg
+
+    def visit_Time(self, op, *, arg):
+        arg = self._localize_timestamp_for_extract(op, arg=arg)
+        return super().visit_Time(op, arg=arg)
+
+    def visit_ExtractEpochSeconds(self, op, *, arg):
+        if op.arg.dtype.is_timestamp() and op.arg.dtype.timezone is not None:
+            return self.f.epoch(arg)
+        return super().visit_ExtractEpochSeconds(op, arg=arg)
+
+    def visit_ExtractHour(self, op, *, arg):
+        return self.f.extract("hour", self._localize_timestamp_for_extract(op, arg=arg))
+
+    def visit_ExtractMinute(self, op, *, arg):
+        return self.f.extract(
+            "minute", self._localize_timestamp_for_extract(op, arg=arg)
+        )
+
+    def visit_ExtractSecond(self, op, *, arg):
+        return self.f.extract(
+            "second", self._localize_timestamp_for_extract(op, arg=arg)
+        )
+
     def visit_ExtractMillisecond(self, op, *, arg):
+        arg = self._localize_timestamp_for_extract(op, arg=arg)
         return self.f.mod(self.f.extract("ms", arg), 1_000)
 
     # DuckDB extracts subminute microseconds and milliseconds
     # so we have to finesse it a little bit
     def visit_ExtractMicrosecond(self, op, *, arg):
+        arg = self._localize_timestamp_for_extract(op, arg=arg)
         return self.f.mod(self.f.extract("us", arg), 1_000_000)
 
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
@@ -428,6 +457,15 @@ class DuckDBCompiler(SQLGlotCompiler):
             return func(sg.cast(arg, to=self.type_mapper.from_ibis(dt.int32)))
         elif to.is_timestamp() and dtype.is_numeric():
             return self.f.to_timestamp(arg)
+        elif to.is_timestamp() and to.timezone is not None and (
+            dtype.is_string() or dtype.is_date()
+        ):
+            # DuckDB TIMESTAMPTZ casts from strings/dates do not retain the target
+            # timezone intent by default, so parse as naive timestamp and then
+            # localize into the requested timezone.
+            return self.f.timezone(
+                to.timezone, self.cast(arg, dt.Timestamp(scale=to.scale))
+            )
         elif to.is_geospatial():
             if dtype.is_binary():
                 return self.f.st_geomfromwkb(arg)
