@@ -57,7 +57,14 @@ def test_force_quoting(bq_path_str, expected):
     assert table.sql("bigquery") == expected
 
 
-def test_create_view_project_dataset_database_uses_parsed_database():
+@pytest.mark.parametrize(
+    ("database", "expected"),
+    [
+        ("my-project.my_dataset", ("my-project", "my_dataset")),
+        (None, ("billing-project", "default_dataset")),
+    ],
+)
+def test_create_view_uses_resolved_database(database, expected):
     backend = Backend.__new__(Backend)
     backend.billing_project = "billing-project"
     backend.data_project = "billing-project"
@@ -75,8 +82,11 @@ def test_create_view_project_dataset_database_uses_parsed_database():
     backend.create_view(
         "my_view",
         object(),
-        database="my-project.my_dataset",
+        database=database,
         overwrite=True,
     )
 
-    assert captured["table"] == ("my_view", ("my-project", "my_dataset"))
+    view = sg.parse_one(captured["sql"], read="bigquery").this
+
+    assert (view.catalog, view.db, view.name) == (*expected, "my_view")
+    assert captured["table"] == ("my_view", expected)
