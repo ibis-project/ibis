@@ -1437,6 +1437,29 @@ def test_string_as_date(alltypes, fmt):
 
 
 @pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have to_date() function - backend limitation",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["flink", "impala"],
+    raises=AssertionError,
+    reason="Java SimpleDateFormat MM/dd is strict; single-digit values return wrong results",
+)
+def test_string_as_date_single_digit(con):
+    expr = ibis.literal("1/1/2026").as_date("%m/%d/%Y")
+    result = con.execute(expr)
+    if isinstance(result, datetime.datetime):
+        result = result.date()
+    assert result == datetime.date(2026, 1, 1)
+
+
+@pytest.mark.notyet(
     [
         "pyspark",
         "exasol",
