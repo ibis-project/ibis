@@ -32,6 +32,50 @@ class Backend(SQLBackend):
     supports_temporary_tables = True
     supports_python_udfs = False
 
+    @staticmethod
+    def _quote_identifier(name: str) -> str:
+        """Always quote identifiers to match Ibis/SQLGlot's behavior when reading.
+        
+        Ibis always quotes identifiers when generating SELECT statements.
+        We must quote consistently in CREATE/INSERT/DROP to avoid case mismatches.
+        
+        Parameters
+        ----------
+        name : str
+            Identifier name (column or table name)
+            
+        Returns
+        -------
+        str
+            Quoted identifier
+        """
+        # Always quote - no exceptions
+        # Escape any existing double quotes by doubling them
+        escaped_name = name.replace('"', '""')
+        return f'"{escaped_name}"'
+
+    @staticmethod
+    def _quote_table_name(name: str) -> str:
+        """Always quote table names to match Ibis/SQLGlot's behavior when reading.
+        
+        Ibis always quotes identifiers when generating SELECT statements.
+        We must quote consistently in CREATE/INSERT/DROP to avoid case mismatches.
+        
+        Parameters
+        ----------
+        name : str
+            Table name
+            
+        Returns
+        -------
+        str
+            Quoted table name
+        """
+        # Always quote - no exceptions
+        # Escape any existing double quotes by doubling them
+        escaped_name = name.replace('"', '""')
+        return f'"{escaped_name}"'
+
     @property
     def compiler(self):
         """Lazy load the compiler to avoid circular imports."""
@@ -299,7 +343,8 @@ class Backend(SQLBackend):
 
         cursor = self._connection.cursor()
         try:
-            cursor.execute(query, (table_name.upper(), schema_name))
+            # Use exact table name - no uppercasing since we always quote in CREATE
+            cursor.execute(query, (table_name, schema_name))
             rows = cursor.fetchall()
         finally:
             cursor.close()
@@ -320,7 +365,7 @@ class Backend(SQLBackend):
             ibis_type = parse_db2_type(type_str)
             # Set nullable based on NULLS column
             ibis_type = ibis_type(nullable=(nulls == "Y"))
-            # Keep column names in uppercase as DB2 stores them
+            # Column names are stored in exact case as created (quoted)
             fields[col_name] = ibis_type
 
         return sch.Schema(fields)
@@ -379,7 +424,9 @@ class Backend(SQLBackend):
         # Build CREATE TABLE statement
         temp_clause = "GLOBAL TEMPORARY " if temp else ""
         db_prefix = f"{database}." if database else ""
-        full_name = f"{db_prefix}{name}"
+        # Always quote table name for consistency with Ibis/SQLGlot
+        quoted_name = self._quote_table_name(name)
+        full_name = f"{db_prefix}{quoted_name}"
 
         if overwrite:
             self.drop_table(name, database=database, force=True)
@@ -389,7 +436,9 @@ class Backend(SQLBackend):
         for col_name, col_type in schema.items():
             db2_type = ibis_type_to_db2_type(col_type)
             nullable = "NULL" if col_type.nullable else "NOT NULL"
-            col_defs.append(f"{col_name} {db2_type} {nullable}")
+            # Always quote column name for consistency with Ibis/SQLGlot
+            quoted_col_name = self._quote_identifier(col_name)
+            col_defs.append(f"{quoted_col_name} {db2_type} {nullable}")
 
         columns_sql = ", ".join(col_defs)
         create_sql = f"CREATE {temp_clause}TABLE {full_name} ({columns_sql})"
@@ -429,7 +478,9 @@ class Backend(SQLBackend):
             Suppress errors if table doesn't exist
         """
         db_prefix = f"{database}." if database else ""
-        full_name = f"{db_prefix}{name}"
+        # Always quote table name for consistency with Ibis/SQLGlot
+        quoted_name = self._quote_table_name(name)
+        full_name = f"{db_prefix}{quoted_name}"
 
         if force:
             # Check if table exists first using parameterized query
@@ -442,7 +493,8 @@ class Backend(SQLBackend):
                         WHERE TABNAME = ?
                         AND TABSCHEMA = ?
                     """
-                    cursor.execute(check_sql, (name.upper(), database.upper()))
+                    # Use exact name - no uppercasing since we always quote in CREATE
+                    cursor.execute(check_sql, (name, database.upper()))
                 else:
                     check_sql = """
                         SELECT COUNT(*)
@@ -450,7 +502,8 @@ class Backend(SQLBackend):
                         WHERE TABNAME = ?
                         AND TABSCHEMA = CURRENT SCHEMA
                     """
-                    cursor.execute(check_sql, (name.upper(),))
+                    # Use exact name - no uppercasing since we always quote in CREATE
+                    cursor.execute(check_sql, (name,))
                 
                 exists = cursor.fetchone()[0] > 0
             finally:
@@ -489,17 +542,26 @@ class Backend(SQLBackend):
         import pandas as pd
 
         db_prefix = f"{database}." if database else ""
-        full_name = f"{db_prefix}{table_name}"
+        # Always quote table name for consistency with Ibis/SQLGlot
+        quoted_table_name = self._quote_table_name(table_name)
+        full_name = f"{db_prefix}{quoted_table_name}"
 
         if overwrite:
+            # Commit any open transaction first to ensure TRUNCATE can be first statement
+            self._connection.commit()
+            # TRUNCATE TABLE ... IMMEDIATE must be first statement in transaction
             self.raw_sql(f"TRUNCATE TABLE {full_name} IMMEDIATE")
+            # Commit the TRUNCATE to complete the transaction
+            self._connection.commit()
 
         if isinstance(obj, pd.DataFrame):
             # Batch insert from DataFrame
             if obj.empty:
                 return
 
-            columns = ", ".join(obj.columns)
+            # Always quote column names for consistency with Ibis/SQLGlot
+            quoted_columns = [self._quote_identifier(col) for col in obj.columns]
+            columns = ", ".join(quoted_columns)
             placeholders = ", ".join(["?" for _ in obj.columns])
             insert_sql = f"INSERT INTO {full_name} ({columns}) VALUES ({placeholders})"
 
@@ -509,7 +571,9 @@ class Backend(SQLBackend):
                 batch_size = 1000
                 for i in range(0, len(obj), batch_size):
                     batch = obj.iloc[i : i + batch_size]
-                    cursor.executemany(insert_sql, batch.values.tolist())
+                    # Convert NaN/NaT/pd.NA to None for DB2 compatibility
+                    rows = self._convert_dataframe_to_rows(batch)
+                    cursor.executemany(insert_sql, rows)
                 self._connection.commit()
             finally:
                 cursor.close()
@@ -517,6 +581,54 @@ class Backend(SQLBackend):
             # Insert from table expression
             insert_sql = f"INSERT INTO {full_name} {self.compile(obj)}"
             self.raw_sql(insert_sql)
+    
+    @staticmethod
+    def _convert_dataframe_to_rows(df: pd.DataFrame) -> list[tuple]:
+        """Convert DataFrame to list of tuples, converting NaN/NaT/pd.NA to None.
+        
+        This is necessary because DB2's ibm_db_dbi driver's executemany() infers
+        parameter types from the first row. If the first row has a real value and
+        a later row has NaN, the types are inconsistent, causing SQL0302N errors.
+        
+        Parameters
+        ----------
+        df : pd.DataFrame
+            DataFrame to convert
+            
+        Returns
+        -------
+        list[tuple]
+            List of tuples with NaN/NaT/pd.NA converted to None
+        """
+        import math
+        import pandas as pd
+        
+        def _convert_row(row):
+            """Convert a single row, replacing NaN/NaT/pd.NA with None."""
+            result = []
+            for val in row:
+                # Check for None first
+                if val is None:
+                    result.append(None)
+                # Check for float NaN
+                elif isinstance(val, float) and math.isnan(val):
+                    result.append(None)
+                # Check for pandas NA types (NaT, pd.NA, etc.)
+                else:
+                    try:
+                        if pd.isna(val):
+                            result.append(None)
+                            continue
+                    except (TypeError, ValueError):
+                        # Not a pandas NA type, keep original value
+                        pass
+                    result.append(val)
+            return tuple(result)
+        
+        # Use itertuples() instead of values.tolist() to preserve types
+        # values.tolist() can upcast integer columns to float when NaN is present
+        rows = [_convert_row(row) for row in df.itertuples(index=False, name=None)]
+        return rows
 
     def to_pyarrow(
         self,
@@ -582,13 +694,22 @@ class Backend(SQLBackend):
         sql = self.compile(expr, params=params, limit=limit)
 
         with self._safe_raw_sql(sql) as cursor:
-            # Fetch column names and types
-            columns = [desc[0].lower() for desc in cursor.description]
-
             # Fetch all rows
             rows = cursor.fetchall()
+            
+            # Get column names from the expression's schema to preserve exact case
+            # This ensures DataFrame columns match what schema() reports
+            schema = expr.as_table().schema()
+            columns = list(schema.names)
+            
+            # Verify column count matches (safety check for alignment)
+            if cursor.description and len(cursor.description) != len(columns):
+                raise exc.IbisError(
+                    f"Column count mismatch: query returned {len(cursor.description)} columns "
+                    f"but schema has {len(columns)} columns"
+                )
 
-        # Convert to DataFrame
+        # Convert to DataFrame with exact column names from schema
         df = pd.DataFrame(rows, columns=columns)
 
         # Pandas handles most type conversions automatically

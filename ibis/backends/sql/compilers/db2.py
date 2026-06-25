@@ -13,7 +13,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.generator import Generator
 
-
+import ibis.expr.operations as ops
 from db2_sqlglot import Db2 as DB2BaseDialect
 
 # Import type mapper from local datatypes module
@@ -257,6 +257,14 @@ class DB2Compiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_ops | lower_sample(),
         *SQLGlotCompiler.rewrites,
     )
+    
+    # Exclude StartsWith and StringContains from SIMPLE_OPS to use our custom implementations
+    # StartsWith: base class maps to "starts_with" function which doesn't exist in DB2
+    # StringContains: base class maps to "contains" function which requires text search feature
+    SIMPLE_OPS = {
+        k: v for k, v in SQLGlotCompiler.SIMPLE_OPS.items()
+        if k not in (ops.StartsWith, ops.StringContains)
+    }
 
     @staticmethod
     def _generate_groups(groups):
@@ -296,17 +304,71 @@ class DB2Compiler(SQLGlotCompiler):
             expression=sge.convert(0)
         )
 
-    def visit_StringFind(self, op, *, haystack, needle, start, end, **kwargs):
+    def visit_EndsWith(self, op, *, arg, end, **kwargs):
+        """Visit an EndsWith operation.
+        
+        Generates SQL: arg LIKE '%' || REPLACE(REPLACE(end, '%', '!%'), '_', '!_') ESCAPE '!'
+        This escapes LIKE wildcards (% and _) to match them literally.
+        """
+        # Escape LIKE wildcards in the pattern using ! as escape char
+        # First replace % with !%, then replace _ with !_
+        escaped = sge.Anonymous(
+            this="REPLACE",
+            expressions=[
+                sge.Anonymous(
+                    this="REPLACE",
+                    expressions=[end, sge.convert('%'), sge.convert('!%')]
+                ),
+                sge.convert('_'),
+                sge.convert('!_')
+            ]
+        )
+        # Create pattern: '%' || escaped_end
+        pattern = sge.DPipe(this=sge.convert('%'), expression=escaped)
+        # Return LIKE with ESCAPE clause
+        return sge.Escape(
+            this=sge.Like(this=arg, expression=pattern),
+            expression=sge.convert('!')
+        )
+
+    def visit_StartsWith(self, op, *, arg, start, **kwargs):
+        """Visit a StartsWith operation.
+        
+        Generates SQL: arg LIKE REPLACE(REPLACE(start, '%', '!%'), '_', '!_') || '%' ESCAPE '!'
+        This escapes LIKE wildcards (% and _) to match them literally.
+        """
+        # Escape LIKE wildcards in the pattern using ! as escape char
+        # First replace % with !%, then replace _ with !_
+        escaped = sge.Anonymous(
+            this="REPLACE",
+            expressions=[
+                sge.Anonymous(
+                    this="REPLACE",
+                    expressions=[start, sge.convert('%'), sge.convert('!%')]
+                ),
+                sge.convert('_'),
+                sge.convert('!_')
+            ]
+        )
+        # Create pattern: escaped_start || '%'
+        pattern = sge.DPipe(this=escaped, expression=sge.convert('%'))
+        # Return LIKE with ESCAPE clause
+        return sge.Escape(
+            this=sge.Like(this=arg, expression=pattern),
+            expression=sge.convert('!')
+        )
+
+    def visit_StringFind(self, op, *, arg, substr, start, end, **kwargs):
         """Visit a StringFind operation."""
         # DB2 uses LOCATE function
         if start is not None:
             return sge.Anonymous(
                 this="LOCATE",
-                expressions=[needle, haystack, start]
+                expressions=[substr, arg, start]
             )
         return sge.Anonymous(
             this="LOCATE",
-            expressions=[needle, haystack]
+            expressions=[substr, arg]
         )
 
     def visit_RegexSearch(self, op, *, arg, pattern, **kwargs):
