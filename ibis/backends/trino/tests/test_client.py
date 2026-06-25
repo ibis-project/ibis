@@ -68,6 +68,37 @@ def test_list_databases(con):
     assert {"information_schema", "sf1"}.issubset(con.list_databases(catalog="tpch"))
 
 
+@pytest.mark.parametrize("auth_type", ["str", "obj"])
+@pytest.mark.parametrize(("http_scheme"), ["http", "https", None])
+def test_con_auth_str(http_scheme, auth_type):
+    """If a non-str object is given to auth, it should be used as is, no matter what.
+    If a str is given to auth, it should be converted to a BasicAuthentication.
+    This happens no matter the http_scheme given.
+
+    Tests for
+    https://github.com/ibis-project/ibis/issues/9113
+    https://github.com/ibis-project/ibis/issues/9956
+    https://github.com/ibis-project/ibis/issues/11841
+    """
+    from trino.auth import BasicAuthentication
+
+    if auth_type == "str":
+        auth = TRINO_PASS
+    else:
+        auth = BasicAuthentication(TRINO_USER, TRINO_PASS)
+
+    con = ibis.trino.connect(
+        user=TRINO_USER,
+        host=TRINO_HOST,
+        port=TRINO_PORT,
+        auth=auth,
+        database="hive",
+        schema="default",
+        http_scheme=http_scheme,
+    )
+    assert con.con.auth == BasicAuthentication(TRINO_USER, TRINO_PASS)
+
+
 @pytest.mark.parametrize(("source", "expected"), [(None, "ibis"), ("foo", "foo")])
 def test_con_source(source, expected):
     con = ibis.trino.connect(
