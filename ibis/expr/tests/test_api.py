@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import operator
+import sys
 from datetime import datetime
 
 import pytest
@@ -203,3 +204,29 @@ def test_unbound_table_namespace():
 
     with pytest.raises(ValueError, match="A catalog-only namespace is invalid in Ibis"):
         ibis.table(name="bork", schema=(("a", "int"), ("b", "int")), catalog="bork")
+
+
+def test_sql_value_deferred():
+    five = ibis.literal(5)  # noqa: F841
+    expr = ibis.sql_value("{ibis._.age} + {five} + {ibis._.age + five}")
+    assert isinstance(expr, ibis.Deferred)
+    table = ibis.table(name="t", schema={"age": "int64"})
+    (col,) = table.bind(expr)
+    assert isinstance(col, ibis.ir.IntegerColumn)
+    assert col.type() == dt.int64
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 14),
+    reason="t'string' literals are only available in Python 3.14+",
+)
+def test_t_string_literal_equivalence():
+    code = """
+import ibis
+table = ibis.table(schema={"int_col": "int64"})
+template = t"{ibis._.int_col + 2} - {table.int_col * 3}"
+col = table.select(template=template).template
+assert isinstance(col, ibis.ir.IntegerColumn)
+assert col.type() == ibis.dtype("int64")
+""".strip()
+    exec(code)  # noqa: S102

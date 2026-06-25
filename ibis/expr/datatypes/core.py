@@ -41,6 +41,17 @@ if TYPE_CHECKING:
     import pyarrow as pa
     from pandas.api.extensions import ExtensionDtype
 
+    IntoDtype = Union[
+        "DataType",
+        str,
+        type,
+        pa.DataType,
+        ExtensionDtype,
+        pl.DataType,
+    ]
+    """Something that can get converted to an ibis.DataType with `ibis.dtype(x)`"""
+    public(IntoDtype=IntoDtype)
+
 
 @public
 class DataType(Concrete, Coercible):
