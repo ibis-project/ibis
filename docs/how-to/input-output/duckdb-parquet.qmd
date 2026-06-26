@@ -34,8 +34,8 @@ t
 
 Note that we're calling `read_parquet` and receiving a table expression without
 establishing a connection first. Ibis spins up a DuckDB connection (or
-whichever default backend you have) when you call `ibis.read_parquet` (or even
-`ibis.read_csv`).
+whichever default backend you have) when you call `ibis.read_parquet` (or
+`ibis.read_csv`, `ibis.read_json`, etc).
 
 Since our result, `t`, is a table expression, we can now run queries against
 the file using Ibis expressions. For example, we can select columns, filter the
