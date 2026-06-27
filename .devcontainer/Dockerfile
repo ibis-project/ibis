@@ -23,18 +23,15 @@ ENV UV_LINK_MODE=copy
 
 COPY --chown=$USERNAME . /app
 
-# Install the project's dependencies using the lockfile and settings
-# Venv lives outside /app so it's not hidden when the workspace is bind-mounted at runtime
-ENV VIRTUAL_ENV=/opt/venv
-
+# Install dependencies into the system interpreter rather than a venv. The
+# workspace bind-mount replaces /app at runtime, which would hide a venv living
+# under /app; the system site-packages lives outside /app and survives, and
+# /usr/local/bin/python is already first on PATH in every (login) shell.
+#
+# ibis is installed editable (-e) against /app, which at runtime is the live
+# bind-mounted workspace, so source edits are picked up without reinstalling.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv venv $VIRTUAL_ENV && just sync duckdb
-
-RUN chown -R $USERNAME $VIRTUAL_ENV && chmod -R 755 $VIRTUAL_ENV
-# Place executables in the environment at the front of the path
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+    uv pip install --system -e '.[duckdb,examples,geospatial]' --group dev --group tests
 
 ENTRYPOINT []
 

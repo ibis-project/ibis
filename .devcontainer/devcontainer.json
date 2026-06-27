@@ -10,6 +10,9 @@
       "openFiles": ["docs/tutorials/basics.qmd"]
     },
     "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      },
       "extensions": ["ms-toolsai.jupyter", "ms-python.python", "quarto.quarto"]
     }
   },
