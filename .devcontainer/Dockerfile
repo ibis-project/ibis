@@ -3,7 +3,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.10.4 /uv /uvx /bin/
 ARG USERNAME=vscode
 
 RUN apt-get update && \
-  apt-get install -y --no-install-recommends libgdal-dev python3-dev openjdk-17-jdk && \
+  apt-get install -y --no-install-recommends libgdal-dev python3-dev default-jdk && \
   rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install pipx --no-cache-dir
@@ -21,24 +21,17 @@ ENV UV_COMPILE_BYTECODE=1
 # Copy from the cache instead of linking since it's a mounted volume
 ENV UV_LINK_MODE=copy
 
-COPY . /app
+COPY --chown=$USERNAME . /app
 
-# Install the project's dependencies using the lockfile and settings
+# Install dependencies into the system interpreter rather than a venv. The
+# workspace bind-mount replaces /app at runtime, which would hide a venv living
+# under /app; the system site-packages lives outside /app and survives, and
+# /usr/local/bin/python is already first on PATH in every (login) shell.
+#
+# ibis is installed editable (-e) against /app, which at runtime is the live
+# bind-mounted workspace, so source edits are picked up without reinstalling.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv venv && just sync duckdb
-
-ENV VENV_DIR=.venv
-RUN chown -R $USERNAME $VENV_DIR && chmod -R 755 $VENV_DIR
-
-ENV IBIS_PROJECT=.
-RUN chown -R $USERNAME $IBIS_PROJECT
-
-# Place executables in the environment at the front of the path
-ENV PATH="/app/.venv/bin:$PATH"
-
-SHELL ["/bin/bash", "-c", "source .venv/bin/activate"]
+    uv pip install --system -e '.[duckdb,examples,geospatial]' --group dev --group tests
 
 ENTRYPOINT []
 
