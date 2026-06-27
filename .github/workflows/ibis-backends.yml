@@ -534,7 +534,8 @@ jobs:
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
         timeout-minutes: 60
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+        # TODO(gh-12004): remove -k filter before merging; narrows to temporal tests for investigation
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -k "test_temporal" --numprocesses auto --dist=loadgroup
         env:
           IBIS_TEST_IMPALA_HOST: localhost
           IBIS_TEST_IMPALA_PORT: 21050
@@ -543,7 +544,8 @@ jobs:
       - name: "run serial tests: ${{ matrix.backend.name }}"
         if: matrix.backend.serial
         timeout-minutes: 60
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }}
+        # TODO(gh-12004): remove -k filter before merging; narrows to temporal tests for investigation
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -k "test_temporal"
         env:
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"
