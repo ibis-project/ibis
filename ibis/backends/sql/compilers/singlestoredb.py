@@ -13,9 +13,9 @@ from ibis.backends.sql.compilers.mysql import MySQLCompiler
 from ibis.backends.sql.datatypes import SingleStoreDBType
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
-    exclude_unsupported_window_frame_from_rank,
-    exclude_unsupported_window_frame_from_row_number,
-    rewrite_empty_order_by_window,
+    rank_one_to_zero_index,
+    row_number_one_to_zero_index,
+    add_order_by_to_empty_ranking_window_functions,
 )
 from ibis.common.patterns import replace
 from ibis.expr.rewrites import p
@@ -47,9 +47,9 @@ class SingleStoreDBCompiler(MySQLCompiler):
     rewrites = (
         rewrite_limit,
         exclude_unsupported_window_frame_from_ops,
-        exclude_unsupported_window_frame_from_rank,
-        exclude_unsupported_window_frame_from_row_number,
-        rewrite_empty_order_by_window,
+        rank_one_to_zero_index,
+        row_number_one_to_zero_index,
+        add_order_by_to_empty_ranking_window_functions,
         *MySQLCompiler.rewrites,
     )
 
