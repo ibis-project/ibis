@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any
 
 import datafusion as df
 import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 from packaging.version import parse as vparse
@@ -33,6 +32,7 @@ from ibis.backends import (
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
+from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowSchema, PyArrowType

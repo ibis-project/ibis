@@ -14,7 +14,6 @@ from urllib.parse import unquote_plus
 from urllib.request import urlcleanup, urlretrieve
 
 import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 
@@ -36,6 +35,7 @@ from ibis.backends import (
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR
+from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator, Mapping

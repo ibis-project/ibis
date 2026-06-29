@@ -4,10 +4,10 @@ import contextlib
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 from ibis.expr.schema import Schema
 from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
 from ibis.util import V

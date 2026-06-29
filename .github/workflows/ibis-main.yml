@@ -49,8 +49,12 @@ jobs:
           - "3.10"
           - "3.14"
         pyarrow:
-          - true
-          - false
+          - none
+          - latest
+          - old
+        exclude:
+          - python-version: "3.14"
+            pyarrow: old
     steps:
       - name: checkout
         uses: actions/checkout@v6
@@ -76,9 +80,13 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: choco install graphviz
 
-      - name: install numpy/pandas/pyarrow
-        if: matrix.pyarrow
-        run: pip install numpy pandas pyarrow pyarrow-hotfix
+      - name: install numpy/pandas/pyarrow (latest)
+        if: matrix.pyarrow == 'latest'
+        run: pip install numpy pandas pyarrow
+
+      - name: install numpy/pandas/pyarrow (old)
+        if: matrix.pyarrow == 'old'
+        run: pip install "numpy<2" pandas pyarrow==10.0.1 pyarrow-hotfix
 
       - uses: extractions/setup-just@v3
         env:

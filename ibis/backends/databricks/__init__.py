@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any
 
 import databricks.sql
 import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 
@@ -29,6 +28,7 @@ from ibis.backends import CanCreateDatabase, PyArrowExampleLoader, UrlFromPath
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, RenameTable
 from ibis.backends.sql.datatypes import DatabricksType
+from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
