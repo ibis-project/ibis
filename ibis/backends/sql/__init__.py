@@ -691,6 +691,82 @@ class SQLBackend(BaseBackend):
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
 
+    def delete(
+        self,
+        name: str,
+        /,
+        where: ir.BooleanValue | Callable,
+        *,
+        database: str | None = None,
+    ) -> None:
+        """Delete rows from a table.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        name
+            Table name
+        where
+            Boolean predicate specifying which rows to delete. Required.
+            Accepts `ir.BooleanValue`, `Deferred` (`ibis._.col > val`),
+            or callable (`lambda t: ...`).
+
+            To delete all rows, use `truncate_table()` instead.
+        database
+            Name of the attached database that the table is located in.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
+        """
+        if where is None:
+            raise exc.IbisInputError(
+                "`delete` requires a `where` predicate. "
+                "To delete all rows, use `truncate_table()` instead."
+            )
+
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
+        query = self._build_delete_query(name=name, where=where, db=db, catalog=catalog)
+
+        with self._safe_raw_sql(query):
+            pass
+
+    def _build_delete_query(
+        self, *, name: str, where, db: str | None = None, catalog: str | None = None
+    ) -> sge.Delete:
+        from ibis.expr.types.relations import bind
+
+        table_expr = self.table(name, database=(catalog, db) if db else db)
+        (predicate,) = bind(table_expr, where)
+        filtered = table_expr.filter(predicate)
+
+        compiled = self.compiler.to_sqlglot(filtered)
+        where_clause = compiled.args.get("where")
+
+        quoted = self.compiler.quoted
+        target_table = sg.table(name, db=db, catalog=catalog, quoted=quoted)
+
+        def strip_table(node):
+            if isinstance(node, sge.Column) and node.args.get("table"):
+                return sge.Column(this=node.this)
+            return node
+
+        cleaned_where = where_clause.transform(strip_table)
+
+        return sge.Delete(this=target_table, where=cleaned_where)
+
     @util.experimental
     @classmethod
     def from_connection(cls, con: Any, /, **kwargs: Any) -> BaseBackend:

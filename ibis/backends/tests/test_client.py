@@ -818,6 +818,292 @@ def test_insert_from_memtable(con, temp_table):
     assert con.tables[table_name].schema() == ibis.schema({"x": "int64"})
 
 
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_with_where(backend, con, employee_data_1_temp_table):
+    temporary = con.table(employee_data_1_temp_table)
+
+    con.delete(employee_data_1_temp_table, ibis._.salary > 200)
+
+    result = temporary.execute()
+    assert len(result) == 2
+    backend.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        pd.DataFrame(
+            {
+                "first_name": ["A", "B"],
+                "last_name": ["D", "E"],
+                "department_name": ["AA", "BB"],
+                "salary": [100.0, 200.0],
+            }
+        ),
+    )
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_with_callable(backend, con, employee_data_1_temp_table):
+    temporary = con.table(employee_data_1_temp_table)
+
+    con.delete(employee_data_1_temp_table, lambda t: t.salary > 200)
+
+    result = temporary.execute()
+    assert len(result) == 2
+    backend.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        pd.DataFrame(
+            {
+                "first_name": ["A", "B"],
+                "last_name": ["D", "E"],
+                "department_name": ["AA", "BB"],
+                "salary": [100.0, 200.0],
+            }
+        ),
+    )
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_no_matching_rows(con, employee_data_1_temp_table):
+    temporary = con.table(employee_data_1_temp_table)
+
+    con.delete(employee_data_1_temp_table, ibis._.salary > 1000)
+
+    result = temporary.execute()
+    assert len(result) == 3
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+def test_delete_where_none_raises(con, employee_data_1_temp_table):
+    with pytest.raises(com.IbisInputError, match="truncate_table"):
+        con.delete(employee_data_1_temp_table, where=None)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: `where` predicates that reference another table or are
+# otherwise correlated.
+#
+# `_build_delete_query` compiles the predicate to a SELECT and then walks the
+# resulting WHERE AST, unconditionally stripping the table qualifier off EVERY
+# `sge.Column` node. That destroys the outer-vs-inner scope distinction that a
+# correlated subquery relies on, so a correlated reference such as
+# `outer.salary = inner.salary` collapses to `salary = salary` and binds both
+# names to the *inner* table -- a tautology. The compiled DELETE therefore
+# silently affects the wrong rows (often every row, or no row) instead of
+# erroring. These tests pin the correct semantics; a correct implementation
+# must either preserve the correlation or reject the predicate, but must never
+# silently delete the wrong rows.
+#
+# employee_data_1 salaries are {100, 200, 300}; employee_data_2 salaries are
+# {400, 500, 600}. The two sets are disjoint, which makes the expected results
+# unambiguous.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_correlated_subquery_exists(
+    con, employee_data_1_temp_table, employee_data_2_temp_table
+):
+    # Delete rows whose salary matches a salary in the other table. The salary
+    # sets are disjoint, so NO rows match and NO rows should be deleted.
+    target = con.table(employee_data_1_temp_table)
+    source = con.table(employee_data_2_temp_table)
+
+    con.delete(
+        employee_data_1_temp_table,
+        where=(source.salary == target.salary).any(),
+    )
+
+    # BUG: the correlation collapses to a tautology and every row is deleted.
+    assert target.count().execute() == 3
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_correlated_subquery_not_exists(
+    con, employee_data_1_temp_table, employee_data_2_temp_table
+):
+    # Delete rows whose salary does NOT match any salary in the other table.
+    # The salary sets are disjoint, so ALL rows fail to match and ALL rows
+    # should be deleted.
+    target = con.table(employee_data_1_temp_table)
+    source = con.table(employee_data_2_temp_table)
+
+    con.delete(
+        employee_data_1_temp_table,
+        where=~(source.salary == target.salary).any(),
+    )
+
+    # BUG: the negated tautology evaluates to false and nothing is deleted.
+    assert target.count().execute() == 0
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_correlated_subquery_compound(
+    con, employee_data_1_temp_table, employee_data_2_temp_table
+):
+    # Compound predicate: a correlated EXISTS AND a simple predicate. Because
+    # no salary matches, the EXISTS branch is false for every row, so the whole
+    # predicate is false and NO rows should be deleted.
+    target = con.table(employee_data_1_temp_table)
+    source = con.table(employee_data_2_temp_table)
+
+    con.delete(
+        employee_data_1_temp_table,
+        where=(source.salary == target.salary).any() & (target.department_name == "BB"),
+    )
+
+    # BUG: the EXISTS branch silently becomes a tautology, so the predicate
+    # collapses to `department_name == "BB"` and the "BB" row is deleted.
+    assert target.count().execute() == 3
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_uncorrelated_subquery(
+    con, employee_data_1_temp_table, employee_data_2_temp_table
+):
+    # Sanity anchor: an UNcorrelated subquery should already work. Insert a
+    # known-overlapping salary into the source, then delete target rows whose
+    # salary is in the source. Only the 200 row should be removed.
+    target = con.table(employee_data_1_temp_table)
+
+    con.insert(employee_data_2_temp_table, [("M", "M", "MM", 200.0)])
+    source = con.table(employee_data_2_temp_table)
+
+    con.delete(employee_data_1_temp_table, where=target.salary.isin(source.salary))
+
+    assert target.count().execute() == 2
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: predicate shapes the builder mishandles.
+#
+# `_build_delete_query` reads only `compiled.args["where"]` and then calls
+# `.transform(...)` on it. That assumes the predicate always lands as a single
+# top-level WHERE on a bare table scan, which is not true in general:
+#   * window/analytic predicates compile to a QUALIFY clause, so `["where"]`
+#     is None and `.transform` raises AttributeError;
+#   * a non-boolean argument (e.g. a Table expression, the exact thing the
+#     originating issue #11205 imagined passing) trips the `(predicate,) =
+#     bind(...)` unpack with a raw ValueError instead of a clear message.
+# These tests pin either correct behavior or a clear, typed error -- never an
+# uncaught internal crash.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_window_predicate(con, employee_data_1_temp_table):
+    # Delete rows whose salary exceeds the table-wide average (100, 200, 300 ->
+    # avg 200), i.e. only the 300 row. This compiles to QUALIFY, not WHERE.
+    target = con.table(employee_data_1_temp_table)
+
+    con.delete(
+        employee_data_1_temp_table,
+        where=target.salary > target.salary.mean().over(ibis.window()),
+    )
+
+    # BUG: builder reads args["where"] (None for QUALIFY) and crashes with
+    # AttributeError: 'NoneType' object has no attribute 'transform'.
+    assert target.count().execute() == 2
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_multiple_predicates(con, employee_data_1_temp_table):
+    # `filter` accepts multiple predicates and ANDs them. A tuple passed to
+    # `delete` currently raises a cryptic InputTypeError from `bind`. Either
+    # AND them (asserted here) or reject with a clear message -- but it must
+    # not surface an internal error. With AND semantics only the 200 row
+    # satisfies both bounds.
+    #
+    # If the maintainers prefer to reject multi-predicate input, replace the
+    # body with `pytest.raises((com.IbisInputError, com.IbisTypeError))`.
+    target = con.table(employee_data_1_temp_table)
+
+    con.delete(
+        employee_data_1_temp_table,
+        where=(target.salary > 100, target.salary < 300),
+    )
+
+    assert target.count().execute() == 2
+
+
 @pytest.mark.notyet(
     [
         "bigquery",
