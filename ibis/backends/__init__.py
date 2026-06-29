@@ -626,6 +626,44 @@ class _FileIOHandler:
             write_deltalake(path, batch_reader, **kwargs)
 
     @util.experimental
+    def to_dicts(
+        self, expr: ir.Table, *, chunk_size: int = 1_000_000
+    ) -> Iterable[dict[str, Any]]:
+        """Iterate through each row as a `dict` of column_name -> value.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to materialize as an iterable of row dictionaries.
+        chunk_size
+            We materialize the results in chunks of this size, to keep memory usage under control.
+            Larger values probably will be faster but consume more memory.
+
+        Returns
+        -------
+        Iterable[dict[str, Any]]
+            An iterator of dictionaries, each representing a row in the table.
+
+        Examples
+        --------
+        >>> t = ibis.memtable({"i": [1, 2, 3], "s": ["a", "b", "c"]})
+        >>> list(t.to_dicts())
+        [{'i': 1, 's': 'a'}, {'i': 2, 's': 'b'}, {'i': 3, 's': 'c'}]
+
+        Single Columns are returned as dictionaries with a single key:
+
+        >>> column = t.i
+        >>> list(column.to_dicts())
+        [{'i': 1}, {'i': 2}, {'i': 3}]
+
+        See Also
+        --------
+        [`Column.to_list`](./expression-generic.qmd#ibis.expr.types.generic.Column.to_list)
+        """
+        for batch in self.to_pyarrow_batches(expr, chunk_size=chunk_size):
+            yield from batch.to_pylist()
+
+    @util.experimental
     def to_json(
         self,
         expr: ir.Table,
