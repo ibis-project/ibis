@@ -89,6 +89,7 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
 
     # deleting the last reference, releases table from cache
     del cached_table
+    import gc; gc.collect()
     assert op not in con._cache_op_to_entry
 
     # assert that table has been dropped
