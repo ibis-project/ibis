@@ -115,25 +115,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
     ):
-        sql = super().to_sqlglot(expr, limit=limit, params=params)
-
-        table_expr = expr.as_table()
-        geocols = table_expr.schema().geospatial
-
-        if not geocols:
-            return sql
-
-        quoted = self.quoted
-        return sg.select(
-            sge.Star(
-                replace=[
-                    self.f.st_aswkb(sg.column(col, quoted=quoted)).as_(
-                        col, quoted=quoted
-                    )
-                    for col in geocols
-                ]
-            )
-        ).from_(sql.subquery())
+        return super().to_sqlglot(expr, limit=limit, params=params)
 
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(
@@ -262,6 +244,11 @@ class DuckDBCompiler(SQLGlotCompiler):
         # if any of the input arrays in arg are NULL, the result is NULL
         any_arg_null = sg.or_(*(arr.is_(NULL) for arr in arg))
         return self.if_(any_arg_null, NULL, zipped_arrays)
+
+    def visit_ArrayStringJoin(self, op, *, arg, sep):
+        return self.if_(
+            self.f.len(arg) > 0, self.f.array_to_string(arg, sep), NULL
+        )
 
     def visit_Array(self, op, *, exprs):
         return self.cast(self.f.array(*exprs), op.dtype)
