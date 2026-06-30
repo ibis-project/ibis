@@ -1112,6 +1112,11 @@ def test_between(backend, alltypes, df):
 
 
 @pytest.mark.notyet(["flink"], reason="timestamp subtraction doesn't work")
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_interactive(alltypes, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
 
@@ -1200,6 +1205,11 @@ def test_typeof(con):
     ["mssql"],
     raises=PyODBCProgrammingError,
     reason="naked IN queries are not supported",
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
 )
 def test_isin_uncorrelated_simple(con):
     u1 = ibis.memtable({"id": [1, 2, 3]})
@@ -1406,7 +1416,7 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 
 
 @pytest.mark.notyet(
-    ["mssql", "mysql", "exasol", "impala"],
+    ["mssql", "exasol", "impala"],
     reason="various syntax errors reported",
 )
 @pytest.mark.notyet(
@@ -2635,6 +2645,11 @@ def test_select_sort_sort_deferred(backend, alltypes, df):
     raises=AttributeError,
     reason="not yet added the data for this backend",
 )
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_topk_counts_null(con):
     t = con.tables.topk
     tk = t.x.topk(10)
@@ -2817,6 +2832,11 @@ def test_table_describe_with_multiple_decimal_columns(con):
         # With Python 3.10, the same code raises a different exception type :(
         sqlite3.InterfaceError,
     ),
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=pa.ArrowInvalid,
+    reason="ADBC MySQL driver returns DECIMAL(n,0) as arrow decimal32, but ibis expects decimal128, causing a schema mismatch in to_pyarrow",
 )
 def test_comparison_with_decimal_literal(con):
     t = ibis.memtable(

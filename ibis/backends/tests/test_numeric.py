@@ -21,6 +21,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
+    MySQLProgrammingError,
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPgDivisionByZero,
@@ -399,7 +400,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
-                pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError),
+                pytest.mark.notimpl(["mysql"], raises=MySQLProgrammingError),
                 pytest.mark.notimpl(
                     ["singlestoredb"], raises=SingleStoreDBOperationalError
                 ),
@@ -762,7 +763,10 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
 @pytest.mark.notimpl(
     ["flink"], raises=(com.OperationNotDefinedError, NotImplementedError)
 )
-@pytest.mark.notimpl(["mysql"], raises=(MySQLOperationalError, NotImplementedError))
+@pytest.mark.notimpl(
+    ["mysql"],
+    raises=(MySQLOperationalError, MySQLProgrammingError, NotImplementedError),
+)
 @pytest.mark.notimpl(
     ["singlestoredb"], raises=(SingleStoreDBOperationalError, NotImplementedError)
 )
@@ -1651,6 +1655,11 @@ def test_bitwise_scalars(con, op, left, right):
     reason="Streaming database does not guarantee row order without ORDER BY",
     strict=False,
 )
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=MySQLOperationalError,
+    reason="ADBC MySQL driver mis-parses BIGINT UNSIGNED values above 2**63 from the text protocol: it passes the raw []byte repr (e.g. '[49 56 ...]') into strconv.ParseUint instead of the decoded string",
+)
 @flink_no_bitwise
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
@@ -1666,6 +1675,11 @@ def test_bitwise_not_scalar(con):
     raises=AssertionError,
     reason="Streaming database does not guarantee row order without ORDER BY",
     strict=False,
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=MySQLOperationalError,
+    reason="ADBC MySQL driver mis-parses BIGINT UNSIGNED values above 2**63 from the text protocol: it passes the raw []byte repr (e.g. '[49 56 ...]') into strconv.ParseUint instead of the decoded string",
 )
 @flink_no_bitwise
 def test_bitwise_not_col(backend, alltypes, df):
