@@ -34,42 +34,23 @@ class Backend(SQLBackend):
 
     @staticmethod
     def _quote_identifier(name: str) -> str:
-        """Always quote identifiers to match Ibis/SQLGlot's behavior when reading.
-        
+        """Always quote an identifier (table or column name) to match
+        Ibis/SQLGlot's behavior when reading.
+
         Ibis always quotes identifiers when generating SELECT statements.
-        We must quote consistently in CREATE/INSERT/DROP to avoid case mismatches.
-        
+        We must quote consistently in CREATE/INSERT/DROP to avoid case
+        mismatches. This single method is used for both table names and
+        column names, since DB2 quoting rules are identical for both.
+
         Parameters
         ----------
         name : str
-            Identifier name (column or table name)
-            
+            Identifier name (table or column name)
+
         Returns
         -------
         str
             Quoted identifier
-        """
-        # Always quote - no exceptions
-        # Escape any existing double quotes by doubling them
-        escaped_name = name.replace('"', '""')
-        return f'"{escaped_name}"'
-
-    @staticmethod
-    def _quote_table_name(name: str) -> str:
-        """Always quote table names to match Ibis/SQLGlot's behavior when reading.
-        
-        Ibis always quotes identifiers when generating SELECT statements.
-        We must quote consistently in CREATE/INSERT/DROP to avoid case mismatches.
-        
-        Parameters
-        ----------
-        name : str
-            Table name
-            
-        Returns
-        -------
-        str
-            Quoted table name
         """
         # Always quote - no exceptions
         # Escape any existing double quotes by doubling them
@@ -425,7 +406,7 @@ class Backend(SQLBackend):
         temp_clause = "GLOBAL TEMPORARY " if temp else ""
         db_prefix = f"{database}." if database else ""
         # Always quote table name for consistency with Ibis/SQLGlot
-        quoted_name = self._quote_table_name(name)
+        quoted_name = self._quote_identifier(name)
         full_name = f"{db_prefix}{quoted_name}"
 
         if overwrite:
@@ -479,7 +460,7 @@ class Backend(SQLBackend):
         """
         db_prefix = f"{database}." if database else ""
         # Always quote table name for consistency with Ibis/SQLGlot
-        quoted_name = self._quote_table_name(name)
+        quoted_name = self._quote_identifier(name)
         full_name = f"{db_prefix}{quoted_name}"
 
         if force:
@@ -543,7 +524,7 @@ class Backend(SQLBackend):
 
         db_prefix = f"{database}." if database else ""
         # Always quote table name for consistency with Ibis/SQLGlot
-        quoted_table_name = self._quote_table_name(table_name)
+        quoted_table_name = self._quote_identifier(table_name)
         full_name = f"{db_prefix}{quoted_table_name}"
 
         if overwrite:
