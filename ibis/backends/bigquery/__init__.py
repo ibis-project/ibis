@@ -1311,20 +1311,22 @@ class Backend(
     ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
+        catalog = catalog or self.billing_project
+        db = db or self.current_database
 
         stmt = sge.Create(
             kind="VIEW",
             this=sg.table(
                 name,
-                db=db or self.current_database,
-                catalog=catalog or self.billing_project,
+                db=db,
+                catalog=catalog,
             ),
             expression=self.compile(obj),
             replace=overwrite,
         )
         self._run_pre_execute_hooks(obj)
         self.raw_sql(stmt.sql(self.name))
-        return self.table(name, database=(catalog, database))
+        return self.table(name, database=(catalog, db))
 
     def drop_view(
         self, name: str, /, *, database: str | None = None, force: bool = False
