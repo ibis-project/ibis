@@ -565,51 +565,15 @@ class Backend(SQLBackend):
     
     @staticmethod
     def _convert_dataframe_to_rows(df: pd.DataFrame) -> list[tuple]:
-        """Convert DataFrame to list of tuples, converting NaN/NaT/pd.NA to None.
-        
-        This is necessary because DB2's ibm_db_dbi driver's executemany() infers
-        parameter types from the first row. If the first row has a real value and
-        a later row has NaN, the types are inconsistent, causing SQL0302N errors.
-        
-        Parameters
-        ----------
-        df : pd.DataFrame
-            DataFrame to convert
-            
-        Returns
-        -------
-        list[tuple]
-            List of tuples with NaN/NaT/pd.NA converted to None
+        """Convert DataFrame to list of tuples, replacing NaN/NaT/pd.NA with None.
+
+        This is necessary because DB2's ibm_db_dbi driver expects SQL NULL values
+        to be represented as Python None.
         """
-        import math
         import pandas as pd
-        
-        def _convert_row(row):
-            """Convert a single row, replacing NaN/NaT/pd.NA with None."""
-            result = []
-            for val in row:
-                # Check for None first
-                if val is None:
-                    result.append(None)
-                # Check for float NaN
-                elif isinstance(val, float) and math.isnan(val):
-                    result.append(None)
-                # Check for pandas NA types (NaT, pd.NA, etc.)
-                else:
-                    try:
-                        if pd.isna(val):
-                            result.append(None)
-                            continue
-                    except (TypeError, ValueError):
-                        # Not a pandas NA type, keep original value
-                        pass
-                    result.append(val)
-            return tuple(result)
-        
-        # Use itertuples() instead of values.tolist() to preserve types
-        # values.tolist() can upcast integer columns to float when NaN is present
-        rows = [_convert_row(row) for row in df.itertuples(index=False, name=None)]
-        return rows
+
+        df = df.astype(object).where(pd.notnull(df), None)
+        return list(df.itertuples(index=False, name=None))
 
     def to_pyarrow(
         self,
