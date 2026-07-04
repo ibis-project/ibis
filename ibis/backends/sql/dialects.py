@@ -507,6 +507,26 @@ class RisingWave(Postgres):
                 return super().datatype_sql(expression)
 
 
+class Feldera(Postgres):
+    """Feldera SQL dialect.
+
+    Feldera parses SQL with Apache Calcite (Postgres-flavoured, double-quoted
+    identifiers).  The canonical Calcite type vocabulary spells ``FLOAT`` as
+    ``REAL`` and ``INT`` as ``INTEGER``; we map those here so the SQL emitted
+    by the Ibis compiler matches what Feldera accepts.
+    """
+
+    class Generator(Postgres.Generator):
+        TYPE_MAPPING = Postgres.Generator.TYPE_MAPPING.copy() | {
+            sge.DataType.Type.FLOAT: "REAL",
+            sge.DataType.Type.INT: "INTEGER",
+        }
+        TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
+            # Calcite spells SIGN as SIGNUM.
+            sge.Sign: rename_func("SIGNUM"),
+        }
+
+
 Snowflake.Generator.TRANSFORMS |= {
     sge.ApproxDistinct: rename_func("approx_count_distinct"),
     sge.Levenshtein: rename_func("editdistance"),

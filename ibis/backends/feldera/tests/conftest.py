@@ -1,0 +1,156 @@
+"""Pytest configuration for the Feldera backend tests.
+
+Feldera is an incremental SQL engine.  Unlike most Ibis backends, tables cannot
+be created ad hoc at runtime — they must be declared in a pipeline's SQL
+program, and only *materialized* tables/views are queryable via ad-hoc SELECT.
+
+So the test harness builds a single pipeline whose SQL program declares all the
+standard Ibis test tables (as materialized tables), pushes the parquet test
+data into them via ``Pipeline.input_pandas``, and yields an Ibis connection to
+that running pipeline.
+"""
+
+from __future__ import annotations
+
+import os
+import uuid
+from typing import Any
+
+import pandas as pd
+import pytest
+
+import ibis
+from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.tests.base import BackendTest
+
+# Extra tables (besides the standard TEST_TABLES) that some backend tests need.
+EXTRA_TABLES = {
+    "array_types": None,
+    "json_t": None,
+    "struct": None,
+    "win": None,
+    "topk": None,
+}
+
+FELDERA_HOST = os.environ.get("FELDERA_HOST", "http://localhost:8080")
+
+# pandas dtype -> Feldera/Calcite SQL type
+_PANDAS_TO_FELDERA = {
+    "int8": "TINYINT",
+    "int16": "SMALLINT",
+    "int32": "INTEGER",
+    "int64": "BIGINT",
+    "uint8": "INTEGER",
+    "uint16": "BIGINT",
+    "uint32": "BIGINT",
+    "uint64": "BIGINT",
+    "float16": "REAL",
+    "float32": "REAL",
+    "float64": "DOUBLE",
+    "bool": "BOOLEAN",
+    "object": "VARCHAR",
+    "string": "VARCHAR",
+}
+
+
+def _pandas_dtype_to_feldera(dtype) -> str:
+    kind = dtype.kind
+    if kind in "biu":
+        return _PANDAS_TO_FELDERA.get(str(dtype), "BIGINT")
+    if kind == "f":
+        return _PANDAS_TO_FELDERA.get(str(dtype), "DOUBLE")
+    if kind == "b":
+        return "BOOLEAN"
+    if kind == "M":
+        return "TIMESTAMP"
+    if kind == "U" or str(dtype) == "string":
+        return "VARCHAR"
+    # Fall back to VARCHAR for object/unknown dtypes.
+    return "VARCHAR"
+
+
+def _build_pipeline_sql(table_dtypes: dict[str, dict[str, str]]) -> str:
+    """Build a CREATE TABLE ... WITH ('materialized'='true') program."""
+    stmts = []
+    for name, cols in table_dtypes.items():
+        col_defs = ", ".join(f'"{c}" {t}' for c, t in cols.items())
+        stmts.append(
+            f'CREATE TABLE "{name}" ({col_defs}) WITH (\'materialized\' = \'true\');'
+        )
+    return "\n".join(stmts)
+
+
+def _read_parquet_dtypes(path) -> dict[str, str]:
+    df = pd.read_parquet(path)
+    return {col: _pandas_dtype_to_feldera(dt) for col, dt in df.dtypes.items()}
+
+
+class TestConf(BackendTest):
+    """Feldera test configuration.
+
+    Creates a fresh pipeline per test session, declares all standard test
+    tables as materialized, pushes the parquet data in, and yields an Ibis
+    connection bound to that pipeline.
+    """
+
+    # Feldera returns results from materialized views/tables; comparisons are
+    # otherwise standard.
+    check_dtype = True
+    supports_arrays = False  # TODO: validate; Calcite supports ARRAY types.
+    supports_structs = False  # TODO: validate.
+    supports_json = False
+    supports_map = False
+    stateful = False
+    supports_tpch = False
+    supports_tpcds = False
+    deps = ("feldera",)
+
+    @staticmethod
+    def connect(*, tmpdir, worker_id, **kw: Any):  # noqa: ARG004
+        return ibis.feldera.connect(host=FELDERA_HOST, pipeline=kw.get("pipeline"))
+
+    def _load_data(self, **_: Any) -> None:
+        from feldera import FelderaClient, PipelineBuilder
+
+        # Collect dtypes for every table we want to load.
+        table_dtypes: dict[str, dict[str, str]] = {}
+        table_data: dict[str, pd.DataFrame] = {}
+
+        for table_name in TEST_TABLES:
+            path = self.data_dir / "parquet" / f"{table_name}.parquet"
+            if path.exists():
+                table_dtypes[table_name] = _read_parquet_dtypes(path)
+                table_data[table_name] = pd.read_parquet(path)
+
+        for extra in EXTRA_TABLES:
+            path = self.data_dir / "parquet" / f"{extra}.parquet"
+            if path.exists():
+                table_dtypes[extra] = _read_parquet_dtypes(path)
+                table_data[extra] = pd.read_parquet(path)
+
+        sql = _build_pipeline_sql(table_dtypes)
+        client = FelderaClient(FELDERA_HOST)
+        name = f"ibis-test-{uuid.uuid4().hex[:8]}"
+        pipe = PipelineBuilder(client, name=name, sql=sql).create(wait=True)
+        pipe.start()
+
+        # Push data into each table.
+        for table_name, df in table_data.items():
+            # Feldera input_pandas expects plain column names; ensure strings.
+            df.columns = [str(c) for c in df.columns]
+            pipe.input_pandas(table_name, df)
+
+        # Stash the pipeline name so the connect() call can find it.
+        self._pipeline_name = name
+        self._client = client
+        self._pipe = pipe
+
+        # Re-create the ibis connection bound to this pipeline.
+        self.connection = ibis.feldera.connect(host=FELDERA_HOST, pipeline=name)
+
+
+@pytest.fixture(scope="session")
+def con(tmp_path_factory, data_dir, worker_id):
+    """Session-scoped Ibis connection to a Feldera pipeline with test data."""
+    with TestConf.load_data(data_dir, tmp_path_factory, worker_id) as be:
+        yield be.connection

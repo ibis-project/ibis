@@ -31,6 +31,7 @@ from ibis.backends.sql.compilers.datafusion import DataFusionCompiler
 from ibis.backends.sql.compilers.druid import DruidCompiler
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 from ibis.backends.sql.compilers.exasol import ExasolCompiler
+from ibis.backends.sql.compilers.feldera import FelderaCompiler
 from ibis.backends.sql.compilers.flink import FlinkCompiler
 from ibis.backends.sql.compilers.impala import ImpalaCompiler
 from ibis.backends.sql.compilers.materialize import MaterializeCompiler

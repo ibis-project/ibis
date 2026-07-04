@@ -335,6 +335,7 @@ datafusion = "ibis.backends.datafusion"
 druid = "ibis.backends.druid"
 duckdb = "ibis.backends.duckdb"
 exasol = "ibis.backends.exasol"
+feldera = "ibis.backends.feldera"
 flink = "ibis.backends.flink"
 impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"
@@ -515,6 +516,7 @@ markers = [
   "druid: Apache Druid tests",
   "duckdb: DuckDB tests",
   "exasol: ExasolDB tests",
+  "feldera: Feldera tests",
   "flink: Flink tests",
   "impala: Apache Impala tests",
   "mysql: MySQL tests",

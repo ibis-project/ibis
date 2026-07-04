@@ -583,6 +583,19 @@ class RisingWaveType(PostgresType):
         )
 
 
+class FelderaType(PostgresType):
+    dialect = "feldera"
+
+    # Feldera (Calcite) supports MAP with arbitrary key types, unlike Postgres.
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
+        key_type = cls.from_ibis(dtype.key_type)
+        value_type = cls.from_ibis(dtype.value_type)
+        return sge.DataType(
+            this=typecode.MAP, expressions=[key_type, value_type], nested=True
+        )
+
+
 class DataFusionType(PostgresType):
     dialect = "datafusion"
     unknown_type_strings = {
