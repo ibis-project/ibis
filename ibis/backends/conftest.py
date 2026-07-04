@@ -266,6 +266,11 @@ def pytest_collection_modifyitems(session, config, items):
     if unrecognized_backends:
         raise pytest.PytestCollectionWarning("\n" + "\n".join(unrecognized_backends))
 
+    for item in items:
+        # Feldera tests share one pipeline-manager; serialize them when xdist is on.
+        if "[feldera]" in item.nodeid or item.get_closest_marker("feldera"):
+            item.add_marker(pytest.mark.xdist_group("feldera"))
+
     for item, markers in additional_markers:
         for marker in markers:
             item.add_marker(marker)

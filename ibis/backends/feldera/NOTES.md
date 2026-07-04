@@ -152,6 +152,20 @@ Feldera's SQL docs (`feldera/docs.feldera.com/docs/sql/`):
 | `execute()` = snapshot only | Real limitation | By design (Flink precedent); streaming is a separate API surface. |
 | Materialized tables required | Real limitation | Feldera constraint; test harness already uses `WITH ('materialized'='true')`. |
 
+## Running tests
+
+Feldera tests hit a single pipeline-manager instance.  Run them **serially**
+to avoid overloading it with concurrent pipelines:
+
+```bash
+docker compose up feldera -d
+just sync feldera
+just test feldera          # no pytest-xdist (same as impala/pyspark)
+```
+
+If you mix backends (e.g. `pytest -m "duckdb or feldera" -n auto --dist loadgroup`),
+Feldera tests are pinned to a single xdist worker via the `feldera` load group.
+
 ## Next steps (for the PR / community)
 
 1. Add `notimpl`/`never` markers for Feldera on the relevant shared test
