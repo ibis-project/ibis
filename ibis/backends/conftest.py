@@ -203,6 +203,39 @@ def pytest_collection_modifyitems(session, config, items):
 
     unrecognized_backends = set()
     for item in items:
+        # Feldera tables must be declared in the pipeline SQL program.
+        if "memtable" in item.name or "memory_table" in item.name:
+            item.add_marker(
+                pytest.mark.never(
+                    ["feldera"],
+                    reason="Feldera tables must be declared in the pipeline SQL program",
+                    raises=NotImplementedError,
+                )
+            )
+
+        if any(
+            item.name.startswith(prefix)
+            for prefix in (
+                "test_create_table",
+                "test_insert_",
+                "test_upsert_",
+                "test_rename_table",
+                "test_load_data",
+                "test_create_drop_view",
+                "test_nullable_input_output",
+                "test_unsigned_integer_type",
+                "test_string_methods_accents",
+                "test_string_methods_no_accents",
+            )
+        ):
+            item.add_marker(
+                pytest.mark.never(
+                    ["feldera"],
+                    reason="Feldera tables must be declared in the pipeline SQL program",
+                    raises=(NotImplementedError, ValueError, TypeError, Exception),
+                )
+            )
+
         # Yell loudly if unrecognized backend in notimpl, notyet or never
         for name in ("notimpl", "notyet", "never"):
             for mark in item.iter_markers(name=name):

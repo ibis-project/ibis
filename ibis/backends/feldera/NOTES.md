@@ -125,7 +125,32 @@ precedent (snapshot execute(), no in-memory tables, test conf builds pipeline).
 - `ibis/backends/feldera/__init__.py` (new — backend)
 - `ibis/backends/feldera/tests/conftest.py` (new — test harness)
 - `ibis/backends/feldera/tests/smoke_e2e.py` (new — smoke test)
-- `pyproject.toml` (entry point + `feldera` test marker)
+- `pyproject.toml` (entry point, optional `feldera` extra, test marker)
+- `compose.yaml` (`feldera` service — pipeline-manager on :8080)
+
+## Limitations vs. opportunities (audit)
+
+GLM's failure taxonomy mixes **real Feldera constraints**, **Postgres-compiler
+mismatches we can fix**, and **test-harness noise**.  After cross-checking
+Feldera's SQL docs (`feldera/docs.feldera.com/docs/sql/`):
+
+| GLM bucket | Verdict | Notes |
+|---|---|---|
+| Row ordering (`AssertionError`) | Harness noise | Feldera is incremental; use `force_sort` (Flink precedent) or sort on a stable key. Not a semantic bug. |
+| In-memory tables (`NotImplementedError`) | Real limitation | Tables must live in the pipeline SQL program. Mitigated in tests by `_bootstrap_pipeline()`; mark shared tests `never("feldera")`. |
+| `make_interval` / interval construction | **Opportunity** | Feldera uses `INTERVAL 'N unit'` literals, not `make_interval()`. Fixed via `_make_interval` override (Materialize precedent). |
+| `make_timestamp` / `datefromparts` | **Opportunity** | Feldera ad-hoc SQL rejects `MAKE_TIMESTAMP` (panics); use `TO_TIMESTAMP` on ISO strings. `MAKE_DATE` works. |
+| `sign` → `SIGN` | **Fixed** | Dialect maps `SIGN` → `SIGNUM`. |
+| `typeof` / `pg_typeof` | Real limitation | Feldera's `TYPEOF` is VARIANT-only; no general `arrow_typeof`. Keep `notimpl`. |
+| `regexp_split_to_array` | Real limitation | Feldera has `SPLIT` (delimiter) but no regex split → array. Keep `notimpl` for `RegexSplit`. |
+| `StringSplit` | **Opportunity** | Feldera `SPLIT(string, delimiter)` covers delimiter splits. |
+| `jsonb_object_agg` | Real limitation | No JSON object aggregate in Feldera SQL surface today. |
+| `first` / `last` aggregates | Real limitation | Window `FIRST_VALUE` exists; ordered-set `first`/`last` agg do not. |
+| `percentile_disc` | Real limitation | Not in Feldera function index. |
+| ARRAY / MAP / STRUCT / JSON types | **Opportunity (TBD)** | Calcite/Feldera support ARRAY; MAP is supported in the type system. Need schema + compiler validation before flipping `supports_*` flags. |
+| Pipeline fixed at `connect()` | Real limitation | Matches dbt-feldera model; not a bug. |
+| `execute()` = snapshot only | Real limitation | By design (Flink precedent); streaming is a separate API surface. |
+| Materialized tables required | Real limitation | Feldera constraint; test harness already uses `WITH ('materialized'='true')`. |
 
 ## Next steps (for the PR / community)
 
