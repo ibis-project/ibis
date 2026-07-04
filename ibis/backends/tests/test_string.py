@@ -1156,6 +1156,8 @@ def string_temp_table(backend, con):
         pytest.xfail("druid doesn't support create table")
     elif backend.name() == "athena":
         pytest.xfail("not yet supported")
+    elif backend.name() == "feldera":
+        pytest.skip("Feldera tables must be declared in the pipeline SQL program")
     else:
         yield con.create_table(
             temp_table_name, better_strings, temp=backend.name() == "flink" or None
@@ -1446,6 +1448,8 @@ def string_temp_table_no_complications(backend, con):
         pytest.xfail("druid doesn't support create table")
     elif backend.name() == "athena":
         pytest.xfail("not yet supported")
+    elif backend.name() == "feldera":
+        pytest.skip("Feldera tables must be declared in the pipeline SQL program")
     else:
         yield con.create_table(
             temp_table_name, better_strings, temp=backend.name() == "flink" or None

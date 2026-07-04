@@ -202,39 +202,33 @@ def pytest_collection_modifyitems(session, config, items):
     additional_markers = []
 
     unrecognized_backends = set()
+    _feldera_ddl_reason = (
+        "Feldera tables must be declared in the pipeline SQL program"
+    )
     for item in items:
-        # Feldera tables must be declared in the pipeline SQL program.
-        if "memtable" in item.name or "memory_table" in item.name:
-            item.add_marker(
-                pytest.mark.never(
-                    ["feldera"],
-                    reason="Feldera tables must be declared in the pipeline SQL program",
-                    raises=NotImplementedError,
+        # Skip (not xfail) Feldera parametrizations that need ad-hoc DDL/memtables.
+        # ``never`` is applied too late (after fixture setup); ``skip`` avoids
+        # setup-time errors from fixtures that call create_table / drop_table.
+        if "[feldera" in item.nodeid and (
+            "memtable" in item.name
+            or "memory_table" in item.name
+            or any(
+                item.name.startswith(prefix)
+                for prefix in (
+                    "test_create_table",
+                    "test_insert_",
+                    "test_upsert_",
+                    "test_rename_table",
+                    "test_load_data",
+                    "test_create_drop_view",
+                    "test_nullable_input_output",
+                    "test_unsigned_integer_type",
+                    "test_string_methods_accents",
+                    "test_string_methods_no_accents",
                 )
-            )
-
-        if any(
-            item.name.startswith(prefix)
-            for prefix in (
-                "test_create_table",
-                "test_insert_",
-                "test_upsert_",
-                "test_rename_table",
-                "test_load_data",
-                "test_create_drop_view",
-                "test_nullable_input_output",
-                "test_unsigned_integer_type",
-                "test_string_methods_accents",
-                "test_string_methods_no_accents",
             )
         ):
-            item.add_marker(
-                pytest.mark.never(
-                    ["feldera"],
-                    reason="Feldera tables must be declared in the pipeline SQL program",
-                    raises=(NotImplementedError, ValueError, TypeError, Exception),
-                )
-            )
+            item.add_marker(pytest.mark.skip(reason=_feldera_ddl_reason))
 
         # Yell loudly if unrecognized backend in notimpl, notyet or never
         for name in ("notimpl", "notyet", "never"):

@@ -297,6 +297,23 @@ class Backend(SQLBackend):
         self._pipeline().input_pandas(name, obj, force=overwrite)
         return self.table(name)
 
+    def drop_table(
+        self,
+        name: str,
+        /,
+        *,
+        database: str | None = None,
+        force: bool = False,
+    ) -> None:
+        if database is not None:
+            raise NotImplementedError(
+                "Feldera has no databases; the pipeline is fixed at connect() time."
+            )
+        raise NotImplementedError(
+            "Feldera does not support dropping tables at runtime; tables are "
+            "declared in the pipeline SQL program."
+        )
+
 
 def _schema_from_feldera_fields(fields: list[dict]) -> sch.Schema:
     """Convert Feldera's field dicts (``{"name", "columntype"}``) to an ibis schema."""
