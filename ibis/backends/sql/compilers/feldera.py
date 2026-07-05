@@ -1,8 +1,10 @@
 """Feldera SQL compiler.
 
-Feldera parses SQL with Apache Calcite using a Postgres-flavoured surface,
-so we subclass :class:`PostgresCompiler` and only declare the (small) set of
-operations that Feldera/Calcite does not (yet) support.
+Ad-hoc SQL (what ``Backend.execute()`` runs via ``Pipeline.query_arrow``) is
+parsed by Apache DataFusion, so we subclass :class:`PostgresCompiler` and only
+override the operations whose Postgres lowering DataFusion rejects.  See
+``ibis/backends/feldera/tests/test_adhoc_surface.py`` for the validated
+surface.
 """
 
 from __future__ import annotations
@@ -24,9 +26,9 @@ class FelderaCompiler(PostgresCompiler):
     dialect = Feldera
     type_mapper = FelderaType
 
-    # Operations we know Feldera/Calcite doesn't support today.  This list is
-    # intentionally conservative; we will trim it as the operation matrix is
-    # validated against a running pipeline (see `ibis/backends/feldera/tests`).
+    # Operations we know Feldera ad-hoc (DataFusion) does not support today.
+    # This list is intentionally conservative; trim it as the operation matrix
+    # is validated against a running pipeline (see test_adhoc_surface.py).
     UNSUPPORTED_OPS = (
         ops.Sample,
         ops.RandomScalar,
@@ -44,21 +46,12 @@ class FelderaCompiler(PostgresCompiler):
         ops.TypeOf,
     )
 
-    # Postgres lowers Sample to TABLESAMPLE; Feldera has no equivalent.
-    LOWERED_OPS = {ops.Sample: None}
-
-    def visit_DateFromYMD(self, op, *, year, month, day):
-        to_int32 = partial(self.cast, to=dt.int32)
-        return sge.Anonymous(
-            this="MAKE_DATE",
-            expressions=[to_int32(year), to_int32(month), to_int32(day)],
-        )
-
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
     ):
-        # Feldera 0.316 rejects MAKE_TIMESTAMP in ad-hoc queries (lowercases to
-        # make_timestamp and fails).  Build an ISO string and parse instead.
+        # DataFusion ad-hoc rejects MAKE_TIMESTAMP ("Invalid function
+        # 'make_timestamp'").  Build an ISO 8601 string and parse it with
+        # TO_TIMESTAMP, which is accepted.
         year_str = self.cast(year, dt.string)
         month_str = self.f.lpad(self.cast(month, dt.string), 2, "0")
         day_str = self.f.lpad(self.cast(day, dt.string), 2, "0")
@@ -80,16 +73,13 @@ class FelderaCompiler(PostgresCompiler):
         )
         return self.f.to_timestamp(ts_str)
 
-    def visit_NonNullLiteral(self, op, *, value, dtype):
-        if dtype.is_date():
-            return self.cast(value.isoformat(), dtype)
-        return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
-
-    def visit_StringSplit(self, op, *, arg, delimiter):
-        return self.f.split(arg, delimiter)
-
     def _make_interval(self, arg, unit):
-        """Feldera uses ``INTERVAL 'N unit'`` literals, not ``make_interval()``."""
+        """Lower ``IntervalFromInteger`` without ``make_interval()``.
+
+        DataFusion ad-hoc has no ``make_interval``; instead, cast the integer
+        to a string and parse it as an interval literal
+        (``CAST('3 days' AS INTERVAL)``).
+        """
         plural = unit.plural
 
         if plural == "weeks":
