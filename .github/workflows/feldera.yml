@@ -68,7 +68,7 @@ jobs:
           ibis/backends/tests/test_udf.py
           -m feldera
         env:
-          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-feldera-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-feldera-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: checkout uv.lock and pyproject.toml
         run: git checkout uv.lock pyproject.toml
