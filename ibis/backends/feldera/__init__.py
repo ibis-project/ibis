@@ -34,21 +34,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import sqlglot as sg
-
 import ibis
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.feldera import compiler as _feldera_compiler
-from ibis.backends.sql.compilers.feldera import FelderaCompiler as _FelderaCompiler
 
 if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
+    import sqlglot as sg
     from feldera import FelderaClient
     from feldera.pipeline import Pipeline
 
@@ -63,7 +60,7 @@ class Backend(SQLBackend):
     # is the only container, and it is fixed at connect() time.  We therefore
     # don't mix in CanCreateDatabase / HasCurrentCatalog / HasCurrentDatabase.
 
-    def _from_url(self, url, **kwargs):  # noqa: D401
+    def _from_url(self, url, **kwargs):
         """Feldera does not use connection URLs."""
         raise NotImplementedError(
             "The Feldera backend does not support connection URLs; use "
@@ -76,7 +73,7 @@ class Backend(SQLBackend):
         host: str | None = None,
         pipeline: str,
         api_key: str | None = None,
-        client: "FelderaClient | None" = None,
+        client: FelderaClient | None = None,
     ) -> None:
         """Connect to a Feldera pipeline.
 
@@ -111,7 +108,7 @@ class Backend(SQLBackend):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, client: "FelderaClient", /, *, pipeline: str) -> "Backend":
+    def from_connection(cls, client: FelderaClient, /, *, pipeline: str) -> Backend:
         """Create a Feldera :class:`Backend` from an existing client.
 
         Parameters
@@ -145,7 +142,7 @@ class Backend(SQLBackend):
     # ------------------------------------------------------------------ #
     # Internals
     # ------------------------------------------------------------------ #
-    def _pipeline(self) -> "Pipeline":
+    def _pipeline(self) -> Pipeline:
         from feldera.pipeline import Pipeline
 
         return Pipeline.get(self._pipeline_name, self._client)
@@ -165,28 +162,29 @@ class Backend(SQLBackend):
         return self._pipeline().query_arrow(query)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        import pyarrow as pa
-
         # Run the query with a LIMIT 0 to fetch just the schema.  Feldera's
         # query_arrow returns PyArrow RecordBatches; the first batch (even if
         # empty) carries the schema.
-        schema_sql = f"SELECT * FROM ({query}) AS __ibis_schema__ LIMIT 0"
+        schema_sql = f"SELECT * FROM ({query}) AS __ibis_schema__ LIMIT 0"  # noqa: S608
         batches = self._pipeline().query_arrow(schema_sql)
         first = next(batches, None)
         if first is None:
             # Fall back to running the full query if LIMIT 0 yields nothing.
             return sch.Schema({})
-        pa_schema: pa.Schema = first.schema
+        pa_schema = first.schema
         return sch.Schema.from_pyarrow(pa_schema)
 
-    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> "pd.DataFrame":
+    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
         import pyarrow as pa
 
         batches = list(cursor)
         if not batches:
             # Build an empty DataFrame with the right columns/dtypes.
-            data = {name: pd.Series(dtype=dtype.to_pandas()) for name, dtype in schema.items()}
+            data = {
+                name: pd.Series(dtype=dtype.to_pandas())
+                for name, dtype in schema.items()
+            }
             return pd.DataFrame(data)
         table = pa.Table.from_batches(batches, batches[0].schema)
         return table.to_pandas()
@@ -199,7 +197,7 @@ class Backend(SQLBackend):
         params: dict | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
-    ) -> "pd.DataFrame | pd.Series | Any":
+    ) -> pd.DataFrame | pd.Series | Any:
         """Execute an Ibis expression and return a pandas DataFrame.
 
         Compiles the expression to a ``SELECT`` and runs it as an ad-hoc query
@@ -221,7 +219,7 @@ class Backend(SQLBackend):
         params: dict | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
-    ) -> "pa.Table":
+    ) -> pa.Table:
         import pyarrow as pa
 
         self._run_pre_execute_hooks(expr)
@@ -257,7 +255,9 @@ class Backend(SQLBackend):
         for rel in candidates:
             if rel.name.lower() == name.lower():
                 return _schema_from_feldera_fields(rel.fields)
-        raise KeyError(f"Table or view {name!r} not found in pipeline {self._pipeline_name!r}")
+        raise KeyError(
+            f"Table or view {name!r} not found in pipeline {self._pipeline_name!r}"
+        )
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         # Feldera tables live in the pipeline SQL program; there is no notion
@@ -268,11 +268,46 @@ class Backend(SQLBackend):
             "create_table(obj=df) to push data into a pipeline table instead."
         )
 
+    def create_view(
+        self,
+        name: str,
+        /,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        if database is not None:
+            raise NotImplementedError(
+                "Feldera has no databases; the pipeline is fixed at connect() time."
+            )
+        raise NotImplementedError(
+            "Feldera does not support creating views at runtime; views are "
+            "declared in the pipeline SQL program."
+        )
+
+    def drop_view(
+        self,
+        name: str,
+        /,
+        *,
+        database: str | None = None,
+        force: bool = False,
+    ) -> None:
+        if database is not None:
+            raise NotImplementedError(
+                "Feldera has no databases; the pipeline is fixed at connect() time."
+            )
+        raise NotImplementedError(
+            "Feldera does not support dropping views at runtime; views are "
+            "declared in the pipeline SQL program."
+        )
+
     def create_table(
         self,
         name: str,
         /,
-        obj: "pd.DataFrame | pa.Table | ir.Table | None" = None,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -307,6 +342,7 @@ class Backend(SQLBackend):
             obj = obj.to_pandas()
         try:
             import pyarrow as pa
+
             if isinstance(obj, pa.Table):
                 obj = obj.to_pandas()
         except ImportError:
@@ -386,7 +422,9 @@ def _schema_to_empty_pa_table(schema: sch.Schema):
         pa.field(name, dtype.to_pyarrow(), nullable=dtype.nullable)
         for name, dtype in ((n, schema[n]) for n in schema.names)
     ]
-    return pa.table({f.name: pa.array([], type=f.type) for f in fields}, schema=pa.schema(fields))
+    return pa.table(
+        {f.name: pa.array([], type=f.type) for f in fields}, schema=pa.schema(fields)
+    )
 
 
 class _LazyFelderaClient:

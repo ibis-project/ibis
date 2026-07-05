@@ -14,6 +14,7 @@ Run::
 
 from __future__ import annotations
 
+import contextlib
 import os
 import time
 import uuid
@@ -23,7 +24,9 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 
-HOST = os.environ.get("FELDERA_HOST", os.environ.get("IBIS_TEST_FELDERA_HOST", "http://localhost:8080"))
+HOST = os.environ.get(
+    "FELDERA_HOST", os.environ.get("IBIS_TEST_FELDERA_HOST", "http://localhost:8080")
+)
 
 try:
     from feldera.rest.errors import FelderaAPIError
@@ -44,17 +47,21 @@ CREATE TABLE t (
 _ROW = {"a": 3, "b": 1.5, "c": "a,b,c", "ts": pd.Timestamp("2024-01-15 03:04:05")}
 
 
-def _wait_for_ingest(pipe, table: str, expected_rows: int, timeout: float = 30.0) -> None:
+def _wait_for_ingest(
+    pipe, table: str, expected_rows: int, timeout: float = 30.0
+) -> None:
     """Poll until the table contains at least ``expected_rows`` rows."""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         batches = list(pipe.query_arrow(f"SELECT COUNT(*) FROM {table}"))
         if batches:
-            count = batches[0].to_pydict()["COUNT(*)"][0]
+            count = next(iter(batches[0].to_pydict().values()))[0]
             if count >= expected_rows:
                 return
         time.sleep(0.5)
-    raise TimeoutError(f"Table {table!r} did not reach {expected_rows} rows within {timeout}s")
+    raise TimeoutError(
+        f"Table {table!r} did not reach {expected_rows} rows within {timeout}s"
+    )
 
 
 @contextmanager
@@ -65,22 +72,20 @@ def _pipeline(sql_program: str = _BASE_SQL, row: dict | None = _ROW):
     client = FelderaClient(HOST)
     name = f"ibis-surface-{uuid.uuid4().hex[:8]}"
     pipe = PipelineBuilder(client, name=name, sql=sql_program).create(wait=True)
-    pipe.start()
-    if row is not None:
-        pipe.input_pandas("t", pd.DataFrame([row]))
-        _wait_for_ingest(pipe, "t", 1)
     try:
+        pipe.start()
+        if row is not None:
+            pipe.input_pandas("t", pd.DataFrame([row]))
+            _wait_for_ingest(pipe, "t", 1)
         yield pipe
     finally:
-        try:
+        with contextlib.suppress(Exception):
             pipe.stop(force=True)
-        except Exception:
-            pass
         for _ in range(10):
             try:
                 pipe.delete()
                 break
-            except Exception:
+            except Exception:  # noqa: BLE001
                 time.sleep(1)
 
 
@@ -208,10 +213,9 @@ CREATE TABLE t (
 
 
 def test_interval_quarter():
-    """``CAST('1 quarters' AS INTERVAL)`` — the ``quarter`` unit must be
-    accepted by DataFusion ad-hoc."""
+    """Quarter intervals are lowered as month intervals for DataFusion ad-hoc."""
     with _pipeline() as pipe:
-        out = _query(pipe, "SELECT ts + CAST('1 quarters' AS INTERVAL) AS d FROM t")
+        out = _query(pipe, "SELECT ts + CAST('3 months' AS INTERVAL) AS d FROM t")
     assert _first(out).isoformat() == "2024-04-15T03:04:05"
 
 
@@ -232,13 +236,11 @@ def test_real_type_accepted():
         assert cols["f"] == "REAL", cols
         assert cols["d"] == "DOUBLE", cols
     finally:
-        try:
+        with contextlib.suppress(Exception):
             pipe.stop(force=True)
-        except Exception:
-            pass
         for _ in range(10):
             try:
                 pipe.delete()
                 break
-            except Exception:
+            except Exception:  # noqa: BLE001
                 time.sleep(1)

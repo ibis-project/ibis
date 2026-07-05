@@ -8,6 +8,7 @@ Run::
 
 from __future__ import annotations
 
+import contextlib
 import os
 import time
 import uuid
@@ -18,7 +19,9 @@ import pytest
 
 import ibis
 
-HOST = os.environ.get("FELDERA_HOST", os.environ.get("IBIS_TEST_FELDERA_HOST", "http://localhost:8080"))
+HOST = os.environ.get(
+    "FELDERA_HOST", os.environ.get("IBIS_TEST_FELDERA_HOST", "http://localhost:8080")
+)
 
 pytestmark = pytest.mark.feldera
 
@@ -41,29 +44,54 @@ GROUP BY species, island;
 """
 
 ROWS = [
-    {"species": "Adelie", "island": "Torgersen", "bill_length_mm": 39.1,
-     "bill_depth_mm": 18.7, "flipper_length_mm": 181, "body_mass_g": 3750,
-     "sex": "male", "year": 2007},
-    {"species": "Adelie", "island": "Torgersen", "bill_length_mm": 39.5,
-     "bill_depth_mm": 17.4, "flipper_length_mm": 186, "body_mass_g": 3800,
-     "sex": "female", "year": 2007},
-    {"species": "Gentoo", "island": "Biscoe", "bill_length_mm": 46.1,
-     "bill_depth_mm": 13.2, "flipper_length_mm": 211, "body_mass_g": 4500,
-     "sex": "female", "year": 2007},
+    {
+        "species": "Adelie",
+        "island": "Torgersen",
+        "bill_length_mm": 39.1,
+        "bill_depth_mm": 18.7,
+        "flipper_length_mm": 181,
+        "body_mass_g": 3750,
+        "sex": "male",
+        "year": 2007,
+    },
+    {
+        "species": "Adelie",
+        "island": "Torgersen",
+        "bill_length_mm": 39.5,
+        "bill_depth_mm": 17.4,
+        "flipper_length_mm": 186,
+        "body_mass_g": 3800,
+        "sex": "female",
+        "year": 2007,
+    },
+    {
+        "species": "Gentoo",
+        "island": "Biscoe",
+        "bill_length_mm": 46.1,
+        "bill_depth_mm": 13.2,
+        "flipper_length_mm": 211,
+        "body_mass_g": 4500,
+        "sex": "female",
+        "year": 2007,
+    },
 ]
 
 
-def _wait_for_ingest(pipe, table: str, expected_rows: int, timeout: float = 30.0) -> None:
+def _wait_for_ingest(
+    pipe, table: str, expected_rows: int, timeout: float = 30.0
+) -> None:
     """Poll until the table contains at least ``expected_rows`` rows."""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         batches = list(pipe.query_arrow(f"SELECT COUNT(*) FROM {table}"))
         if batches:
-            count = batches[0].to_pydict()["COUNT(*)"][0]
+            count = next(iter(batches[0].to_pydict().values()))[0]
             if count >= expected_rows:
                 return
         time.sleep(0.5)
-    raise TimeoutError(f"Table {table!r} did not reach {expected_rows} rows within {timeout}s")
+    raise TimeoutError(
+        f"Table {table!r} did not reach {expected_rows} rows within {timeout}s"
+    )
 
 
 @contextmanager
@@ -73,21 +101,19 @@ def _pipeline():
     client = FelderaClient(HOST)
     name = "ibis-e2e-" + uuid.uuid4().hex[:8]
     pipe = PipelineBuilder(client, name=name, sql=SQL).create(wait=True)
-    pipe.start()
-    pipe.input_pandas("penguins", pd.DataFrame(ROWS))
-    _wait_for_ingest(pipe, "penguins", len(ROWS))
     try:
+        pipe.start()
+        pipe.input_pandas("penguins", pd.DataFrame(ROWS))
+        _wait_for_ingest(pipe, "penguins", len(ROWS))
         yield name
     finally:
-        try:
+        with contextlib.suppress(Exception):
             pipe.stop(force=True)
-        except Exception:
-            pass
         for _ in range(10):
             try:
                 pipe.delete()
                 break
-            except Exception:
+            except Exception:  # noqa: BLE001
                 time.sleep(1)
 
 
@@ -133,7 +159,9 @@ def test_compile_only():
     the table expression directly with an explicit schema.
     """
     con = ibis.feldera.connect(host="http://nonexistent:9999", pipeline="dummy")
-    schema = ibis.schema({"body_mass_g": "int64", "bill_length_mm": "float64", "species": "string"})
+    schema = ibis.schema(
+        {"body_mass_g": "int64", "bill_length_mm": "float64", "species": "string"}
+    )
     t = ibis.table(schema, name="penguins")
     expr = t.filter(t.body_mass_g > 3000).order_by(ibis.desc("body_mass_g"))
     sql = con.compile(expr)

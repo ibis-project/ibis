@@ -9,12 +9,11 @@ surface.
 
 from __future__ import annotations
 
-from functools import partial
-
 import sqlglot.expressions as sge
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.sql.compilers.datafusion import DataFusionCompiler
 from ibis.backends.sql.compilers.postgres import PostgresCompiler
 from ibis.backends.sql.datatypes import FelderaType
 from ibis.backends.sql.dialects import Feldera
@@ -30,9 +29,12 @@ class FelderaCompiler(PostgresCompiler):
     # This list is intentionally conservative; trim it as the operation matrix
     # is validated against a running pipeline (see test_adhoc_surface.py).
     UNSUPPORTED_OPS = (
+        *PostgresCompiler.UNSUPPORTED_OPS,
+        *DataFusionCompiler.UNSUPPORTED_OPS,
         ops.Sample,
         ops.RandomScalar,
         ops.RandomUUID,
+        ops.BitwiseNot,
         ops.Arbitrary,
         ops.Mode,
         ops.Kurtosis,
@@ -111,6 +113,9 @@ class FelderaCompiler(PostgresCompiler):
         if plural == "weeks":
             arg = arg * 7
             plural = "days"
+        elif plural == "quarters":
+            arg = arg * 3
+            plural = "months"
 
         unit_map = {
             "years": "year",

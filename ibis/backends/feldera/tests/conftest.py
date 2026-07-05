@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import contextlib
 import os
+import time
 import uuid
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import pytest
@@ -25,6 +25,9 @@ from filelock import FileLock
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Extra tables (besides the standard TEST_TABLES) that some backend tests need.
 EXTRA_TABLES = {
@@ -91,6 +94,23 @@ def _read_parquet_dtypes(path) -> dict[str, str]:
     return {col: _pandas_dtype_to_feldera(dt) for col, dt in df.dtypes.items()}
 
 
+def _wait_for_ingest(
+    pipe, table: str, expected_rows: int, timeout: float = 30.0
+) -> None:
+    """Poll until Feldera has materialized at least ``expected_rows`` rows."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        batches = list(pipe.query_arrow(f'SELECT COUNT(*) FROM "{table}"'))
+        if batches:
+            count = next(iter(batches[0].to_pydict().values()))[0]
+            if count >= expected_rows:
+                return
+        time.sleep(0.5)
+    raise TimeoutError(
+        f"Table {table!r} did not reach {expected_rows} rows within {timeout}s"
+    )
+
+
 def _bootstrap_empty_pipeline() -> tuple[str, Any, Any]:
     """Create a minimal Feldera pipeline for no-data connection tests."""
     from feldera import FelderaClient, PipelineBuilder
@@ -132,6 +152,7 @@ def _bootstrap_pipeline(data_dir: Path) -> tuple[str, Any, Any]:
     for table_name, df in table_data.items():
         df.columns = [str(c) for c in df.columns]
         pipe.input_pandas(table_name, df)
+        _wait_for_ingest(pipe, table_name, len(df))
 
     return name, client, pipe
 
@@ -210,7 +231,7 @@ class TestConf(BackendTest):
                 try:
                     pipe.delete()
                     break
-                except Exception:
+                except Exception:  # noqa: BLE001
                     time.sleep(1)
         self.connection.disconnect()
 

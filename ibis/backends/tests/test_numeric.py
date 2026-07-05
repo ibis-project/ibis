@@ -1671,7 +1671,7 @@ def test_bitwise_scalars(con, op, left, right):
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notimpl(
     ["feldera"],
-    raises=FelderaAPIError,
+    raises=com.OperationNotDefinedError,
     reason="DataFusion ad-hoc does not support the BitwiseNot (~) operator",
 )
 @pytest.mark.never(
@@ -1692,7 +1692,7 @@ def test_bitwise_not_scalar(con):
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notimpl(
     ["feldera"],
-    raises=FelderaAPIError,
+    raises=com.OperationNotDefinedError,
     reason="DataFusion ad-hoc does not support the BitwiseNot (~) operator",
 )
 @pytest.mark.never(
