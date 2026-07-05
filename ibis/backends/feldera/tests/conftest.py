@@ -12,6 +12,7 @@ that running pipeline.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import uuid
 from pathlib import Path
@@ -156,11 +157,10 @@ class TestConf(BackendTest):
     deps = ("feldera",)
 
     @staticmethod
-    def connect(*, tmpdir, worker_id, **kw: Any):  # noqa: ARG004
-        pipeline = kw.get("pipeline")
+    def connect(*, tmpdir, worker_id, client=None, pipeline=None, **kw: Any):  # noqa: ARG004
         if pipeline is None:
-            pipeline, _, _ = _bootstrap_empty_pipeline()
-        return ibis.feldera.connect(host=FELDERA_HOST, pipeline=pipeline)
+            pipeline, client, _ = _bootstrap_empty_pipeline()
+        return ibis.feldera.connect(client=client, pipeline=pipeline)
 
     @classmethod
     def load_data(
@@ -180,12 +180,11 @@ class TestConf(BackendTest):
                 data_dir=data_dir,
                 tmpdir=tmpdir,
                 worker_id=worker_id,
+                client=client,
                 pipeline=pipeline_name,
                 **kw,
             )
-            inst._client = client
             inst._pipe = pipe
-            inst._pipeline_name = pipeline_name
 
             if inst.stateful:
                 inst.stateful_load(fn, **kw)
@@ -197,6 +196,22 @@ class TestConf(BackendTest):
 
             inst.postload(tmpdir=tmpdir, worker_id=worker_id, **kw)
             return inst
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Stop and delete the pipeline so CI loops don't accumulate pipelines.
+        pipe = getattr(self, "_pipe", None)
+        if pipe is not None:
+            import time
+
+            with contextlib.suppress(Exception):
+                pipe.stop(force=True)
+            for _ in range(10):
+                try:
+                    pipe.delete()
+                    break
+                except Exception:
+                    time.sleep(1)
+        self.connection.disconnect()
 
 
 @pytest.fixture(scope="session")

@@ -100,10 +100,12 @@ class Backend(SQLBackend):
         >>> con = ibis.feldera.connect(host="http://localhost:8080", pipeline="penguins")
         >>> con.table("penguins").head(3)  # doctest: +SKIP
         """
-        from feldera import FelderaClient
-
         if client is None:
-            client = FelderaClient(url=host, api_key=api_key)
+            # Construct the client lazily so that ``compile()`` and other
+            # offline operations work without a running server.  The SDK's
+            # ``FelderaClient`` constructor pings ``/config``, which would
+            # otherwise make ``connect()`` fail when the server is down.
+            client = _LazyFelderaClient(url=host, api_key=api_key)
         self._client: FelderaClient = client
         self._pipeline_name = pipeline
 
@@ -346,3 +348,28 @@ def schema_to_empty_pa_table(schema: sch.Schema):
         for name, dtype in ((n, schema[n]) for n in schema.names)
     ]
     return pa.table({f.name: pa.array([], type=f.type) for f in fields}, schema=pa.schema(fields))
+
+
+class _LazyFelderaClient:
+    """A thin proxy that defers ``FelderaClient`` construction until first use.
+
+    The SDK's ``FelderaClient.__init__`` calls ``get_config()`` (a server
+    ping).  Wrapping the client means ``ibis.feldera.connect()`` and
+    ``Backend.compile()`` work offline — only ``execute()`` / ``list_tables()``
+    / ``get_schema()`` actually need a live server.
+    """
+
+    def __init__(self, *, url: str | None, api_key: str | None):
+        self._url = url
+        self._api_key = api_key
+        self._client: FelderaClient | None = None
+
+    def _get(self):
+        if self._client is None:
+            from feldera import FelderaClient
+
+            self._client = FelderaClient(url=self._url, api_key=self._api_key)
+        return self._client
+
+    def __getattr__(self, name):
+        return getattr(self._get(), name)
