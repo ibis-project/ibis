@@ -32,31 +32,6 @@ class Backend(SQLBackend):
     supports_temporary_tables = True
     supports_python_udfs = False
 
-    @staticmethod
-    def _quote_identifier(name: str) -> str:
-        """Always quote an identifier (table or column name) to match
-        Ibis/SQLGlot's behavior when reading.
-
-        Ibis always quotes identifiers when generating SELECT statements.
-        We must quote consistently in CREATE/INSERT/DROP to avoid case
-        mismatches. This single method is used for both table names and
-        column names, since DB2 quoting rules are identical for both.
-
-        Parameters
-        ----------
-        name : str
-            Identifier name (table or column name)
-
-        Returns
-        -------
-        str
-            Quoted identifier
-        """
-        # Always quote - no exceptions
-        # Escape any existing double quotes by doubling them
-        escaped_name = name.replace('"', '""')
-        return f'"{escaped_name}"'
-
     @property
     def compiler(self):
         """Lazy load the compiler to avoid circular imports."""
@@ -404,10 +379,12 @@ class Backend(SQLBackend):
 
         # Build CREATE TABLE statement
         temp_clause = "GLOBAL TEMPORARY " if temp else ""
-        db_prefix = f"{database}." if database else ""
-        # Always quote table name for consistency with Ibis/SQLGlot
-        quoted_name = self._quote_identifier(name)
-        full_name = f"{db_prefix}{quoted_name}"
+        # sg.table(..., quoted=True) builds the table reference the same way
+        # Ibis/SQLGlot quotes it in SELECT, so CREATE stays consistent by
+        # construction rather than by hand-replicating the quoting rules.
+        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
 
         if overwrite:
             self.drop_table(name, database=database, force=True)
@@ -417,8 +394,11 @@ class Backend(SQLBackend):
         for col_name, col_type in schema.items():
             db2_type = ibis_type_to_db2_type(col_type)
             nullable = "NULL" if col_type.nullable else "NOT NULL"
-            # Always quote column name for consistency with Ibis/SQLGlot
-            quoted_col_name = self._quote_identifier(col_name)
+            # sg.to_identifier(..., quoted=True) is the same quoting primitive
+            # SQLGlot uses for column references, so column names always match
+            quoted_col_name = sg.to_identifier(
+                col_name, quoted=self.compiler.quoted
+            ).sql(self.dialect)
             col_defs.append(f"{quoted_col_name} {db2_type} {nullable}")
 
         columns_sql = ", ".join(col_defs)
@@ -458,10 +438,9 @@ class Backend(SQLBackend):
         force : bool, default False
             Suppress errors if table doesn't exist
         """
-        db_prefix = f"{database}." if database else ""
-        # Always quote table name for consistency with Ibis/SQLGlot
-        quoted_name = self._quote_identifier(name)
-        full_name = f"{db_prefix}{quoted_name}"
+        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
 
         if force:
             # Check if table exists first using parameterized query
@@ -522,10 +501,9 @@ class Backend(SQLBackend):
         """
         import pandas as pd
 
-        db_prefix = f"{database}." if database else ""
-        # Always quote table name for consistency with Ibis/SQLGlot
-        quoted_table_name = self._quote_identifier(table_name)
-        full_name = f"{db_prefix}{quoted_table_name}"
+        full_name = sg.table(
+            table_name, db=database, quoted=self.compiler.quoted
+        ).sql(self.dialect)
 
         if overwrite:
             # Commit any open transaction first to ensure TRUNCATE can be first statement
@@ -540,8 +518,11 @@ class Backend(SQLBackend):
             if obj.empty:
                 return
 
-            # Always quote column names for consistency with Ibis/SQLGlot
-            quoted_columns = [self._quote_identifier(col) for col in obj.columns]
+            # Same quoting primitive SQLGlot uses for column references
+            quoted_columns = [
+                sg.to_identifier(col, quoted=self.compiler.quoted).sql(self.dialect)
+                for col in obj.columns
+            ]
             columns = ", ".join(quoted_columns)
             placeholders = ", ".join(["?" for _ in obj.columns])
             insert_sql = f"INSERT INTO {full_name} ({columns}) VALUES ({placeholders})"
