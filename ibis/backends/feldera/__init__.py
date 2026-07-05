@@ -365,6 +365,10 @@ class Backend(SQLBackend):
         * Otherwise (e.g. ``obj is None`` with a fresh schema), this raises
           ``NotImplementedError``: defining new tables requires editing the
           pipeline SQL program, which is out of scope for this backend.
+
+        ``overwrite=True`` is rejected: ``input_pandas`` is append-only ingress
+        and cannot truncate-and-replace existing rows, so honouring it would
+        silently append instead of replacing.
         """
         if database is not None:
             raise NotImplementedError(
@@ -389,7 +393,17 @@ class Backend(SQLBackend):
         if not isinstance(obj, pd.DataFrame):
             raise TypeError(f"Unsupported obj type: {type(obj)!r}")
 
-        self._pipeline().input_pandas(name, obj, force=overwrite)
+        if overwrite:
+            # Feldera's ``force`` flag means "push even while the pipeline is
+            # paused"; it does *not* replace existing rows.  There is no
+            # truncate-and-replace path through ``input_pandas``, so accepting
+            # overwrite=True would silently append rather than overwrite.
+            raise NotImplementedError(
+                "overwrite=True is not supported by the Feldera backend; "
+                "input_pandas appends rows and cannot replace existing data."
+            )
+
+        self._pipeline().input_pandas(name, obj)
         return self.table(name)
 
     def drop_table(
