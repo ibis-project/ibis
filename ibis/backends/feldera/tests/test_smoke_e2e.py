@@ -120,7 +120,7 @@ def _pipeline():
 def test_connect_and_metadata():
     with _pipeline() as name:
         con = ibis.feldera.connect(host=HOST, pipeline=name)
-        version = con.version()
+        version = con.version
         assert version != "unknown"
         assert version.startswith("0.")
         tables = con.list_tables()

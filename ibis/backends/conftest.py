@@ -202,10 +202,10 @@ def pytest_collection_modifyitems(session, config, items):
     additional_markers = []
 
     unrecognized_backends = set()
-    _feldera_ddl_reason = (
-        "Feldera tables must be declared in the pipeline SQL program"
+    _feldera_ddl_reason = "Feldera tables must be declared in the pipeline SQL program"
+    _feldera_unsupported_reason = (
+        "Feldera ad-hoc/DataFusion does not support this operation yet"
     )
-    _feldera_unsupported_reason = "Feldera ad-hoc/DataFusion does not support this operation yet"
     _feldera_ddl_prefixes = (
         "test_create_table",
         "test_insert_",
@@ -222,6 +222,9 @@ def pytest_collection_modifyitems(session, config, items):
         "test_persist_expression",
         "test_schema_with_caching",
         "test_comparison_with_decimal_literal",
+        "test_all_null_table",
+        "test_all_null_column",
+        "test_cast_non_null",
     )
     _feldera_unsupported_prefixes = (
         "test_parse_url",
@@ -266,15 +269,16 @@ def pytest_collection_modifyitems(session, config, items):
         ):
             item.add_marker(pytest.mark.skip(reason=_feldera_ddl_reason))
         elif "[feldera" in item.nodeid and (
-            any(item.name.startswith(prefix) for prefix in _feldera_unsupported_prefixes)
+            any(
+                item.name.startswith(prefix) for prefix in _feldera_unsupported_prefixes
+            )
             or item.name.startswith("test_cast[")
             or (
                 item.name.startswith("test_filter")
                 and ("-xor]" in item.name or "xor" in item.name)
             )
             or (
-                item.name.startswith("test_column_fill_null")
-                and "nan_col" in item.name
+                item.name.startswith("test_column_fill_null") and "nan_col" in item.name
             )
         ):
             item.add_marker(pytest.mark.skip(reason=_feldera_unsupported_reason))

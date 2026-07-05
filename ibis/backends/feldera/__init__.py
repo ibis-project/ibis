@@ -130,6 +130,7 @@ class Backend(SQLBackend):
         # The Feldera client holds no persistent resources that need closing.
         pass
 
+    @property
     def version(self) -> str:
         """Return the connected Feldera server version."""
         try:
@@ -235,14 +236,37 @@ class Backend(SQLBackend):
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
+        with self.to_pyarrow_batches(
+            expr, params=params, limit=limit, **kwargs
+        ) as batch_reader:
+            table = batch_reader.read_all()
+        return expr.__pyarrow_result__(table)
+
+    @util.experimental
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: dict | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **kwargs: Any,
+    ) -> pa.ipc.RecordBatchReader:
         import pyarrow as pa
 
         self._run_pre_execute_hooks(expr)
-        sql = self.compile(expr.as_table(), params=params, limit=limit, **kwargs)
+        table_expr = expr.as_table()
+        sql = self.compile(table_expr, params=params, limit=limit, **kwargs)
         batches = list(self._pipeline().query_arrow(sql))
-        if not batches:
-            return _schema_to_empty_pa_table(expr.as_table().schema())
-        return pa.Table.from_batches(batches, batches[0].schema)
+        if batches:
+            table = pa.Table.from_batches(batches, batches[0].schema)
+        else:
+            table = _schema_to_empty_pa_table(table_expr.schema())
+
+        return pa.ipc.RecordBatchReader.from_batches(
+            table.schema, table.to_batches(max_chunksize=chunk_size)
+        )
 
     # ------------------------------------------------------------------ #
     # Metadata

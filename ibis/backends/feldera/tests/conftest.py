@@ -24,6 +24,7 @@ from filelock import FileLock
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.sql.compilers.feldera import compiler as _feldera_compiler
 from ibis.backends.tests.base import BackendTest
 
 if TYPE_CHECKING:
@@ -94,6 +95,38 @@ def _read_parquet_dtypes(path) -> dict[str, str]:
     return {col: _pandas_dtype_to_feldera(dt) for col, dt in df.dtypes.items()}
 
 
+def _schema_to_feldera_dtypes(schema) -> dict[str, str]:
+    type_mapper = _feldera_compiler.type_mapper
+    return {name: type_mapper.to_string(dtype) for name, dtype in schema.items()}
+
+
+def _coerce_dataframe_to_schema(df: pd.DataFrame, schema) -> pd.DataFrame:
+    df = df.copy()
+    for name, dtype in schema.items():
+        if name not in df:
+            continue
+        if dtype.is_integer():
+            df[name] = df[name].astype(f"Int{dtype.nbytes * 8}")
+        elif dtype.is_floating():
+            df[name] = df[name].astype(f"float{dtype.nbytes * 8}")
+        elif dtype.is_boolean():
+            df[name] = df[name].astype("boolean")
+        elif dtype.is_timestamp():
+            df[name] = pd.to_datetime(df[name])
+    return df
+
+
+def _cleanup_pipeline(pipe) -> None:
+    with contextlib.suppress(Exception):
+        pipe.stop(force=True)
+    for _ in range(10):
+        try:
+            pipe.delete()
+            break
+        except Exception:  # noqa: BLE001
+            time.sleep(1)
+
+
 def _wait_for_ingest(
     pipe, table: str, expected_rows: int, timeout: float = 30.0
 ) -> None:
@@ -134,8 +167,12 @@ def _bootstrap_pipeline(data_dir: Path) -> tuple[str, Any, Any]:
     for table_name in TEST_TABLES:
         path = data_dir / "parquet" / f"{table_name}.parquet"
         if path.exists():
-            table_dtypes[table_name] = _read_parquet_dtypes(path)
-            table_data[table_name] = pd.read_parquet(path)
+            table_dtypes[table_name] = _schema_to_feldera_dtypes(
+                TEST_TABLES[table_name]
+            )
+            table_data[table_name] = _coerce_dataframe_to_schema(
+                pd.read_parquet(path), TEST_TABLES[table_name]
+            )
 
     for extra in EXTRA_TABLES:
         path = data_dir / "parquet" / f"{extra}.parquet"
@@ -147,12 +184,16 @@ def _bootstrap_pipeline(data_dir: Path) -> tuple[str, Any, Any]:
     client = FelderaClient(FELDERA_HOST)
     name = f"ibis-test-{uuid.uuid4().hex[:8]}"
     pipe = PipelineBuilder(client, name=name, sql=sql).create(wait=True)
-    pipe.start()
+    try:
+        pipe.start()
 
-    for table_name, df in table_data.items():
-        df.columns = [str(c) for c in df.columns]
-        pipe.input_pandas(table_name, df)
-        _wait_for_ingest(pipe, table_name, len(df))
+        for table_name, df in table_data.items():
+            df.columns = [str(c) for c in df.columns]
+            pipe.input_pandas(table_name, df)
+            _wait_for_ingest(pipe, table_name, len(df))
+    except Exception:
+        _cleanup_pipeline(pipe)
+        raise
 
     return name, client, pipe
 
@@ -223,16 +264,7 @@ class TestConf(BackendTest):
         # Stop and delete the pipeline so CI loops don't accumulate pipelines.
         pipe = getattr(self, "_pipe", None)
         if pipe is not None:
-            import time
-
-            with contextlib.suppress(Exception):
-                pipe.stop(force=True)
-            for _ in range(10):
-                try:
-                    pipe.delete()
-                    break
-                except Exception:  # noqa: BLE001
-                    time.sleep(1)
+            _cleanup_pipeline(pipe)
         self.connection.disconnect()
 
 
