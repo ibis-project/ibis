@@ -35,6 +35,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -269,7 +270,7 @@ class Backend(SQLBackend):
         for rel in candidates:
             if rel.name.lower() == name.lower():
                 return _schema_from_feldera_fields(rel.fields)
-        raise KeyError(
+        raise com.TableNotFound(
             f"Table or view {name!r} not found in pipeline {self._pipeline_name!r}"
         )
 

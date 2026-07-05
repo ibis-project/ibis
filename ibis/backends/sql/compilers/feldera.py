@@ -46,6 +46,9 @@ class FelderaCompiler(PostgresCompiler):
         ops.RegexSplit,
         ops.TimestampBucket,
         ops.TypeOf,
+        ops.GeoAsText,
+        ops.GeoDistance,
+        ops.GeoUnaryUnion,
     )
 
     def visit_TimestampFromYMDHMS(

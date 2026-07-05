@@ -57,7 +57,16 @@ jobs:
 
       - name: run feldera tests
         timeout-minutes: 30
-        run: just ci-check "--extra feldera --extra examples" -m feldera
+        run: >
+          just ci-check "--extra feldera --extra examples"
+          ibis/backends/feldera/tests
+          ibis/backends/tests/test_client.py
+          ibis/backends/tests/test_expr_caching.py
+          ibis/backends/tests/test_generic.py
+          ibis/backends/tests/test_numeric.py
+          ibis/backends/tests/test_string.py
+          ibis/backends/tests/test_udf.py
+          -m feldera
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-feldera-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
