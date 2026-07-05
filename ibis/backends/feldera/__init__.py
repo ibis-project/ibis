@@ -222,9 +222,10 @@ class Backend(SQLBackend):
         """
         self._run_pre_execute_hooks(expr)
 
-        sql = self.compile(expr.as_table(), params=params, limit=limit, **kwargs)
+        table_expr = expr.as_table()
+        sql = self.compile(table_expr, params=params, limit=limit, **kwargs)
         cursor = self._pipeline().query_arrow(sql)
-        df = self._fetch_from_cursor(cursor, expr.as_table().schema())
+        df = self._fetch_from_cursor(cursor, table_expr.schema())
         return expr.__pandas_result__(df)
 
     def to_pyarrow(
