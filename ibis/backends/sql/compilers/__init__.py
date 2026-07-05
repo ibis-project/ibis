@@ -9,6 +9,7 @@ __all__ = [
     "DruidCompiler",
     "DuckDBCompiler",
     "ExasolCompiler",
+    "FelderaCompiler",
     "FlinkCompiler",
     "ImpalaCompiler",
     "MSSQLCompiler",
