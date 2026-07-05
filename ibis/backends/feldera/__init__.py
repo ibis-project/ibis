@@ -16,6 +16,16 @@ The mapping to Ibis's connection model is:
   a *snapshot* of the view at the current moment; Feldera keeps maintaining the
   view incrementally underneath.
 
+Engine note
+------------
+``execute()`` / ``to_pyarrow()`` / ``raw_sql()`` all run *ad-hoc* SQL via
+``Pipeline.query_arrow``, and ad-hoc SQL is parsed by **Apache DataFusion**
+(not Apache Calcite).  The Calcite-flavoured dialect documented in
+Feldera's `docs.feldera.com/docs/sql/` governs the pipeline *program*, which
+is a different surface.  When choosing function names in the compiler, cross-
+check against the DataFusion function index (and the existing
+``ibis.backends.datafusion`` compiler) rather than the Feldera SQL docs.
+
 Streaming consumption (listening to a view's changelog) is out of scope for the
 standard Ibis ``execute()`` contract, just as it is for the Flink backend.
 """
