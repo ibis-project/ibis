@@ -73,6 +73,18 @@ class FelderaCompiler(PostgresCompiler):
         )
         return self.f.to_timestamp(ts_str)
 
+    def visit_Clip(self, op, *, arg, lower, upper):
+        # The base compiler wraps GREATEST/LEAST in ``CASE WHEN arg IS NULL
+        # THEN arg ELSE ... END`` to propagate NULLs.  DataFusion's optimizer
+        # miscompiles the ``THEN arg`` variant (returns 0 for ~55 % of rows
+        # that are not NULL), so use ``THEN NULL`` instead, which is
+        # semantically identical (``arg`` *is* NULL in that branch).
+        if upper is not None:
+            arg = self.if_(arg.is_(sge.Null()), sge.Null(), self.f.least(upper, arg))
+        if lower is not None:
+            arg = self.if_(arg.is_(sge.Null()), sge.Null(), self.f.greatest(lower, arg))
+        return arg
+
     def visit_Log2(self, op, *, arg):
         # Postgres casts to DECIMAL before calling LOG(base, arg), but Feldera's
         # DECIMAL without an explicit scale truncates fractional digits, so
