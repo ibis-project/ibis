@@ -152,6 +152,24 @@ def test_to_pyarrow():
         assert "species" in tbl.column_names
 
 
+def test_sql_schema_inference():
+    with _pipeline() as name:
+        con = ibis.feldera.connect(host=HOST, pipeline=name)
+        expr = con.sql(
+            """
+            SELECT species, COUNT(*) AS n
+            FROM penguins
+            GROUP BY species
+            """
+        )
+        assert expr.schema().names == ("species", "n")
+
+        df = expr.execute()
+        counts = dict(zip(df["species"], df["n"]))
+        assert counts["Adelie"] == 2
+        assert counts["Gentoo"] == 1
+
+
 def test_compile_only():
     """compile() must not require a live server (lazy client).
 

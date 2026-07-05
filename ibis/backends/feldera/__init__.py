@@ -162,17 +162,31 @@ class Backend(SQLBackend):
         return self._pipeline().query_arrow(query)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        # Run the query with a LIMIT 0 to fetch just the schema.  Feldera's
-        # query_arrow returns PyArrow RecordBatches; the first batch (even if
-        # empty) carries the schema.
+        # Run the query with a LIMIT 0 to fetch just the schema. The SDK's
+        # query_arrow helper only yields RecordBatches, so a zero-row Arrow
+        # stream looks empty even though the stream itself carries a schema.
         schema_sql = f"SELECT * FROM ({query}) AS __ibis_schema__ LIMIT 0"  # noqa: S608
-        batches = self._pipeline().query_arrow(schema_sql)
-        first = next(batches, None)
-        if first is None:
-            # Fall back to running the full query if LIMIT 0 yields nothing.
-            return sch.Schema({})
-        pa_schema = first.schema
-        return sch.Schema.from_pyarrow(pa_schema)
+        return sch.Schema.from_pyarrow(self._query_arrow_schema(schema_sql))
+
+    def _query_arrow_schema(self, query: str) -> pa.Schema:
+        """Return the Arrow schema for an ad-hoc query without reading rows."""
+        import pyarrow as pa
+
+        params = {
+            "pipeline_name": self._pipeline_name,
+            "sql": query,
+            "format": "arrow_ipc",
+        }
+        resp = self._client.http.get(
+            path=f"/pipelines/{self._pipeline_name}/query",
+            params=params,
+            stream=True,
+        )
+        try:
+            with pa.ipc.open_stream(resp.raw) as reader:
+                return reader.schema
+        finally:
+            resp.close()
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
