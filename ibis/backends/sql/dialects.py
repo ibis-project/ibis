@@ -524,6 +524,9 @@ class Feldera(Postgres):
         TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
             # Calcite spells SIGN as SIGNUM.
             sge.Sign: rename_func("SIGNUM"),
+            # Postgres uses the HASH token (#) for bitwise XOR, but DataFusion
+            # (which parses ad-hoc SQL) expects the caret (^) operator.
+            sge.BitwiseXor: lambda self, e: self.binary(e, "^"),
         }
 
 
