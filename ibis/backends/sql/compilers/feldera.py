@@ -114,6 +114,7 @@ class FelderaCompiler(PostgresCompiler):
 
         unit_map = {
             "years": "year",
+            "quarters": "quarter",
             "months": "month",
             "days": "day",
             "hours": "hour",

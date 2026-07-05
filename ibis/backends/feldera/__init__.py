@@ -123,6 +123,11 @@ class Backend(SQLBackend):
         """
         return ibis.feldera.connect(client=client, pipeline=pipeline)
 
+    @property
+    def pipeline_name(self) -> str:
+        """Name of the Feldera pipeline this backend is connected to."""
+        return self._pipeline_name
+
     def disconnect(self) -> None:
         # The Feldera client holds no persistent resources that need closing.
         pass
@@ -131,8 +136,11 @@ class Backend(SQLBackend):
         """Return the connected Feldera server version."""
         try:
             return self._client.get_config().version
-        except Exception:
-            return "unknown"
+        except Exception as e:  # noqa: BLE001
+            # The lazy client may not have resolved yet, or the server may be
+            # unreachable.  Return "unknown" rather than crashing so that
+            # tooling that introspects version strings degrades gracefully.
+            return f"unknown ({type(e).__name__})"
 
     # ------------------------------------------------------------------ #
     # Internals
@@ -220,7 +228,7 @@ class Backend(SQLBackend):
         sql = self.compile(expr.as_table(), params=params, limit=limit, **kwargs)
         batches = list(self._pipeline().query_arrow(sql))
         if not batches:
-            return schema_to_empty_pa_table(expr.as_table().schema())
+            return _schema_to_empty_pa_table(expr.as_table().schema())
         return pa.Table.from_batches(batches, batches[0].schema)
 
     # ------------------------------------------------------------------ #
@@ -327,6 +335,37 @@ class Backend(SQLBackend):
         )
 
 
+def _feldera_type_to_string(ctype: dict | str) -> str:
+    """Recursively serialize a Feldera ``columntype`` JSON object to a SQL type string.
+
+    Feldera represents nested types as nested dicts, e.g.::
+
+        {"type": "ARRAY", "component": {"type": "INTEGER"}}
+        {"type": "MAP", "key": {"type": "VARCHAR"}, "value": {"type": "BIGINT"}}
+    """
+    if isinstance(ctype, str):
+        return ctype
+    t = ctype.get("type", "VARCHAR")
+    if t == "ARRAY":
+        component = _feldera_type_to_string(ctype.get("component", {}))
+        return f"{t}<{component}>"
+    if t == "MAP":
+        key = _feldera_type_to_string(ctype.get("key", {}))
+        value = _feldera_type_to_string(ctype.get("value", {}))
+        return f"{t}<{key}, {value}>"
+    if t == "STRUCT":
+        # Feldera represents struct fields as a list of {"name": ..., "type": ...}
+        fields = ctype.get("fields", [])
+        field_strs = [
+            f"{f.get('name', '')}: {_feldera_type_to_string(f.get('type', {}))}"
+            for f in fields
+        ]
+        return f"{t}<{', '.join(field_strs)}>"
+    # For scalar types (INTEGER, VARCHAR, DOUBLE, etc.) the dict may also
+    # contain "nullable": bool, but we handle nullability separately.
+    return t
+
+
 def _schema_from_feldera_fields(fields: list[dict]) -> sch.Schema:
     """Convert Feldera's field dicts (``{"name", "columntype"}``) to an ibis schema."""
     type_mapper = _feldera_compiler.type_mapper
@@ -334,13 +373,13 @@ def _schema_from_feldera_fields(fields: list[dict]) -> sch.Schema:
     for f in fields:
         name = f.get("name", "")
         ctype = f.get("columntype", {})
-        type_str = ctype.get("type", "VARCHAR") if isinstance(ctype, dict) else str(ctype)
+        type_str = _feldera_type_to_string(ctype)
         # nullable info isn't reliably exposed; default to nullable=True
         out[name] = type_mapper.from_string(type_str, nullable=True)
     return sch.Schema(out)
 
 
-def schema_to_empty_pa_table(schema: sch.Schema):
+def _schema_to_empty_pa_table(schema: sch.Schema):
     import pyarrow as pa
 
     fields = [

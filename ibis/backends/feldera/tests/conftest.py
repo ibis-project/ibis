@@ -147,6 +147,7 @@ class TestConf(BackendTest):
     # Feldera materialized output is unordered without ORDER BY; sort before compare.
     force_sort = True
     check_dtype = True
+    returned_timestamp_unit = "us"
     supports_arrays = False  # TODO: validate; Calcite supports ARRAY types.
     supports_structs = False  # TODO: validate.
     supports_json = False

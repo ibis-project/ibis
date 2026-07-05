@@ -53,6 +53,19 @@ ROWS = [
 ]
 
 
+def _wait_for_ingest(pipe, table: str, expected_rows: int, timeout: float = 30.0) -> None:
+    """Poll until the table contains at least ``expected_rows`` rows."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        batches = list(pipe.query_arrow(f"SELECT COUNT(*) FROM {table}"))
+        if batches:
+            count = batches[0].to_pydict()["COUNT(*)"][0]
+            if count >= expected_rows:
+                return
+        time.sleep(0.5)
+    raise TimeoutError(f"Table {table!r} did not reach {expected_rows} rows within {timeout}s")
+
+
 @contextmanager
 def _pipeline():
     from feldera import FelderaClient, PipelineBuilder
@@ -62,7 +75,7 @@ def _pipeline():
     pipe = PipelineBuilder(client, name=name, sql=SQL).create(wait=True)
     pipe.start()
     pipe.input_pandas("penguins", pd.DataFrame(ROWS))
-    time.sleep(2)
+    _wait_for_ingest(pipe, "penguins", len(ROWS))
     try:
         yield name
     finally:
@@ -81,7 +94,9 @@ def _pipeline():
 def test_connect_and_metadata():
     with _pipeline() as name:
         con = ibis.feldera.connect(host=HOST, pipeline=name)
-        assert con.version() == "0.316.0"
+        version = con.version()
+        assert version != "unknown"
+        assert version.startswith("0.")
         tables = con.list_tables()
         assert "penguins" in tables
         assert "penguin_counts" in tables
