@@ -73,6 +73,20 @@ class FelderaCompiler(PostgresCompiler):
         )
         return self.f.to_timestamp(ts_str)
 
+    def visit_Log2(self, op, *, arg):
+        # Postgres casts to DECIMAL before calling LOG(base, arg), but Feldera's
+        # DECIMAL without an explicit scale truncates fractional digits, so
+        # LOG(CAST(2 AS DECIMAL), CAST(11.1 AS DECIMAL)) returns 3.0 instead of
+        # 3.472.  DataFusion ad-hoc has LOG2, so use it directly.
+        return self.f.log2(arg)
+
+    def visit_Log(self, op, *, arg, base):
+        # Same DECIMAL-truncation issue as visit_Log2: emit LOG(base, arg)
+        # without casting through DECIMAL.  When base is None, emit LN(arg).
+        if base is None:
+            return self.f.ln(arg)
+        return self.f.log(base, arg)
+
     def _make_interval(self, arg, unit):
         """Lower ``IntervalFromInteger`` without ``make_interval()``.
 
