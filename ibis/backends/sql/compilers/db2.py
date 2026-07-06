@@ -306,57 +306,21 @@ class DB2Compiler(SQLGlotCompiler):
 
     def visit_EndsWith(self, op, *, arg, end, **kwargs):
         """Visit an EndsWith operation.
-        
-        Generates SQL: arg LIKE '%' || REPLACE(REPLACE(end, '%', '!%'), '_', '!_') ESCAPE '!'
-        This escapes LIKE wildcards (% and _) to match them literally.
+
+        Generates SQL: RIGHT(arg, LENGTH(end)) = end
+        DB2 built-ins RIGHT() and LENGTH() treat the value as a literal,
+        so wildcard characters (% and _) require no escaping.
         """
-        # Escape LIKE wildcards in the pattern using ! as escape char
-        # First replace % with !%, then replace _ with !_
-        escaped = sge.Anonymous(
-            this="REPLACE",
-            expressions=[
-                sge.Anonymous(
-                    this="REPLACE",
-                    expressions=[end, sge.convert('%'), sge.convert('!%')]
-                ),
-                sge.convert('_'),
-                sge.convert('!_')
-            ]
-        )
-        # Create pattern: '%' || escaped_end
-        pattern = sge.DPipe(this=sge.convert('%'), expression=escaped)
-        # Return LIKE with ESCAPE clause
-        return sge.Escape(
-            this=sge.Like(this=arg, expression=pattern),
-            expression=sge.convert('!')
-        )
+        return sge.Right(this=arg, expression=sge.Length(this=end)).eq(end)
 
     def visit_StartsWith(self, op, *, arg, start, **kwargs):
         """Visit a StartsWith operation.
-        
-        Generates SQL: arg LIKE REPLACE(REPLACE(start, '%', '!%'), '_', '!_') || '%' ESCAPE '!'
-        This escapes LIKE wildcards (% and _) to match them literally.
+
+        Generates SQL: LEFT(arg, LENGTH(start)) = start
+        DB2 built-ins LEFT() and LENGTH() treat the value as a literal,
+        so wildcard characters (% and _) require no escaping.
         """
-        # Escape LIKE wildcards in the pattern using ! as escape char
-        # First replace % with !%, then replace _ with !_
-        escaped = sge.Anonymous(
-            this="REPLACE",
-            expressions=[
-                sge.Anonymous(
-                    this="REPLACE",
-                    expressions=[start, sge.convert('%'), sge.convert('!%')]
-                ),
-                sge.convert('_'),
-                sge.convert('!_')
-            ]
-        )
-        # Create pattern: escaped_start || '%'
-        pattern = sge.DPipe(this=escaped, expression=sge.convert('%'))
-        # Return LIKE with ESCAPE clause
-        return sge.Escape(
-            this=sge.Like(this=arg, expression=pattern),
-            expression=sge.convert('!')
-        )
+        return sge.Left(this=arg, expression=sge.Length(this=start)).eq(start)
 
     def visit_StringFind(self, op, *, arg, substr, start, end, **kwargs):
         """Visit a StringFind operation."""
@@ -584,4 +548,3 @@ class DB2Compiler(SQLGlotCompiler):
         """Visit a HashBytes operation."""
         # DB2 uses HASH function with algorithm
         return sge.Anonymous(this="HASH", expressions=[arg, sge.convert(how)])
-
