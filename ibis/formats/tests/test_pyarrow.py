@@ -18,18 +18,6 @@ ipa = pytest.importorskip("ibis.formats.pyarrow")
 PyArrowSchema = ipa.PyArrowSchema
 PyArrowType = ipa.PyArrowType
 
-
-def assert_dtype_roundtrip(arrow_type, ibis_type=None, restored_type=None):
-    dtype = PyArrowType.to_ibis(arrow_type, nullable=False)
-    if ibis_type is not None:
-        assert dtype == ibis_type
-
-    patyp = PyArrowType.from_ibis(dtype)
-    if restored_type is None:
-        restored_type = arrow_type
-    assert patyp == restored_type
-
-
 roundtripable_types = st.deferred(
     lambda: (
         past.null_type
@@ -50,9 +38,16 @@ roundtripable_types = st.deferred(
 )
 
 
-@h.given(roundtripable_types)
-def test_roundtripable_types(arrow_type):
-    assert_dtype_roundtrip(arrow_type)
+@h.given(
+    arrow_type=roundtripable_types,
+    nullable_pair=st.sampled_from([(True, True), (False, False), (None, True)]),
+)
+def test_roundtripable_types(arrow_type, nullable_pair):
+    nullable, expected_nullable = nullable_pair
+    dtype = PyArrowType.to_ibis(arrow_type, nullable=nullable)
+    assert dtype.nullable is expected_nullable
+    restored = PyArrowType.from_ibis(dtype)
+    assert restored == arrow_type
 
 
 @pytest.mark.parametrize(
@@ -81,7 +76,11 @@ def test_roundtripable_types(arrow_type):
     ],
 )
 def test_non_roundtripable_types(arrow_type, ibis_type, restored_type):
-    assert_dtype_roundtrip(arrow_type, ibis_type, restored_type)
+    dtype = PyArrowType.to_ibis(arrow_type, nullable=False)
+    assert dtype == ibis_type
+
+    patyp = PyArrowType.from_ibis(dtype)
+    assert patyp == restored_type
 
 
 @pytest.mark.parametrize("timezone", [None, "UTC"])

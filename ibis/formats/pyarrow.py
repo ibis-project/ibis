@@ -76,10 +76,16 @@ _to_pyarrow_types = {
 
 class PyArrowType(TypeMapper):
     @classmethod
-    def to_ibis(cls, typ: pa.DataType, nullable=True) -> dt.DataType:
+    def to_ibis(cls, typ: pa.DataType, nullable: bool | None = None) -> dt.DataType:
         """Convert a pyarrow type to an ibis type."""
+        # arrow's type system doesn't keep track of nullability.
+        # We accept nullable=None to be compatible with the rest of TypeMapper.to_ibis()
+        # implementations, but we treat None as True, since we can't infer nullability
+        # from a pyarrow dtype.
+        if nullable is None:
+            nullable = True
         if pa.types.is_null(typ):
-            return dt.null
+            return dt.null(nullable=nullable)
         elif pa.types.is_decimal(typ):
             return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
         elif pa.types.is_timestamp(typ):
