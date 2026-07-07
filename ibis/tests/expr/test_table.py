@@ -978,12 +978,10 @@ def test_join_no_predicate_list(con):
         assert joined.op() == expected
 
 
-def test_join_deferred(con):
+def test_join_deferred_in_2tuple(con):
     region = con.table("tpch_region")
     nation = con.table("tpch_nation")
-
-    res = region.join(nation, _.r_regionkey == nation.n_regionkey)
-
+    res = region.join(nation, [(_.r_regionkey, nation.n_regionkey)])
     with join_tables(res) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
@@ -995,6 +993,61 @@ def test_join_deferred(con):
                 "n_nationkey": r2.n_nationkey,
                 "n_name": r2.n_name,
                 "n_regionkey": r2.n_regionkey,
+                "n_comment": r2.n_comment,
+            },
+        )
+        assert res.op() == expected
+
+
+def test_join_deferred_left(con):
+    region = con.table("tpch_region")
+    nation = con.table("tpch_nation")
+    with pytest.raises(AttributeError, match="r_regionkey"):
+        region.join(nation, _.r_regionkey == nation.n_regionkey)
+
+
+def test_join_deferred_both_simple(con):
+    region = con.table("tpch_region").rename(regionkey="r_regionkey")
+    nation = con.table("tpch_nation").rename(regionkey="n_regionkey")
+
+    res = region.join(nation, _.regionkey)
+    with join_tables(res) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[ops.JoinLink("inner", r2, [r1.regionkey == r2.regionkey])],
+            values={
+                "regionkey": r1.regionkey,
+                "r_name": r1.r_name,
+                "r_comment": r1.r_comment,
+                "n_nationkey": r2.n_nationkey,
+                "n_name": r2.n_name,
+                # Since this is simple equlity, there is only a single "regionkey"
+                # in the output.
+                "n_comment": r2.n_comment,
+            },
+        )
+        assert res.op() == expected
+
+
+def test_join_deferred_both_complex(con):
+    region = con.table("tpch_region").rename(regionkey="r_regionkey")
+    nation = con.table("tpch_nation").rename(regionkey="n_regionkey")
+    res = region.join(nation, _.regionkey.abs())
+    with join_tables(res) as (r1, r2):
+        expected = ops.JoinChain(
+            first=r1,
+            rest=[
+                ops.JoinLink("inner", r2, [r1.regionkey.abs() == r2.regionkey.abs()])
+            ],
+            values={
+                "regionkey": r1.regionkey,
+                "r_name": r1.r_name,
+                "r_comment": r1.r_comment,
+                "n_nationkey": r2.n_nationkey,
+                "n_name": r2.n_name,
+                "regionkey_right": r2.regionkey,
+                # since the join key is an expression, we have to keep both
+                # regionkey columns
                 "n_comment": r2.n_comment,
             },
         )
