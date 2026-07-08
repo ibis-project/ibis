@@ -929,11 +929,61 @@ class SnowflakeType(SqlglotType):
         return dt.Array(dt.json, nullable=nullable)
 
     @classmethod
+    def _from_sqlglot_VECTOR(
+        cls,
+        value_type: sge.DataType,
+        length: sge.DataTypeParam,
+        nullable: bool | None = None,
+    ) -> dt.Array:
+        # Snowflake VECTOR(<element>, <dimension>) stores fixed-length numeric
+        # vectors. Element types are documented at
+        # https://docs.snowflake.com/en/sql-reference/data-types-vector:
+        #   - INT   -> 32-bit signed integer
+        #   - FLOAT -> 32-bit single-precision floating-point
+        #
+        # sqlglot normalizes Snowflake's VECTOR-element FLOAT to Type.DOUBLE
+        # in its parsed DataType AST, so we don't fall back to
+        # ``cls.to_ibis(value_type)`` for FLOAT/INT here -- that would
+        # resolve to Float64/Int64 via the default scalar mappings.
+        # Underlying VECTOR elements are also not null per Snowflake's
+        # storage model, hence ``nullable=False`` on the inner dtype.
+        type_name = value_type.this.name
+        if type_name in ("FLOAT", "DOUBLE"):
+            element_type: dt.DataType = dt.Float32(nullable=False)
+        elif type_name in ("INT", "BIGINT", "INTEGER", "SMALLINT", "TINYINT"):
+            element_type = dt.Int32(nullable=False)
+        else:
+            element_type = cls.to_ibis(value_type)
+        return dt.Array(
+            element_type,
+            length=int(length.this.this),
+            nullable=nullable,
+        )
+
+    @classmethod
     def _from_ibis_JSON(cls, dtype: dt.JSON) -> sge.DataType:
         return sge.DataType(this=typecode.VARIANT)
 
     @classmethod
     def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
+        if dtype.length is not None and (
+            dtype.value_type.is_floating() or dtype.value_type.is_integer()
+        ):
+            # Fixed-length numeric arrays round-trip to Snowflake VECTOR.
+            # ``VECTOR(<element>, <dimension>)`` only accepts INT or FLOAT
+            # elements (mapped from the inner ibis dtype below); other
+            # element types fall back to ARRAY (variable-length JSON-backed).
+            element_typecode = (
+                typecode.FLOAT if dtype.value_type.is_floating() else typecode.INT
+            )
+            return sge.DataType(
+                this=typecode.VECTOR,
+                expressions=[
+                    sge.DataType(this=element_typecode, nested=False),
+                    sge.DataTypeParam(this=sge.Literal.number(dtype.length)),
+                ],
+                nested=False,
+            )
         return sge.DataType(this=typecode.ARRAY, nested=True)
 
     @classmethod
