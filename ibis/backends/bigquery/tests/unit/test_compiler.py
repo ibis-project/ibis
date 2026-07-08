@@ -558,6 +558,12 @@ def test_approx(alltypes, agg, where, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
+def test_approx_median_where_string_filter(alltypes, snapshot):
+    t = alltypes
+    expr = t.float_col.approx_median(where=t.string_col > "a")
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
 @pytest.mark.parametrize("funcname", ["bit_and", "bit_or", "bit_xor"])
 @pytest.mark.parametrize(
     "where",
