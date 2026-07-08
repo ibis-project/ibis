@@ -722,6 +722,14 @@ class SQLBackend(BaseBackend):
             or callable (`lambda t: ...`).
 
             To delete all rows, use `truncate_table()` instead.
+
+            ::: {.callout-warning}
+            ## A literal `True` predicate deletes every row.
+
+            Passing `where=True` is a valid boolean predicate and is **not**
+            caught by the `where=None` safety check: it compiles to
+            `DELETE ... WHERE TRUE` and removes all rows from the table.
+            :::
         database
             Name of the attached database that the table is located in.
 
@@ -733,6 +741,11 @@ class SQLBackend(BaseBackend):
             raise exc.IbisInputError(
                 "`delete` requires a `where` predicate. "
                 "To delete all rows, use `truncate_table()` instead."
+            )
+        if isinstance(where, (tuple, list, set)):
+            raise exc.IbisInputError(
+                "`delete` accepts a single boolean predicate; combine multiple "
+                "predicates with `&`, e.g. `(pred1) & (pred2)`."
             )
 
         table_loc = self._to_sqlglot_table(database)
@@ -749,23 +762,52 @@ class SQLBackend(BaseBackend):
         from ibis.expr.types.relations import bind
 
         table_expr = self.table(name, database=(catalog, db) if db else db)
-        (predicate,) = bind(table_expr, where)
+        predicates = list(bind(table_expr, where))
+        if len(predicates) != 1 or not isinstance(predicates[0], ir.BooleanValue):
+            raise exc.IbisInputError(
+                "`where` must resolve to a single boolean predicate; "
+                f"got {type(where).__name__!r}"
+            )
+        (predicate,) = predicates
+        if predicate.op().find(ops.WindowFunction):
+            raise exc.UnsupportedOperationError(
+                "Window functions are not supported in `delete` predicates "
+                "because SQL does not allow them in a DELETE statement's WHERE "
+                "clause. Materialize the rows to delete first, or rewrite the "
+                "predicate, e.g. using a scalar subquery such as "
+                "`t.col > t.col.mean()`."
+            )
         filtered = table_expr.filter(predicate)
 
         compiled = self.compiler.to_sqlglot(filtered)
         where_clause = compiled.args.get("where")
+        if where_clause is None:
+            raise exc.UnsupportedOperationError(
+                "The `where` predicate did not compile to a WHERE clause and "
+                "cannot be used in a DELETE statement."
+            )
 
-        quoted = self.compiler.quoted
-        target_table = sg.table(name, db=db, catalog=catalog, quoted=quoted)
+        if where_clause.find(sge.Select) is None:
+            # No subqueries, so every column reference is to the target table:
+            # strip the generated alias qualifiers and emit an unaliased DELETE
+            # for maximum dialect portability.
+            quoted = self.compiler.quoted
+            target_table = sg.table(name, db=db, catalog=catalog, quoted=quoted)
 
-        def strip_table(node):
-            if isinstance(node, sge.Column) and node.args.get("table"):
-                return sge.Column(this=node.this)
-            return node
+            def strip_table(node):
+                if isinstance(node, sge.Column) and node.args.get("table"):
+                    return sge.Column(this=node.this)
+                return node
 
-        cleaned_where = where_clause.transform(strip_table)
+            return sge.Delete(
+                this=target_table, where=where_clause.transform(strip_table)
+            )
 
-        return sge.Delete(this=target_table, where=cleaned_where)
+        # The predicate contains subqueries, which may be correlated: keep the
+        # alias the compiler assigned to the target table so outer-vs-inner
+        # column scoping survives in the DELETE.
+        target_table = compiled.find(sge.From).this.copy()
+        return sge.Delete(this=target_table, where=where_clause)
 
     @util.experimental
     @classmethod

@@ -948,7 +948,7 @@ class Backend(
         self,
         name: str,
         /,
-        where,
+        where: ir.BooleanValue | Callable,
         *,
         database: str | None = None,
     ) -> None:
@@ -975,6 +975,14 @@ class Backend(
             or callable (`lambda t: ...`).
 
             To delete all rows, use `truncate_table()` instead.
+
+            ::: {.callout-warning}
+            ## A literal `True` predicate deletes every row.
+
+            Passing `where=True` is a valid boolean predicate and is **not**
+            caught by the `where=None` safety check: it compiles to
+            `DELETE ... WHERE TRUE` and removes all rows from the table.
+            :::
         database
             Name of the attached database that the table is located in.
         """
