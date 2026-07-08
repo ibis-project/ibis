@@ -174,6 +174,49 @@ def test_delete_where_none_raises(con, employee_data_1_temp_table):
         con.delete(employee_data_1_temp_table, where=None)
 
 
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_with_bound_predicate(con, employee_data_1_temp_table):
+    # A predicate already bound to the table, as opposed to the `Deferred` and
+    # callable forms covered above.
+    target = con.table(employee_data_1_temp_table)
+
+    con.delete(employee_data_1_temp_table, target.salary > 200)
+
+    assert target.count().execute() == 2
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_literal_boolean_predicates(con, employee_data_1_temp_table):
+    # Literal booleans are valid predicates: `False` deletes nothing, and, as
+    # called out in the `delete` docstring, `True` is NOT caught by the
+    # `where=None` safety check and deletes every row.
+    target = con.table(employee_data_1_temp_table)
+
+    con.delete(employee_data_1_temp_table, False)
+    assert target.count().execute() == 3
+
+    con.delete(employee_data_1_temp_table, True)
+    assert target.count().execute() == 0
+
+
 # ---------------------------------------------------------------------------
 # Regression tests: `where` predicates that reference another table or are
 # otherwise correlated.
@@ -299,6 +342,63 @@ def test_delete_uncorrelated_subquery(
     assert target.count().execute() == 2
 
 
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_scalar_subquery_predicate(con, employee_data_1_temp_table):
+    # An aggregate over the target table compiles to a scalar subquery that
+    # scans the table being deleted from. This is also the rewrite the
+    # window-predicate error message recommends. Salaries are {100, 200, 300}
+    # (mean 200), so only the 300 row is deleted.
+    target = con.table(employee_data_1_temp_table)
+
+    con.delete(employee_data_1_temp_table, target.salary > target.salary.mean())
+
+    assert target.count().execute() == 2
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_null_predicate_semantics(con, employee_data_1_temp_table):
+    # SQL three-valued logic: a DELETE only removes rows where the predicate
+    # is TRUE. Rows where it evaluates to NULL survive.
+    target = con.table(employee_data_1_temp_table)
+
+    con.insert(
+        employee_data_1_temp_table,
+        ibis.memtable(
+            {
+                "first_name": ["N"],
+                "last_name": ["O"],
+                "department_name": ["NN"],
+                "salary": [None],
+            },
+            schema=target.schema(),
+        ),
+    )
+
+    con.delete(employee_data_1_temp_table, ibis._.salary > 150)
+
+    result = target.execute()
+    assert len(result) == 2  # the 100 row and the NULL-salary row
+    assert result.salary.isna().sum() == 1
+
+
 # ---------------------------------------------------------------------------
 # Predicate shapes that `delete` rejects with a clear, typed error.
 #
@@ -353,3 +453,47 @@ def test_delete_non_boolean_predicate_raises(con, employee_data_1_temp_table):
         con.delete(employee_data_1_temp_table, where="salary")
 
     assert target.count().execute() == 3
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@pytest.mark.notyet(
+    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+)
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=Exception,
+    reason="Materialize restricts DML within transaction blocks",
+)
+def test_delete_with_database_param(con_create_database, test_employee_schema):
+    # Delete from a table that lives in an explicitly created database, passing
+    # `database=` to resolve it.
+    con = con_create_database
+    database = gen_name("test_delete_db")
+    con.create_database(database)
+    try:
+        table_name = gen_name("temp_employee_db")
+        con.create_table(
+            table_name,
+            obj=ibis.memtable(
+                {
+                    "first_name": ["A", "B", "C"],
+                    "last_name": ["D", "E", "F"],
+                    "department_name": ["AA", "BB", "CC"],
+                    "salary": [100.0, 200.0, 300.0],
+                },
+                schema=test_employee_schema,
+            ),
+            database=database,
+        )
+        try:
+            target = con.table(table_name, database=database)
+            assert target.count().execute() == 3
+
+            con.delete(table_name, ibis._.salary > 200, database=database)
+
+            assert target.count().execute() == 2
+        finally:
+            con.drop_table(table_name, database=database, force=True)
+    finally:
+        con.drop_database(database, force=True)
