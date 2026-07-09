@@ -948,7 +948,7 @@ class Backend(
         self,
         name: str,
         /,
-        where: ir.BooleanValue | Callable,
+        where: ir.BooleanValue | Callable | bool,
         *,
         database: str | None = None,
     ) -> None:
@@ -972,7 +972,7 @@ class Backend(
         where
             Boolean predicate specifying which rows to delete. Required.
             Accepts `ir.BooleanValue`, `Deferred` (`ibis._.col > val`),
-            or callable (`lambda t: ...`).
+            callable (`lambda t: ...`), or a literal `bool`.
 
             To delete all rows, use `truncate_table()` instead.
 
