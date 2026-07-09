@@ -443,3 +443,27 @@ def test_delete_with_database_tuple(con_create_catalog_database, test_employee_s
             assert target.count().execute() == 2
         finally:
             con.drop_table(table_name, database=(catalog, database), force=True)
+
+
+@pytest.mark.usefixtures("con")
+def test_delete_alias_stripping_dialect_detection():
+    # Pins the sqlglot behavior `delete` guards against: presto-family
+    # generators cannot express an aliased DELETE target, so they drop the
+    # alias and unqualify every column, silently collapsing a correlated
+    # predicate into a tautology. `_delete_preserves_alias` must detect the
+    # stripping so `delete` raises instead of removing the wrong rows.
+    import sqlglot as sg
+
+    from ibis.backends.sql import SQLBackend
+
+    stmt = sg.parse_one(
+        'DELETE FROM "tgt" AS "t0" WHERE '
+        'EXISTS(SELECT 1 FROM "src" AS "t1" WHERE "t1"."s" = "t0"."s")',
+        read="duckdb",
+    )
+
+    for dialect in ("trino", "presto", "athena"):
+        assert not SQLBackend._delete_preserves_alias(stmt, "t0", dialect)
+
+    for dialect in ("duckdb", "postgres", "mysql", "sqlite", "bigquery"):
+        assert SQLBackend._delete_preserves_alias(stmt, "t0", dialect)

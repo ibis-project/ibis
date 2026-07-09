@@ -807,7 +807,35 @@ class SQLBackend(BaseBackend):
         # alias the compiler assigned to the target table so outer-vs-inner
         # column scoping survives in the DELETE.
         target_table = compiled.find(sge.From).this.copy()
-        return sge.Delete(this=target_table, where=where_clause)
+        query = sge.Delete(this=target_table, where=where_clause)
+        alias = target_table.alias
+        if alias and not self._delete_preserves_alias(query, alias, self.dialect):
+            raise exc.UnsupportedOperationError(
+                f"The {self.name} backend cannot express a DELETE whose "
+                "predicate contains subqueries: its SQL dialect does not "
+                "support aliasing the DELETE target, which the subquery needs "
+                "in order to reference enclosing-scope columns. Rewrite the "
+                "predicate without subqueries, or materialize the rows to "
+                "delete first."
+            )
+        return query
+
+    @staticmethod
+    def _delete_preserves_alias(query: sge.Delete, alias: str, dialect) -> bool:
+        """Whether ``dialect`` renders ``query`` with its target alias intact.
+
+        Some dialects (e.g. the presto family) cannot express an aliased
+        DELETE target; their generators drop the alias and unqualify every
+        column reference, which silently turns a correlated predicate into a
+        tautology -- the DELETE would remove the wrong rows.
+        """
+        rendered = query.copy().sql(dialect)
+        try:
+            reparsed = sg.parse_one(rendered, read=dialect)
+        except sg.ParseError:
+            return alias in rendered
+        target = reparsed.this
+        return isinstance(target, sge.Table) and target.alias == alias
 
     @util.experimental
     @classmethod
