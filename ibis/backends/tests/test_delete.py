@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+
 import pytest
 
 import ibis
@@ -396,3 +398,39 @@ def test_delete_with_database_param(con_create_database, test_employee_schema):
             con.drop_table(table_name, database=database, force=True)
     finally:
         con.drop_database(database, force=True)
+
+
+@contextlib.contextmanager
+def _create_and_destroy_catalog_db(con):
+    catalog = gen_name("test_delete_catalog")
+    con.create_catalog(catalog)
+    try:
+        database = gen_name("test_delete_database")
+        con.create_database(database, catalog=catalog)
+        try:
+            yield catalog, database
+        finally:
+            con.drop_database(database, catalog=catalog)
+    finally:
+        con.drop_catalog(catalog)
+
+
+@NO_DELETE_SUPPORT
+def test_delete_with_database_tuple(con_create_catalog_database, test_employee_schema):
+    con = con_create_catalog_database
+    with _create_and_destroy_catalog_db(con) as (catalog, database):
+        table_name = gen_name("temp_employee_catalog_db")
+        con.create_table(
+            table_name,
+            obj=ibis.memtable(employee_data_1(), schema=test_employee_schema),
+            database=(catalog, database),
+        )
+        try:
+            target = con.table(table_name, database=(catalog, database))
+            assert target.count().execute() == 3
+
+            con.delete(table_name, ibis._.salary > 200, database=(catalog, database))
+
+            assert target.count().execute() == 2
+        finally:
+            con.drop_table(table_name, database=(catalog, database), force=True)

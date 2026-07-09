@@ -761,7 +761,7 @@ class SQLBackend(BaseBackend):
     ) -> sge.Delete:
         from ibis.expr.types.relations import bind
 
-        table_expr = self.table(name, database=(catalog, db) if db else db)
+        table_expr = self.table(name, database=(catalog, db) if catalog else db)
         predicates = list(bind(table_expr, where))
         if len(predicates) != 1 or not isinstance(predicates[0], ir.BooleanValue):
             raise exc.IbisInputError(
