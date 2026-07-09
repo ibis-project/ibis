@@ -9,6 +9,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 from ibis.backends.tests.conftest import NO_DELETE_SUPPORT, combine_marks
+from ibis.backends.tests.errors import ClickHouseDatabaseError
 from ibis.util import gen_name
 
 pd = pytest.importorskip("pandas")
@@ -28,6 +29,15 @@ CANNOT_CREATE_TEMP_TABLES_MARKS = [
     ),
 ]
 CANNOT_CREATE_TEMP_TABLES = combine_marks(CANNOT_CREATE_TEMP_TABLES_MARKS)
+
+# Subquery predicates compile to an aliased DELETE (`DELETE FROM t AS t0 ...`)
+# so that correlated references can name the enclosing scope; ClickHouse's
+# DELETE grammar does not accept a table alias and rejects the statement.
+NO_DELETE_ALIAS_SUPPORT = pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="ClickHouse DELETE does not accept a table alias",
+)
 
 
 def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=None):
@@ -201,6 +211,7 @@ def test_delete_literal_boolean_predicates(con, temp_employee_table):
 
 @NO_DELETE_SUPPORT
 @CANNOT_CREATE_TEMP_TABLES
+@NO_DELETE_ALIAS_SUPPORT
 def test_delete_correlated_subquery_exists(con, temp_employee_table):
     # Delete rows whose salary matches a salary in the other table. The salary
     # sets ({100, 200, 300} vs {400, 500, 600}) are disjoint, so NO rows match
@@ -218,6 +229,7 @@ def test_delete_correlated_subquery_exists(con, temp_employee_table):
 
 @NO_DELETE_SUPPORT
 @CANNOT_CREATE_TEMP_TABLES
+@NO_DELETE_ALIAS_SUPPORT
 def test_delete_correlated_subquery_not_exists(con, temp_employee_table):
     # Delete rows whose salary does NOT match any salary in the other table.
     # The salary sets are disjoint, so ALL rows fail to match and ALL rows
@@ -234,6 +246,7 @@ def test_delete_correlated_subquery_not_exists(con, temp_employee_table):
 
 @NO_DELETE_SUPPORT
 @CANNOT_CREATE_TEMP_TABLES
+@NO_DELETE_ALIAS_SUPPORT
 def test_delete_correlated_subquery_compound(con, temp_employee_table):
     # Compound predicate: a correlated EXISTS AND a simple predicate. Because
     # no salary matches, the EXISTS branch is false for every row, so the whole
@@ -253,6 +266,7 @@ def test_delete_correlated_subquery_compound(con, temp_employee_table):
 
 @NO_DELETE_SUPPORT
 @CANNOT_CREATE_TEMP_TABLES
+@NO_DELETE_ALIAS_SUPPORT
 def test_delete_uncorrelated_subquery(con, temp_employee_table):
     # An uncorrelated subquery. The source contains exactly one salary that
     # overlaps the target (200); deleting target rows whose salary is in the
@@ -277,6 +291,7 @@ def test_delete_uncorrelated_subquery(con, temp_employee_table):
 
 @NO_DELETE_SUPPORT
 @CANNOT_CREATE_TEMP_TABLES
+@NO_DELETE_ALIAS_SUPPORT
 def test_delete_scalar_subquery_predicate(con, temp_employee_table):
     # An aggregate over the target table compiles to a scalar subquery that
     # scans the table being deleted from. This is also the rewrite the
