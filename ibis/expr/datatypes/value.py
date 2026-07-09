@@ -10,13 +10,14 @@ import uuid
 from collections.abc import Mapping, Sequence
 from functools import partial
 from operator import attrgetter
-from typing import Any
+from typing import Any, NoReturn
 
 import toolz
 from public import public
 
 import ibis.expr.datatypes as dt
 from ibis.common.collections import frozendict
+from ibis.common.deferred import Deferred
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError, InputTypeError
 from ibis.common.numeric import normalize_decimal
@@ -34,6 +35,16 @@ def infer(value: Any) -> dt.DataType:
     """Infer the corresponding ibis dtype for a python object."""
     raise InputTypeError(
         f"Unable to infer datatype of value {value!r} with type {type(value)}"
+    )
+
+
+@infer.register(Deferred)
+def infer_deferred(value: Deferred) -> NoReturn:
+    raise TypeError(
+        "Cannot infer the type of a Deferred value. "
+        "You will need to use a bound value instead. "
+        "For example, if you have `ibis._.my_col + 5`, "
+        "you will need to replace this with `my_table.my_col + 5`."
     )
 
 
