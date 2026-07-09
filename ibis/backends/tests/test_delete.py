@@ -217,25 +217,6 @@ def test_delete_literal_boolean_predicates(con, employee_data_1_temp_table):
     assert target.count().execute() == 0
 
 
-# ---------------------------------------------------------------------------
-# Regression tests: `where` predicates that reference another table or are
-# otherwise correlated.
-#
-# An earlier implementation of `_build_delete_query` compiled the predicate to
-# a SELECT and then unconditionally stripped the table qualifier off every
-# column in the WHERE AST. That destroyed the outer-vs-inner scope distinction
-# a correlated subquery relies on: `outer.salary = inner.salary` collapsed to
-# the tautology `salary = salary`, silently deleting the wrong rows. The
-# current implementation keeps the target table's alias whenever the predicate
-# contains a subquery, so correlation scoping survives. These tests pin the
-# correct semantics.
-#
-# employee_data_1 salaries are {100, 200, 300}; employee_data_2 salaries are
-# {400, 500, 600}. The two sets are disjoint, which makes the expected results
-# unambiguous.
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
 @pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
@@ -250,7 +231,9 @@ def test_delete_correlated_subquery_exists(
     con, employee_data_1_temp_table, employee_data_2_temp_table
 ):
     # Delete rows whose salary matches a salary in the other table. The salary
-    # sets are disjoint, so NO rows match and NO rows should be deleted.
+    # sets ({100, 200, 300} vs {400, 500, 600}) are disjoint, so NO rows match
+    # and NO rows should be deleted. Regression test: a correlated subquery
+    # must never collapse into a tautology that deletes every row.
     target = con.table(employee_data_1_temp_table)
     source = con.table(employee_data_2_temp_table)
 
@@ -399,21 +382,11 @@ def test_delete_null_predicate_semantics(con, employee_data_1_temp_table):
     assert result.salary.isna().sum() == 1
 
 
-# ---------------------------------------------------------------------------
-# Predicate shapes that `delete` rejects with a clear, typed error.
-#
-# * Window/analytic predicates cannot appear in a DELETE statement's WHERE
-#   clause (they compile to QUALIFY), so they are rejected up front instead of
-#   crashing inside the query builder.
-# * Multiple predicates and non-boolean arguments are rejected with a clear
-#   message instead of surfacing an internal error from `bind`.
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
 def test_delete_window_predicate_raises(con, employee_data_1_temp_table):
-    # Window functions are not allowed in a DELETE WHERE clause; ibis rejects
-    # them with a typed error rather than emitting invalid SQL or crashing.
+    # Window functions cannot appear in a DELETE statement's WHERE clause
+    # (they compile to QUALIFY); ibis rejects them with a typed error rather
+    # than emitting invalid SQL or crashing.
     target = con.table(employee_data_1_temp_table)
 
     with pytest.raises(com.UnsupportedOperationError, match=r"[Ww]indow"):
