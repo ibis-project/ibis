@@ -96,10 +96,13 @@ def temp_employee_table(backend, con, test_employee_schema):
 
     def make(data: pd.DataFrame) -> str:
         temp_table_name = gen_name("temp_employee")
+        # Register for cleanup before creating: if creation fails partway
+        # through (the helper creates, then validates), the table is still
+        # dropped; drop_table(force=True) tolerates names that never existed.
+        created.append(temp_table_name)
         _create_temp_table_with_schema(
             backend, con, temp_table_name, test_employee_schema, data=data
         )
-        created.append(temp_table_name)
         return temp_table_name
 
     try:
@@ -251,14 +254,20 @@ def test_delete_correlated_subquery_compound(con, temp_employee_table):
 @NO_DELETE_SUPPORT
 @CANNOT_CREATE_TEMP_TABLES
 def test_delete_uncorrelated_subquery(con, temp_employee_table):
-    # An uncorrelated subquery. Insert a known-overlapping salary into the
-    # source, then delete target rows whose salary is in the source. Only the
-    # 200 row should be removed.
+    # An uncorrelated subquery. The source contains exactly one salary that
+    # overlaps the target (200); deleting target rows whose salary is in the
+    # source removes only the 200 row.
+    source_data = pd.DataFrame(
+        {
+            "first_name": ["X", "Y", "Z", "M"],
+            "last_name": ["A", "B", "C", "M"],
+            "department_name": ["XX", "YY", "ZZ", "MM"],
+            "salary": [400.0, 500.0, 600.0, 200.0],
+        }
+    )
     target_name = temp_employee_table(employee_data_1())
-    source_name = temp_employee_table(employee_data_2())
+    source_name = temp_employee_table(source_data)
     target = con.table(target_name)
-
-    con.insert(source_name, [("M", "M", "MM", 200.0)])
     source = con.table(source_name)
 
     con.delete(target_name, where=target.salary.isin(source.salary))
