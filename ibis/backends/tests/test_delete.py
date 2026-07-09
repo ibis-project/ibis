@@ -6,21 +6,29 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
+from ibis.backends.tests.conftest import NO_DELETE_SUPPORT, combine_marks
 from ibis.util import gen_name
 
 pd = pytest.importorskip("pandas")
 
+# These backends cannot create the scratch tables this module stages its
+# tests on -- a limitation of table creation, not of DELETE. `raises` is
+# deliberately omitted: they convert any failure, mirroring the unconditional
+# `pytest.xfail()` calls they replace.
+CANNOT_CREATE_TEMP_TABLES_MARKS = [
+    pytest.mark.notimpl(["druid"], reason="doesn't implement create_table"),
+    pytest.mark.notimpl(
+        ["flink"],
+        reason="doesn't implement create_table from schema without additional arguments",
+    ),
+    pytest.mark.notyet(
+        ["athena"], reason="create table must specify external location"
+    ),
+]
+CANNOT_CREATE_TEMP_TABLES = combine_marks(CANNOT_CREATE_TEMP_TABLES_MARKS)
+
 
 def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=None):
-    if con.name == "druid":
-        pytest.xfail("druid doesn't implement create_table")
-    elif con.name == "flink":
-        pytest.xfail(
-            "flink doesn't implement create_table from schema without additional arguments"
-        )
-    elif con.name == "athena":
-        pytest.xfail("create table must specific external location")
-
     temporary = con.create_table(temp_table_name, schema=schema)
     assert temporary.to_pandas().empty
 
@@ -38,6 +46,28 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
     return temporary
 
 
+def employee_data_1() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "first_name": ["A", "B", "C"],
+            "last_name": ["D", "E", "F"],
+            "department_name": ["AA", "BB", "CC"],
+            "salary": [100.0, 200.0, 300.0],
+        }
+    )
+
+
+def employee_data_2() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "first_name": ["X", "Y", "Z"],
+            "last_name": ["A", "B", "C"],
+            "department_name": ["XX", "YY", "ZZ"],
+            "salary": [400.0, 500.0, 600.0],
+        }
+    )
+
+
 @pytest.fixture
 def test_employee_schema() -> ibis.schema:
     return ibis.schema(
@@ -51,58 +81,39 @@ def test_employee_schema() -> ibis.schema:
 
 
 @pytest.fixture
-def employee_data_1_temp_table(backend, con, test_employee_schema):
-    test_employee_data_1 = pd.DataFrame(
-        {
-            "first_name": ["A", "B", "C"],
-            "last_name": ["D", "E", "F"],
-            "department_name": ["AA", "BB", "CC"],
-            "salary": [100.0, 200.0, 300.0],
-        }
-    )
+def temp_employee_table(backend, con, test_employee_schema):
+    """Return a factory that creates a temporary employee table.
 
-    temp_table_name = gen_name("temp_employee_data_1")
-    _create_temp_table_with_schema(
-        backend, con, temp_table_name, test_employee_schema, data=test_employee_data_1
-    )
-    assert temp_table_name in con.list_tables()
-    yield temp_table_name
-    con.drop_table(temp_table_name, force=True)
+    Creation runs inside the test call phase, NOT fixture setup: ibis
+    translates `notimpl`/`notyet` marks into xfails in `pytest_runtest_call`,
+    which never runs when a fixture errors during setup. Creating the table
+    from the test body lets create_table limitations (druid, flink, athena)
+    surface where the marks can convert them.
+    """
+    created = []
 
+    def make(data: pd.DataFrame) -> str:
+        temp_table_name = gen_name("temp_employee")
+        _create_temp_table_with_schema(
+            backend, con, temp_table_name, test_employee_schema, data=data
+        )
+        created.append(temp_table_name)
+        return temp_table_name
 
-@pytest.fixture
-def employee_data_2_temp_table(backend, con, test_employee_schema):
-    test_employee_data_2 = pd.DataFrame(
-        {
-            "first_name": ["X", "Y", "Z"],
-            "last_name": ["A", "B", "C"],
-            "department_name": ["XX", "YY", "ZZ"],
-            "salary": [400.0, 500.0, 600.0],
-        }
-    )
-
-    temp_table_name = gen_name("temp_employee_data_2")
-    _create_temp_table_with_schema(
-        backend, con, temp_table_name, test_employee_schema, data=test_employee_data_2
-    )
-    yield temp_table_name
-    con.drop_table(temp_table_name, force=True)
+    try:
+        yield make
+    finally:
+        for name in created:
+            con.drop_table(name, force=True)
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_with_where(backend, con, employee_data_1_temp_table):
-    temporary = con.table(employee_data_1_temp_table)
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_with_where(backend, con, temp_employee_table):
+    table_name = temp_employee_table(employee_data_1())
+    temporary = con.table(table_name)
 
-    con.delete(employee_data_1_temp_table, ibis._.salary > 200)
+    con.delete(table_name, ibis._.salary > 200)
 
     result = temporary.execute()
     assert len(result) == 2
@@ -119,20 +130,13 @@ def test_delete_with_where(backend, con, employee_data_1_temp_table):
     )
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_with_callable(backend, con, employee_data_1_temp_table):
-    temporary = con.table(employee_data_1_temp_table)
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_with_callable(backend, con, temp_employee_table):
+    table_name = temp_employee_table(employee_data_1())
+    temporary = con.table(table_name)
 
-    con.delete(employee_data_1_temp_table, lambda t: t.salary > 200)
+    con.delete(table_name, lambda t: t.salary > 200)
 
     result = temporary.execute()
     assert len(result) == 2
@@ -149,233 +153,149 @@ def test_delete_with_callable(backend, con, employee_data_1_temp_table):
     )
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_no_matching_rows(con, employee_data_1_temp_table):
-    temporary = con.table(employee_data_1_temp_table)
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_no_matching_rows(con, temp_employee_table):
+    table_name = temp_employee_table(employee_data_1())
+    temporary = con.table(table_name)
 
-    con.delete(employee_data_1_temp_table, ibis._.salary > 1000)
+    con.delete(table_name, ibis._.salary > 1000)
 
     result = temporary.execute()
     assert len(result) == 3
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-def test_delete_where_none_raises(con, employee_data_1_temp_table):
-    with pytest.raises(com.IbisInputError, match="truncate_table"):
-        con.delete(employee_data_1_temp_table, where=None)
-
-
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_with_bound_predicate(con, employee_data_1_temp_table):
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_with_bound_predicate(con, temp_employee_table):
     # A predicate already bound to the table, as opposed to the `Deferred` and
     # callable forms covered above.
-    target = con.table(employee_data_1_temp_table)
+    table_name = temp_employee_table(employee_data_1())
+    target = con.table(table_name)
 
-    con.delete(employee_data_1_temp_table, target.salary > 200)
+    con.delete(table_name, target.salary > 200)
 
     assert target.count().execute() == 2
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_literal_boolean_predicates(con, employee_data_1_temp_table):
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_literal_boolean_predicates(con, temp_employee_table):
     # Literal booleans are valid predicates: `False` deletes nothing, and, as
     # called out in the `delete` docstring, `True` is NOT caught by the
     # `where=None` safety check and deletes every row.
-    target = con.table(employee_data_1_temp_table)
+    table_name = temp_employee_table(employee_data_1())
+    target = con.table(table_name)
 
-    con.delete(employee_data_1_temp_table, False)
+    con.delete(table_name, False)
     assert target.count().execute() == 3
 
-    con.delete(employee_data_1_temp_table, True)
+    con.delete(table_name, True)
     assert target.count().execute() == 0
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_correlated_subquery_exists(
-    con, employee_data_1_temp_table, employee_data_2_temp_table
-):
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_correlated_subquery_exists(con, temp_employee_table):
     # Delete rows whose salary matches a salary in the other table. The salary
     # sets ({100, 200, 300} vs {400, 500, 600}) are disjoint, so NO rows match
     # and NO rows should be deleted. Regression test: a correlated subquery
     # must never collapse into a tautology that deletes every row.
-    target = con.table(employee_data_1_temp_table)
-    source = con.table(employee_data_2_temp_table)
+    target_name = temp_employee_table(employee_data_1())
+    source_name = temp_employee_table(employee_data_2())
+    target = con.table(target_name)
+    source = con.table(source_name)
 
-    con.delete(
-        employee_data_1_temp_table,
-        where=(source.salary == target.salary).any(),
-    )
+    con.delete(target_name, where=(source.salary == target.salary).any())
 
     assert target.count().execute() == 3
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_correlated_subquery_not_exists(
-    con, employee_data_1_temp_table, employee_data_2_temp_table
-):
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_correlated_subquery_not_exists(con, temp_employee_table):
     # Delete rows whose salary does NOT match any salary in the other table.
     # The salary sets are disjoint, so ALL rows fail to match and ALL rows
     # should be deleted.
-    target = con.table(employee_data_1_temp_table)
-    source = con.table(employee_data_2_temp_table)
+    target_name = temp_employee_table(employee_data_1())
+    source_name = temp_employee_table(employee_data_2())
+    target = con.table(target_name)
+    source = con.table(source_name)
 
-    con.delete(
-        employee_data_1_temp_table,
-        where=~(source.salary == target.salary).any(),
-    )
+    con.delete(target_name, where=~(source.salary == target.salary).any())
 
     assert target.count().execute() == 0
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_correlated_subquery_compound(
-    con, employee_data_1_temp_table, employee_data_2_temp_table
-):
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_correlated_subquery_compound(con, temp_employee_table):
     # Compound predicate: a correlated EXISTS AND a simple predicate. Because
     # no salary matches, the EXISTS branch is false for every row, so the whole
     # predicate is false and NO rows should be deleted.
-    target = con.table(employee_data_1_temp_table)
-    source = con.table(employee_data_2_temp_table)
+    target_name = temp_employee_table(employee_data_1())
+    source_name = temp_employee_table(employee_data_2())
+    target = con.table(target_name)
+    source = con.table(source_name)
 
     con.delete(
-        employee_data_1_temp_table,
+        target_name,
         where=(source.salary == target.salary).any() & (target.department_name == "BB"),
     )
 
     assert target.count().execute() == 3
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_uncorrelated_subquery(
-    con, employee_data_1_temp_table, employee_data_2_temp_table
-):
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_uncorrelated_subquery(con, temp_employee_table):
     # An uncorrelated subquery. Insert a known-overlapping salary into the
     # source, then delete target rows whose salary is in the source. Only the
     # 200 row should be removed.
-    target = con.table(employee_data_1_temp_table)
+    target_name = temp_employee_table(employee_data_1())
+    source_name = temp_employee_table(employee_data_2())
+    target = con.table(target_name)
 
-    con.insert(employee_data_2_temp_table, [("M", "M", "MM", 200.0)])
-    source = con.table(employee_data_2_temp_table)
+    con.insert(source_name, [("M", "M", "MM", 200.0)])
+    source = con.table(source_name)
 
-    con.delete(employee_data_1_temp_table, where=target.salary.isin(source.salary))
+    con.delete(target_name, where=target.salary.isin(source.salary))
 
     assert target.count().execute() == 2
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_scalar_subquery_predicate(con, employee_data_1_temp_table):
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_scalar_subquery_predicate(con, temp_employee_table):
     # An aggregate over the target table compiles to a scalar subquery that
     # scans the table being deleted from. This is also the rewrite the
     # window-predicate error message recommends. Salaries are {100, 200, 300}
     # (mean 200), so only the 300 row is deleted.
-    target = con.table(employee_data_1_temp_table)
+    table_name = temp_employee_table(employee_data_1())
+    target = con.table(table_name)
 
-    con.delete(employee_data_1_temp_table, target.salary > target.salary.mean())
+    con.delete(table_name, target.salary > target.salary.mean())
 
     assert target.count().execute() == 2
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
-def test_delete_null_predicate_semantics(con, employee_data_1_temp_table):
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_null_predicate_semantics(con, temp_employee_table):
     # SQL three-valued logic: a DELETE only removes rows where the predicate
     # is TRUE. Rows where it evaluates to NULL survive.
-    target = con.table(employee_data_1_temp_table)
-
-    con.insert(
-        employee_data_1_temp_table,
-        ibis.memtable(
-            {
-                "first_name": ["N"],
-                "last_name": ["O"],
-                "department_name": ["NN"],
-                "salary": [None],
-            },
-            schema=target.schema(),
-        ),
+    data = pd.DataFrame(
+        {
+            "first_name": ["A", "B", "C", "N"],
+            "last_name": ["D", "E", "F", "O"],
+            "department_name": ["AA", "BB", "CC", "NN"],
+            "salary": [100.0, 200.0, 300.0, None],
+        }
     )
+    table_name = temp_employee_table(data)
+    target = con.table(table_name)
 
-    con.delete(employee_data_1_temp_table, ibis._.salary > 150)
+    con.delete(table_name, ibis._.salary > 150)
 
     result = target.execute()
     assert len(result) == 2  # the 100 row and the NULL-salary row
@@ -383,15 +303,29 @@ def test_delete_null_predicate_semantics(con, employee_data_1_temp_table):
 
 
 @pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-def test_delete_window_predicate_raises(con, employee_data_1_temp_table):
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_where_none_raises(con, temp_employee_table):
+    # No DELETE DML marks (datafusion, materialize): the error is raised
+    # client-side before any DELETE statement is sent to the backend.
+    table_name = temp_employee_table(employee_data_1())
+
+    with pytest.raises(com.IbisInputError, match="truncate_table"):
+        con.delete(table_name, where=None)
+
+
+@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_window_predicate_raises(con, temp_employee_table):
     # Window functions cannot appear in a DELETE statement's WHERE clause
     # (they compile to QUALIFY); ibis rejects them with a typed error rather
-    # than emitting invalid SQL or crashing.
-    target = con.table(employee_data_1_temp_table)
+    # than emitting invalid SQL or crashing. No DELETE DML marks (datafusion,
+    # materialize): the error is raised client-side before any DELETE is sent.
+    table_name = temp_employee_table(employee_data_1())
+    target = con.table(table_name)
 
     with pytest.raises(com.UnsupportedOperationError, match=r"[Ww]indow"):
         con.delete(
-            employee_data_1_temp_table,
+            table_name,
             where=target.salary > target.salary.mean().over(ibis.window()),
         )
 
@@ -399,14 +333,18 @@ def test_delete_window_predicate_raises(con, employee_data_1_temp_table):
 
 
 @pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-def test_delete_multiple_predicates_raises(con, employee_data_1_temp_table):
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_multiple_predicates_raises(con, temp_employee_table):
     # Unlike `filter`, `delete` takes a single predicate; a tuple is rejected
     # with a clear message pointing at `&` instead of a cryptic internal error.
-    target = con.table(employee_data_1_temp_table)
+    # No DELETE DML marks (datafusion, materialize): the error is raised
+    # client-side before any DELETE statement is sent.
+    table_name = temp_employee_table(employee_data_1())
+    target = con.table(table_name)
 
     with pytest.raises(com.IbisInputError, match="single boolean predicate"):
         con.delete(
-            employee_data_1_temp_table,
+            table_name,
             where=(target.salary > 100, target.salary < 300),
         )
 
@@ -414,30 +352,26 @@ def test_delete_multiple_predicates_raises(con, employee_data_1_temp_table):
 
 
 @pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-def test_delete_non_boolean_predicate_raises(con, employee_data_1_temp_table):
+@CANNOT_CREATE_TEMP_TABLES
+def test_delete_non_boolean_predicate_raises(con, temp_employee_table):
     # A non-boolean `where` (e.g. a table or a column name) is rejected with a
-    # clear message instead of an internal unpacking error.
-    target = con.table(employee_data_1_temp_table)
+    # clear message instead of an internal unpacking error. No DELETE DML marks
+    # (datafusion, materialize): the error is raised client-side before any
+    # DELETE statement is sent.
+    table_name = temp_employee_table(employee_data_1())
+    target = con.table(table_name)
 
     with pytest.raises(com.IbisInputError, match="boolean predicate"):
-        con.delete(employee_data_1_temp_table, where=target)
+        con.delete(table_name, where=target)
 
     with pytest.raises(com.IbisInputError, match="boolean predicate"):
-        con.delete(employee_data_1_temp_table, where="salary")
+        con.delete(table_name, where="salary")
 
     assert target.count().execute() == 3
 
 
-@pytest.mark.notimpl(["polars"], reason="`delete` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=Exception,
-    reason="Materialize restricts DML within transaction blocks",
-)
+@NO_DELETE_SUPPORT
+@CANNOT_CREATE_TEMP_TABLES
 def test_delete_with_database_param(con_create_database, test_employee_schema):
     # Delete from a table that lives in an explicitly created database, passing
     # `database=` to resolve it.
@@ -448,15 +382,7 @@ def test_delete_with_database_param(con_create_database, test_employee_schema):
         table_name = gen_name("temp_employee_db")
         con.create_table(
             table_name,
-            obj=ibis.memtable(
-                {
-                    "first_name": ["A", "B", "C"],
-                    "last_name": ["D", "E", "F"],
-                    "department_name": ["AA", "BB", "CC"],
-                    "salary": [100.0, 200.0, 300.0],
-                },
-                schema=test_employee_schema,
-            ),
+            obj=ibis.memtable(employee_data_1(), schema=test_employee_schema),
             database=database,
         )
         try:

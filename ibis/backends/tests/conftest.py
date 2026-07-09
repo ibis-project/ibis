@@ -166,3 +166,16 @@ NO_MERGE_SUPPORT_MARKS = [
     ),
 ]
 NO_MERGE_SUPPORT = combine_marks(NO_MERGE_SUPPORT_MARKS)
+
+NO_DELETE_SUPPORT_MARKS = [
+    pytest.mark.notimpl(["polars"], reason="`delete` method not implemented"),
+    pytest.mark.notyet(
+        ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+    ),
+    pytest.mark.notyet(
+        ["materialize"],
+        raises=Exception,
+        reason="Materialize restricts DML within transaction blocks",
+    ),
+]
+NO_DELETE_SUPPORT = combine_marks(NO_DELETE_SUPPORT_MARKS)
