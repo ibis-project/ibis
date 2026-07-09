@@ -578,9 +578,6 @@ def test_insert_no_overwrite_from_dataframe(
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
 )
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
 @pytest.mark.notyet(
     ["athena"], raises=com.UnsupportedOperationError, reason="s3 location required"
@@ -629,9 +626,6 @@ def test_insert_no_overwrite_from_expr(
 
 @pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
 @pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
@@ -658,9 +652,6 @@ def test_insert_overwrite_from_expr(
 
 
 @pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
 @pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,

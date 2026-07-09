@@ -98,7 +98,6 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.ExtractEpochSeconds: "unix_timestamp",
         ops.ExtractDayOfYear: "dayofyear",
         ops.Strftime: "date_format",
-        ops.StringToTimestamp: "str_to_date",
         ops.Log2: "log2",
     }
 
@@ -217,6 +216,14 @@ class MySQLCompiler(SQLGlotCompiler):
             ),
             "%Y%m%d",
         )
+
+    def visit_StringToTimestamp(self, op, *, arg, format_str):
+        # Build StrToTime directly so the (Python strftime) format is treated as
+        # canonical and translated to MySQL's native codes by the generator.
+        # Routing through ``self.f.str_to_date`` re-parses the format as if it
+        # were already MySQL-native, which corrupts tokens that collide with
+        # Python's (e.g. ``%M`` = minutes in Python but month-name in MySQL).
+        return sge.StrToTime(this=arg, format=format_str)
 
     def visit_FindInSet(self, op, *, needle, values):
         return self.f.find_in_set(needle, self.f.concat_ws(",", values))

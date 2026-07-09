@@ -79,7 +79,6 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.Log10: "log10",
         ops.IsNan: "is_nan",
         ops.IsInf: "is_infinite",
-        ops.StringToTimestamp: "date_parse",
         ops.Strftime: "date_format",
         ops.ExtractEpochSeconds: "to_unixtime",
         ops.ExtractWeekOfYear: "week_of_year",
@@ -112,6 +111,14 @@ class TrinoCompiler(SQLGlotCompiler):
         ):
             return None
         return spec
+
+    def visit_StringToTimestamp(self, op, *, arg, format_str):
+        # Build StrToTime directly so the (Python strftime) format is treated as
+        # canonical and translated to Trino's native codes by the generator.
+        # Routing through ``self.f.date_parse`` re-parses the format as if it
+        # were already Trino-native, which corrupts tokens that collide with
+        # Python's (e.g. ``%M`` = minutes in Python but month-name in Trino).
+        return sge.StrToTime(this=arg, format=format_str)
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
