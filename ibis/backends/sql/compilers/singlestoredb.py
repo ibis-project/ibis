@@ -300,15 +300,6 @@ class SingleStoreDBCompiler(MySQLCompiler):
         # Use Anonymous to force DATE() function instead of TO_DATE()
         return sge.Anonymous(this="DATE", expressions=[iso_date_string])
 
-    def visit_StringToTimestamp(self, op, *, arg, format_str):
-        """Convert string to timestamp in SingleStoreDB.
-
-        Use TIMESTAMP() function instead of STR_TO_DATE to get proper timestamp type.
-        """
-        # Use STR_TO_DATE to parse the string with the format, then wrap in TIMESTAMP()
-        parsed_date = sge.Anonymous(this="STR_TO_DATE", expressions=[arg, format_str])
-        return sge.Anonymous(this="TIMESTAMP", expressions=[parsed_date])
-
     def visit_StringToTime(self, op, *, arg, format_str):
         """Convert string to time in SingleStoreDB.
 

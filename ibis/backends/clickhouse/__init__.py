@@ -98,7 +98,7 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
         user: str = "default",
         password: str = "",
         client_name: str = "ibis",
-        secure: bool | None = None,
+        secure: bool = False,
         compression: str | bool = True,
         settings: Mapping[str, Any] | None = None,
         **kwargs: Any,
@@ -152,6 +152,7 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
             query_limit=0,
             compress=compression,
             settings=settings,
+            secure=secure,
             **kwargs,
         )
 
