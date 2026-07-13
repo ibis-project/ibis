@@ -1,12 +1,12 @@
-# IBM DB2
+# IBM Db2
 
 [https://www.ibm.com/products/db2](https://www.ibm.com/products/db2)
 
-![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-DB2 tables-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-DB2 tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
+![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-Db2 tables-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-Db2 tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
 
 ## Install
 
-Install Ibis and dependencies for the DB2 backend:
+Install Ibis and dependencies for the Db2 backend:
 
 ::: {.panel-tabset}
 
@@ -30,7 +30,7 @@ con = ibis.db2.connect()  # <1>
 
 ## `conda`
 
-Install for DB2:
+Install for Db2:
 
 ```{.bash}
 conda install -c conda-forge ibis-db2
@@ -48,7 +48,7 @@ con = ibis.db2.connect()  # <1>
 
 ## `mamba`
 
-Install for DB2:
+Install for Db2:
 
 ```{.bash}
 mamba install -c conda-forge ibis-db2
@@ -95,37 +95,85 @@ from _utils import render_do_connect
 render_do_connect("db2")
 ```
 
-### `ibis.connect` URL format
+### SSL connections
 
-In addition to `ibis.db2.connect`, you can also connect to DB2 by
-passing a properly-formatted DB2 connection URL to `ibis.connect`:
+Use `ssl=True` to enable an encrypted connection (default Db2 SSL port: **50001**).
+Set `ssl=False` (the default) for plain unencrypted connections.
 
 ```python
-con = ibis.connect(f"db2://{username}:{password}@{hostname}:{port}/{database}")
+# Plain connection — ssl defaults to False
+con = ibis.db2.connect(
+    database="SAMPLE",
+    hostname="db2-server.example.com",
+    port=50000,
+    username="db2inst1",
+    password="password",
+    ssl=False,
+)
+
+# SSL — no certificate validation (useful for self-signed certs in dev)
+con = ibis.db2.connect(
+    database="SAMPLE",
+    hostname="db2-server.example.com",
+    port=50001,
+    username="db2inst1",
+    password="password",
+    ssl=True,
+)
+
+# SSL — with server certificate (recommended for production)
+con = ibis.db2.connect(
+    database="SAMPLE",
+    hostname="db2-server.example.com",
+    port=50001,
+    username="db2inst1",
+    password="password",
+    ssl=True,
+    ssl_server_certificate="/path/to/server.arm",
+)
 ```
 
-## DB2 Client Requirements
+### `ibis.connect` URL format
 
-The DB2 backend requires the IBM DB2 client libraries to be installed. You can install them using:
+In addition to `ibis.db2.connect`, you can also connect to Db2 by
+passing a properly-formatted Db2 connection URL to `ibis.connect`:
+
+```python
+# Plain connection
+con = ibis.connect(f"db2://{username}:{password}@{hostname}:{port}/{database}")
+
+# SSL connection via URL query parameters
+con = ibis.connect(f"db2://{username}:{password}@{hostname}:50001/{database}?ssl=true")
+
+# SSL with server certificate
+con = ibis.connect(
+    f"db2://{username}:{password}@{hostname}:50001/{database}"
+    "?ssl=true&ssl_server_certificate=/path/to/server.arm"
+)
+```
+
+## Db2 Client Requirements
+
+The Db2 backend requires the IBM Db2 client libraries to be installed. You can install them using:
 
 ```bash
 pip install ibm_db
 ```
 
 ::: {.callout-note}
-The `ibm_db` package includes `ibm_db_dbi` (the DB-API 2.0 compliant interface) and requires the DB2 client libraries to be installed on your system.
-For installation instructions, see the [IBM DB2 documentation](https://www.ibm.com/docs/en/db2).
+The `ibm_db` package includes `ibm_db_dbi` (the DB-API 2.0 compliant interface) and requires the Db2 client libraries to be installed on your system.
+For installation instructions, see the [IBM Db2 documentation](https://www.ibm.com/docs/en/db2).
 :::
 
 ## Features
 
-The DB2 backend supports:
+The Db2 backend supports:
 
 - **Temporary tables**: Create temporary tables for intermediate results
 - **Schema operations**: List databases (schemas), tables, and get table schemas
 - **Data manipulation**: Insert, create, and drop tables
 - **Query execution**: Execute SQL queries and return results as pandas DataFrames or PyArrow tables
-- **Type mapping**: Automatic conversion between Ibis types and DB2 types
+- **Type mapping**: Automatic conversion between Ibis types and Db2 types
 
 ## Limitations
 
@@ -137,7 +185,7 @@ The DB2 backend supports:
 ```python
 import ibis
 
-# Connect to DB2
+# Connect to Db2
 con = ibis.db2.connect(
     database="SAMPLE",
     hostname="localhost",
@@ -167,7 +215,7 @@ con.create_table(
 
 ```{python}
 #| echo: false
-BACKEND = "DB2"
+BACKEND = "Db2"
 ```
 
 {{< include ./_templates/api.qmd >}}

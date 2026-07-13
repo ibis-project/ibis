@@ -1,20 +1,17 @@
-"""Pytest configuration and fixtures for DB2 backend tests."""
+"""Pytest configuration and fixtures for Db2 backend tests."""
 
 from __future__ import annotations
 
+import contextlib
 import os
-from typing import TYPE_CHECKING
 
 import pytest
-
-if TYPE_CHECKING:
-    pass
 
 
 @pytest.fixture(scope="session")
 def db2_config():
     """
-    Get DB2 connection configuration from environment variables.
+    Get Db2 connection configuration from environment variables.
 
     Returns
     -------
@@ -34,7 +31,7 @@ def db2_config():
 @pytest.fixture(scope="session")
 def con(db2_config):
     """
-    Create a DB2 backend connection for testing.
+    Create a Db2 backend connection for testing.
 
     Parameters
     ----------
@@ -46,14 +43,15 @@ def con(db2_config):
     Backend
         Connected backend instance
     """
-    from ibis.backends import db2
+    import ibis
 
     try:
-        backend = db2.connect(**db2_config)
+        backend = ibis.db2.connect(**db2_config)
+    except Exception as e:  # noqa: BLE001
+        pytest.skip(f"Could not connect to Db2: {e}")
+    else:
         yield backend
         backend.disconnect()
-    except Exception as e:
-        pytest.skip(f"Could not connect to DB2: {e}")
 
 
 @pytest.fixture
@@ -105,10 +103,8 @@ def temp_table(con, test_table_name, sample_dataframe):
     yield test_table_name
 
     # Cleanup
-    try:
+    with contextlib.suppress(Exception):
         con.drop_table(test_table_name, force=True)
-    except Exception:
-        pass
 
 
 @pytest.fixture
@@ -153,21 +149,19 @@ def alltypes_table(con):
         con.create_table(table_name, df, overwrite=True)
         yield table_name
     finally:
-        try:
+        with contextlib.suppress(Exception):
             con.drop_table(table_name, force=True)
-        except Exception:
-            pass
 
 
 def pytest_configure(config):
     """Configure pytest with custom markers."""
     config.addinivalue_line(
-        "markers", "integration: mark test as integration test (requires DB2)"
+        "markers", "integration: mark test as integration test (requires Db2)"
     )
     config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(items):
     """Automatically mark tests based on their location."""
     for item in items:
         # Mark all tests in test_integration.py as integration tests

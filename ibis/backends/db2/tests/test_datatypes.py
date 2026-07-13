@@ -1,9 +1,8 @@
-"""Tests for DB2 data type mappings."""
+"""Tests for Db2 data type mappings."""
 
 from __future__ import annotations
 
 import ibis.expr.datatypes as dt
-
 from ibis.backends.db2.datatypes import (
     ibis_type_to_db2_type,
     parse_db2_type,
@@ -134,7 +133,9 @@ class TestIbisTypeToDB2Type:
         # Array, Map, and Struct should be stored as CLOB (JSON)
         assert ibis_type_to_db2_type(dt.Array(dt.int32)) == "CLOB"
         assert ibis_type_to_db2_type(dt.Map(dt.string, dt.int32)) == "CLOB"
-        assert ibis_type_to_db2_type(dt.Struct({"a": dt.int32, "b": dt.string})) == "CLOB"
+        assert (
+            ibis_type_to_db2_type(dt.Struct({"a": dt.int32, "b": dt.string})) == "CLOB"
+        )
 
 
 class TestTypeCodeToIbisType:
@@ -168,9 +169,9 @@ class TestTypeCodeToIbisType:
         """Test conversion of numeric type codes."""
         assert type_code_to_ibis_type(480) == dt.float64  # FLOAT
         assert type_code_to_ibis_type(484) == dt.float64  # DOUBLE
-        assert type_code_to_ibis_type(496) == dt.int32    # INTEGER
-        assert type_code_to_ibis_type(500) == dt.int16    # SMALLINT
-        assert type_code_to_ibis_type(504) == dt.int64    # BIGINT
+        assert type_code_to_ibis_type(496) == dt.int32  # INTEGER
+        assert type_code_to_ibis_type(500) == dt.int16  # SMALLINT
+        assert type_code_to_ibis_type(504) == dt.int64  # BIGINT
 
     def test_decimal_type_with_precision(self):
         """Test conversion of DECIMAL type code with precision."""

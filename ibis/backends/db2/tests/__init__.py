@@ -1,1 +1,1 @@
-"""Tests for ibis-db2 backend."""
+"""Tests for the ibis Db2 backend."""

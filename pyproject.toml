@@ -104,7 +104,7 @@ db2 = [
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
   "rich>=12.4.4",
-  "packaging>=21.3"
+  "packaging>=21.3",
 ]
 databricks = [
   "databricks-sql-connector>=4",
@@ -394,6 +394,7 @@ addopts = [
 ]
 norecursedirs = [
   "**/snapshots",
+  "**/temp",
   ".benchmarks",
   ".direnv",
   ".git",
@@ -523,6 +524,7 @@ markers = [
   "clickhouse: ClickHouse tests",
   "databricks: Databricks SQL tests",
   "datafusion: Apache Datafusion tests",
+  "db2: IBM Db2 tests",
   "druid: Apache Druid tests",
   "duckdb: DuckDB tests",
   "exasol: ExasolDB tests",
