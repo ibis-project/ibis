@@ -171,6 +171,9 @@ class MySQLCompiler(SQLGlotCompiler):
     def visit_DayOfWeekIndex(self, op, *, arg):
         return (self.f.dayofweek(arg) + 5) % 7
 
+    def visit_IsoDayOfWeekIndex(self, op, *, arg):
+        return ((self.f.dayofweek(arg) + 5) % 7) + 1
+
     def visit_Literal(self, op, *, value, dtype):
         # avoid casting NULL: the set of types allowed by MySQL and
         # MariaDB when casting is a strict subset of allowed types in other

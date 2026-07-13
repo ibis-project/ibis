@@ -699,6 +699,9 @@ $$""".format(
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.cast(self.f.extract("dow", arg) + 6, dt.int16) % 7
 
+    def visit_IsoDayOfWeekIndex(self, op, *, arg):
+        return self.cast(self.f.extract("isodow", arg), dt.int16)
+
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.trim(self.f.to_char(arg, "Day"), string.whitespace)
 
