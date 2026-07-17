@@ -86,11 +86,6 @@ class ArrayConcatAgg(Orderable):
     limit: Optional[Scalar[dt.Integer]] = None
 
     def __init__(self, arg, order_by, distinct, limit, **kwargs):
-        if distinct and order_by and [arg] != [key.arg for key in order_by]:
-            raise ValidationError(
-                "`concat_agg` with `order_by` and `distinct=True` may only "
-                "order by the concatenated array"
-            )
         if limit is not None and getattr(limit, "value", 0) < 0:
             raise ValidationError("`concat_agg` limit must be non-negative")
         super().__init__(

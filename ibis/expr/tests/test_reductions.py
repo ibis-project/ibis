@@ -220,9 +220,7 @@ def test_concat_agg_distinct_ordering():
 
     t.a.concat_agg(distinct=True)
     t.a.concat_agg(distinct=True, order_by=t.a.desc())
-
-    with pytest.raises(ValidationError, match="only order by the concatenated array"):
-        t.a.concat_agg(distinct=True, order_by=t.key)
+    t.a.concat_agg(distinct=True, order_by=t.key)
 
 
 def test_collect_flatten_rewrites_to_concat_agg():
@@ -232,3 +230,9 @@ def test_collect_flatten_rewrites_to_concat_agg():
     expected = t.a.concat_agg(where=_.keep, order_by=_.key)
 
     assert result.equals(expected)
+    assert (
+        t.a.collect(include_null=True)
+        .flatten()
+        .equals(t.a.concat_agg(include_null=True))
+    )
+    assert t.a.collect(distinct=True).flatten().equals(t.a.concat_agg(distinct=True))

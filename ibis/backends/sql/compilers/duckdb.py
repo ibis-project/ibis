@@ -178,6 +178,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         self, op, *, arg, where, order_by, include_null, distinct, limit
     ):
         return self._array_concat_agg(
+            op=op,
             arg=arg,
             where=where,
             order_by=order_by,

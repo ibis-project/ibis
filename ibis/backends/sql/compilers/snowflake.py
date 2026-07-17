@@ -526,6 +526,7 @@ $$""",
     def visit_ArrayConcatAgg(
         self, op, *, arg, where, order_by, include_null, distinct, limit
     ):
+        self._validate_array_concat_agg(op)
         arrays = self._array_collect(
             arg=arg,
             where=where,
@@ -533,9 +534,17 @@ $$""",
             include_null=include_null,
             distinct=distinct,
         )
+        has_inputs = self.f.array_size(arrays) > 0
         if limit is not None:
             arrays = self.f.array_slice(arrays, 0, limit)
-        return self.f.array_flatten(arrays)
+
+        # ARRAY_AGG returns an empty array when every input is null. Preserve
+        # the reduction contract by returning null for that case.
+        return self.if_(
+            has_inputs,
+            self.f.array_flatten(arrays),
+            NULL,
+        )
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         out = self._array_collect(

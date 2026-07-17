@@ -680,7 +680,13 @@ class ClickHouseCompiler(SQLGlotCompiler):
         name = "groupUniqArray" if distinct else "groupArray"
         if limit is None:
             arrays = self.agg[name](arg, where=where)
+        elif not isinstance(op.limit, ops.Literal) or op.limit.value == 0:
+            # ClickHouse rejects a zero parameter for groupArray, so slice the
+            # complete aggregate for zero and dynamic limits.
+            arrays = self.f.arraySlice(self.agg[name](arg, where=where), 1, limit)
         else:
+            # ClickHouse parameterizes aggregate limits before the argument
+            # list and expresses filtering with the `If` combinator.
             arrays = sge.ParameterizedAgg(
                 this=f"{name}If" if where is not None else name,
                 expressions=[limit],
