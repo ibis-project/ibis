@@ -523,6 +523,20 @@ $$""",
             distinct=distinct,
         )
 
+    def visit_ArrayConcatAgg(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        arrays = self._array_collect(
+            arg=arg,
+            where=where,
+            order_by=order_by,
+            include_null=include_null,
+            distinct=distinct,
+        )
+        if limit is not None:
+            arrays = self.f.array_slice(arrays, 0, limit)
+        return self.f.array_flatten(arrays)
+
     def visit_First(self, op, *, arg, where, order_by, include_null):
         out = self._array_collect(
             arg=arg, where=where, order_by=order_by, include_null=include_null

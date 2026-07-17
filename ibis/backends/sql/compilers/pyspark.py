@@ -444,6 +444,25 @@ class PySparkCompiler(SQLGlotCompiler):
             arg = sge.Distinct(expressions=[arg])
         return self.agg.array_agg(arg, order_by=order_by)
 
+    def visit_ArrayConcatAgg(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the pyspark backend"
+            )
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of `concat_agg` is not supported by the pyspark backend"
+            )
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        func = self.f.collect_set if distinct else self.f.collect_list
+        arrays = func(arg)
+        if limit is not None:
+            arrays = self.f.slice(arrays, 1, limit)
+        return self.f.flatten(arrays)
+
     def visit_Strip(self, op, *, arg):
         return self.f.trim(arg, self.f.concat(string.whitespace[:-2], VT, FF))
 

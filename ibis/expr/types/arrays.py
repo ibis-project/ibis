@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from public import public
 
@@ -76,6 +76,82 @@ class ArrayValue(Value):
         └────────────────┘
         """
         return ops.ArrayLength(self).to_expr()
+
+    def concat_agg(
+        self,
+        *,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        include_null: bool = False,
+        distinct: bool = False,
+        limit: int | ir.IntegerValue | None = None,
+    ) -> ir.ArrayScalar:
+        """Aggregate arrays by concatenating their elements.
+
+        This operation is called `array_concat_agg` in some systems. It is
+        equivalent to calling [`collect`](./expression-generic.qmd#ibis.expr.types.generic.Value.collect)
+        and then [`flatten`](#ibis.expr.types.arrays.ArrayValue.flatten), but
+        can also limit the number of input arrays before concatenating them.
+
+        Parameters
+        ----------
+        where
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the input arrays before
+            concatenating them. The order of elements within each input array
+            is preserved. If not provided, the order of the input arrays is
+            undefined and backend specific.
+        include_null
+            Whether to include null input arrays. By default, null input arrays
+            are ignored. Null elements within non-null input arrays are always
+            preserved. Backend support for including null arrays varies.
+        distinct
+            Whether to include only distinct input arrays. This does not remove
+            duplicate elements after concatenation.
+        limit
+            The maximum number of input arrays to concatenate after filtering,
+            ordering, and deduplication.
+
+        Returns
+        -------
+        ArrayScalar
+            The concatenated elements of the input arrays.
+
+        Examples
+        --------
+        Concatenate arrays in a specified order:
+
+        >>> import ibis
+        >>> from ibis import _
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "key": ["a", "a", "b"],
+        ...         "order": [2, 1, 3],
+        ...         "values": [[2, 3], [1], [4, 5]],
+        ...     }
+        ... )
+        >>> (
+        ...     t.group_by("key").agg(values=t.values.concat_agg(order_by=_.order)).order_by("key")
+        ... ).to_pandas()
+          key     values
+        0   a  [1, 2, 3]
+        1   b     [4, 5]
+
+        Limit the number of input arrays before concatenating:
+
+        >>> t.values.concat_agg(order_by=_.order, limit=2).to_pandas()
+        [1, 2, 3]
+        """
+        return ops.ArrayConcatAgg(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+            include_null=include_null,
+            distinct=distinct,
+            limit=limit,
+        ).to_expr()
 
     def __getitem__(self, index: int | ir.IntegerValue | slice) -> ir.Value:
         """Extract one or more elements of `self`.
@@ -1107,6 +1183,15 @@ class ArrayValue(Value):
         │ []                   │ ['def']              │ NULL       │ … │
         └──────────────────────┴──────────────────────┴────────────┴───┘
         """
+        if isinstance(op := self.op(), ops.ArrayCollect):
+            return ops.ArrayConcatAgg(
+                op.arg,
+                where=op.where,
+                order_by=op.order_by,
+                include_null=op.include_null,
+                distinct=op.distinct,
+                limit=None,
+            ).to_expr()
         return ops.ArrayFlatten(self).to_expr()
 
     def anys(self) -> ir.BooleanValue:

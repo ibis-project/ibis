@@ -11,7 +11,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import ValidationError, attribute
 from ibis.common.typing import VarTuple  # noqa: TC001
-from ibis.expr.operations.core import Column, Value
+from ibis.expr.operations.core import Column, Scalar, Value
 from ibis.expr.operations.relations import Relation  # noqa: TC001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TC001
 
@@ -74,6 +74,34 @@ class ArrayCollect(Orderable):
     @attribute
     def dtype(self):
         return dt.Array(self.arg.dtype)
+
+
+@public
+class ArrayConcatAgg(Orderable):
+    """Concatenate arrays in a group."""
+
+    arg: Column[dt.Array]
+    include_null: bool = False
+    distinct: bool = False
+    limit: Optional[Scalar[dt.Integer]] = None
+
+    def __init__(self, arg, order_by, distinct, limit, **kwargs):
+        if distinct and order_by and [arg] != [key.arg for key in order_by]:
+            raise ValidationError(
+                "`concat_agg` with `order_by` and `distinct=True` may only "
+                "order by the concatenated array"
+            )
+        if limit is not None and getattr(limit, "value", 0) < 0:
+            raise ValidationError("`concat_agg` limit must be non-negative")
+        super().__init__(
+            arg=arg,
+            order_by=order_by,
+            distinct=distinct,
+            limit=limit,
+            **kwargs,
+        )
+
+    dtype = rlz.dtype_like("arg")
 
 
 # TODO(NickCrews): This is the only Orderable without a include_null parameter,

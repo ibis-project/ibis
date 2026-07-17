@@ -1292,6 +1292,32 @@ class SQLGlotCompiler(abc.ABC):
     def visit_ArrayConcat(self, op, *, arg):
         return sge.ArrayConcat(this=arg[0], expressions=list(arg[1:]))
 
+    def _array_concat_agg(
+        self,
+        *,
+        arg,
+        where,
+        order_by,
+        include_null,
+        distinct,
+        limit,
+        flatten="flatten",
+        array_slice=None,
+    ):
+        if limit is not None and array_slice is None:
+            raise com.UnsupportedOperationError(
+                f"`limit` is not supported by the {self.dialect} backend"
+            )
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        if distinct:
+            arg = sge.Distinct(expressions=[arg])
+        arrays = self.agg.array_agg(arg, where=where, order_by=order_by)
+        if limit is not None:
+            arrays = array_slice(arrays, limit)
+        return self.f[flatten](arrays)
+
     ## relations
 
     @staticmethod

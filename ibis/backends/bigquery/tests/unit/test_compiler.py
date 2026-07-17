@@ -546,6 +546,20 @@ def test_bool_reducers_where_conj(alltypes, snapshot):
     snapshot.assert_match(to_sql(expr2), "out.sql")
 
 
+def test_array_concat_agg(snapshot):
+    t = ibis.table(
+        {"arr": "array<int64>", "key": "int64", "keep": "boolean"},
+        name="t",
+    )
+    expr = t.arr.concat_agg(
+        where=_.keep,
+        order_by=_.key.desc(),
+        limit=2,
+    ).name("result")
+
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
 @pytest.mark.parametrize("agg", ["approx_median", "approx_nunique"])
 @pytest.mark.parametrize(
     "where",

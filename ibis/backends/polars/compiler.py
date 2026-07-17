@@ -1096,6 +1096,41 @@ def array_collect(op, in_group_by=False, **kw):
     return arg if in_group_by else arg.implode()
 
 
+@translate.register(ops.ArrayConcatAgg)
+def array_concat_agg(op, in_group_by=False, **kw):
+    if op.include_null:
+        raise com.UnsupportedOperationError(
+            "`include_null=True` is not supported by the polars backend"
+        )
+
+    arg = translate(op.arg, **kw)
+    predicate = arg.is_not_null()
+    if op.where is not None:
+        predicate &= translate(op.where, **kw)
+    arg = arg.filter(predicate)
+
+    if op.order_by:
+        keys = [translate(k.arg, **kw).filter(predicate) for k in op.order_by]
+        descending = [k.descending for k in op.order_by]
+        arg = arg.sort_by(keys, descending=descending, nulls_last=True)
+
+    if op.distinct:
+        arg = arg.unique(maintain_order=op.order_by is not None)
+
+    if op.limit is not None:
+        try:
+            limit = op.limit.value
+        except AttributeError:
+            raise com.UnsupportedOperationError(
+                "dynamic `concat_agg` limits are not supported by polars"
+            ) from None
+        arg = arg.head(limit)
+
+    flattened = arg.filter(arg.list.len() > 0).flatten().implode()
+    null = pl.lit(None, dtype=PolarsType.from_ibis(op.dtype))
+    return pl.when(arg.len() == 0).then(null).otherwise(flattened)
+
+
 @translate.register(ops.ArrayFlatten)
 def array_flatten(op, **kw):
     result = translate(op.arg, **kw)
