@@ -1117,6 +1117,7 @@ def array_concat_agg(op, in_group_by=False, **kw):
     if op.distinct:
         arg = arg.unique(maintain_order=op.order_by is not None)
 
+    has_inputs = arg.len() > 0
     if op.limit is not None:
         try:
             limit = op.limit.value
@@ -1126,9 +1127,11 @@ def array_concat_agg(op, in_group_by=False, **kw):
             ) from None
         arg = arg.head(limit)
 
+    # Polars inserts a null when flattening only empty lists, so discard empty
+    # inputs before flattening while using the pre-limit count for null groups.
     flattened = arg.filter(arg.list.len() > 0).flatten().implode()
     null = pl.lit(None, dtype=PolarsType.from_ibis(op.dtype))
-    return pl.when(arg.len() == 0).then(null).otherwise(flattened)
+    return pl.when(has_inputs).then(flattened).otherwise(null)
 
 
 @translate.register(ops.ArrayFlatten)

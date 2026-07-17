@@ -1292,23 +1292,29 @@ class SQLGlotCompiler(abc.ABC):
     def visit_ArrayConcat(self, op, *, arg):
         return sge.ArrayConcat(this=arg[0], expressions=list(arg[1:]))
 
+    def _validate_array_concat_agg(self, op):
+        if op.distinct and op.order_by and [op.arg] != [key.arg for key in op.order_by]:
+            raise com.UnsupportedOperationError(
+                f"`distinct=True` with an independent `order_by` is not "
+                f"supported by the {self.dialect} backend"
+            )
+
     def _array_concat_agg(
         self,
         *,
+        op,
         arg,
         where,
         order_by,
         include_null,
         distinct,
         limit,
-        flatten="flatten",
-        array_slice=None,
+        array_slice,
     ):
-        if limit is not None and array_slice is None:
-            raise com.UnsupportedOperationError(
-                f"`limit` is not supported by the {self.dialect} backend"
-            )
+        self._validate_array_concat_agg(op)
         if not include_null:
+            # Filter before ARRAY_AGG so an all-null group follows the usual
+            # reduction contract and produces null instead of an empty array.
             cond = arg.is_(sg.not_(NULL, copy=False))
             where = cond if where is None else sge.And(this=cond, expression=where)
         if distinct:
@@ -1316,7 +1322,7 @@ class SQLGlotCompiler(abc.ABC):
         arrays = self.agg.array_agg(arg, where=where, order_by=order_by)
         if limit is not None:
             arrays = array_slice(arrays, limit)
-        return self.f[flatten](arrays)
+        return self.f.flatten(arrays)
 
     ## relations
 

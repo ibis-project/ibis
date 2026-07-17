@@ -459,9 +459,13 @@ class PySparkCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         func = self.f.collect_set if distinct else self.f.collect_list
         arrays = func(arg)
+        has_inputs = self.f.size(arrays) > 0
         if limit is not None:
             arrays = self.f.slice(arrays, 1, limit)
-        return self.f.flatten(arrays)
+
+        # Spark returns an empty array when every input is null. Reductions
+        # return null when no input values remain after filtering.
+        return self.if_(has_inputs, self.f.flatten(arrays), NULL)
 
     def visit_Strip(self, op, *, arg):
         return self.f.trim(arg, self.f.concat(string.whitespace[:-2], VT, FF))

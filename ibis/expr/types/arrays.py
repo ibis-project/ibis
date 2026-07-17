@@ -88,10 +88,9 @@ class ArrayValue(Value):
     ) -> ir.ArrayScalar:
         """Aggregate arrays by concatenating their elements.
 
-        This operation is called `array_concat_agg` in some systems. It is
-        equivalent to calling [`collect`](./expression-generic.qmd#ibis.expr.types.generic.Value.collect)
-        and then [`flatten`](#ibis.expr.types.arrays.ArrayValue.flatten), but
-        can also limit the number of input arrays before concatenating them.
+        This operation is called `array_concat_agg` in some systems. Without
+        `limit`, it is equivalent to collecting the input arrays and flattening
+        the result.
 
         Parameters
         ----------
@@ -102,11 +101,13 @@ class ArrayValue(Value):
             An ordering key (or keys) to use to order the input arrays before
             concatenating them. The order of elements within each input array
             is preserved. If not provided, the order of the input arrays is
-            undefined and backend specific.
+            undefined and backend-specific.
         include_null
             Whether to include null input arrays. By default, null input arrays
             are ignored. Null elements within non-null input arrays are always
-            preserved. Backend support for including null arrays varies.
+            preserved. On supporting backends, a retained null array contributes
+            no elements but makes an all-null group return an empty array instead
+            of null. Backend support for including null arrays varies.
         distinct
             Whether to include only distinct input arrays. This does not remove
             duplicate elements after concatenation.
@@ -118,6 +119,11 @@ class ArrayValue(Value):
         -------
         ArrayScalar
             The concatenated elements of the input arrays.
+
+        See Also
+        --------
+        [`Value.collect`](./expression-generic.qmd#ibis.expr.types.generic.Value.collect)
+        [`ArrayValue.flatten`](#ibis.expr.types.arrays.ArrayValue.flatten)
 
         Examples
         --------
@@ -1184,6 +1190,8 @@ class ArrayValue(Value):
         └──────────────────────┴──────────────────────┴────────────┴───┘
         """
         if isinstance(op := self.op(), ops.ArrayCollect):
+            # Keep collect modifiers intact while selecting native
+            # concatenating aggregates where a backend provides one.
             return ops.ArrayConcatAgg(
                 op.arg,
                 where=op.where,
