@@ -665,6 +665,29 @@ class ClickHouseCompiler(SQLGlotCompiler):
         func = self.agg.groupUniqArray if distinct else self.agg.groupArray
         return func(arg, where=where, order_by=order_by)
 
+    def visit_ArrayConcatAgg(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the clickhouse backend"
+            )
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of `concat_agg` is not supported by the clickhouse backend"
+            )
+
+        name = "groupUniqArray" if distinct else "groupArray"
+        if limit is None:
+            arrays = self.agg[name](arg, where=where)
+        else:
+            arrays = sge.ParameterizedAgg(
+                this=f"{name}If" if where is not None else name,
+                expressions=[limit],
+                params=[arg, where] if where is not None else [arg],
+            )
+        return self.f.arrayFlatten(arrays)
+
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if include_null:
             raise com.UnsupportedOperationError(

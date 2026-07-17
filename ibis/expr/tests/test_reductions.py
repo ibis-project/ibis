@@ -66,6 +66,11 @@ from ibis.common.exceptions import IbisTypeError
             id="collect",
         ),
         param(
+            lambda t, where: t.array_col.concat_agg(where=where),
+            ops.ArrayConcatAgg,
+            id="concat_agg",
+        ),
+        param(
             lambda t, where: t.int_col.approx_quantile(0.5, where=where),
             ops.ApproxQuantile,
             id="approx_quantile",
@@ -92,6 +97,7 @@ def test_reduction_methods(fn, operation, cond):
             "string_col": "string",
             "int_col": "int64",
             "bool_col": "boolean",
+            "array_col": "array<int64>",
         },
     )
     where = cond(t)
@@ -175,3 +181,54 @@ def test_collect_distinct():
                 t.b,
             ),
         )
+
+
+def test_concat_agg_options():
+    t = ibis.table({"a": "array<int64>", "key": "int64"}, name="t")
+
+    expr = t.a.concat_agg(
+        where=_.key > 0,
+        order_by=_.key.desc(),
+        include_null=True,
+        limit=2,
+    )
+    op = expr.op()
+
+    assert op.where == (t.key > 0).op()
+    assert op.order_by == (t.key.desc().op(),)
+    assert op.include_null is True
+    assert op.distinct is False
+    assert op.limit.value == 2
+
+
+def test_concat_agg_limit_expression():
+    t = ibis.table({"a": "array<int64>"}, name="t")
+    limit = ibis.param("int64")
+
+    assert t.a.concat_agg(limit=limit).op().limit == limit.op()
+
+
+def test_concat_agg_rejects_negative_literal_limit():
+    t = ibis.table({"a": "array<int64>"}, name="t")
+
+    with pytest.raises(ValidationError, match="non-negative"):
+        t.a.concat_agg(limit=-1)
+
+
+def test_concat_agg_distinct_ordering():
+    t = ibis.table({"a": "array<int64>", "key": "int64"}, name="t")
+
+    t.a.concat_agg(distinct=True)
+    t.a.concat_agg(distinct=True, order_by=t.a.desc())
+
+    with pytest.raises(ValidationError, match="only order by the concatenated array"):
+        t.a.concat_agg(distinct=True, order_by=t.key)
+
+
+def test_collect_flatten_rewrites_to_concat_agg():
+    t = ibis.table({"a": "array<int64>", "key": "int64", "keep": "boolean"}, name="t")
+
+    result = t.a.collect(where=_.keep, order_by=_.key).flatten()
+    expected = t.a.concat_agg(where=_.keep, order_by=_.key)
+
+    assert result.equals(expected)

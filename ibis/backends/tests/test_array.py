@@ -1691,6 +1691,180 @@ def test_array_literal_with_exprs(con, input, expected):
     assert result == expected
 
 
+@builtin_array
+@pytest.mark.notimpl(
+    ["flink", "materialize", "postgres", "risingwave"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "databricks", "pyspark"],
+    raises=com.UnsupportedOperationError,
+    reason="backend cannot order array-valued aggregates",
+)
+def test_array_concat_agg(con_no_data):
+    t = ibis.memtable(
+        {
+            "group": ["a", "a", "b"],
+            "order": [2, 1, 1],
+            "arr": [[2, 3], [1], [4, 5]],
+        }
+    )
+    expr = (
+        t.group_by("group")
+        .agg(result=t.arr.concat_agg(order_by=t.order))
+        .order_by("group")
+    )
+
+    assert con_no_data.to_pyarrow(expr).to_pylist() == [
+        {"group": "a", "result": [1, 2, 3]},
+        {"group": "b", "result": [4, 5]},
+    ]
+
+
+@pytest.mark.parametrize(
+    ("dialect", "expected"),
+    [
+        ("clickhouse", "arrayflatten(grouparray("),
+        ("datafusion", "flatten(array_agg("),
+        ("databricks", "flatten(collect_list("),
+        ("duckdb", "flatten(array_agg("),
+        ("pyspark", "flatten(collect_list("),
+        ("snowflake", "array_flatten(array_agg("),
+        ("trino", "flatten(array_agg("),
+        ("athena", "flatten(array_agg("),
+    ],
+)
+def test_array_concat_agg_compiles(dialect, expected):
+    t = ibis.table({"arr": "array<int64>"}, name="t")
+
+    sql = str(ibis.to_sql(t.arr.concat_agg(), dialect=dialect)).lower()
+
+    assert expected in sql
+
+
+@pytest.mark.parametrize(
+    ("dialect", "expected"),
+    [
+        ("clickhouse", "grouparrayif(2)("),
+        ("datafusion", "array_slice(array_agg("),
+        ("databricks", "slice(collect_list("),
+        ("duckdb", "list_slice(array_agg("),
+        ("pyspark", "slice(collect_list("),
+        ("snowflake", "array_slice(array_agg("),
+        ("trino", "slice(array_agg("),
+        ("athena", "slice(array_agg("),
+    ],
+)
+def test_array_concat_agg_limit_compiles(dialect, expected):
+    t = ibis.table({"arr": "array<int64>", "keep": "boolean"}, name="t")
+
+    sql = str(
+        ibis.to_sql(t.arr.concat_agg(where=t.keep, limit=2), dialect=dialect)
+    ).lower()
+
+    assert expected in sql
+
+
+@pytest.mark.parametrize(
+    "dialect", ["bigquery", "clickhouse", "databricks", "pyspark", "snowflake"]
+)
+def test_array_concat_agg_include_null_rejected(dialect):
+    t = ibis.table({"arr": "array<int64>"}, name="t")
+
+    with pytest.raises(com.UnsupportedOperationError):
+        ibis.to_sql(t.arr.concat_agg(include_null=True), dialect=dialect)
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    ["flink", "materialize", "postgres", "risingwave"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["bigquery"],
+    raises=GoogleBadRequest,
+    reason="BigQuery does not allow a final array containing null elements",
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=AssertionError,
+    reason="ClickHouse arrays are not nullable",
+)
+@pytest.mark.notyet(
+    ["databricks", "pyspark", "snowflake"],
+    raises=AssertionError,
+    reason="backend returns an empty array for an all-null group",
+)
+def test_array_concat_agg_nulls(con_no_data):
+    t = ibis.memtable(
+        {
+            "group": ["a", "a", "a", "b"],
+            "arr": [[1, None], None, [], None],
+        },
+        schema={"group": "string", "arr": "array<int64>"},
+    )
+    expr = t.group_by("group").agg(result=t.arr.concat_agg()).order_by("group")
+
+    assert con_no_data.to_pyarrow(expr).to_pylist() == [
+        {"group": "a", "result": [1, None]},
+        {"group": "b", "result": None},
+    ]
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    ["flink", "materialize", "postgres", "risingwave"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "databricks", "pyspark"],
+    raises=com.UnsupportedOperationError,
+    reason="backend cannot order array-valued aggregates",
+)
+def test_array_concat_agg_filter_order_limit(con_no_data):
+    t = ibis.memtable(
+        {
+            "order": [0, 2, 1, 3],
+            "keep": [False, True, True, True],
+            "arr": [[9], [2], [1], [3]],
+        }
+    )
+    expr = t.arr.concat_agg(where=t.keep, order_by=t.order, limit=2)
+
+    assert con_no_data.to_pyarrow(expr).as_py() == [1, 2]
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    ["flink", "materialize", "postgres", "risingwave"],
+    raises=com.OperationNotDefinedError,
+)
+def test_array_concat_agg_limit(con_no_data):
+    t = ibis.memtable({"arr": [[1], [1], [1]]})
+
+    result = con_no_data.to_pyarrow(t.arr.concat_agg(limit=2)).as_py()
+
+    assert result == [1, 1]
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    ["flink", "materialize", "postgres", "risingwave"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["bigquery"],
+    raises=com.UnsupportedOperationError,
+    reason="backend cannot aggregate distinct arrays",
+)
+def test_array_concat_agg_distinct(con_no_data):
+    t = ibis.memtable({"arr": [[2], [1], [2]]})
+
+    result = con_no_data.to_pyarrow(t.arr.concat_agg(distinct=True)).as_py()
+
+    assert sorted(result) == [1, 2]
+
+
 @pytest.mark.notimpl(
     ["datafusion", "postgres", "polars", "risingwave", "flink"],
     raises=com.OperationNotDefinedError,

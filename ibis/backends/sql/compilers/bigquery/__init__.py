@@ -503,6 +503,25 @@ class BigQueryCompiler(SQLGlotCompiler):
             arg = sge.IgnoreNulls(this=arg)
         return self.f.array_agg(arg)
 
+    def visit_ArrayConcatAgg(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the bigquery backend"
+            )
+        if distinct:
+            raise com.UnsupportedOperationError(
+                "`distinct=True` is not supported by the bigquery backend"
+            )
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        if order_by:
+            arg = sge.Order(this=arg, expressions=order_by)
+        if limit is not None:
+            arg = sge.Limit(this=arg, expression=limit)
+        return self.f.array_concat_agg(arg)
+
     def _neg_idx_to_pos(self, arg, idx):
         return self.if_(idx < 0, self.f.array_length(arg) + idx, idx)
 
