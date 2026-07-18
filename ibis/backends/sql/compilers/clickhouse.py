@@ -701,7 +701,13 @@ class ClickHouseCompiler(SQLGlotCompiler):
                 expressions=[limit],
                 params=[arg, where] if where is not None else [arg],
             )
-        return self.f.arrayFlatten(arrays)
+        flattened = self.f.arrayFlatten(arrays)
+        # ClickHouse infers Variant(Array(...)) for this conditional, allowing
+        # an otherwise non-nullable array reduction to represent an empty group.
+        has_inputs = (
+            self.f.countIf(where) > 0 if where is not None else sge.Count(this=STAR) > 0
+        )
+        return self.if_(has_inputs, flattened, NULL)
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if include_null:

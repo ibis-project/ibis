@@ -87,7 +87,8 @@ class ArrayConcatAgg(Orderable):
 
     def __init__(self, arg, order_by, distinct, limit, **kwargs):
         """Validate and initialize an array concatenation aggregate."""
-        if limit is not None and getattr(limit, "value", 0) < 0:
+        value = getattr(limit, "value", None)
+        if value is not None and value < 0:
             raise ValidationError("`concat_agg` limit must be non-negative")
         super().__init__(
             arg=arg,

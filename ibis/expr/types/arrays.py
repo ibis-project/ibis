@@ -89,9 +89,13 @@ class ArrayValue(Value):
         """Aggregate arrays by concatenating their elements.
 
         This operation is called `array_concat_agg` in some systems. Without
-        `limit`, it is equivalent to collecting the input arrays and flattening
-        the result. Modifier support varies by backend; unsupported combinations
-        raise `UnsupportedOperationError` during compilation.
+        `limit`, it concatenates the same retained input elements as collecting
+        the arrays and flattening the result. Empty-input results can differ from
+        that composition on backends whose collection aggregate returns an empty
+        array. Modifier support varies by backend; unsupported combinations raise
+        `UnsupportedOperationError` during compilation. By default, no retained
+        non-null input arrays produce null; BigQuery represents null arrays as
+        empty arrays. Window-function support also varies by backend.
 
         Parameters
         ----------
@@ -105,17 +109,21 @@ class ArrayValue(Value):
             undefined and backend-specific.
         include_null
             Whether to include null input arrays. By default, null input arrays
-            are ignored. Null elements within non-null input arrays are always
-            preserved. On supporting backends, a retained null array contributes
-            no elements but makes an all-null group return an empty array instead
-            of null. Backend support for including null arrays varies.
+            are ignored. A retained null array contributes no elements but makes
+            an all-null group return an empty array instead of null. Null elements
+            within non-null input arrays are preserved where the backend permits;
+            BigQuery cannot return a final array containing null elements. Backend
+            support for including null arrays and modifier combinations varies.
         distinct
             Whether to include only distinct input arrays. This does not remove
             duplicate elements after concatenation.
         limit
             The maximum number of input arrays to concatenate after filtering,
             ordering, and deduplication. If zero, return an empty array when at
-            least one input array remains after filtering.
+            least one input array remains after filtering. BigQuery requires a
+            deterministic, relation-independent constant integer expression,
+            and Polars requires a literal value; other backends may support
+            scalar expressions.
 
         Returns
         -------
@@ -1200,17 +1208,6 @@ class ArrayValue(Value):
         │ []                   │ ['def']              │ NULL       │ … │
         └──────────────────────┴──────────────────────┴────────────┴───┘
         """
-        if isinstance(op := self.op(), ops.ArrayCollect):
-            # Keep collect modifiers intact while selecting native
-            # concatenating aggregates where a backend provides one.
-            return ops.ArrayConcatAgg(
-                op.arg,
-                where=op.where,
-                order_by=op.order_by,
-                include_null=op.include_null,
-                distinct=op.distinct,
-                limit=None,
-            ).to_expr()
         return ops.ArrayFlatten(self).to_expr()
 
     def anys(self) -> ir.BooleanValue:
