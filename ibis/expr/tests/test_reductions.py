@@ -66,6 +66,11 @@ from ibis.common.exceptions import IbisTypeError
             id="collect",
         ),
         param(
+            lambda t, where: t.array_col.concat_agg(where=where),
+            ops.ArrayConcatAgg,
+            id="concat_agg",
+        ),
+        param(
             lambda t, where: t.int_col.approx_quantile(0.5, where=where),
             ops.ApproxQuantile,
             id="approx_quantile",
@@ -92,6 +97,7 @@ def test_reduction_methods(fn, operation, cond):
             "string_col": "string",
             "int_col": "int64",
             "bool_col": "boolean",
+            "array_col": "array<int64>",
         },
     )
     where = cond(t)
@@ -175,3 +181,51 @@ def test_collect_distinct():
                 t.b,
             ),
         )
+
+
+def test_concat_agg_options_and_validation():
+    """Validate concat_agg modifiers without rejecting backend-specific forms."""
+    t = ibis.table({"a": "array<int64>", "key": "int64"}, name="t")
+
+    expr = t.a.concat_agg(
+        where=_.key > 0,
+        order_by=_.key.desc(),
+        include_null=True,
+        limit=2,
+    )
+    op = expr.op()
+
+    assert op.where == (t.key > 0).op()
+    assert op.order_by == (t.key.desc().op(),)
+    assert op.include_null is True
+    assert op.distinct is False
+    assert op.limit.value == 2
+
+    limit = ibis.param("int64")
+    assert t.a.concat_agg(limit=limit).op().limit == limit.op()
+
+    null_limit = ibis.literal(None, type="int64")
+    assert t.a.concat_agg(limit=null_limit).op().limit == null_limit.op()
+
+    with pytest.raises(ValidationError, match="non-negative"):
+        t.a.concat_agg(limit=-1)
+
+    t.a.concat_agg(distinct=True)
+    t.a.concat_agg(distinct=True, order_by=t.a.desc())
+    t.a.concat_agg(distinct=True, order_by=t.key)
+
+
+def test_collect_flatten_preserves_composition():
+    """Keep collect and flatten separate in backend-independent expressions."""
+    t = ibis.table({"a": "array<int64>", "key": "int64", "keep": "boolean"}, name="t")
+
+    result = t.a.collect(where=_.keep, order_by=_.key).flatten()
+    op = result.op()
+
+    assert isinstance(op, ops.ArrayFlatten)
+    assert isinstance(collect := op.arg, ops.ArrayCollect)
+    assert collect.where == t.keep.op()
+    assert collect.order_by == (t.key.asc().op(),)
+
+    assert t.a.collect(include_null=True).flatten().op().arg.include_null is True
+    assert t.a.collect(distinct=True).flatten().op().arg.distinct is True

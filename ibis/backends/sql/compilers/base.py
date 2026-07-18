@@ -1292,6 +1292,43 @@ class SQLGlotCompiler(abc.ABC):
     def visit_ArrayConcat(self, op, *, arg):
         return sge.ArrayConcat(this=arg[0], expressions=list(arg[1:]))
 
+    def _validate_array_concat_agg(self, op):
+        """Reject SQL-invalid distinct ordering combinations."""
+        if op.distinct and op.order_by and [op.arg] != [key.arg for key in op.order_by]:
+            raise com.UnsupportedOperationError(
+                f"`distinct=True` with an independent `order_by` is not "
+                f"supported by the {self.dialect} backend"
+            )
+
+    def _array_concat_agg(
+        self,
+        *,
+        op,
+        arg,
+        where,
+        order_by,
+        include_null,
+        distinct,
+        limit,
+        array_slice,
+    ):
+        """Compile an array aggregate followed by flattening."""
+        self._validate_array_concat_agg(op)
+        if not include_null:
+            # Filter before ARRAY_AGG so an all-null group follows the usual
+            # reduction contract and produces null instead of an empty array.
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        if isinstance(op.limit, ops.Literal) and op.limit.value == 0:
+            has_inputs = self.agg.count(STAR, where=where) > 0
+            return self.if_(has_inputs, self.cast(self.f.array(), op.dtype), NULL)
+        if distinct:
+            arg = sge.Distinct(expressions=[arg])
+        arrays = self.agg.array_agg(arg, where=where, order_by=order_by)
+        if limit is not None:
+            arrays = array_slice(arrays, limit)
+        return self.f.flatten(arrays)
+
     ## relations
 
     @staticmethod

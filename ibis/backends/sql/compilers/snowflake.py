@@ -523,6 +523,42 @@ $$""",
             distinct=distinct,
         )
 
+    def visit_ArrayConcatAgg(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        """Compile with Snowflake ARRAY_AGG and ARRAY_FLATTEN."""
+        self._validate_array_concat_agg(op)
+        if include_null and distinct:
+            raise com.UnsupportedOperationError(
+                "combining `include_null=True` and `distinct=True` is not "
+                "supported by the snowflake backend"
+            )
+        if include_null:
+            # ARRAY_AGG omits nulls, so use empty arrays to preserve their
+            # participation in input-array limits without adding elements.
+            arg = self.f.coalesce(arg, self.cast(self.f.array(), op.dtype))
+        # COUNT checks retained rows without rendering ARRAY_AGG twice.
+        has_inputs = self.agg.count(arg, where=where) > 0
+        if isinstance(op.limit, ops.Literal) and op.limit.value == 0:
+            return self.if_(has_inputs, self.cast(self.f.array(), op.dtype), NULL)
+        arrays = self._array_collect(
+            arg=arg,
+            where=where,
+            order_by=order_by,
+            include_null=False,
+            distinct=distinct,
+        )
+        if limit is not None:
+            arrays = self.f.array_slice(arrays, 0, limit)
+
+        # ARRAY_AGG returns an empty array when every input is null. Preserve
+        # the reduction contract by returning null for that case.
+        return self.if_(
+            has_inputs,
+            self.f.array_flatten(arrays),
+            NULL,
+        )
+
     def visit_First(self, op, *, arg, where, order_by, include_null):
         out = self._array_collect(
             arg=arg, where=where, order_by=order_by, include_null=include_null

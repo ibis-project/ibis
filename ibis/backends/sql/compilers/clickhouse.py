@@ -665,6 +665,50 @@ class ClickHouseCompiler(SQLGlotCompiler):
         func = self.agg.groupUniqArray if distinct else self.agg.groupArray
         return func(arg, where=where, order_by=order_by)
 
+    def visit_ArrayConcatAgg(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        """Compile with ClickHouse groupArray and arrayFlatten."""
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the clickhouse backend"
+            )
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of `concat_agg` is not supported by the clickhouse backend"
+            )
+
+        name = "groupUniqArray" if distinct else "groupArray"
+        if limit is None:
+            arrays = self.agg[name](arg, where=where)
+        elif isinstance(op.limit, ops.Literal) and op.limit.value == 0:
+            # Bound the aggregate at one input to retain reduction shape without
+            # collecting, sorting, or deduplicating a result that will be empty.
+            empty = self.cast(self.f.array(), op.dtype)
+            arrays = sge.ParameterizedAgg(
+                this="groupArrayIf" if where is not None else "groupArray",
+                expressions=[sge.Literal.number(1)],
+                params=[empty, where] if where is not None else [empty],
+            )
+            arrays = self.f.arraySlice(arrays, 1, limit)
+        elif not isinstance(op.limit, ops.Literal):
+            arrays = self.f.arraySlice(self.agg[name](arg, where=where), 1, limit)
+        else:
+            # ClickHouse parameterizes aggregate limits before the argument
+            # list and expresses filtering with the `If` combinator.
+            arrays = sge.ParameterizedAgg(
+                this=f"{name}If" if where is not None else name,
+                expressions=[limit],
+                params=[arg, where] if where is not None else [arg],
+            )
+        flattened = self.f.arrayFlatten(arrays)
+        # ClickHouse infers Variant(Array(...)) for this conditional, allowing
+        # an otherwise non-nullable array reduction to represent an empty group.
+        has_inputs = (
+            self.f.countIf(where) > 0 if where is not None else sge.Count(this=STAR) > 0
+        )
+        return self.if_(has_inputs, flattened, NULL)
+
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if include_null:
             raise com.UnsupportedOperationError(
