@@ -1691,16 +1691,20 @@ def test_array_literal_with_exprs(con, input, expected):
     assert result == expected
 
 
-@builtin_array
-@pytest.mark.notimpl(
+array_concat_agg_notimpl = pytest.mark.notimpl(
     ["flink", "materialize", "postgres", "risingwave"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
+array_concat_agg_order_by_notimpl = pytest.mark.notimpl(
     ["clickhouse", "databricks", "pyspark"],
     raises=com.UnsupportedOperationError,
     reason="backend cannot order array-valued aggregates",
 )
+
+
+@builtin_array
+@array_concat_agg_notimpl
+@array_concat_agg_order_by_notimpl
 def test_array_concat_agg(con_no_data):
     t = ibis.memtable(
         {
@@ -1722,47 +1726,61 @@ def test_array_concat_agg(con_no_data):
 
 
 @pytest.mark.parametrize(
-    ("dialect", "expected"),
+    ("dialect", "expected", "aggregate"),
     [
-        ("clickhouse", "arrayflatten(grouparray("),
-        ("datafusion", "flatten(array_agg("),
-        ("databricks", "flatten(collect_list("),
-        ("duckdb", "flatten(array_agg("),
-        ("pyspark", "flatten(collect_list("),
-        ("snowflake", "array_flatten(array_agg("),
-        ("trino", "flatten(array_agg("),
-        ("athena", "flatten(array_agg("),
+        ("clickhouse", ("arrayflatten(grouparray(",), "grouparray("),
+        ("datafusion", ("flatten(array_agg(",), "array_agg("),
+        ("databricks", ("if(count(", "flatten(collect_list("), "collect_list("),
+        ("duckdb", ("flatten(array_agg(",), "array_agg("),
+        ("pyspark", ("if(count(", "flatten(collect_list("), "collect_list("),
+        ("snowflake", ("iff(count(", "array_flatten(array_agg("), "array_agg("),
+        ("trino", ("flatten(array_agg(",), "array_agg("),
+        ("athena", ("flatten(array_agg(",), "array_agg("),
     ],
 )
-def test_array_concat_agg_compiles(dialect, expected):
+def test_array_concat_agg_compiles(dialect, expected, aggregate):
     t = ibis.table({"arr": "array<int64>"}, name="t")
 
     sql = str(ibis.to_sql(t.arr.concat_agg(), dialect=dialect)).lower()
 
-    assert expected in sql
+    assert all(fragment in sql for fragment in expected)
+    assert sql.count(aggregate) == 1
 
 
 @pytest.mark.parametrize(
-    ("dialect", "expected"),
+    ("dialect", "limited", "zero", "aggregate", "zero_aggregate_count"),
     [
-        ("clickhouse", "grouparrayif(2)("),
-        ("datafusion", "array_slice(array_agg("),
-        ("databricks", "slice(collect_list("),
-        ("duckdb", "list_slice(array_agg("),
-        ("pyspark", "slice(collect_list("),
-        ("snowflake", "array_slice(array_agg("),
-        ("trino", "slice(array_agg("),
-        ("athena", "slice(array_agg("),
+        (
+            "clickhouse",
+            "grouparrayif(2)(",
+            "arrayslice(grouparrayif(1)(",
+            "grouparrayif(",
+            1,
+        ),
+        ("datafusion", "array_slice(array_agg(", "count(*) filter(", "array_agg(", 0),
+        ("databricks", "slice(collect_list(", "if(count(", "collect_list(", 0),
+        ("duckdb", "list_slice(array_agg(", "count(*) filter(", "array_agg(", 0),
+        ("pyspark", "slice(collect_list(", "if(count(", "collect_list(", 0),
+        ("snowflake", "array_slice(array_agg(", "iff(count(", "array_agg(", 0),
+        ("trino", "slice(array_agg(", "count(*) filter(", "array_agg(", 0),
+        ("athena", "slice(array_agg(", "count(*) filter(", "array_agg(", 0),
     ],
 )
-def test_array_concat_agg_limit_compiles(dialect, expected):
+def test_array_concat_agg_limit_compiles(
+    dialect, limited, zero, aggregate, zero_aggregate_count
+):
     t = ibis.table({"arr": "array<int64>", "keep": "boolean"}, name="t")
 
-    sql = str(
+    limited_sql = str(
         ibis.to_sql(t.arr.concat_agg(where=t.keep, limit=2), dialect=dialect)
     ).lower()
+    zero_sql = str(
+        ibis.to_sql(t.arr.concat_agg(where=t.keep, limit=0), dialect=dialect)
+    ).lower()
 
-    assert expected in sql
+    assert limited in limited_sql
+    assert zero in zero_sql
+    assert zero_sql.count(aggregate) == zero_aggregate_count
 
 
 @pytest.mark.parametrize(
@@ -1797,10 +1815,7 @@ def test_array_concat_agg_distinct_order_by_rejected(dialect):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "materialize", "postgres", "risingwave"],
-    raises=com.OperationNotDefinedError,
-)
+@array_concat_agg_notimpl
 @pytest.mark.notyet(
     ["bigquery"],
     raises=GoogleBadRequest,
@@ -1828,10 +1843,7 @@ def test_array_concat_agg_nulls(con_no_data):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "materialize", "postgres", "risingwave"],
-    raises=com.OperationNotDefinedError,
-)
+@array_concat_agg_notimpl
 @pytest.mark.notimpl(
     ["bigquery", "clickhouse", "databricks", "polars", "pyspark", "snowflake"],
     raises=com.UnsupportedOperationError,
@@ -1857,32 +1869,9 @@ def test_array_concat_agg_include_null(con_no_data):
     ]
 
 
-@pytest.mark.parametrize(
-    ("dialect", "expected"),
-    [
-        ("databricks", "if(size("),
-        ("pyspark", "if(size("),
-        ("snowflake", "iff(array_size("),
-    ],
-)
-def test_array_concat_agg_empty_group_compiles(dialect, expected):
-    t = ibis.table({"arr": "array<int64>"}, name="t")
-
-    sql = str(ibis.to_sql(t.arr.concat_agg(), dialect=dialect)).lower()
-
-    assert expected in sql
-
-
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "materialize", "postgres", "risingwave"],
-    raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
-    ["clickhouse", "databricks", "pyspark"],
-    raises=com.UnsupportedOperationError,
-    reason="backend cannot order array-valued aggregates",
-)
+@array_concat_agg_notimpl
+@array_concat_agg_order_by_notimpl
 def test_array_concat_agg_filter_order_limit(con_no_data):
     t = ibis.memtable(
         {
@@ -1897,36 +1886,24 @@ def test_array_concat_agg_filter_order_limit(con_no_data):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "materialize", "postgres", "risingwave"],
-    raises=com.OperationNotDefinedError,
+@array_concat_agg_notimpl
+@pytest.mark.parametrize(
+    ("limit", "expected"),
+    [
+        pytest.param(2, [1, 1], id="positive"),
+        pytest.param(0, [], id="zero"),
+    ],
 )
-def test_array_concat_agg_limit(con_no_data):
+def test_array_concat_agg_limit(con_no_data, limit, expected):
     t = ibis.memtable({"arr": [[1], [1], [1]]})
 
-    result = con_no_data.to_pyarrow(t.arr.concat_agg(limit=2)).as_py()
+    result = con_no_data.to_pyarrow(t.arr.concat_agg(limit=limit)).as_py()
 
-    assert result == [1, 1]
-
-
-@builtin_array
-@pytest.mark.notimpl(
-    ["flink", "materialize", "postgres", "risingwave"],
-    raises=com.OperationNotDefinedError,
-)
-def test_array_concat_agg_zero_limit(con_no_data):
-    t = ibis.memtable({"arr": [[1], [2]]})
-
-    result = con_no_data.to_pyarrow(t.arr.concat_agg(limit=0)).as_py()
-
-    assert result == []
+    assert result == expected
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "materialize", "postgres", "risingwave"],
-    raises=com.OperationNotDefinedError,
-)
+@array_concat_agg_notimpl
 def test_array_concat_agg_filter(con_no_data):
     t = ibis.memtable({"arr": [[1], [2], [3]], "keep": [True, True, False]})
 
@@ -1936,10 +1913,7 @@ def test_array_concat_agg_filter(con_no_data):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "materialize", "postgres", "risingwave"],
-    raises=com.OperationNotDefinedError,
-)
+@array_concat_agg_notimpl
 @pytest.mark.notimpl(
     ["bigquery"],
     raises=com.UnsupportedOperationError,
@@ -1954,10 +1928,7 @@ def test_array_concat_agg_distinct(con_no_data):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "materialize", "postgres", "risingwave"],
-    raises=com.OperationNotDefinedError,
-)
+@array_concat_agg_notimpl
 @pytest.mark.notimpl(
     [
         "athena",
@@ -1984,10 +1955,7 @@ def test_array_concat_agg_distinct_order_by(con_no_data):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "materialize", "postgres", "risingwave"],
-    raises=com.OperationNotDefinedError,
-)
+@array_concat_agg_notimpl
 @pytest.mark.notimpl(
     ["bigquery", "snowflake"],
     raises=com.UnsupportedOperationError,
@@ -2004,10 +1972,7 @@ def test_array_concat_agg_filter_distinct(con_no_data):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "materialize", "postgres", "risingwave"],
-    raises=com.OperationNotDefinedError,
-)
+@array_concat_agg_notimpl
 @pytest.mark.notimpl(
     ["bigquery"],
     raises=com.UnsupportedOperationError,

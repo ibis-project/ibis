@@ -506,6 +506,7 @@ class BigQueryCompiler(SQLGlotCompiler):
     def visit_ArrayConcatAgg(
         self, op, *, arg, where, order_by, include_null, distinct, limit
     ):
+        """Compile with BigQuery's native ARRAY_CONCAT_AGG."""
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the bigquery backend"

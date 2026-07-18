@@ -90,7 +90,8 @@ class ArrayValue(Value):
 
         This operation is called `array_concat_agg` in some systems. Without
         `limit`, it is equivalent to collecting the input arrays and flattening
-        the result.
+        the result. Modifier support varies by backend; unsupported combinations
+        raise `UnsupportedOperationError` during compilation.
 
         Parameters
         ----------
@@ -113,12 +114,22 @@ class ArrayValue(Value):
             duplicate elements after concatenation.
         limit
             The maximum number of input arrays to concatenate after filtering,
-            ordering, and deduplication.
+            ordering, and deduplication. If zero, return an empty array when at
+            least one input array remains after filtering.
 
         Returns
         -------
         ArrayScalar
-            The concatenated elements of the input arrays.
+            The concatenated elements of the input arrays. Groups with no retained
+            input arrays return null unless supported `include_null=True` semantics
+            retain a null input array.
+
+        Raises
+        ------
+        ValidationError
+            If `limit` is a negative literal.
+        UnsupportedOperationError
+            If the backend does not support a requested modifier or combination.
 
         See Also
         --------
@@ -138,9 +149,9 @@ class ArrayValue(Value):
         ...         "values": [[2, 3], [1], [4, 5]],
         ...     }
         ... )
-        >>> (
-        ...     t.group_by("key").agg(values=t.values.concat_agg(order_by=_.order)).order_by("key")
-        ... ).to_pandas()
+        >>> grouped = t.group_by("key")
+        >>> result = grouped.agg(values=t.values.concat_agg(order_by=_.order))
+        >>> result.order_by("key").to_pandas()
           key     values
         0   a  [1, 2, 3]
         1   b     [4, 5]

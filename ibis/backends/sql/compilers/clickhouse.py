@@ -668,6 +668,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_ArrayConcatAgg(
         self, op, *, arg, where, order_by, include_null, distinct, limit
     ):
+        """Compile with ClickHouse groupArray and arrayFlatten."""
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the clickhouse backend"
@@ -680,9 +681,17 @@ class ClickHouseCompiler(SQLGlotCompiler):
         name = "groupUniqArray" if distinct else "groupArray"
         if limit is None:
             arrays = self.agg[name](arg, where=where)
-        elif not isinstance(op.limit, ops.Literal) or op.limit.value == 0:
-            # ClickHouse rejects a zero parameter for groupArray, so slice the
-            # complete aggregate for zero and dynamic limits.
+        elif isinstance(op.limit, ops.Literal) and op.limit.value == 0:
+            # Bound the aggregate at one input to retain reduction shape without
+            # collecting, sorting, or deduplicating a result that will be empty.
+            empty = self.cast(self.f.array(), op.dtype)
+            arrays = sge.ParameterizedAgg(
+                this="groupArrayIf" if where is not None else "groupArray",
+                expressions=[sge.Literal.number(1)],
+                params=[empty, where] if where is not None else [empty],
+            )
+            arrays = self.f.arraySlice(arrays, 1, limit)
+        elif not isinstance(op.limit, ops.Literal):
             arrays = self.f.arraySlice(self.agg[name](arg, where=where), 1, limit)
         else:
             # ClickHouse parameterizes aggregate limits before the argument

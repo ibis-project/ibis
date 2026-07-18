@@ -183,7 +183,7 @@ def test_collect_distinct():
         )
 
 
-def test_concat_agg_options():
+def test_concat_agg_options_and_validation():
     t = ibis.table({"a": "array<int64>", "key": "int64"}, name="t")
 
     expr = t.a.concat_agg(
@@ -200,23 +200,11 @@ def test_concat_agg_options():
     assert op.distinct is False
     assert op.limit.value == 2
 
-
-def test_concat_agg_limit_expression():
-    t = ibis.table({"a": "array<int64>"}, name="t")
     limit = ibis.param("int64")
-
     assert t.a.concat_agg(limit=limit).op().limit == limit.op()
-
-
-def test_concat_agg_rejects_negative_literal_limit():
-    t = ibis.table({"a": "array<int64>"}, name="t")
 
     with pytest.raises(ValidationError, match="non-negative"):
         t.a.concat_agg(limit=-1)
-
-
-def test_concat_agg_distinct_ordering():
-    t = ibis.table({"a": "array<int64>", "key": "int64"}, name="t")
 
     t.a.concat_agg(distinct=True)
     t.a.concat_agg(distinct=True, order_by=t.a.desc())

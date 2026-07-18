@@ -526,7 +526,12 @@ $$""",
     def visit_ArrayConcatAgg(
         self, op, *, arg, where, order_by, include_null, distinct, limit
     ):
+        """Compile with Snowflake ARRAY_AGG and ARRAY_FLATTEN."""
         self._validate_array_concat_agg(op)
+        # COUNT checks retained rows without rendering ARRAY_AGG twice.
+        has_inputs = self.agg.count(arg, where=where) > 0
+        if isinstance(op.limit, ops.Literal) and op.limit.value == 0:
+            return self.if_(has_inputs, self.cast(self.f.array(), op.dtype), NULL)
         arrays = self._array_collect(
             arg=arg,
             where=where,
@@ -534,7 +539,6 @@ $$""",
             include_null=include_null,
             distinct=distinct,
         )
-        has_inputs = self.f.array_size(arrays) > 0
         if limit is not None:
             arrays = self.f.array_slice(arrays, 0, limit)
 
