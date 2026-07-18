@@ -447,6 +447,7 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_ArrayConcatAgg(
         self, op, *, arg, where, order_by, include_null, distinct, limit
     ):
+        """Compile with Spark collection and flattening functions."""
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the pyspark backend"
@@ -458,8 +459,11 @@ class PySparkCompiler(SQLGlotCompiler):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         func = self.f.collect_set if distinct else self.f.collect_list
+        # COUNT checks retained rows without rendering the array aggregate twice.
+        has_inputs = self.f.count(arg) > 0
+        if isinstance(op.limit, ops.Literal) and op.limit.value == 0:
+            return self.if_(has_inputs, self.cast(self.f.array(), op.dtype), NULL)
         arrays = func(arg)
-        has_inputs = self.f.size(arrays) > 0
         if limit is not None:
             arrays = self.f.slice(arrays, 1, limit)
 

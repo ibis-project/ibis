@@ -264,6 +264,7 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_ArrayConcatAgg(
         self, op, *, arg, where, order_by, include_null, distinct, limit
     ):
+        """Compile by collecting arrays and flattening the result."""
         return self._array_concat_agg(
             op=op,
             arg=arg,
