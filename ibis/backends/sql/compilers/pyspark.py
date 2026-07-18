@@ -448,14 +448,19 @@ class PySparkCompiler(SQLGlotCompiler):
         self, op, *, arg, where, order_by, include_null, distinct, limit
     ):
         """Compile with Spark collection and flattening functions."""
-        if include_null:
+        if include_null and distinct:
             raise com.UnsupportedOperationError(
-                "`include_null=True` is not supported by the pyspark backend"
+                "combining `include_null=True` and `distinct=True` is not "
+                "supported by the pyspark backend"
             )
         if order_by:
             raise com.UnsupportedOperationError(
                 "ordering of `concat_agg` is not supported by the pyspark backend"
             )
+        if include_null:
+            # collect_list drops nulls, so use empty arrays to preserve their
+            # participation in input-array limits without adding elements.
+            arg = self.f.coalesce(arg, self.cast(self.f.array(), op.dtype))
         if where is not None:
             arg = self.if_(where, arg, NULL)
         func = self.f.collect_set if distinct else self.f.collect_list

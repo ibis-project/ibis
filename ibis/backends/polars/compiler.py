@@ -1095,6 +1095,7 @@ def _prepare_array_aggregate(op, *, apply_modifiers=True, **kw):
 
 @translate.register(ops.ArrayCollect)
 def array_collect(op, in_group_by=False, **kw):
+    """Translate scalar collection into a Polars list aggregate."""
     arg, _ = _prepare_array_aggregate(op, **kw)
 
     # Polars' behavior changes for `implode` within a `group_by` currently.
@@ -1105,11 +1106,6 @@ def array_collect(op, in_group_by=False, **kw):
 @translate.register(ops.ArrayConcatAgg)
 def array_concat_agg(op, in_group_by=False, **kw):
     """Translate an array concatenation aggregate."""
-    if op.include_null:
-        raise com.UnsupportedOperationError(
-            "`include_null=True` is not supported by the polars backend"
-        )
-
     zero_limit = isinstance(op.limit, ops.Literal) and op.limit.value == 0
     arg, has_inputs = _prepare_array_aggregate(op, apply_modifiers=not zero_limit, **kw)
     dtype = PolarsType.from_ibis(op.dtype)

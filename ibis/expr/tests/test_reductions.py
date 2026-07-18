@@ -184,6 +184,7 @@ def test_collect_distinct():
 
 
 def test_concat_agg_options_and_validation():
+    """Validate concat_agg modifiers without rejecting backend-specific forms."""
     t = ibis.table({"a": "array<int64>", "key": "int64"}, name="t")
 
     expr = t.a.concat_agg(
@@ -203,6 +204,9 @@ def test_concat_agg_options_and_validation():
     limit = ibis.param("int64")
     assert t.a.concat_agg(limit=limit).op().limit == limit.op()
 
+    null_limit = ibis.literal(None, type="int64")
+    assert t.a.concat_agg(limit=null_limit).op().limit == null_limit.op()
+
     with pytest.raises(ValidationError, match="non-negative"):
         t.a.concat_agg(limit=-1)
 
@@ -211,16 +215,17 @@ def test_concat_agg_options_and_validation():
     t.a.concat_agg(distinct=True, order_by=t.key)
 
 
-def test_collect_flatten_rewrites_to_concat_agg():
+def test_collect_flatten_preserves_composition():
+    """Keep collect and flatten separate in backend-independent expressions."""
     t = ibis.table({"a": "array<int64>", "key": "int64", "keep": "boolean"}, name="t")
 
     result = t.a.collect(where=_.keep, order_by=_.key).flatten()
-    expected = t.a.concat_agg(where=_.keep, order_by=_.key)
+    op = result.op()
 
-    assert result.equals(expected)
-    assert (
-        t.a.collect(include_null=True)
-        .flatten()
-        .equals(t.a.concat_agg(include_null=True))
-    )
-    assert t.a.collect(distinct=True).flatten().equals(t.a.concat_agg(distinct=True))
+    assert isinstance(op, ops.ArrayFlatten)
+    assert isinstance(collect := op.arg, ops.ArrayCollect)
+    assert collect.where == t.keep.op()
+    assert collect.order_by == (t.key.asc().op(),)
+
+    assert t.a.collect(include_null=True).flatten().op().arg.include_null is True
+    assert t.a.collect(distinct=True).flatten().op().arg.distinct is True
