@@ -746,9 +746,7 @@ _reductions = {
     ops.All: "all",
     ops.Any: "any",
     ops.ApproxMedian: "median",
-    ops.ApproxCountDistinct: "approx_n_unique",
     ops.Count: "count",
-    ops.CountDistinct: "n_unique",
     ops.Max: "max",
     ops.Mean: "mean",
     ops.Median: "median",
@@ -1408,6 +1406,23 @@ def execute_aliased_relation(op, *, ctx: pl.SQLContext, **kw):
 @translate.register(ops.Reference)
 def execute_reference(op, **kw):
     return translate(op.parent, **kw)
+
+
+@translate.register(ops.CountDistinct)
+def execute_count_distinct(op, **kw):
+    arg = translate(op.arg, **kw)
+    if op.where is not None:
+        arg = arg.filter(translate(op.where, **kw))
+    # polars' n_unique counts null as a distinct value, COUNT(DISTINCT) does not
+    return arg.drop_nulls().n_unique()
+
+
+@translate.register(ops.ApproxCountDistinct)
+def execute_approx_count_distinct(op, **kw):
+    arg = translate(op.arg, **kw)
+    if op.where is not None:
+        arg = arg.filter(translate(op.where, **kw))
+    return arg.drop_nulls().approx_n_unique()
 
 
 @translate.register(ops.CountDistinctStar)
