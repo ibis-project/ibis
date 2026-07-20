@@ -11,7 +11,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import ValidationError, attribute
 from ibis.common.typing import VarTuple  # noqa: TC001
-from ibis.expr.operations.core import Column, Value
+from ibis.expr.operations.core import Column, Scalar, Value
 from ibis.expr.operations.relations import Relation  # noqa: TC001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TC001
 
@@ -62,14 +62,25 @@ class ArrayCollect(Orderable):
     arg: Column
     include_null: bool = False
     distinct: bool = False
+    limit: Optional[Scalar[dt.Integer]] = None
 
-    def __init__(self, arg, order_by, distinct, **kwargs):
+    def __init__(self, arg, order_by, distinct, limit=None, **kwargs):
+        """Validate and initialize an array collection aggregate."""
         if distinct and order_by and [arg] != [key.arg for key in order_by]:
             raise ValidationError(
                 "`collect` with `order_by` and `distinct=True` and may only "
                 "order by the collected column"
             )
-        super().__init__(arg=arg, order_by=order_by, distinct=distinct, **kwargs)
+        value = getattr(limit, "value", None)
+        if value is not None and value < 0:
+            raise ValidationError("`collect` limit must be non-negative")
+        super().__init__(
+            arg=arg,
+            order_by=order_by,
+            distinct=distinct,
+            limit=limit,
+            **kwargs,
+        )
 
     @attribute
     def dtype(self):

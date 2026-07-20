@@ -253,7 +253,13 @@ class TrinoCompiler(SQLGlotCompiler):
             NULL,
         )
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
+    def visit_ArrayCollect(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        if limit is not None:
+            raise com.UnsupportedOperationError(
+                "`collect` limit is not supported by the trino backend"
+            )
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
             where = cond if where is None else sge.And(this=cond, expression=where)

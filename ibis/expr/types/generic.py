@@ -1085,6 +1085,7 @@ class Value(Expr):
         order_by: Any = None,
         include_null: bool = False,
         distinct: bool = False,
+        limit: int | ir.IntegerValue | None = None,
     ) -> ir.ArrayScalar:
         """Aggregate this expression's elements into an array.
 
@@ -1104,11 +1105,23 @@ class Value(Expr):
             to `True` to include nulls in the result.
         distinct
             Whether to collect only distinct elements.
+        limit
+            The maximum number of elements to collect after filtering, ordering,
+            and deduplication. Backend support varies; unsupported backends raise
+            `UnsupportedOperationError` during compilation.
 
         Returns
         -------
         ArrayScalar
             An array of all the collected elements.
+
+        Raises
+        ------
+        ValidationError
+            If `limit` is a negative literal.
+        UnsupportedOperationError
+            If the backend does not support bounded collection or a requested
+            argument combination.
 
         Examples
         --------
@@ -1164,6 +1177,7 @@ class Value(Expr):
             order_by=self._bind_order_by(order_by),
             include_null=include_null,
             distinct=distinct,
+            limit=limit,
         ).to_expr()
 
     def identical_to(self, other: Value, /) -> ir.BooleanValue:

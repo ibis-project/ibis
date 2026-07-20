@@ -175,3 +175,13 @@ def test_collect_distinct():
                 t.b,
             ),
         )
+
+
+def test_collect_limit():
+    """Validate bounded collection expressions."""
+    t = ibis.table({"a": "string"}, name="t")
+
+    assert t.a.collect(limit=2).op().limit.value == 2
+
+    with pytest.raises(ValidationError, match="limit must be non-negative"):
+        t.a.collect(limit=-1)

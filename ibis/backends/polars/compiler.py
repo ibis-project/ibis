@@ -1075,6 +1075,7 @@ def array_column(op, **kw):
 
 @translate.register(ops.ArrayCollect)
 def array_collect(op, in_group_by=False, **kw):
+    """Translate scalar collection into a Polars list aggregate."""
     arg = translate(op.arg, **kw)
 
     predicate = True if op.include_null else arg.is_not_null()
@@ -1090,6 +1091,19 @@ def array_collect(op, in_group_by=False, **kw):
 
     if op.distinct:
         arg = arg.unique(maintain_order=op.order_by is not None)
+
+    if op.limit is not None:
+        try:
+            limit = op.limit.value
+        except AttributeError:
+            raise com.UnsupportedOperationError(
+                "dynamic `collect` limits are not supported by polars"
+            ) from None
+        if limit is None:
+            raise com.UnsupportedOperationError(
+                "null `collect` limits are not supported by polars"
+            )
+        arg = arg.head(limit)
 
     # Polars' behavior changes for `implode` within a `group_by` currently.
     # See https://github.com/pola-rs/polars/issues/16756

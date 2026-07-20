@@ -514,7 +514,13 @@ $$""",
 
         return out
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
+    def visit_ArrayCollect(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        if limit is not None:
+            raise com.UnsupportedOperationError(
+                "`collect` limit is not supported by the snowflake backend"
+            )
         return self._array_collect(
             arg=arg,
             where=where,
