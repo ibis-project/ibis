@@ -1085,7 +1085,6 @@ class Value(Expr):
         order_by: Any = None,
         include_null: bool = False,
         distinct: bool = False,
-        limit: int | ir.IntegerValue | None = None,
     ) -> ir.ArrayScalar:
         """Aggregate this expression's elements into an array.
 
@@ -1105,23 +1104,11 @@ class Value(Expr):
             to `True` to include nulls in the result.
         distinct
             Whether to collect only distinct elements.
-        limit
-            The maximum number of elements to collect after filtering, ordering,
-            and deduplication. Backend support varies; unsupported backends raise
-            `UnsupportedOperationError` during compilation.
 
         Returns
         -------
         ArrayScalar
             An array of all the collected elements.
-
-        Raises
-        ------
-        ValidationError
-            If `limit` is a negative literal.
-        UnsupportedOperationError
-            If the backend does not support bounded collection or a requested
-            argument combination.
 
         Examples
         --------
@@ -1159,13 +1146,17 @@ class Value(Expr):
         >>> t.value.collect(order_by=_.value.desc()).to_pandas()
         [5, 3, 2, 1, 1]
 
-        Compile a bounded collection for a backend with native aggregate limits:
+        Collect the first three ordered elements. Backends may push this prefix
+        slice into the aggregate to avoid constructing the complete array:
 
-        >>> expr = t.value.collect(order_by=_.value.desc(), limit=3)
+        >>> expr = t.value.collect(order_by=_.value.desc())[:3]
         >>> print(ibis.bigquery.compile(expr))
         SELECT
-          ARRAY_AGG(`t0`.`value` IGNORE NULLS ORDER BY `t0`.`value` DESC
-          LIMIT 3) AS `ArrayCollect_value_3__value`
+          COALESCE(
+            ARRAY_AGG(`t0`.`value` IGNORE NULLS ORDER BY `t0`.`value` DESC
+            LIMIT 3),
+            ARRAY<INT64>[]
+          ) AS `ArraySlice_ArrayCollect_value__value_0_3`
         FROM `ibis_pandas_memtable_...` AS `t0`
 
         Collect elements per group, filtering out values <= 1:
@@ -1186,7 +1177,6 @@ class Value(Expr):
             order_by=self._bind_order_by(order_by),
             include_null=include_null,
             distinct=distinct,
-            limit=limit,
         ).to_expr()
 
     def identical_to(self, other: Value, /) -> ir.BooleanValue:

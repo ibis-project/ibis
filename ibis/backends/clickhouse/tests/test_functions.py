@@ -10,7 +10,6 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
@@ -20,19 +19,38 @@ pytest.importorskip("clickhouse_connect")
 
 
 @pytest.mark.parametrize(
-    "limit",
+    ("builder", "expected"),
     [
-        lambda t: t.id.max(),
-        lambda _: ibis.null().cast("int64"),
+        param(lambda t: t.id.collect()[:0], "arraySlice(groupArray(1)", id="empty"),
+        param(lambda t: t.id.collect()[:2], "groupArray(2)", id="bounded"),
+        param(
+            lambda t: t.id.collect(where=t.id > 0)[:2],
+            "groupArrayIf(2)",
+            id="filtered",
+        ),
+        param(
+            lambda t: t.id.collect(distinct=True)[:2],
+            "groupUniqArray(2)",
+            id="distinct",
+        ),
     ],
-    ids=["dynamic", "null"],
 )
-def test_collect_limit_rejects_non_literal(limit):
-    """Reject collection bounds outside ClickHouse's literal syntax."""
+def test_collect_slice_pushdown(builder, expected):
+    """Push a leading collection slice into groupArray's size parameter."""
     t = ibis.table({"id": "int64"}, name="t")
 
-    with pytest.raises(com.UnsupportedOperationError, match="non-null literal"):
-        ibis.clickhouse.compile(t.id.collect(limit=limit(t)))
+    sql = ibis.clickhouse.compile(builder(t))
+
+    assert expected in sql
+
+
+def test_collect_slice_dynamic_bound_not_pushed_down():
+    """Preserve slicing when ClickHouse cannot parameterize groupArray."""
+    t = ibis.table({"id": "int64"}, name="t")
+
+    sql = ibis.clickhouse.compile(t.id.collect()[: t.id.max()])
+
+    assert "arraySlice(groupArray(" in sql
 
 
 @pytest.mark.parametrize("to_type", ["int8", "int16", "float32", "float", "!float64"])

@@ -607,13 +607,7 @@ class FlinkCompiler(SQLGlotCompiler):
     def visit_StructColumn(self, op, *, names, values):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)
 
-    def visit_ArrayCollect(
-        self, op, *, arg, where, order_by, include_null, distinct, limit
-    ):
-        if limit is not None:
-            raise com.UnsupportedOperationError(
-                "`collect` limit is not supported by the flink backend"
-            )
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if order_by:
             raise com.UnsupportedOperationError(
                 "ordering of order-sensitive aggregations via `order_by` is "

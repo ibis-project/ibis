@@ -17,6 +17,7 @@ import ibis.expr.operations as ops
 from ibis.backends.polars.rewrites import PandasAsofJoin, PandasJoin, PandasRename
 from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.dialects import Polars
+from ibis.expr.operations.reductions import LimitedArrayCollect
 from ibis.expr.operations.udf import InputType
 from ibis.formats.polars import PolarsType
 from ibis.util import gen_name
@@ -1074,6 +1075,7 @@ def array_column(op, **kw):
 
 
 @translate.register(ops.ArrayCollect)
+@translate.register(LimitedArrayCollect)
 def array_collect(op, in_group_by=False, **kw):
     """Translate scalar collection into a Polars list aggregate."""
     arg = translate(op.arg, **kw)
@@ -1092,18 +1094,8 @@ def array_collect(op, in_group_by=False, **kw):
     if op.distinct:
         arg = arg.unique(maintain_order=op.order_by is not None)
 
-    if op.limit is not None:
-        try:
-            limit = op.limit.value
-        except AttributeError:
-            raise com.UnsupportedOperationError(
-                "dynamic `collect` limits are not supported by polars"
-            ) from None
-        if limit is None:
-            raise com.UnsupportedOperationError(
-                "null `collect` limits are not supported by polars"
-            )
-        arg = arg.head(limit)
+    if isinstance(op, LimitedArrayCollect):
+        arg = arg.head(op.limit.value)
 
     # Polars' behavior changes for `implode` within a `group_by` currently.
     # See https://github.com/pola-rs/polars/issues/16756

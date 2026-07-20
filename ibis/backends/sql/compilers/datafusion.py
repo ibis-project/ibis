@@ -350,13 +350,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_ArrayPosition(self, op, *, arg, other):
         return self.f.coalesce(self.f.array_position(arg, other), 0)
 
-    def visit_ArrayCollect(
-        self, op, *, arg, where, order_by, include_null, distinct, limit
-    ):
-        if limit is not None:
-            raise com.UnsupportedOperationError(
-                "`collect` limit is not supported by the datafusion backend"
-            )
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if distinct:
             raise com.UnsupportedOperationError(
                 "`collect` with `distinct=True` is not supported"

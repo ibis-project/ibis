@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any
 import sqlglot as sg
 import sqlglot.expressions as sge
 from sqlglot.dialects import BigQuery
-from sqlglot.optimizer.simplify import simplify
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -29,9 +28,8 @@ from ibis.backends.sql.rewrites import (
     lower_sample,
     split_select_distinct_with_order_by,
 )
-from ibis.common.patterns import replace
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
-from ibis.expr.rewrites import p
+from ibis.expr.rewrites import lower_array_collect_slice
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -39,16 +37,6 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
-
-
-@replace(p.WindowFunction)
-def _reject_windowed_bounded_collect(_, **kwargs):
-    """Reject aggregate limits, which BigQuery forbids in window functions."""
-    if isinstance(_.func, ops.ArrayCollect) and _.func.limit is not None:
-        raise com.UnsupportedOperationError(
-            "BigQuery does not support `collect` limit in a window function"
-        )
-    return _
 
 
 def _qualify_memtable(
@@ -125,7 +113,7 @@ class BigQueryCompiler(SQLGlotCompiler):
     agg = AggGen(supports_order_by=True)
 
     rewrites = (
-        _reject_windowed_bounded_collect,
+        lower_array_collect_slice,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_rank,
@@ -499,40 +487,9 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.f.parse_datetime(format_str, arg)
 
     def visit_ArrayCollect(
-        self, op, *, arg, where, order_by, include_null, distinct, limit
+        self, op, *, arg, where, order_by, include_null, distinct, limit=None
     ):
-        """Compile collection with BigQuery's native aggregate limit."""
-        if op.limit is not None and (
-            op.limit.relations or op.limit.find(ops.Impure, filter=ops.Value)
-        ):
-            # Aggregate-call LIMIT differs from query LIMIT: BigQuery requires a
-            # deterministic integer constant independent of the input relation.
-            raise com.UnsupportedOperationError(
-                "BigQuery requires `collect` limit to be a constant integer"
-            )
-        if limit is not None:
-            # Parameter substitution happens before this visitor. Strip integer
-            # casts, then fold constant SQL arithmetic for validation.
-            uncast = limit.transform(
-                lambda node: node.this if isinstance(node, sge.Cast) else node,
-                copy=True,
-            )
-            constant = simplify(uncast, dialect=self.dialect)
-            if isinstance(constant, sge.Null):
-                raise com.UnsupportedOperationError(
-                    "BigQuery requires `collect` limit to be non-null"
-                )
-            try:
-                constant_value = constant.to_py()
-            except ValueError:
-                constant_value = None
-            if (
-                isinstance(constant_value, (int, decimal.Decimal))
-                and constant_value < 0
-            ):
-                raise com.UnsupportedOperationError(
-                    "BigQuery requires `collect` limit to be non-negative"
-                )
+        """Compile regular and internally bounded collection aggregates."""
         if where is not None:
             if include_null:
                 raise com.UnsupportedOperationError(
@@ -551,7 +508,15 @@ class BigQueryCompiler(SQLGlotCompiler):
             arg = sge.Limit(this=arg, expression=limit)
         if not include_null:
             arg = sge.IgnoreNulls(this=arg)
-        return self.f.array_agg(arg)
+        result = self.f.array_agg(arg)
+        if limit is not None:
+            # Array slicing returns an empty array when the aggregate is null,
+            # including for empty inputs and groups filtered down to no values.
+            empty = self.cast(sge.Array(expressions=[]), op.dtype)
+            result = self.f.coalesce(result, empty)
+        return result
+
+    visit_LimitedArrayCollect = visit_ArrayCollect
 
     def _neg_idx_to_pos(self, arg, idx):
         return self.if_(idx < 0, self.f.array_length(arg) + idx, idx)

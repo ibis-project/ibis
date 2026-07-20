@@ -101,38 +101,56 @@ def test_hashbytes(case, how, dtype, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-def test_collect_limit(alltypes, snapshot):
-    """Compile bounded collection inside the aggregate call."""
-    expr = alltypes.string_col.collect(order_by=alltypes.id.desc(), limit=5)
+def test_collect_slice_pushdown(alltypes, snapshot):
+    """Push a leading collection slice into the aggregate call."""
+    expr = alltypes.string_col.collect(order_by=alltypes.id.desc())[:5]
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@pytest.mark.parametrize(
-    ("limit", "message"),
-    [
-        param(ibis.null().cast("int64"), "non-null", id="null"),
-        param(ibis.random().cast("int64"), "constant integer", id="impure"),
-        param(ibis.literal(-2) + 1, "non-negative", id="negative-expression"),
-    ],
-)
-def test_collect_limit_invalid(alltypes, limit, message):
-    """Reject bounded collection that BigQuery cannot express."""
-    with pytest.raises(com.UnsupportedOperationError, match=message):
-        to_sql(alltypes.string_col.collect(limit=limit))
+def test_collect_slice_pushdown_preserves_modifiers(alltypes):
+    """Apply the native bound after filtering, deduplication, and ordering."""
+    filtered = alltypes.filter(alltypes.id > 0)
+    expr = filtered.group_by("bool_col").agg(
+        top=filtered.string_col.collect(distinct=True, order_by=filtered.string_col)[:2]
+    )
+    sql = to_sql(expr)
+
+    assert sql.index("DISTINCT") < sql.index("ORDER BY") < sql.index("LIMIT 2")
+    assert "WHERE" in sql
+    assert "AS `top`" in sql
 
 
-def test_collect_limit_relation_dependent(alltypes):
-    """Reject aggregate limits derived from the input relation."""
-    limit = alltypes.id.max()
-    with pytest.raises(com.UnsupportedOperationError, match="constant integer"):
-        to_sql(alltypes.string_col.collect(limit=limit))
+def test_collect_slice_dynamic_bound_not_pushed_down(alltypes):
+    """Preserve slicing when BigQuery cannot use the bound in ARRAY_AGG."""
+    sql = to_sql(alltypes.string_col.collect()[: alltypes.id.max()])
+
+    assert "UNNEST(ARRAY_AGG" in sql
+    assert "LIMIT" not in sql
 
 
-def test_collect_limit_window(alltypes):
-    """Reject aggregate limits in BigQuery window functions."""
-    expr = alltypes.string_col.collect(limit=5).over()
-    with pytest.raises(com.UnsupportedOperationError, match="window function"):
-        to_sql(expr)
+@pytest.mark.parametrize("index", [slice(1, 5), slice(None, -1)])
+def test_collect_slice_non_prefix_not_pushed_down(alltypes, index):
+    """Preserve slices that are not nonnegative prefixes."""
+    sql = to_sql(alltypes.string_col.collect()[index])
+
+    assert "UNNEST(ARRAY_AGG" in sql
+    assert "LIMIT" not in sql
+
+
+def test_collect_slice_window_not_pushed_down(alltypes):
+    """Preserve slicing around windowed collection aggregates."""
+    sql = to_sql(alltypes.string_col.collect().over()[:5])
+
+    assert "UNNEST(ARRAY_AGG" in sql
+    assert "OVER" in sql
+
+
+def test_collect_nested_slice_preserves_inner_bound(alltypes):
+    """Do not widen a collection already bounded by an inner slice."""
+    sql = to_sql(alltypes.string_col.collect()[:2][:10])
+
+    assert "LIMIT 2" in sql
+    assert "LIMIT 10" not in sql
 
 
 @pytest.mark.parametrize(

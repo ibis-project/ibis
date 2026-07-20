@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis
 import ibis.expr.operations as ops
-from ibis.expr.rewrites import simplify
+from ibis.expr.operations.reductions import LimitedArrayCollect
+from ibis.expr.rewrites import lower_array_collect_slice, simplify
 
 t = ibis.table(
     name="t",
@@ -13,6 +16,66 @@ t = ibis.table(
         "string_col": "string",
     },
 )
+
+
+@pytest.mark.parametrize("stop", [0, 3])
+def test_lower_array_collect_prefix_slice(stop):
+    """Lower nonnegative literal prefix slices to bounded collection."""
+    result = t.int_col.collect()[:stop].op().replace(lower_array_collect_slice)
+
+    assert isinstance(result, LimitedArrayCollect)
+    assert result.limit.value == stop
+
+
+@pytest.mark.parametrize("index", [slice(1, 3), slice(None, -1), slice(None, None)])
+def test_preserve_non_prefix_collect_slice(index):
+    """Preserve collection slices that cannot use a native aggregate bound."""
+    op = t.int_col.collect()[index].op()
+
+    assert op.replace(lower_array_collect_slice) == op
+
+
+@pytest.mark.parametrize(
+    "stop",
+    [
+        ibis.literal(1) + 2,
+        ibis.param("int64"),
+        ibis.null().cast("int64"),
+    ],
+)
+def test_preserve_nonliteral_collect_slice(stop):
+    """Preserve bounds that native aggregate parameters cannot share."""
+    op = t.int_col.collect()[:stop].op()
+
+    assert op.replace(lower_array_collect_slice) == op
+
+
+def test_preserve_dynamic_collect_slice():
+    """Preserve collection slices with relation-dependent bounds."""
+    op = t.int_col.collect()[: t.int_col.max()].op()
+
+    assert op.replace(lower_array_collect_slice) == op
+
+
+@pytest.mark.parametrize(
+    "expr",
+    [t.int_col.collect().over()[:3], t.int_col.collect()[:3].over()],
+)
+def test_preserve_windowed_collect_slice(expr):
+    """Preserve collection slices outside window functions."""
+    op = expr.op()
+
+    assert op.replace(lower_array_collect_slice) == op
+
+
+def test_preserve_slice_around_limited_collect():
+    """Do not widen an inner collection bound with an outer slice."""
+    op = t.int_col.collect()[:2][:10].op()
+    result = op.replace(lower_array_collect_slice)
+
+    assert isinstance(result, ops.ArraySlice)
+    assert isinstance(result.arg, LimitedArrayCollect)
+    assert result.arg.limit.value == 2
 
 
 def test_simplify_full_reprojection():

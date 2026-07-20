@@ -5,7 +5,6 @@ import polars.testing
 import pytest
 
 import ibis
-import ibis.common.exceptions as com
 from ibis.backends.tests.errors import PolarsSQLInterfaceError
 from ibis.util import gen_name
 
@@ -42,22 +41,59 @@ def test_array_flatten(con):
     tm.assert_frame_equal(result.to_pandas(), expected)
 
 
-def test_collect_limit_retains_null(con):
-    """Apply a Polars collection bound after null filtering."""
+def test_collect_slice_pushdown():
+    """Apply a leading slice before constructing the Polars list."""
+    con = ibis.polars.connect()
     t = ibis.memtable({"x": [None, 1]}, schema={"x": "int64"})
+    expr = t.x.collect(include_null=True)[:1]
 
-    result = con.execute(t.x.collect(include_null=True, limit=1))
+    result = con.execute(expr)
+    plan = con.compile(expr).explain(optimized=False)
 
     assert len(result) == 1
     assert pd.isna(result[0])
+    assert ".slice(offset=0, length=1).implode()" in plan
+    assert ".implode().list.slice" not in plan
 
 
-def test_collect_limit_rejects_dynamic_value(con):
-    """Reject collection bounds that Polars cannot evaluate statically."""
+def test_collect_slice_dynamic_bound_not_pushed_down():
+    """Preserve slicing when Polars cannot apply a static head operation."""
+    con = ibis.polars.connect()
     t = ibis.memtable({"x": [1, 2, 3]})
+    expr = t.x.collect()[: t.x.max()]
 
-    with pytest.raises(com.UnsupportedOperationError, match="dynamic"):
-        con.compile(t.x.collect(limit=t.x.max()))
+    plan = con.compile(expr).explain(optimized=False)
+
+    assert ".implode().list.slice" in plan
+
+
+def test_collect_slice_modifier_order():
+    """Apply a grouped prefix after filtering, ordering, and deduplication."""
+    con = ibis.polars.connect()
+    t = ibis.memtable(
+        {
+            "g": ["a"] * 5 + ["b"] * 3,
+            "x": [4, 1, 4, 3, 2, 5, 2, 1],
+        }
+    )
+    expr = t.group_by("g").agg(
+        top=t.x.collect(where=t.x > 1, order_by=t.x.desc(), distinct=True)[:2]
+    )
+
+    result = con.execute(expr.order_by("g"))
+
+    assert result.to_dict(orient="list") == {
+        "g": ["a", "b"],
+        "top": [[4, 3], [5, 2]],
+    }
+
+
+def test_collect_nested_slice_does_not_widen():
+    """Retain an inner collection bound under a wider outer slice."""
+    con = ibis.polars.connect()
+    t = ibis.memtable({"x": [1, 2, 3, 4, 5]})
+
+    assert con.execute(t.x.collect()[:2][:5]) == [1, 2]
 
 
 def test_memtable_polars_types(con):
