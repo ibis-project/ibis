@@ -1,6 +1,6 @@
 FROM postgis/postgis:18-3.6-alpine AS pgvector-builder
-RUN apk add --no-cache git build-base clang19 llvm19
-RUN git clone --branch v0.8.1 https://github.com/pgvector/pgvector.git /tmp/pgvector
+RUN apk add --no-cache git build-base clang21 llvm21
+RUN git clone --branch v0.8.5 https://github.com/pgvector/pgvector.git /tmp/pgvector
 RUN make -C /tmp/pgvector -j "$(nproc)"
 RUN make -C /tmp/pgvector -j "$(nproc)" install
 
