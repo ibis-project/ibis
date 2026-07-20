@@ -657,13 +657,35 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_ArrayZip(self, op: ops.ArrayZip, *, arg, **_: Any) -> str:
         return self.f.arrayZip(*arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
+    def visit_ArrayCollect(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        """Compile collection with ClickHouse's parameterized array aggregate."""
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the clickhouse backend"
             )
-        func = self.agg.groupUniqArray if distinct else self.agg.groupArray
-        return func(arg, where=where, order_by=order_by)
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of `collect` is not supported by the clickhouse backend"
+            )
+        name = "groupUniqArray" if distinct else "groupArray"
+        if limit is None:
+            return self.agg[name](arg, where=where, order_by=order_by)
+        if not isinstance(op.limit, ops.Literal) or op.limit.value is None:
+            raise com.UnsupportedOperationError(
+                "ClickHouse requires `collect` limit to be a non-null literal"
+            )
+
+        # ClickHouse places aggregate parameters before the argument list and
+        # expresses filtering with the `If` combinator.
+        aggregate_limit = sge.Literal.number(max(op.limit.value, 1))
+        result = sge.ParameterizedAgg(
+            this=f"{name}If" if where is not None else name,
+            expressions=[aggregate_limit],
+            params=[arg, where] if where is not None else [arg],
+        )
+        return self.f.arraySlice(result, 1, limit) if op.limit.value == 0 else result
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if include_null:

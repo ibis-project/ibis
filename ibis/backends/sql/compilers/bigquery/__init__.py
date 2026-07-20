@@ -28,7 +28,9 @@ from ibis.backends.sql.rewrites import (
     lower_sample,
     split_select_distinct_with_order_by,
 )
+from ibis.common.patterns import replace
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
+from ibis.expr.rewrites import p
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -36,6 +38,16 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
+
+
+@replace(p.WindowFunction)
+def _reject_windowed_bounded_collect(_, **kwargs):
+    """Reject aggregate limits, which BigQuery forbids in window functions."""
+    if isinstance(_.func, ops.ArrayCollect) and _.func.limit is not None:
+        raise com.UnsupportedOperationError(
+            "BigQuery does not support `collect` limit in a window function"
+        )
+    return _
 
 
 def _qualify_memtable(
@@ -112,6 +124,7 @@ class BigQueryCompiler(SQLGlotCompiler):
     agg = AggGen(supports_order_by=True)
 
     rewrites = (
+        _reject_windowed_bounded_collect,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_rank,
@@ -484,7 +497,25 @@ class BigQueryCompiler(SQLGlotCompiler):
             return self.f.parse_timestamp(format_str, arg, timezone)
         return self.f.parse_datetime(format_str, arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
+    def visit_ArrayCollect(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        """Compile collection with BigQuery's native aggregate limit."""
+        uncast_limit = op.limit
+        while isinstance(uncast_limit, ops.Cast):
+            uncast_limit = uncast_limit.arg
+        if isinstance(uncast_limit, ops.Literal) and uncast_limit.value is None:
+            raise com.UnsupportedOperationError(
+                "BigQuery requires `collect` limit to be non-null"
+            )
+        if op.limit is not None and (
+            op.limit.relations or op.limit.find(ops.Impure, filter=ops.Value)
+        ):
+            # Aggregate-call LIMIT differs from query LIMIT: BigQuery requires a
+            # deterministic integer constant independent of the input relation.
+            raise com.UnsupportedOperationError(
+                "BigQuery requires `collect` limit to be a constant integer"
+            )
         if where is not None:
             if include_null:
                 raise com.UnsupportedOperationError(
@@ -499,6 +530,8 @@ class BigQueryCompiler(SQLGlotCompiler):
             arg = sge.Distinct(expressions=[arg])
         if order_by:
             arg = sge.Order(this=arg, expressions=order_by)
+        if limit is not None:
+            arg = sge.Limit(this=arg, expression=limit)
         if not include_null:
             arg = sge.IgnoreNulls(this=arg)
         return self.f.array_agg(arg)

@@ -101,6 +101,39 @@ def test_hashbytes(case, how, dtype, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
+def test_collect_limit(alltypes, snapshot):
+    """Compile bounded collection inside the aggregate call."""
+    expr = alltypes.string_col.collect(order_by=alltypes.id.desc(), limit=5)
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
+@pytest.mark.parametrize(
+    ("limit", "message"),
+    [
+        param(ibis.null().cast("int64"), "non-null", id="null"),
+        param(ibis.random().cast("int64"), "constant integer", id="impure"),
+    ],
+)
+def test_collect_limit_invalid(alltypes, limit, message):
+    """Reject bounded collection that BigQuery cannot express."""
+    with pytest.raises(com.UnsupportedOperationError, match=message):
+        to_sql(alltypes.string_col.collect(limit=limit))
+
+
+def test_collect_limit_relation_dependent(alltypes):
+    """Reject aggregate limits derived from the input relation."""
+    limit = alltypes.id.max()
+    with pytest.raises(com.UnsupportedOperationError, match="constant integer"):
+        to_sql(alltypes.string_col.collect(limit=limit))
+
+
+def test_collect_limit_window(alltypes):
+    """Reject aggregate limits in BigQuery window functions."""
+    expr = alltypes.string_col.collect(limit=5).over()
+    with pytest.raises(com.UnsupportedOperationError, match="window function"):
+        to_sql(expr)
+
+
 @pytest.mark.parametrize(
     ("case", "unit"),
     (

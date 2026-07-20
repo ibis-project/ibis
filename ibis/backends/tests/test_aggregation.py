@@ -1511,6 +1511,45 @@ def test_collect(alltypes, df, distinct, filtered, ordered, include_null):
     assert res == sol
 
 
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "duckdb",
+        "flink",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "trino",
+        "databricks",
+        "athena",
+        "risingwave",
+        "materialize",
+    ],
+    raises=com.UnsupportedOperationError,
+)
+@pytest.mark.notimpl(
+    [
+        "druid",
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "singlestoredb",
+        "oracle",
+        "sqlite",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.parametrize("limit", [0, 2])
+def test_collect_limit(alltypes, limit):
+    """Collect no more than the requested number of retained rows."""
+    expr = alltypes.id.collect(where=_.id < 5, limit=limit)
+    result = expr.execute()
+
+    assert len(result) == limit
+    assert set(result).issubset(range(5))
+
+
 @pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)
 def test_topk_op(alltypes, df):
     # TopK expression will order rows by "count" but each backend
