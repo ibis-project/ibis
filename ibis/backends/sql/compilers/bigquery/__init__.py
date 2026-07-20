@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import sqlglot as sg
 import sqlglot.expressions as sge
 from sqlglot.dialects import BigQuery
+from sqlglot.optimizer.simplify import simplify
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -501,13 +502,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         self, op, *, arg, where, order_by, include_null, distinct, limit
     ):
         """Compile collection with BigQuery's native aggregate limit."""
-        uncast_limit = op.limit
-        while isinstance(uncast_limit, ops.Cast):
-            uncast_limit = uncast_limit.arg
-        if isinstance(uncast_limit, ops.Literal) and uncast_limit.value is None:
-            raise com.UnsupportedOperationError(
-                "BigQuery requires `collect` limit to be non-null"
-            )
         if op.limit is not None and (
             op.limit.relations or op.limit.find(ops.Impure, filter=ops.Value)
         ):
@@ -516,6 +510,29 @@ class BigQueryCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(
                 "BigQuery requires `collect` limit to be a constant integer"
             )
+        if limit is not None:
+            # Parameter substitution happens before this visitor. Strip integer
+            # casts, then fold constant SQL arithmetic for validation.
+            uncast = limit.transform(
+                lambda node: node.this if isinstance(node, sge.Cast) else node,
+                copy=True,
+            )
+            constant = simplify(uncast, dialect=self.dialect)
+            if isinstance(constant, sge.Null):
+                raise com.UnsupportedOperationError(
+                    "BigQuery requires `collect` limit to be non-null"
+                )
+            try:
+                constant_value = constant.to_py()
+            except ValueError:
+                constant_value = None
+            if (
+                isinstance(constant_value, (int, decimal.Decimal))
+                and constant_value < 0
+            ):
+                raise com.UnsupportedOperationError(
+                    "BigQuery requires `collect` limit to be non-negative"
+                )
         if where is not None:
             if include_null:
                 raise com.UnsupportedOperationError(

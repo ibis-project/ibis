@@ -183,5 +183,6 @@ def test_collect_limit():
 
     assert t.a.collect(limit=2).op().limit.value == 2
 
-    with pytest.raises(ValidationError, match="limit must be non-negative"):
-        t.a.collect(limit=-1)
+    for limit in (-1, ibis.literal(-1).cast("int64")):
+        with pytest.raises(ValidationError, match="limit must be non-negative"):
+            t.a.collect(limit=limit)

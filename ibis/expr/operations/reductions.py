@@ -12,6 +12,7 @@ import ibis.expr.rules as rlz
 from ibis.common.annotations import ValidationError, attribute
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.operations.core import Column, Scalar, Value
+from ibis.expr.operations.generic import Cast
 from ibis.expr.operations.relations import Relation  # noqa: TC001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TC001
 
@@ -71,7 +72,10 @@ class ArrayCollect(Orderable):
                 "`collect` with `order_by` and `distinct=True` and may only "
                 "order by the collected column"
             )
-        value = getattr(limit, "value", None)
+        literal_limit = limit
+        while isinstance(literal_limit, Cast):
+            literal_limit = literal_limit.arg
+        value = getattr(literal_limit, "value", None)
         if value is not None and value < 0:
             raise ValidationError("`collect` limit must be non-negative")
         super().__init__(

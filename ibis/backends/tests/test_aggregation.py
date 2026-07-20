@@ -1550,6 +1550,48 @@ def test_collect_limit(alltypes, limit):
     assert set(result).issubset(range(5))
 
 
+@pytest.mark.notimpl(
+    [
+        "athena",
+        "clickhouse",
+        "databricks",
+        "datafusion",
+        "duckdb",
+        "flink",
+        "materialize",
+        "postgres",
+        "pyspark",
+        "risingwave",
+        "snowflake",
+        "trino",
+    ],
+    raises=com.UnsupportedOperationError,
+)
+@pytest.mark.notimpl(
+    [
+        "druid",
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "singlestoredb",
+        "sqlite",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+def test_collect_limit_modifier_order(alltypes):
+    """Apply the bound after filtering, ordering, and deduplication."""
+    expr = alltypes.id.collect(
+        where=_.id < 5,
+        order_by=_.id.desc(),
+        distinct=True,
+        limit=2,
+    )
+
+    assert expr.execute() == [4, 3]
+
+
 @pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)
 def test_topk_op(alltypes, df):
     # TopK expression will order rows by "count" but each backend
