@@ -177,12 +177,9 @@ def test_collect_distinct():
         )
 
 
-def test_collect_limit():
-    """Validate bounded collection expressions."""
+def test_collect_has_no_limit_argument():
+    """Keep bounded collection behind the existing array-slice interface."""
     t = ibis.table({"a": "string"}, name="t")
 
-    assert t.a.collect(limit=2).op().limit.value == 2
-
-    for limit in (-1, ibis.literal(-1).cast("int64")):
-        with pytest.raises(ValidationError, match="limit must be non-negative"):
-            t.a.collect(limit=limit)
+    with pytest.raises(TypeError, match="unexpected keyword argument 'limit'"):
+        t.a.collect(limit=2)

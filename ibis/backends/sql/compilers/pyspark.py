@@ -433,13 +433,7 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_ArrayStringJoin(self, op, *, arg, sep):
         return self.if_(self.f.array_length(arg) > 0, self.f.concat_ws(sep, arg), NULL)
 
-    def visit_ArrayCollect(
-        self, op, *, arg, where, order_by, include_null, distinct, limit
-    ):
-        if limit is not None:
-            raise com.UnsupportedOperationError(
-                "`collect` limit is not supported by the pyspark backend"
-            )
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the pyspark backend"
