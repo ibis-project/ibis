@@ -372,6 +372,7 @@ class SQLGlotCompiler(abc.ABC):
         ops.StartsWith: "starts_with",
         ops.StrRight: "right",
         ops.StringAscii: "ascii",
+        ops.StringByteLength: "octet_length",
         ops.StringContains: "contains",
         ops.StringLength: "length",
         ops.StringReplace: "replace",

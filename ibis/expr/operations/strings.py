@@ -362,6 +362,13 @@ class StringLength(StringUnary):
 
 
 @public
+class StringByteLength(StringUnary):
+    """Compute the UTF-8 byte length of a string."""
+
+    dtype = dt.int32
+
+
+@public
 class StringAscii(StringUnary):
     """Compute the ASCII code of the first character of a string."""
 
