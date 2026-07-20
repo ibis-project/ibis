@@ -77,6 +77,16 @@ def test_length(table):
     assert isinstance(result.op(), ops.StringLength)
 
 
+def test_byte_length(table):
+    """Construct byte-length expressions with the expected shape."""
+    result = table.g.byte_length()
+    lit_result = literal("FoO").byte_length()
+
+    assert isinstance(result, ir.IntegerColumn)
+    assert isinstance(lit_result, ir.IntegerScalar)
+    assert isinstance(result.op(), ops.StringByteLength)
+
+
 def test_join(table):
     dash = literal("-")
 

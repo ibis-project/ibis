@@ -1264,18 +1264,21 @@ def string_temp_table(backend, con):
             lambda t: t.string_col.length(),
             lambda t: t.str.len().astype("int32"),
             id="len",
-            marks=[
-                pytest.mark.notyet(
-                    ["impala", "polars"],
-                    raises=AssertionError,
-                    reason="thinks emoji are 4 characters long, double-counts accented characters",
-                ),
-                pytest.mark.notyet(
-                    ["clickhouse"],
-                    raises=AssertionError,
-                    reason="Can use lengthUTF8 instead",
-                ),
-            ],
+            marks=pytest.mark.notyet(
+                ["impala"],
+                raises=AssertionError,
+                reason="counts UTF-8 bytes instead of Unicode code points",
+            ),
+        ),
+        param(
+            lambda t: t.string_col.byte_length(),
+            lambda t: t.str.encode("utf-8").str.len().astype("int32"),
+            id="byte_length",
+            marks=pytest.mark.notimpl(
+                ["druid", "mssql"],
+                raises=com.OperationNotDefinedError,
+                reason="backend cannot expose a UTF-8 byte count",
+            ),
         ),
         param(
             lambda t: t.string_col.find_in_set(["aBc", "123"]),
