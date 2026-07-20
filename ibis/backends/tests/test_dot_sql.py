@@ -386,3 +386,33 @@ def test_scalar_dot_sql(con):
     sql = sg.select(sge.convert(1).as_("a")).sql(con.dialect)
     expr = con.sql(sql).as_scalar()
     assert expr.type().is_numeric()
+
+
+@pytest.mark.notimpl(["druid", "polars"])
+@pytest.mark.notyet(
+    ["impala"], reason="Impala does not support recursive CTEs"
+)
+@pytest.mark.notyet(
+    ["flink"], reason="Flink does not support recursive CTEs"
+)
+def test_con_dot_sql_recursive_cte(con):
+    """Verify that WITH RECURSIVE is preserved through ibis compilation (GH #11949)."""
+    sql = sg.parse_one(
+        """
+        WITH RECURSIVE counter(n) AS (
+            SELECT 1 AS n
+            UNION ALL
+            SELECT n + 1 FROM counter WHERE n < 3
+        )
+        SELECT n FROM counter ORDER BY n
+        """,
+        read="duckdb",
+    ).sql(con.dialect)
+
+    expr = con.sql(sql)
+
+    assert "RECURSIVE" in ibis.to_sql(expr, dialect=con.name)
+
+    result = expr.execute()
+    expected = pd.DataFrame({"n": [1, 2, 3]})
+    tm.assert_frame_equal(result, expected, check_dtype=False)
