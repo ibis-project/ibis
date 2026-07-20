@@ -1275,9 +1275,9 @@ def string_temp_table(backend, con):
             lambda t: t.str.encode("utf-8").str.len().astype("int32"),
             id="byte_length",
             marks=pytest.mark.notimpl(
-                ["druid", "mssql"],
+                ["mssql"],
                 raises=com.OperationNotDefinedError,
-                reason="backend cannot expose a UTF-8 byte count",
+                reason="Ibis has no MSSQL UTF-8 byte-length implementation",
             ),
         ),
         param(
@@ -1427,6 +1427,37 @@ def test_string_methods_accents_and_emoji(
     expected = expected_func(series)
 
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(
+    ["druid", "mssql"],
+    raises=com.OperationNotDefinedError,
+    reason="Ibis has no UTF-8 byte-length implementation for this backend",
+)
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        param(
+            "",
+            0,
+            marks=pytest.mark.notyet(
+                ["exasol", "oracle"],
+                raises=AssertionError,
+                reason="backend represents empty strings as null",
+            ),
+            id="empty",
+        ),
+        param(None, None, id="null"),
+    ],
+)
+def test_byte_length_edge_cases(con, value, expected):
+    """Handle empty and null strings consistently with backend semantics."""
+    result = con.execute(ibis.literal(value, type="string").byte_length())
+
+    if expected is None:
+        assert pd.isna(result)
+    else:
+        assert result == expected
 
 
 @pytest.fixture(scope="session")
