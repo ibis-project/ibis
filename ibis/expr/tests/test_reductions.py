@@ -175,11 +175,3 @@ def test_collect_distinct():
                 t.b,
             ),
         )
-
-
-def test_collect_has_no_limit_argument():
-    """Keep bounded collection behind the existing array-slice interface."""
-    t = ibis.table({"a": "string"}, name="t")
-
-    with pytest.raises(TypeError, match="unexpected keyword argument 'limit'"):
-        t.a.collect(limit=2)

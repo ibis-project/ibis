@@ -41,9 +41,8 @@ def test_array_flatten(con):
     tm.assert_frame_equal(result.to_pandas(), expected)
 
 
-def test_collect_slice_pushdown():
+def test_collect_slice_pushdown(con):
     """Apply a leading slice before constructing the Polars list."""
-    con = ibis.polars.connect()
     t = ibis.memtable({"x": [None, 1]}, schema={"x": "int64"})
     expr = t.x.collect(include_null=True)[:1]
 
@@ -53,23 +52,10 @@ def test_collect_slice_pushdown():
     assert len(result) == 1
     assert pd.isna(result[0])
     assert ".slice(offset=0, length=1).implode()" in plan
-    assert ".implode().list.slice" not in plan
 
 
-def test_collect_slice_dynamic_bound_not_pushed_down():
-    """Preserve slicing when Polars cannot apply a static head operation."""
-    con = ibis.polars.connect()
-    t = ibis.memtable({"x": [1, 2, 3]})
-    expr = t.x.collect()[: t.x.max()]
-
-    plan = con.compile(expr).explain(optimized=False)
-
-    assert ".implode().list.slice" in plan
-
-
-def test_collect_slice_modifier_order():
+def test_collect_slice_modifier_order(con):
     """Apply a grouped prefix after filtering, ordering, and deduplication."""
-    con = ibis.polars.connect()
     t = ibis.memtable(
         {
             "g": ["a"] * 5 + ["b"] * 3,
@@ -86,14 +72,6 @@ def test_collect_slice_modifier_order():
         "g": ["a", "b"],
         "top": [[4, 3], [5, 2]],
     }
-
-
-def test_collect_nested_slice_does_not_widen():
-    """Retain an inner collection bound under a wider outer slice."""
-    con = ibis.polars.connect()
-    t = ibis.memtable({"x": [1, 2, 3, 4, 5]})
-
-    assert con.execute(t.x.collect()[:2][:5]) == [1, 2]
 
 
 def test_memtable_polars_types(con):

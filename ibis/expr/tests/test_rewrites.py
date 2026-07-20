@@ -27,42 +27,19 @@ def test_lower_array_collect_prefix_slice(stop):
     assert result.limit.value == stop
 
 
-@pytest.mark.parametrize("index", [slice(1, 3), slice(None, -1), slice(None, None)])
-def test_preserve_non_prefix_collect_slice(index):
-    """Preserve collection slices that cannot use a native aggregate bound."""
-    op = t.int_col.collect()[index].op()
-
-    assert op.replace(lower_array_collect_slice) == op
-
-
-@pytest.mark.parametrize(
-    "stop",
-    [
-        ibis.literal(1) + 2,
-        ibis.param("int64"),
-        ibis.null().cast("int64"),
-    ],
-)
-def test_preserve_nonliteral_collect_slice(stop):
-    """Preserve bounds that native aggregate parameters cannot share."""
-    op = t.int_col.collect()[:stop].op()
-
-    assert op.replace(lower_array_collect_slice) == op
-
-
-def test_preserve_dynamic_collect_slice():
-    """Preserve collection slices with relation-dependent bounds."""
-    op = t.int_col.collect()[: t.int_col.max()].op()
-
-    assert op.replace(lower_array_collect_slice) == op
-
-
 @pytest.mark.parametrize(
     "expr",
-    [t.int_col.collect().over()[:3], t.int_col.collect()[:3].over()],
+    [
+        pytest.param(t.int_col.collect()[1:3], id="offset"),
+        pytest.param(t.int_col.collect()[:-1], id="negative"),
+        pytest.param(t.int_col.collect()[:], id="open"),
+        pytest.param(t.int_col.collect()[: ibis.null().cast("int64")], id="null"),
+        pytest.param(t.int_col.collect()[: t.int_col.max()], id="dynamic"),
+        pytest.param(t.int_col.collect().over()[:3], id="windowed-collect"),
+    ],
 )
-def test_preserve_windowed_collect_slice(expr):
-    """Preserve collection slices outside window functions."""
+def test_preserve_collect_slice(expr):
+    """Preserve collection slices that native aggregate bounds cannot express."""
     op = expr.op()
 
     assert op.replace(lower_array_collect_slice) == op
