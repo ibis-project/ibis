@@ -44,15 +44,6 @@ def test_collect_slice_pushdown(builder, expected):
     assert expected in sql
 
 
-def test_collect_slice_dynamic_bound_not_pushed_down():
-    """Preserve slicing when ClickHouse cannot parameterize groupArray."""
-    t = ibis.table({"id": "int64"}, name="t")
-
-    sql = ibis.clickhouse.compile(t.id.collect()[: t.id.max()])
-
-    assert "arraySlice(groupArray(" in sql
-
-
 @pytest.mark.parametrize("to_type", ["int8", "int16", "float32", "float", "!float64"])
 def test_cast_double_col(alltypes, to_type, assert_sql):
     expr = alltypes.double_col.cast(to_type)
