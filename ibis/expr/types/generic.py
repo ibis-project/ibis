@@ -1159,6 +1159,15 @@ class Value(Expr):
         >>> t.value.collect(order_by=_.value.desc()).to_pandas()
         [5, 3, 2, 1, 1]
 
+        Compile a bounded collection for a backend with native aggregate limits:
+
+        >>> expr = t.value.collect(order_by=_.value.desc(), limit=3)
+        >>> print(ibis.bigquery.compile(expr))
+        SELECT
+          ARRAY_AGG(`t0`.`value` IGNORE NULLS ORDER BY `t0`.`value` DESC
+          LIMIT 3) AS `ArrayCollect_value_3__value`
+        FROM `ibis_pandas_memtable_...` AS `t0`
+
         Collect elements per group, filtering out values <= 1:
 
         >>> t.group_by("key").agg(v=t.value.collect(where=_.value > 1)).order_by("key")

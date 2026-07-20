@@ -10,12 +10,29 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
 from ibis import udf
 
 pytest.importorskip("clickhouse_connect")
+
+
+@pytest.mark.parametrize(
+    "limit",
+    [
+        lambda t: t.id.max(),
+        lambda _: ibis.null().cast("int64"),
+    ],
+    ids=["dynamic", "null"],
+)
+def test_collect_limit_rejects_non_literal(limit):
+    """Reject collection bounds outside ClickHouse's literal syntax."""
+    t = ibis.table({"id": "int64"}, name="t")
+
+    with pytest.raises(com.UnsupportedOperationError, match="non-null literal"):
+        ibis.clickhouse.compile(t.id.collect(limit=limit(t)))
 
 
 @pytest.mark.parametrize("to_type", ["int8", "int16", "float32", "float", "!float64"])

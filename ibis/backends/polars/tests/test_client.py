@@ -5,6 +5,7 @@ import polars.testing
 import pytest
 
 import ibis
+import ibis.common.exceptions as com
 from ibis.backends.tests.errors import PolarsSQLInterfaceError
 from ibis.util import gen_name
 
@@ -39,6 +40,24 @@ def test_array_flatten(con):
         {"id": data["id"], "flat": [row[0] for row in data["happy"]]}
     )
     tm.assert_frame_equal(result.to_pandas(), expected)
+
+
+def test_collect_limit_retains_null(con):
+    """Apply a Polars collection bound after null filtering."""
+    t = ibis.memtable({"x": [None, 1]}, schema={"x": "int64"})
+
+    result = con.execute(t.x.collect(include_null=True, limit=1))
+
+    assert len(result) == 1
+    assert pd.isna(result[0])
+
+
+def test_collect_limit_rejects_dynamic_value(con):
+    """Reject collection bounds that Polars cannot evaluate statically."""
+    t = ibis.memtable({"x": [1, 2, 3]})
+
+    with pytest.raises(com.UnsupportedOperationError, match="dynamic"):
+        con.compile(t.x.collect(limit=t.x.max()))
 
 
 def test_memtable_polars_types(con):

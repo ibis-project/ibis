@@ -112,6 +112,7 @@ def test_collect_limit(alltypes, snapshot):
     [
         param(ibis.null().cast("int64"), "non-null", id="null"),
         param(ibis.random().cast("int64"), "constant integer", id="impure"),
+        param(ibis.literal(-2) + 1, "non-negative", id="negative-expression"),
     ],
 )
 def test_collect_limit_invalid(alltypes, limit, message):
