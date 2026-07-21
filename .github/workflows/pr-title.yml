@@ -23,7 +23,10 @@ jobs:
       - name: checkout code to pick up commitlint configuration
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          # If the PR is from a fork, grab the commitlint configuration from
+          # our main branch.  If the PR is from a local branch, grab the code
+          # from that branch.
+          ref: ${{ github.event.pull_request.head.repo.fork && github.event.repository.default_branch || github.event.pull_request.head.sha }}
 
       - name: run commitlint
         id: lint
