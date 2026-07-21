@@ -166,3 +166,29 @@ NO_MERGE_SUPPORT_MARKS = [
     ),
 ]
 NO_MERGE_SUPPORT = combine_marks(NO_MERGE_SUPPORT_MARKS)
+
+NO_DELETE_SUPPORT_MARKS = [
+    pytest.mark.notimpl(["polars"], reason="`delete` method not implemented"),
+    pytest.mark.notyet(
+        ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+    ),
+    pytest.mark.notyet(
+        ["materialize"],
+        raises=Exception,
+        reason="Materialize restricts DML within transaction blocks",
+    ),
+    # Subquery predicates raise UnsupportedOperationError client-side on
+    # trino because its dialect cannot express the aliased DELETE they need;
+    # simple predicates reach the server and fail on the CI connector.
+    pytest.mark.notyet(
+        ["trino"],
+        raises=(TrinoUserError, com.UnsupportedOperationError),
+        reason="memory connector does not support modifying table rows",
+    ),
+    pytest.mark.notyet(
+        ["impala"],
+        raises=ImpalaHiveServer2Error,
+        reason="DELETE is only supported for Kudu-backed tables",
+    ),
+]
+NO_DELETE_SUPPORT = combine_marks(NO_DELETE_SUPPORT_MARKS)
