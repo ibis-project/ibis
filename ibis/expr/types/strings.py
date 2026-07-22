@@ -138,6 +138,34 @@ class StringValue(Value):
         """
         return ops.StringLength(self).to_expr()
 
+    def byte_length(self) -> ir.IntegerValue:
+        """Compute the UTF-8 encoded length of a string in bytes.
+
+        Returns
+        -------
+        IntegerValue
+            The number of bytes in each string after UTF-8 encoding.
+
+        Examples
+        --------
+        Compare character and byte lengths:
+
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["a", "é", "🐍"]})
+        >>> t.mutate(characters=t.s.length(), bytes=t.s.byte_length())
+        ┏━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ s      ┃ characters ┃ bytes ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━┩
+        │ string │ int32      │ int32 │
+        ├────────┼────────────┼───────┤
+        │ a      │          1 │     1 │
+        │ é      │          1 │     2 │
+        │ 🐍     │          1 │     4 │
+        └────────┴────────────┴───────┘
+        """
+        return ops.StringByteLength(self).to_expr()
+
     def lower(self) -> Self:
         """Convert string to all lowercase.
 
