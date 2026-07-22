@@ -17,7 +17,11 @@ from ibis.backends.polars.compiler import translate
 from ibis.backends.polars.rewrites import bind_unbound_table, rewrite_join
 from ibis.backends.sql.dialects import Polars
 from ibis.common.dispatch import lazy_singledispatch
-from ibis.expr.rewrites import lower_stringslice, replace_parameter
+from ibis.expr.rewrites import (
+    lower_array_collect_slice,
+    lower_stringslice,
+    replace_parameter,
+)
 from ibis.formats.polars import PolarsSchema
 from ibis.util import gen_name, normalize_filename, normalize_filenames
 
@@ -419,7 +423,11 @@ class Backend(SupportsTempTables, BaseBackend, NoUrl, DirectExampleLoader):
 
         node = expr.as_table().op()
         node = node.replace(
-            rewrite_join | replace_parameter | bind_unbound_table | lower_stringslice,
+            rewrite_join
+            | replace_parameter
+            | bind_unbound_table
+            | lower_stringslice
+            | lower_array_collect_slice,
             context={"params": params, "backend": self},
         )
 

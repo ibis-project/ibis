@@ -22,6 +22,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PolarsInvalidOperationError,
     PsycoPg2InternalError,
+    PsycoPgInternalError,
     Py4JError,
     Py4JJavaError,
     PyAthenaOperationalError,
@@ -1509,6 +1510,71 @@ def test_collect(alltypes, df, distinct, filtered, ordered, include_null):
         res = sorted(res, key=lambda x: (x is not None, x), reverse=True)
 
     assert res == sol
+
+
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "druid",
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "singlestoredb",
+        "sqlite",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize does not support array slice syntax",
+)
+@pytest.mark.parametrize("stop", [0, 2])
+def test_collect_slice(alltypes, stop):
+    """Slice collected values through the standard array interface."""
+    expr = alltypes.id.collect(where=_.id < 5)[:stop]
+    result = expr.execute()
+
+    assert len(result) == stop
+    assert set(result).issubset(range(5))
+
+
+@pytest.mark.notimpl(
+    [
+        "clickhouse",
+        "databricks",
+        "flink",
+        "pyspark",
+    ],
+    raises=com.UnsupportedOperationError,
+)
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "druid",
+        "exasol",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "singlestoredb",
+        "sqlite",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize does not support array slice syntax",
+)
+def test_collect_slice_modifier_order(alltypes):
+    """Slice after filtering, ordering, and deduplicating collected values."""
+    filtered = alltypes.filter(_.id < 5)
+    expr = filtered.id.collect(order_by=_.id.desc(), distinct=True)[:2]
+
+    assert expr.execute() == [4, 3]
 
 
 @pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)

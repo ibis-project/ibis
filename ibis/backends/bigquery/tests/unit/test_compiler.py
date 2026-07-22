@@ -101,6 +101,14 @@ def test_hashbytes(case, how, dtype, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
+def test_collect_slice_pushdown(alltypes, snapshot):
+    """Push a leading collection slice into the aggregate call."""
+    expr = alltypes.string_col.collect(
+        distinct=True, order_by=alltypes.string_col.desc()
+    )[:5]
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
 @pytest.mark.parametrize(
     ("case", "unit"),
     (

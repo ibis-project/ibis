@@ -16,6 +16,7 @@ from ibis.backends.sql.compilers._compat import EXCEPT_ARG
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ClickHouseType
 from ibis.backends.sql.dialects import ClickHouse
+from ibis.expr.rewrites import lower_array_collect_slice
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -43,6 +44,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
     type_mapper = ClickHouseType
 
     agg = ClickhouseAggGen()
+
+    rewrites = (lower_array_collect_slice, *SQLGlotCompiler.rewrites)
 
     supports_qualify = True
 
@@ -657,13 +660,35 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_ArrayZip(self, op: ops.ArrayZip, *, arg, **_: Any) -> str:
         return self.f.arrayZip(*arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
+    def visit_ArrayCollect(
+        self, op, *, arg, where, order_by, include_null, distinct, limit=None
+    ):
+        """Compile regular and internally bounded collection aggregates."""
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the clickhouse backend"
             )
-        func = self.agg.groupUniqArray if distinct else self.agg.groupArray
-        return func(arg, where=where, order_by=order_by)
+        name = "groupUniqArray" if distinct else "groupArray"
+        if limit is None:
+            return self.agg[name](arg, where=where, order_by=order_by)
+
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+
+        # ClickHouse places aggregate parameters before the argument list and
+        # expresses filtering with the `If` combinator.
+        aggregate_limit = sge.Literal.number(max(op.limit.value, 1))
+        result = sge.ParameterizedAgg(
+            this=f"{name}If" if where is not None else name,
+            expressions=[aggregate_limit],
+            params=[arg, where] if where is not None else [arg],
+        )
+        return self.f.arraySlice(result, 1, limit) if op.limit.value == 0 else result
+
+    visit_LimitedArrayCollect = visit_ArrayCollect
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if include_null:
