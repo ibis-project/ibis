@@ -21,7 +21,7 @@ jobs:
     if: github.repository_owner == 'ibis-project'
     runs-on: ubuntu-latest
     steps:
-      - uses: tiangolo/issue-manager@0.6.0
+      - uses: tiangolo/issue-manager@0.8.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config: >
