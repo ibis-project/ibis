@@ -389,12 +389,28 @@ def test_scalar_dot_sql(con):
 
 
 @pytest.mark.notimpl(["druid", "polars"])
+@pytest.mark.notyet(["impala"], reason="Impala does not support recursive CTEs")
+@pytest.mark.notyet(["flink"], reason="Flink does not support recursive CTEs")
+@pytest.mark.notyet(["pyspark"], reason="PySpark does not support recursive CTEs")
 @pytest.mark.notyet(
-    ["impala"], reason="Impala does not support recursive CTEs"
+    ["oracle"],
+    reason="Oracle does not use the RECURSIVE keyword in recursive CTEs and "
+    "sqlglot's oracle dialect still emits it, causing a syntax error",
 )
 @pytest.mark.notyet(
-    ["flink"], reason="Flink does not support recursive CTEs"
+    ["mssql"],
+    reason="T-SQL does not include a RECURSIVE keyword in recursive CTEs, "
+    "so the generated SQL never contains the literal string 'RECURSIVE'",
 )
+@pytest.mark.notyet(
+    ["materialize"],
+    reason="Materialize uses WITH MUTUALLY RECURSIVE syntax, not WITH RECURSIVE",
+)
+@pytest.mark.notyet(["risingwave"], reason="RisingWave does not support recursive CTEs")
+@pytest.mark.notyet(
+    ["singlestoredb"], reason="SingleStoreDB does not support recursive CTEs"
+)
+@pytest.mark.notyet(["exasol"], reason="Exasol does not support recursive CTEs")
 def test_con_dot_sql_recursive_cte(con):
     """Verify that WITH RECURSIVE is preserved through ibis compilation (GH #11949)."""
     sql = sg.parse_one(
