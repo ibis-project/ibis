@@ -129,6 +129,18 @@ def test_literal_string(case, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
+def test_cast_string_to_json(snapshot):
+    t = ibis.table({"payload": "string"}, name="events")
+
+    snapshot.assert_match(to_sql(t.payload.cast("json")), "out.sql")
+
+
+def test_try_cast_string_to_json(snapshot):
+    t = ibis.table({"payload": "string"}, name="events")
+
+    snapshot.assert_match(to_sql(t.payload.try_cast("json")), "out.sql")
+
+
 @pytest.mark.parametrize(
     ("case", "dtype"),
     [

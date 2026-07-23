@@ -122,6 +122,32 @@ def test_cast_float_to_int(alltypes, df):
     tm.assert_series_equal(result, expected, check_names=False, check_index=False)
 
 
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param("[1, 2]", [1, 2], id="array"),
+        pytest.param(None, None, id="null"),
+    ],
+)
+def test_cast_string_to_json(con, value, expected):
+    expr = ibis.literal(value, type="string").cast("json")
+
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param("[1, 2]", [1, 2], id="valid"),
+        pytest.param("not json", None, id="malformed"),
+    ],
+)
+def test_try_cast_string_to_json(con, value, expected):
+    expr = ibis.literal(value).try_cast("json")
+
+    assert con.execute(expr) == expected
+
+
 def test_has_partitions(alltypes, parted_alltypes, con):
     col = con.partition_column
     assert col not in alltypes.columns
