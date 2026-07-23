@@ -94,7 +94,11 @@ test +backends:
 
     pytest_args=("-m" "$(sed 's/ / or /g' <<< '{{ backends }}')")
 
-    if ! [[ "{{ backends }}" =~ impala|pyspark ]]; then
+    if [[ "{{ backends }}" =~ ^(impala|pyspark|feldera)$ ]]; then
+        # impala/pyspark: JVM/cluster quirks; feldera: single pipeline-manager
+        # instance cannot sustain many concurrent pipelines.
+        :
+    else
         pytest_args+=("-n" "auto" "-q" "--dist" "loadgroup")
     fi
 

@@ -141,6 +141,14 @@ exasol = [
   "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
+feldera = [
+  "feldera>=0.316",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<4",
+  "rich>=12.4.4",
+]
 flink = [
   # adding apache-flink would lock pyarrow to an old version (for all backends),
   # due to the transitional dependency apache-beam imposing a low upper bound.
@@ -335,6 +343,7 @@ datafusion = "ibis.backends.datafusion"
 druid = "ibis.backends.druid"
 duckdb = "ibis.backends.duckdb"
 exasol = "ibis.backends.exasol"
+feldera = "ibis.backends.feldera"
 flink = "ibis.backends.flink"
 impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"
@@ -515,6 +524,7 @@ markers = [
   "druid: Apache Druid tests",
   "duckdb: DuckDB tests",
   "exasol: ExasolDB tests",
+  "feldera: Feldera tests",
   "flink: Flink tests",
   "impala: Apache Impala tests",
   "mysql: MySQL tests",

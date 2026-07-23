@@ -33,6 +33,7 @@ def test_version(backend):
         "singlestoredb",
         "impala",
         "flink",
+        "feldera",
     ],
     reason="backend does not support catalogs",
     raises=AttributeError,

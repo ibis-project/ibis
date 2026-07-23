@@ -35,6 +35,11 @@ NO_ARRAY_SUPPORT_MARKS = [
         ["sqlite", "mysql", "exasol"], reason="No array support", raises=Exception
     ),
     pytest.mark.never(
+        ["feldera"],
+        reason="Array types not yet validated for Feldera",
+        raises=(com.UnsupportedBackendType, com.OperationNotDefinedError, Exception),
+    ),
+    pytest.mark.never(
         ["mssql"],
         reason="No array support",
         raises=(
@@ -70,7 +75,8 @@ NO_ARRAY_SUPPORT = combine_marks(NO_ARRAY_SUPPORT_MARKS)
 
 NO_STRUCT_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["mysql", "singlestoredb", "sqlite", "mssql"], reason="No struct support"
+        ["mysql", "singlestoredb", "sqlite", "mssql", "feldera"],
+        reason="No struct support",
     ),
     pytest.mark.notyet(
         ["impala", "materialize"], reason="Backend doesn't yet support struct types"
@@ -81,7 +87,7 @@ NO_STRUCT_SUPPORT = combine_marks(NO_STRUCT_SUPPORT_MARKS)
 
 NO_MAP_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["sqlite", "mysql", "singlestoredb", "mssql"],
+        ["sqlite", "mysql", "singlestoredb", "mssql", "feldera"],
         reason="Unlikely to ever add map support",
     ),
     pytest.mark.notyet(
@@ -103,7 +109,9 @@ NO_MAP_SUPPORT = combine_marks(NO_MAP_SUPPORT_MARKS)
 NO_JSON_SUPPORT_MARKS = [
     pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
     pytest.mark.notyet(["clickhouse"], reason="upstream is broken"),
-    pytest.mark.notimpl(["datafusion", "exasol", "mssql", "druid", "oracle"]),
+    pytest.mark.notimpl(
+        ["datafusion", "exasol", "mssql", "druid", "oracle", "feldera"],
+    ),
 ]
 NO_JSON_SUPPORT = combine_marks(NO_JSON_SUPPORT_MARKS)
 

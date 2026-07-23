@@ -202,7 +202,87 @@ def pytest_collection_modifyitems(session, config, items):
     additional_markers = []
 
     unrecognized_backends = set()
+    _feldera_ddl_reason = "Feldera tables must be declared in the pipeline SQL program"
+    _feldera_unsupported_reason = (
+        "Feldera ad-hoc/DataFusion does not support this operation yet"
+    )
+    _feldera_ddl_prefixes = (
+        "test_create_table",
+        "test_insert_",
+        "test_upsert_",
+        "test_rename_table",
+        "test_load_data",
+        "test_create_drop_view",
+        "test_nullable_input_output",
+        "test_unsigned_integer_type",
+        "test_string_methods_accents",
+        "test_string_methods_no_accents",
+        "test_overwrite",
+        "test_create_temporary_table_from_schema",
+        "test_persist_expression",
+        "test_schema_with_caching",
+        "test_comparison_with_decimal_literal",
+        "test_all_null_table",
+        "test_all_null_column",
+        "test_cast_non_null",
+    )
+    _feldera_unsupported_prefixes = (
+        "test_parse_url",
+        "test_re_split",
+        "test_empty_array_string_join",
+        "test_try_cast",
+        "test_order_by_nulls",
+        "test_order_by_two_cols_nulls",
+        "test_order_by_preservation",
+        "test_isin",
+        "test_null_isin_null_is_null",
+        "test_isnull_equality",
+        "test_distinct",
+        "test_select_distinct_order_by_alias",
+        "test_union_generates_predictable_aliases",
+        "test_table_describe",
+        "test_table_info_large",
+        "test_topk_counts_null",
+        "test_dynamic_table_slice",
+        "test_sample",
+        "test_pivot",
+        "test_simple_pivot_wider",
+        "test_hash",
+        "test_hashbytes",
+        "test_hexdigest",
+        "test_interactive",
+        "test_typeof",
+        "test_list_catalogs",
+        "test_list_database_contents",
+        "test_from_connection",
+        "test_json_to_pyarrow",
+        "test_select_filter_mutate",
+    )
     for item in items:
+        # Skip (not xfail) Feldera parametrizations that need ad-hoc DDL/memtables.
+        # ``never`` is applied too late (after fixture setup); ``skip`` avoids
+        # setup-time errors from fixtures that call create_table / drop_table.
+        if "[feldera" in item.nodeid and (
+            "memtable" in item.name
+            or "memory_table" in item.name
+            or any(item.name.startswith(prefix) for prefix in _feldera_ddl_prefixes)
+        ):
+            item.add_marker(pytest.mark.skip(reason=_feldera_ddl_reason))
+        elif "[feldera" in item.nodeid and (
+            any(
+                item.name.startswith(prefix) for prefix in _feldera_unsupported_prefixes
+            )
+            or item.name.startswith("test_cast[")
+            or (
+                item.name.startswith("test_filter")
+                and ("-xor]" in item.name or "xor" in item.name)
+            )
+            or (
+                item.name.startswith("test_column_fill_null") and "nan_col" in item.name
+            )
+        ):
+            item.add_marker(pytest.mark.skip(reason=_feldera_unsupported_reason))
+
         # Yell loudly if unrecognized backend in notimpl, notyet or never
         for name in ("notimpl", "notyet", "never"):
             for mark in item.iter_markers(name=name):
@@ -232,6 +312,11 @@ def pytest_collection_modifyitems(session, config, items):
 
     if unrecognized_backends:
         raise pytest.PytestCollectionWarning("\n" + "\n".join(unrecognized_backends))
+
+    for item in items:
+        # Feldera tests share one pipeline-manager; serialize them when xdist is on.
+        if "[feldera]" in item.nodeid or item.get_closest_marker("feldera"):
+            item.add_marker(pytest.mark.xdist_group("feldera"))
 
     for item, markers in additional_markers:
         for marker in markers:

@@ -309,6 +309,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
         "trino",
         "databricks",
         "athena",
+        "feldera",
     ],
     reason="no partitioning support",
 )
@@ -400,6 +401,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
         "snowflake",
         "sqlite",
         "trino",
+        "feldera",
     ],
     reason="haven't gotten to them yet. Might be easy!",
     raises=NotImplementedError,
@@ -540,6 +542,11 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     ["databricks"], raises=AssertionError, reason="Only the devil knows"
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
+@pytest.mark.notyet(
+    ["feldera"],
+    raises=AssertionError,
+    reason="Feldera ad-hoc does not preserve timestamp timezone metadata",
+)
 def test_arrow_timestamp_with_time_zone(alltypes):
     from ibis.formats.pyarrow import PyArrowType
 

@@ -25,6 +25,7 @@ no_python_udfs = mark.notimpl(
         "risingwave",
         "databricks",
         "athena",
+        "feldera",
     ]
 )
 cloudpickle_version_mismatch = mark.notimpl(
@@ -159,6 +160,11 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
     ["postgres"],
     raises=NotImplementedError,
     reason="postgres only supports Python-native UDFs",
+)
+@mark.notyet(
+    ["feldera"],
+    raises=NotImplementedError,
+    reason="Python UDFs are not supported by the Feldera backend",
 )
 @mark.notyet(
     ["pyspark"],

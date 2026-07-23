@@ -18,6 +18,7 @@ from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
     DuckDBParserException,
     ExaQueryError,
+    FelderaAPIError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
@@ -302,6 +303,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "flink": decimal.Decimal("1.1"),
                 "polars": decimal.Decimal("1.1"),
                 "databricks": decimal.Decimal("1.1"),
+                "feldera": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
@@ -352,6 +354,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "flink": decimal.Decimal("1.1"),
                 "polars": decimal.Decimal("1.1"),
                 "databricks": decimal.Decimal("1.1"),
+                "feldera": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
@@ -385,6 +388,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "1.10000000000000003193790845333396190208"
                 ),
                 "oracle": 1.1,
+                "feldera": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "BIGNUMERIC",
@@ -521,6 +525,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason='invalid input syntax for type numeric: "Infinity"',
                     raises=PsycoPgInternalError,
                 ),
+                pytest.mark.notyet(
+                    ["feldera"],
+                    reason="Cannot cast string 'Infinity' to decimal",
+                    raises=FelderaAPIError,
+                ),
             ],
             id="decimal-infinity+",
         ),
@@ -599,6 +608,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason='invalid input syntax for type numeric: "-Infinity"',
                     raises=PsycoPgInternalError,
                 ),
+                pytest.mark.notyet(
+                    ["feldera"],
+                    reason="Cannot cast string '-Infinity' to decimal",
+                    raises=FelderaAPIError,
+                ),
             ],
             id="decimal-infinity-",
         ),
@@ -675,6 +689,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
+                pytest.mark.notyet(
+                    ["feldera"],
+                    reason="Cannot cast string 'NaN' to decimal",
+                    raises=FelderaAPIError,
+                ),
             ],
             id="decimal-NaN",
         ),
@@ -1393,7 +1412,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
 
 
 @pytest.mark.notimpl(
-    ["polars", "druid", "risingwave"],
+    ["polars", "druid", "risingwave", "feldera"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.never(
@@ -1410,7 +1429,7 @@ def test_random(con):
 
 
 @pytest.mark.notimpl(
-    ["polars", "druid", "risingwave"],
+    ["polars", "druid", "risingwave", "feldera"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.never(
@@ -1477,6 +1496,11 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="SQL query requires 'MIN' operator that is not supported.",
+)
+@pytest.mark.never(
+    ["feldera"],
+    raises=NotImplementedError,
+    reason="In-memory tables are not supported by the Feldera backend",
 )
 def test_histogram(con, alltypes):
     n = 10
@@ -1645,6 +1669,11 @@ def test_bitwise_scalars(con, op, left, right):
 
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
+@pytest.mark.notimpl(
+    ["feldera"],
+    raises=com.OperationNotDefinedError,
+    reason="DataFusion ad-hoc does not support the BitwiseNot (~) operator",
+)
 @pytest.mark.never(
     ["materialize"],
     raises=AssertionError,
@@ -1661,6 +1690,11 @@ def test_bitwise_not_scalar(con):
 
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
+@pytest.mark.notimpl(
+    ["feldera"],
+    raises=com.OperationNotDefinedError,
+    reason="DataFusion ad-hoc does not support the BitwiseNot (~) operator",
+)
 @pytest.mark.never(
     ["materialize"],
     raises=AssertionError,
@@ -1675,6 +1709,11 @@ def test_bitwise_not_col(backend, alltypes, df):
     backend.assert_series_equal(result, expected.rename("tmp"))
 
 
+@pytest.mark.never(
+    ["feldera"],
+    raises=NotImplementedError,
+    reason="In-memory tables are not supported by the Feldera backend",
+)
 def test_column_round_is_integer(con):
     t = ibis.memtable({"x": [1.2, 3.4]})
     expr = t.x.round().cast(int)

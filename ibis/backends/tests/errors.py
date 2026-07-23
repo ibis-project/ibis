@@ -209,3 +209,8 @@ try:
     from pyathena.error import OperationalError as PyAthenaOperationalError
 except ImportError:
     PyAthenaDatabaseError = PyAthenaOperationalError = None
+
+try:
+    from feldera.rest.errors import FelderaAPIError
+except ImportError:
+    FelderaAPIError = None

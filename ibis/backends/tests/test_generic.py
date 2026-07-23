@@ -605,9 +605,9 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     reason="random not supported",
 )
 @pytest.mark.never(
-    ["materialize"],
+    ["materialize", "feldera"],
     raises=com.OperationNotDefinedError,
-    reason="Materialize will never support random() - nondeterministic functions can't be used in materialized views (their core feature)",
+    reason="Incremental engines do not support nondeterministic functions in materialized views",
 )
 def test_order_by_random(alltypes):
     expr = alltypes.filter(_.id < 100).order_by(ibis.random()).limit(5)

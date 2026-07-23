@@ -21,7 +21,7 @@ pytestmark = [
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
-    ["risingwave"],
+    ["risingwave", "feldera"],
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
@@ -39,7 +39,7 @@ def test_persist_expression(backend, alltypes):
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
-    ["risingwave"],
+    ["risingwave", "feldera"],
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
@@ -57,7 +57,7 @@ def test_persist_expression_contextmanager(backend, con, alltypes):
 
 @mark.notimpl(["flink", "impala", "trino", "druid"])
 @pytest.mark.never(
-    ["risingwave"],
+    ["risingwave", "feldera"],
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
@@ -98,7 +98,7 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
 @mark.notimpl(["flink", "impala", "trino", "druid"])
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
-    ["risingwave"],
+    ["risingwave", "feldera"],
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
@@ -120,7 +120,7 @@ def test_persist_expression_repeated_cache(alltypes, con):
 @mark.notimpl(["flink", "impala", "trino", "druid"])
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
-    ["risingwave"],
+    ["risingwave", "feldera"],
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )

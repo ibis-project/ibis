@@ -67,6 +67,8 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
         )
     elif con.name == "athena":
         pytest.xfail("create table must specific external location")
+    elif con.name == "feldera":
+        pytest.skip("Feldera tables must be declared in the pipeline SQL program")
 
     temporary = con.create_table(temp_table_name, schema=schema)
     assert temporary.to_pandas().empty
