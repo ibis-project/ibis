@@ -638,6 +638,9 @@ class BigQueryCompiler(SQLGlotCompiler):
             return self.f.anon["SAFE.PARSE_JSON"](arg)
         return super().visit_TryCast(op, arg=arg, to=to)
 
+    def visit_ToJSONArray(self, op, *, arg):
+        return self.f.anon["JSON_QUERY_ARRAY"](arg)
+
     def visit_JSONGetItem(self, op, *, arg, index):
         return arg[index]
 
