@@ -147,6 +147,17 @@ def test_json_array(snapshot):
     snapshot.assert_match(to_sql(t.payload.array), "out.sql")
 
 
+def test_json_array_relation(snapshot):
+    t = ibis.table({"payload": "string"}, name="events")
+    items = t.select(item=t.payload.cast("json").array.unnest()).alias("items")
+    expr = items.select(
+        name=items.item["name"].str,
+        status=items.item["status"].str,
+    )
+
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
 @pytest.mark.parametrize(
     ("case", "dtype"),
     [
