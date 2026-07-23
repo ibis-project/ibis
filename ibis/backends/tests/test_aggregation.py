@@ -13,12 +13,13 @@ import ibis.expr.datatypes as dt
 from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
+    ArrowInvalid,
     ClickHouseDatabaseError,
     DatabricksServerOperationError,
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
-    MySQLNotSupportedError,
+    MySQLProgrammingError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
     PsycoPg2InternalError,
@@ -1769,7 +1770,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
-@pytest.mark.notyet(["mysql"], raises=MySQLNotSupportedError)
+@pytest.mark.notyet(["mysql"], raises=MySQLProgrammingError)
 @pytest.mark.notyet(["singlestoredb"], raises=SingleStoreDBOperationalError)
 @pytest.mark.notyet(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
@@ -1841,6 +1842,11 @@ def test_group_by_scalar(alltypes, df, value):
     assert n == len(df)
 
 
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_empty_sum(con):
     t = ibis.memtable({"x": [1]}, schema={"x": "int"})
     result = con.execute(t.count())
