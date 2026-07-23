@@ -122,6 +122,72 @@ def test_cast_float_to_int(alltypes, df):
     tm.assert_series_equal(result, expected, check_names=False, check_index=False)
 
 
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param("[1, 2]", [1, 2], id="array"),
+        pytest.param(None, None, id="null"),
+    ],
+)
+def test_cast_string_to_json(con, value, expected):
+    expr = ibis.literal(value, type="string").cast("json")
+
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param("[1, 2]", [1, 2], id="valid"),
+        pytest.param("not json", None, id="malformed"),
+    ],
+)
+def test_try_cast_string_to_json(con, value, expected):
+    expr = ibis.literal(value).try_cast("json")
+
+    assert con.execute(expr) == expected
+
+
+def test_json_empty_array(con):
+    expr = ibis.literal("[]").cast("json").array
+
+    assert con.execute(expr) == []
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param(None, id="null"),
+        pytest.param("{}", id="non-array"),
+    ],
+)
+def test_json_array_null(con, value):
+    expr = ibis.literal(value, type="string").cast("json").array
+
+    assert con.execute(expr.isnull())
+
+
+def test_json_array_relation(con):
+    payload = ibis.literal(
+        '[{"name":"first","status":"ready"},{"name":"second","status":"done"}]'
+    )
+    items = payload.cast("json").array.unnest().name("item").as_table()
+    expr = items.select(
+        name=items.item["name"].str,
+        status=items.item["status"].str,
+    )
+
+    result = con.execute(expr).sort_values("name").reset_index(drop=True)
+    expected = pd.DataFrame(
+        {
+            "name": ["first", "second"],
+            "status": ["ready", "done"],
+        }
+    )
+
+    tm.assert_frame_equal(result, expected)
+
+
 def test_has_partitions(alltypes, parted_alltypes, con):
     col = con.partition_column
     assert col not in alltypes.columns
