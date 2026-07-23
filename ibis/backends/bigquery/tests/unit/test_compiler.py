@@ -141,6 +141,12 @@ def test_try_cast_string_to_json(snapshot):
     snapshot.assert_match(to_sql(t.payload.try_cast("json")), "out.sql")
 
 
+def test_json_array(snapshot):
+    t = ibis.table({"payload": "json"}, name="events")
+
+    snapshot.assert_match(to_sql(t.payload.array), "out.sql")
+
+
 @pytest.mark.parametrize(
     ("case", "dtype"),
     [

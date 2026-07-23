@@ -148,6 +148,25 @@ def test_try_cast_string_to_json(con, value, expected):
     assert con.execute(expr) == expected
 
 
+def test_json_empty_array(con):
+    expr = ibis.literal("[]").cast("json").array
+
+    assert con.execute(expr) == []
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param(None, id="null"),
+        pytest.param("{}", id="non-array"),
+    ],
+)
+def test_json_array_null(con, value):
+    expr = ibis.literal(value, type="string").cast("json").array
+
+    assert con.execute(expr.isnull())
+
+
 def test_has_partitions(alltypes, parted_alltypes, con):
     col = con.partition_column
     assert col not in alltypes.columns
