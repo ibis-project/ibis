@@ -751,28 +751,20 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
         >>> con.insert(table_name, table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
 
         """
-        if isinstance(obj, ir.Table):
-            self._run_pre_execute_hooks(obj)
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+        source_table = self._ensure_table_to_insert(
+            target_columns=self.get_schema(name, catalog=catalog, database=db),
+            data=obj,
+        )
+        self._run_pre_execute_hooks(source_table)
 
-        table = self.table(name, database=database)
-
-        if not isinstance(obj, ir.Table):
-            obj = ibis.memtable(obj)
-
-        if not set(table.columns).difference(obj.columns):
-            # project out using column order of parent table
-            # if column names match
-            obj = obj.select(table.columns)
-
-        self._run_pre_execute_hooks(obj)
+        existing_table = self.table(name, database=database)
 
         if validate:
-            existing_schema = table.schema()
-            insert_schema = obj.schema()
+            existing_schema = existing_table.schema()
+            insert_schema = source_table.schema()
             if not insert_schema.equals(existing_schema):
-                if set(insert_schema.names) != set(existing_schema.names):
-                    raise com.IbisInputError("Schemas have different names")
-
                 for insert_name in insert_schema:
                     lt = insert_schema[insert_name]
                     rt = existing_schema[insert_name]
@@ -781,11 +773,11 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
 
         if partition is not None:
             partition_schema = self.get_partition_schema(name, database=database)
-            partition_schema_names = frozenset(partition_schema.names)
-            obj = obj.select(
+            partition_schema_names = frozenset(partition_schema)
+            source_table = source_table.select(
                 [
                     column
-                    for column in obj.columns
+                    for column in source_table.columns
                     if column not in partition_schema_names
                 ]
             )
@@ -794,8 +786,8 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
 
         statement = ddl.InsertSelect(
             self._fully_qualified_name(name, database),
-            self.compile(obj),
-            obj.columns,
+            self.compile(source_table),
+            source_table.columns,
             partition=partition,
             partition_schema=partition_schema,
             overwrite=overwrite,
