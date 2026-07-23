@@ -167,6 +167,27 @@ def test_json_array_null(con, value):
     assert con.execute(expr.isnull())
 
 
+def test_json_array_relation(con):
+    payload = ibis.literal(
+        '[{"name":"first","status":"ready"},{"name":"second","status":"done"}]'
+    )
+    items = payload.cast("json").array.unnest().name("item").as_table()
+    expr = items.select(
+        name=items.item["name"].str,
+        status=items.item["status"].str,
+    )
+
+    result = con.execute(expr).sort_values("name").reset_index(drop=True)
+    expected = pd.DataFrame(
+        {
+            "name": ["first", "second"],
+            "status": ["ready", "done"],
+        }
+    )
+
+    tm.assert_frame_equal(result, expected)
+
+
 def test_has_partitions(alltypes, parted_alltypes, con):
     col = con.partition_column
     assert col not in alltypes.columns
