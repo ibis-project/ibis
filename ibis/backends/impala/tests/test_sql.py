@@ -300,3 +300,10 @@ def test_group_by_with_window_preserves_range(snapshot):
 
     result = ibis.impala.compile(expr)
     snapshot.assert_match(result, "out.sql")
+
+
+# https://github.com/ibis-project/ibis/issues/12004
+def test_strftime_translates_python_format_codes(con, snapshot):
+    expr = con.table("functional_alltypes").timestamp_col.strftime("%m/%d/%Y")
+    result = ibis.to_sql(expr, dialect="impala")
+    snapshot.assert_match(result, "out.sql")
