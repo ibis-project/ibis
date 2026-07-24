@@ -44,7 +44,9 @@ _pyspark_interval_units = {
 
 class PySparkType(TypeMapper):
     @classmethod
-    def to_ibis(cls, typ, nullable=True):
+    def to_ibis(cls, typ: pt.DataType, nullable: bool | None = None) -> dt.DataType:
+        if nullable is None:
+            nullable = True
         """Convert a pyspark type to an ibis type."""
         if isinstance(typ, pt.DecimalType):
             return dt.Decimal(typ.precision, typ.scale, nullable=nullable)

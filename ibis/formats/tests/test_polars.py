@@ -66,7 +66,10 @@ from ibis.formats.polars import PolarsData, PolarsSchema, PolarsType  # noqa: E4
 )
 def test_to_from_ibis_type(ibis_dtype, polars_type):
     assert PolarsType.from_ibis(ibis_dtype) == polars_type
-    assert PolarsType.to_ibis(polars_type) == ibis_dtype
+    assert PolarsType.from_ibis(ibis_dtype.copy(nullable=False)) == polars_type
+    assert PolarsType.to_ibis(polars_type) == ibis_dtype(nullable=True)
+    assert PolarsType.to_ibis(polars_type, nullable=None) == ibis_dtype(nullable=True)
+    assert PolarsType.to_ibis(polars_type, nullable=True) == ibis_dtype(nullable=True)
     assert PolarsType.to_ibis(polars_type, nullable=False) == ibis_dtype(nullable=False)
 
 

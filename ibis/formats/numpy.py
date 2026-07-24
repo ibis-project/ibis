@@ -36,7 +36,13 @@ _to_numpy_types = {v: k for k, v in _from_numpy_types.items()}
 
 class NumpyType(TypeMapper[np.dtype]):
     @classmethod
-    def to_ibis(cls, typ: np.dtype, nullable: bool = True) -> dt.DataType:
+    def to_ibis(cls, typ: np.dtype, nullable: bool | None = True) -> dt.DataType:
+        # numpy's type system doesn't keep track of nullability.
+        # We accept nullable=None to be compatible with the rest of TypeMapper.to_ibis()
+        # implementations, but we treat None as True, since we can't infer nullability
+        # from a numpy dtype.
+        if nullable is None:
+            nullable = True
         if np.issubdtype(typ, np.datetime64):
             # TODO(kszucs): the following code provedes proper timestamp roundtrips
             # between ibis and numpy/pandas but breaks the test suite at several
