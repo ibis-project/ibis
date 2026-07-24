@@ -302,3 +302,21 @@ def test_order_by_no_deference_literals(backend_name, snapshot):
     o = s.order_by("a", "i", "s")
     sql = ibis.to_sql(o, dialect=backend_name)
     snapshot.assert_match(sql, "out.sql")
+
+
+def test_trino_zip_struct_field_access_casts_to_named_row():
+    # Regression for #11971: on Trino, zip() builds anonymous ROW fields, so
+    # accessing a struct field (f1, f2, ...) inside a subsequent filter/map
+    # lambda compiled to unresolvable dot access (`param."f2"`). The zipped
+    # array must be cast to a named ROW type so those field names resolve.
+    t = ibis.table({"a": "string", "b": "string"}, name="t")
+    keys = ibis.array([ibis.literal("k1"), ibis.literal("k2")])
+    vals = ibis.array([_.a.cast("string"), _.b.cast("string")]).resolve(t)
+    zipped = keys.zip(vals)
+    filtered = zipped.filter(lambda s: s["f2"].notnull())
+    expr = t.select(filtered.map(lambda s: s["f2"]).name("m"))
+
+    sql = " ".join(ibis.to_sql(expr, dialect="trino").split())
+
+    assert "CAST(ZIP(" in sql
+    assert 'ARRAY(ROW("f1" VARCHAR, "f2" VARCHAR))' in sql
