@@ -235,7 +235,7 @@ class ImpalaCompiler(SQLGlotCompiler):
                 f"got: {type(op.format_str).__name__}"
             )
         format_str = sg.time.format_time(
-            op.format_str.value, {v: k for k, v in Impala.TIME_MAPPING.items()}
+            op.format_str.value, Impala.INVERSE_TIME_MAPPING, Impala.INVERSE_TIME_TRIE
         )
         return self.f.anon.from_unixtime(
             self.f.unix_timestamp(self.cast(arg, dt.string)), format_str
