@@ -2,6 +2,7 @@
   "build": { "dockerfile": "Dockerfile", "context": ".." },
   "containerUser": "vscode",
   "remoteUser": "vscode",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind,consistency=cached",
   "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
   "workspaceFolder": "/app",
   "customizations": {
@@ -9,15 +10,15 @@
       "openFiles": ["docs/tutorials/basics.qmd"]
     },
     "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      },
       "extensions": ["ms-toolsai.jupyter", "ms-python.python", "quarto.quarto"]
     }
   },
   "features": {
     "ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {
       "version": "1.5.13"
-    },
-    "ghcr.io/eitsupi/devcontainer-features/duckdb-cli:1": {
-      "extensions": "httpfs,sqlite,postgres,spatial,substrait,parquet,json,arrow,mysql"
     },
     "ghcr.io/eitsupi/devcontainer-features/jq-likes:2": {
       "jqVersion": "none",
