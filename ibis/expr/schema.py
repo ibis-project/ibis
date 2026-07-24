@@ -358,9 +358,9 @@ class Schema(Concrete, Coercible, MapSet[str, dt.DataType]):
         >>> columns
         [ColumnDef(
           this=Identifier(this='a', quoted=True),
-          kind=DataType(this=Type.BIGINT)), ColumnDef(
+          kind=DataType(this=DType.BIGINT)), ColumnDef(
           this=Identifier(this='b', quoted=True),
-          kind=DataType(this=Type.VARCHAR),
+          kind=DataType(this=DType.VARCHAR),
           constraints=[
             ColumnConstraint(
               kind=NotNullColumnConstraint())])]

@@ -627,7 +627,10 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         func = sge.Lambda(this=body, expressions=expressions)
 
-        return self.f.arrayMap(func, *args)
+        # ClickHouse's arrayMap takes a lambda plus a variable number of
+        # arrays, but sqlglot's generic ArrayMap expression caps it at two
+        # arguments; go through `anon` to bypass that arity check.
+        return self.f.anon.arrayMap(func, *args)
 
     def visit_ArrayFilter(self, op, *, arg, param, body, index):
         expressions = [param]
@@ -639,7 +642,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         func = sge.Lambda(this=body, expressions=expressions)
 
-        return self.f.arrayFilter(func, *args)
+        # Same arity issue as visit_ArrayMap: bypass via anon.
+        return self.f.anon.arrayFilter(func, *args)
 
     def visit_ArrayRemove(self, op, *, arg, other):
         x = sg.to_identifier(util.gen_name("x"))
