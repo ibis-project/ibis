@@ -392,6 +392,7 @@ class Backend(
 
     def do_connect(
         self,
+        *,
         host: str | None = None,
         user: str | None = None,
         password: str | None = None,
