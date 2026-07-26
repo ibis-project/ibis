@@ -10,7 +10,7 @@ import uuid
 from collections.abc import Mapping, Sequence
 from functools import partial
 from operator import attrgetter
-from typing import Any
+from typing import TYPE_CHECKING, Any, Union
 
 import toolz
 from public import public
@@ -28,9 +28,56 @@ from ibis.common.temporal import (
 )
 from ibis.expr.datatypes.cast import highest_precedence
 
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
+InferrableToStruct = Mapping[str, Any]
+InferrableToMap = Mapping[Any, Any]
+InferrableToArray = Union[list, tuple, set, frozenset]
+InferrableToTime = datetime.time
+InferrableToDate = datetime.date
+InferrableToTimestamp = Union[datetime.datetime, "pd.Timestamp"]
+InferrableToInterval = Union[datetime.timedelta, "pd.Timedelta"]
+InferrableToString = str | enum.Enum
+InferrableToBytes = bytes
+InferrableToFloating = float
+InferrableToInteger = int
+InferrableToDecimal = decimal.Decimal
+InferrableToBoolean = bool
+InferrableToNull = None
+InferrableToUUID = uuid.UUID
+InferrableToINET = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
+InferrableToSomething = Union["np.ndarray", "pd.Series"]
+
+InferrableToNumeric = Union[
+    InferrableToFloating, InferrableToInteger, InferrableToDecimal, InferrableToBoolean
+]
+
+Inferrable = Union[
+    InferrableToStruct,
+    InferrableToMap,
+    InferrableToArray,
+    InferrableToTime,
+    InferrableToDate,
+    InferrableToTimestamp,
+    InferrableToInterval,
+    InferrableToString,
+    InferrableToBytes,
+    InferrableToFloating,
+    InferrableToInteger,
+    InferrableToDecimal,
+    InferrableToBoolean,
+    InferrableToNull,
+    InferrableToUUID,
+    InferrableToINET,
+    InferrableToSomething,
+]
+"""All the types that can be inferred to an ibis dtype."""
+
 
 @lazy_singledispatch
-def infer(value: Any) -> dt.DataType:
+def infer(value: Inferrable) -> dt.DataType:
     """Infer the corresponding ibis dtype for a python object."""
     raise InputTypeError(
         f"Unable to infer datatype of value {value!r} with type {type(value)}"
@@ -169,14 +216,14 @@ def infer_ipaddr(
 
 
 @infer.register("numpy.generic")
-def infer_numpy_scalar(value):
+def infer_numpy_scalar(value: np.generic):
     from ibis.formats.numpy import NumpyType
 
     return NumpyType.to_ibis(value.dtype)
 
 
 @infer.register("pandas.Timestamp")
-def infer_pandas_timestamp(value):
+def infer_pandas_timestamp(value: pd.Timestamp) -> dt.Timestamp:
     if value.tz is not None:
         return dt.Timestamp(timezone=str(value.tz))
     else:
@@ -184,7 +231,7 @@ def infer_pandas_timestamp(value):
 
 
 @infer.register("pandas.Timedelta")
-def infer_interval_pandas(value) -> dt.Interval:
+def infer_interval_pandas(value: pd.Timedelta) -> dt.Interval:
     # pandas Timedelta has more granularity
     units = {
         "D": "d",
@@ -207,7 +254,7 @@ def infer_interval_pandas(value) -> dt.Interval:
 
 @infer.register("numpy.ndarray")
 @infer.register("pandas.Series")
-def infer_numpy_array(value):
+def infer_numpy_array(value: np.ndarray | pd.Series) -> dt.Array:
     from ibis.formats.numpy import NumpyType
     from ibis.formats.pyarrow import PyArrowData
 

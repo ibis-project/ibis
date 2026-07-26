@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     import ibis.expr.types as ir
+    from ibis.expr.datatypes.value import InferrableToArray
     from ibis.expr.types.typing import V
 
 import ibis.common.exceptions as com
@@ -1372,6 +1373,36 @@ class ArrayValue(Value):
         └──────────────────────┴─────────┘
         """
         return ops.ArrayMean(self).to_expr()
+
+    def __eq__(
+        self, other: InferrableToArray | ArrayValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__eq__(other)
+
+    def __ne__(
+        self, other: InferrableToArray | ArrayValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__ne__(other)
+
+    def __ge__(
+        self, other: InferrableToArray | ArrayValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__ge__(other)
+
+    def __gt__(
+        self, other: InferrableToArray | ArrayValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__gt__(other)
+
+    def __le__(
+        self, other: InferrableToArray | ArrayValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__le__(other)
+
+    def __lt__(
+        self, other: InferrableToArray | ArrayValue | Deferred
+    ) -> ir.BooleanValue:
+        return super().__lt__(other)
 
 
 @public

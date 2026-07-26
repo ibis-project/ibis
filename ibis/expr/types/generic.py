@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
+    from ibis.expr.datatypes.value import Inferrable
     from ibis.formats.pandas import PandasData
     from ibis.formats.pyarrow import PyArrowData
 
@@ -1291,30 +1292,30 @@ class Value(Expr):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def __eq__(self, other: Value) -> ir.BooleanValue:
+    def __eq__(self, other: Inferrable | Value | Deferred) -> ir.BooleanValue:
         if _is_null_literal(other):
             return self.isnull()
         elif _is_null_literal(self):
             return other.isnull()
         return _binop(ops.Equals, self, other)
 
-    def __ne__(self, other: Value) -> ir.BooleanValue:
+    def __ne__(self, other: Inferrable | Value | Deferred) -> ir.BooleanValue:
         if _is_null_literal(other):
             return self.notnull()
         elif _is_null_literal(self):
             return other.notnull()
         return _binop(ops.NotEquals, self, other)
 
-    def __ge__(self, other: Value) -> ir.BooleanValue:
+    def __ge__(self, other: Inferrable | Value | Deferred) -> ir.BooleanValue:
         return _binop(ops.GreaterEqual, self, other)
 
-    def __gt__(self, other: Value) -> ir.BooleanValue:
+    def __gt__(self, other: Inferrable | Value | Deferred) -> ir.BooleanValue:
         return _binop(ops.Greater, self, other)
 
-    def __le__(self, other: Value) -> ir.BooleanValue:
+    def __le__(self, other: Inferrable | Value | Deferred) -> ir.BooleanValue:
         return _binop(ops.LessEqual, self, other)
 
-    def __lt__(self, other: Value) -> ir.BooleanValue:
+    def __lt__(self, other: Inferrable | Value | Deferred) -> ir.BooleanValue:
         return _binop(ops.Less, self, other)
 
     def asc(self, *, nulls_first: bool = False) -> Self:
@@ -3045,7 +3046,7 @@ def null(type: dt.DataType | str | None = None, /) -> NullScalar:
 
 @public
 @deferrable
-def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
+def literal(value: Inferrable, type: dt.DataType | str | None = None) -> Scalar:
     """Create a scalar expression from a Python value.
 
     ::: {.callout-tip}
