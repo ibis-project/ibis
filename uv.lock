@@ -7121,11 +7121,11 @@ wheels = [
 
 [[package]]
 name = "sqlglot"
-version = "30.13.0"
+version = "30.14.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/bf/62/6d5bd3169478b7f09e08ab3e50175d486a9e7f3a419b88fc9280ba564ab1/sqlglot-30.13.0.tar.gz", hash = "sha256:f0a6eb79de2fd6efe2689f8cf197caa4f08bfe77c7880315616fa4420b8ba2bf", size = 5932385, upload-time = "2026-07-20T20:16:54.873Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3a/cd/39a94f0f98076ee8e7c7c38fd4bba8d7845b0c629ff967057c64ef2c0989/sqlglot-30.14.0.tar.gz", hash = "sha256:df2ef5d2b8ca814313781f4ff35bf63e58f821ef517eeddbd523c19a61fa9bb9", size = 5944410, upload-time = "2026-07-27T11:23:30.698Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f2/2f/2076eca54f6a8ed1c86301bdb4bb2ae4181b0c1c4dbc041062ca997dc1b2/sqlglot-30.13.0-py3-none-any.whl", hash = "sha256:08f87ff7b052246d61b731628c8c2db0bc91f2c9e69f5ba68a1d160a9f5b49b1", size = 719120, upload-time = "2026-07-20T20:16:53.248Z" },
+    { url = "https://files.pythonhosted.org/packages/33/ec/a729883ceda22dcd9117ce182f64d884bf494e72c4dfce00c2ad0a5978e1/sqlglot-30.14.0-py3-none-any.whl", hash = "sha256:fc768e24889d63a5e1237dea7ad305e5ffb4356a98b0bed828f89591ebcd3636", size = 719007, upload-time = "2026-07-27T11:23:28.637Z" },
 ]
 
 [[package]]
