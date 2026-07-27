@@ -1152,6 +1152,15 @@ def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
 
 
 @pytest.mark.notimpl(["druid", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=AssertionError,
+    reason=(
+        "sqlglot's ClickHouse dialect has an empty TIME_MAPPING, so canonical "
+        "`%M` (minutes) passes through to `formatDateTime`, which reads it as "
+        "the full month name; ClickHouse spells minutes `%i`"
+    ),
+)
 def test_strftime_with_time(con):
     # Regression test: a format with a time component exercises ``%M`` (minutes),
     # which collides with the month-name token in MySQL/Trino-family format codes
@@ -1462,11 +1471,6 @@ def test_string_as_date(alltypes, fmt):
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notyet(
-    ["flink"],
-    raises=AssertionError,
-    reason="Flink misinterprets strftime-style format strings, producing a wrong date",
-)
 def test_string_as_date_single_digit_month_day(con):
     expr = ibis.literal("1/2/2021").as_date("%m/%d/%Y")
     result = con.execute(expr)
@@ -1485,11 +1489,6 @@ def test_string_as_date_single_digit_month_day(con):
 @pytest.mark.notimpl(
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notyet(
-    ["flink"],
-    raises=AssertionError,
-    reason="Flink misinterprets strftime-style format strings, producing a wrong date",
 )
 def test_string_as_date_single_digit_month_day_column(con):
     # con.sql() creates a column (not a literal), then .as_date() is applied.
