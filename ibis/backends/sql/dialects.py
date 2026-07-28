@@ -46,6 +46,16 @@ with contextlib.suppress(AttributeError):
     ClickHouse.Generator.TRANSFORMS[sge.Median] = rename_func("median")
 
 
+class ChDB(ClickHouse):
+    """chDB is embedded ClickHouse; the SQL dialect is identical.
+
+    Registered as a distinct sqlglot dialect (name ``"chdb"``) so the chdb
+    backend, whose ``name`` is ``"chdb"``, can render SQL via
+    ``expr.sql("chdb")`` the same way every other backend renders via its own
+    name.
+    """
+
+
 class DataFusion(Postgres):
     class Generator(Postgres.Generator):
         TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {

@@ -88,6 +88,15 @@ bigquery = [
   "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
+chdb = [
+  "chdb>=3.0",
+  "clickhouse-connect[arrow,pandas,numpy]>=0.5.23",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<4",
+  "rich>=12.4.4",
+]
 clickhouse = [
   "clickhouse-connect[arrow,pandas,numpy]>=0.5.23",
   "pyarrow>=10.0.1",
@@ -329,6 +338,7 @@ docs = [
 [project.entry-points."ibis.backends"]
 athena = "ibis.backends.athena"
 bigquery = "ibis.backends.bigquery"
+chdb = "ibis.backends.chdb"
 clickhouse = "ibis.backends.clickhouse"
 databricks = "ibis.backends.databricks"
 datafusion = "ibis.backends.datafusion"
