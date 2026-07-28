@@ -130,6 +130,8 @@ class Options(Config):
         set.
     sql: SQL
         SQL-related options.
+    chdb : Config | None
+        chDB specific options.
     clickhouse : Config | None
         Clickhouse specific options.
     impala : Config | None
@@ -148,6 +150,7 @@ class Options(Config):
     graphviz_repr: bool = False
     default_backend: Optional[Any] = None
     sql: SQL = SQL()
+    chdb: Optional[Config] = None
     clickhouse: Optional[Config] = None
     impala: Optional[Config] = None
     pandas: Optional[Config] = None
