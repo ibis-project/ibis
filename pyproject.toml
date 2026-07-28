@@ -89,8 +89,7 @@ bigquery = [
   "rich>=12.4.4",
 ]
 chdb = [
-  "chdb>=3.0",
-  "clickhouse-connect[arrow,pandas,numpy]>=0.5.23",
+  "chdb>=4.2.1",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
