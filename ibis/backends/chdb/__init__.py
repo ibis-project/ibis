@@ -10,14 +10,19 @@ Arrow output fixup (:class:`ChdbArrowConverter`).
 from __future__ import annotations
 
 import contextlib
+import importlib
+import re
 import threading
+import types
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -71,13 +76,68 @@ class ChdbArrowConverter(PyArrowData):
 
     @classmethod
     def convert_column(cls, column: pa.ChunkedArray, dtype: dt.DataType):
+        import ipaddress
+        import uuid as uuidlib
+
+        def combined(col):
+            return col.combine_chunks() if isinstance(col, pa.ChunkedArray) else col
+
         pa_type = PyArrowType.from_ibis(dtype)
         if column.type == pa_type:
             return column
+
+        n = len(column)
+        # dt.null and all-null columns: chDB may return them as binary/other,
+        # which Arrow won't cast; rebuild directly as nulls of the target type.
+        if dtype.is_null() or pa.types.is_null(pa_type) or (n and column.null_count == n):
+            return pa.nulls(n, type=pa_type)
+
+        # scale-less DateTime arrives as uint32 seconds; uint32->timestamp is
+        # not a legal Arrow cast, so route through int64.
         if dtype.is_timestamp() and pa.types.is_integer(column.type):
             unit = "s" if dtype.scale is None else pa_type.unit
             target = pa.timestamp(unit, tz=dtype.timezone)
             return column.cast(pa.int64()).cast(target).cast(pa_type)
+
+        if dtype.is_interval() and pa.types.is_integer(column.type):
+            return column.cast(pa.int64()).cast(pa_type)
+
+        # UUID arrives as fixed_size_binary(16) / arrow.uuid extension.
+        if dtype.is_uuid():
+            def fmt_uuid(v):
+                if v is None or isinstance(v, str):
+                    return v
+                if isinstance(v, uuidlib.UUID):
+                    return str(v)
+                return str(uuidlib.UUID(bytes=bytes(v)))
+
+            return pa.array(
+                [fmt_uuid(v) for v in combined(column).to_pylist()], type=pa_type
+            )
+
+        # INET arrives as uint32 (IPv4) or fixed_size_binary(16) (IPv6).
+        if dtype.is_inet():
+            def fmt_ip(v):
+                if v is None or isinstance(v, str):
+                    return v
+                if isinstance(v, (bytes, bytearray)):
+                    return str(ipaddress.ip_address(bytes(v)))
+                return str(ipaddress.ip_address(v))
+
+            return pa.array(
+                [fmt_ip(v) for v in combined(column).to_pylist()], type=pa_type
+            )
+
+        # chDB emits anonymous tuples with positional field names ('1','2',...);
+        # relabel to the declared field names (Arrow matches struct fields by name).
+        if dtype.is_struct() and pa.types.is_struct(column.type):
+            arr = combined(column)
+            fields = [arr.field(i) for i in range(arr.type.num_fields)]
+            renamed = pa.StructArray.from_arrays(fields, names=list(dtype.names))
+            with contextlib.suppress(Exception):
+                return renamed.cast(pa_type)
+            return renamed
+
         if (
             dtype.is_array()
             and dtype.value_type.is_timestamp()
@@ -88,8 +148,18 @@ class ChdbArrowConverter(PyArrowData):
             unit = "s" if value.scale is None else pa_type.value_type.unit
             inner = pa.timestamp(unit, tz=value.timezone)
             return column.cast(pa.list_(pa.int64())).cast(pa.list_(inner)).cast(pa_type)
-        with contextlib.suppress(pa.lib.ArrowInvalid, pa.lib.ArrowNotImplementedError):
+
+        # nullable values come back as a dense union; resolve to plain values.
+        if pa.types.is_union(column.type):
+            return pa.array(combined(column).to_pylist(), type=pa_type)
+
+        # generic: safe cast, then unsafe (e.g. signed<->unsigned), then rebuild.
+        with contextlib.suppress(Exception):
             return column.cast(pa_type)
+        with contextlib.suppress(Exception):
+            return pc.cast(column, pa_type, safe=False)
+        with contextlib.suppress(Exception):
+            return pa.array(combined(column).to_pylist(), type=pa_type)
         return column
 
     @classmethod
@@ -211,7 +281,10 @@ class Backend(UrlFromPath, CHBackend):
         self._run_pre_execute_hooks(table)
         sql = self.compile(table, **kwargs)
         self._log(sql)
-        result = self.con.send_query(sql, "Arrow").record_batch().read_all()
+        # Materialize via the non-streaming ArrowTable format: it returns a
+        # pyarrow.Table directly, leaving no open stream to poison the shared
+        # connection if type conversion raises.
+        result = self.con.query(sql, fmt="ArrowTable")
         return ChdbArrowConverter.convert_table(result, table.schema())
 
     def to_pyarrow(self, expr, /, **kwargs) -> pa.Table:
@@ -254,7 +327,12 @@ class Backend(UrlFromPath, CHBackend):
                 "`catalog` namespaces are not supported by chdb"
             )
         query = sge.Describe(this=sg.table(table_name, db=database))
-        table = self.raw_sql(query, fmt="ArrowTable")
+        try:
+            table = self.raw_sql(query, fmt="ArrowTable")
+        except Exception as e:
+            if re.search(r"\bUNKNOWN_TABLE\b", str(e)):
+                raise com.TableNotFound(table_name) from e
+            raise
         names = table.column("name").to_pylist()
         types = table.column("type").to_pylist()
         type_mapper = self.compiler.type_mapper
@@ -284,6 +362,42 @@ class Backend(UrlFromPath, CHBackend):
         query = sg.select(C.name).from_(sg.table("databases", db="system"))
         result = self.raw_sql(query, fmt="ArrowTable")
         return self._filter_with_like(result.column("name").to_pylist(), like)
+
+    # -- file readers ------------------------------------------------------
+    # The inherited ClickHouse readers stream files over clickhouse_connect;
+    # the embedded engine instead reads the local path via file() directly.
+
+    def _read_file(self, path, *, table_name, fmt, engine):
+        name = table_name or util.gen_name("read")
+        path = sge.convert(str(path)).sql(self.dialect)
+        self.raw_sql(  # noqa: S608 - path is a quoted literal, name is generated
+            f"CREATE OR REPLACE TABLE {name} ENGINE = {engine} "
+            f"AS SELECT * FROM file({path}, '{fmt}')"
+        )
+        return self.table(name)
+
+    def read_parquet(
+        self, path, /, *, table_name=None, engine: str = "MergeTree", **_: Any
+    ) -> ir.Table:
+        return self._read_file(path, table_name=table_name, fmt="Parquet", engine=engine)
+
+    def read_csv(
+        self, path, /, *, table_name=None, engine: str = "MergeTree", **_: Any
+    ) -> ir.Table:
+        return self._read_file(
+            path, table_name=table_name, fmt="CSVWithNames", engine=engine
+        )
+
+    def insert(self, name, /, obj, *, database=None, overwrite=False, **_: Any):
+        # The embedded engine has no clickhouse_connect insert transport; route
+        # pandas/pyarrow/etc. through the Python() memtable path via INSERT SELECT.
+        if overwrite:
+            self.truncate_table(name, database=database)
+        if not isinstance(obj, ir.Table):
+            obj = ibis.memtable(obj)
+        self._run_pre_execute_hooks(obj)
+        query = self._build_insert_from_table(target=name, source=obj, db=database)
+        self.raw_sql(query)
 
     # -- in-memory tables --------------------------------------------------
 
@@ -328,3 +442,10 @@ class Backend(UrlFromPath, CHBackend):
 def _pop_arrow_kwargs(kwargs: dict) -> dict:
     """Keep only the ``params``/``limit`` kwargs the compiler accepts."""
     return {k: kwargs[k] for k in ("params", "limit") if k in kwargs}
+
+
+# Let ibis.to_sql(expr, dialect="chdb") resolve a compiler the same way it does
+# for built-in backends (getattr(compilers, name).compiler).
+_compilers = importlib.import_module("ibis.backends.sql.compilers")
+if not hasattr(_compilers, "chdb"):
+    _compilers.chdb = types.SimpleNamespace(compiler=Backend.compiler)
