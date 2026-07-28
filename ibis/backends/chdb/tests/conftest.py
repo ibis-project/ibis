@@ -47,14 +47,15 @@ class TestConf(BackendTest):
         con.raw_query(f"CREATE DATABASE IF NOT EXISTS {database} ENGINE = Atomic")
         con.raw_query(f"USE {database}")
         for stmt in self.ddl_script:
-            con.raw_query(stmt.replace("\n", " "))
+            if stmt.strip():
+                con.raw_query(stmt)
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw: Any):
-        # One persistent on-disk database per worker so tables survive across
-        # the several connections a test session opens (chDB permits multiple
-        # connections only against the same path).
-        return ibis.chdb.connect(str(tmpdir / f"chdb_{worker_id}"), **kw)
+        # Persistent on-disk db per worker (tmpdir is a TempPathFactory) so the
+        # process's several connections share one path, as chDB requires.
+        path = tmpdir.getbasetemp() / f"chdb_{worker_id}"
+        return ibis.chdb.connect(str(path), **kw)
 
 
 @pytest.fixture(scope="session")
