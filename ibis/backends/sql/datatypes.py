@@ -1463,8 +1463,7 @@ class ClickHouseType(SqlglotType):
 
 
 class ChdbType(ClickHouseType):
-    # chDB is embedded ClickHouse; the type system is identical, only the
-    # dialect name differs so the chdb backend can register its own mapper.
+    # embedded ClickHouse: identical type system, distinct dialect name.
     dialect = "chdb"
 
 
