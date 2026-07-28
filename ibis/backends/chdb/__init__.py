@@ -38,7 +38,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, UrlFromPath
+from ibis.backends import UrlFromPath
 from ibis.backends.clickhouse import Backend as CHBackend
 from ibis.backends.sql.compilers import ClickHouseCompiler
 from ibis.backends.sql.compilers.base import C
