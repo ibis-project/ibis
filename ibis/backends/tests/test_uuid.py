@@ -15,6 +15,7 @@ TEST_UUID = uuid.UUID(TEST_UUID_STR)
 
 UUID_BACKEND_TYPE = {
     "bigquery": "STRING",
+    "chdb": "Nullable(UUID)",
     "clickhouse": "Nullable(UUID)",
     "duckdb": "UUID",
     "exasol": "UUID",

@@ -50,6 +50,7 @@ pa = pytest.importorskip("pyarrow")
 NULL_BACKEND_TYPES = {
     "bigquery": "NULL",
     "clickhouse": "Nullable(Nothing)",
+    "chdb": "Nullable(Nothing)",
     "datafusion": "NULL",
     "duckdb": "NULL",
     "impala": "BOOLEAN",
@@ -94,6 +95,7 @@ def test_null_literal_typed(con):
 BOOLEAN_BACKEND_TYPE = {
     "bigquery": "BOOL",
     "clickhouse": "Bool",
+    "chdb": "Bool",
     "impala": "BOOLEAN",
     "snowflake": "BOOLEAN",
     "sqlite": "integer",
@@ -113,6 +115,7 @@ def test_null_literal_typed_typeof(con, backend):
     TYPES = {
         **BOOLEAN_BACKEND_TYPE,
         "clickhouse": "Nullable(Bool)",
+        "chdb": "Nullable(Bool)",
         "flink": "BOOLEAN",
         "sqlite": "null",  # in sqlite, typeof(x) is determined by the VALUE of x at runtime, not it's static type
         "snowflake": None,
@@ -207,6 +210,7 @@ def test_isna(backend, alltypes, col, value, filt):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "datafusion",
                         "duckdb",
                         "impala",
@@ -847,6 +851,7 @@ def test_table_info_large(con):
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
+                        "chdb",
                         "exasol",
                         "impala",
                         "pyspark",
@@ -919,7 +924,7 @@ def test_table_info_large(con):
             ["name", "pos", "type", "count", "nulls", "unique", "mode"],
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "exasol", "impala", "pyspark", "risingwave"],
+                    ["clickhouse", "chdb", "exasol", "impala", "pyspark", "risingwave"],
                     raises=com.OperationNotDefinedError,
                     reason="mode is not supported",
                 ),
@@ -1814,6 +1819,7 @@ def test_hashbytes(backend, alltypes):
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "flink",
         "impala",
@@ -1977,7 +1983,7 @@ def test_try_cast(con, from_val, to_type, expected):
             "int",
             marks=[
                 pytest.mark.never(
-                    ["clickhouse", "pyspark", "flink", "databricks"],
+                    ["clickhouse", "chdb", "pyspark", "flink", "databricks"],
                     reason="casts to 1672531200",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
@@ -2053,7 +2059,7 @@ def test_try_cast_table(backend, con):
             pd.isna,
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse", "polars", "flink", "pyspark", "databricks"],
+                    ["clickhouse", "chdb", "polars", "flink", "pyspark", "databricks"],
                     reason="casts this to to a number",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
@@ -2329,6 +2335,11 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     reason="pyspark and databricks don't support dynamic limit/offset",
 )
 @pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
+@pytest.mark.notyet(
+    ["chdb"],
+    raises=Exception,
+    reason="chDB parser rejects the reused table alias in the correlated subquery LIMIT (MULTIPLE_EXPRESSIONS_FOR_ALIAS)",
+)
 def test_dynamic_table_slice(backend, slc, expected_count_fn):
     t = backend.functional_alltypes
 
@@ -2465,6 +2476,7 @@ def test_sample_memtable(con, backend):
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "druid",
         "flink",
@@ -2644,7 +2656,7 @@ def test_topk_counts_null(con):
 
 
 @pytest.mark.notyet(
-    "clickhouse",
+    ["clickhouse", "chdb"],
     raises=AssertionError,
     reason="ClickHouse returns False for x.isin([None])",
 )
@@ -2759,7 +2771,7 @@ def test_named_literal(con, backend):
     reason="n_unique isn't supported on decimal columns",
 )
 @pytest.mark.notyet(
-    ["clickhouse"],
+    ["clickhouse", "chdb"],
     raises=ArrowTypeError,
     reason="doesn't allow casting Float64 to Decimal(38, 2)",
 )
@@ -2806,7 +2818,7 @@ def test_table_describe_with_multiple_decimal_columns(con):
     assert len(result) == 2
 
 
-@pytest.mark.notyet(["clickhouse"], raises=NotImplementedError)
+@pytest.mark.notyet(["clickhouse", "chdb"], raises=NotImplementedError)
 @pytest.mark.notyet(["exasol"], raises=TypeError)
 @pytest.mark.notimpl(["flink"], raises=NotImplementedError)
 @pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)

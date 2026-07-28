@@ -102,7 +102,7 @@ NO_MAP_SUPPORT = combine_marks(NO_MAP_SUPPORT_MARKS)
 
 NO_JSON_SUPPORT_MARKS = [
     pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
-    pytest.mark.notyet(["clickhouse"], reason="upstream is broken"),
+    pytest.mark.notyet(["clickhouse", "chdb"], reason="upstream is broken"),
     pytest.mark.notimpl(["datafusion", "exasol", "mssql", "druid", "oracle"]),
 ]
 NO_JSON_SUPPORT = combine_marks(NO_JSON_SUPPORT_MARKS)
@@ -122,6 +122,11 @@ NO_MERGE_SUPPORT_MARKS = [
     pytest.mark.notyet(
         ["clickhouse"],
         raises=ClickHouseDatabaseError,
+        reason="MERGE INTO is not supported",
+    ),
+    pytest.mark.notyet(
+        ["chdb"],
+        raises=RuntimeError,
         reason="MERGE INTO is not supported",
     ),
     pytest.mark.notyet(["datafusion"], reason="MERGE INTO is not supported"),
