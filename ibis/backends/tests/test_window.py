@@ -99,7 +99,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="lead",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     reason="upstream is broken; returns all nulls",
                     raises=AssertionError,
                 ),
@@ -129,7 +129,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="percent_rank",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse", "materialize"],
+                    ["clickhouse", "chdb", "materialize"],
                     reason="clickhouse doesn't implement percent_rank",
                     raises=com.OperationNotDefinedError,
                 ),
@@ -147,7 +147,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="cume_dist",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse", "exasol", "singlestoredb", "materialize"],
+                    ["clickhouse", "chdb", "exasol", "singlestoredb", "materialize"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
@@ -368,6 +368,7 @@ def test_grouped_bounded_expanding_window(
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "duckdb",
                         "druid",
                         "flink",
@@ -560,6 +561,7 @@ def test_grouped_bounded_preceding_window(
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "duckdb",
                         "druid",
                         "flink",
@@ -714,6 +716,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "duckdb",
                         "druid",
                         "flink",
@@ -753,6 +756,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "duckdb",
                         "druid",
                         "impala",
@@ -878,6 +882,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "duckdb",
                         "druid",
                         "flink",
@@ -912,6 +917,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "duckdb",
                         "druid",
                         "impala",
@@ -1039,7 +1045,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     # See: https://materialize.com/docs/sql/functions/#window-functions
 )
 @pytest.mark.notyet(
-    ["clickhouse"],
+    ["clickhouse", "chdb"],
     reason="clickhouse doesn't implement percent_rank",
     raises=com.OperationNotDefinedError,
 )
@@ -1144,6 +1150,7 @@ def test_first_last(backend):
 @pytest.mark.notyet(
     ["clickhouse"], raises=ClickHouseDatabaseError, reason="not supported by ClickHouse"
 )
+@pytest.mark.notyet(["chdb"], raises=Exception, reason="not supported by ClickHouse")
 @pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="not supported by DataFusion"
 )
@@ -1214,7 +1221,7 @@ def test_range_expression_bounds(backend):
 
 
 @pytest.mark.notyet(
-    ["clickhouse"],
+    ["clickhouse", "chdb"],
     reason="clickhouse doesn't implement percent_rank",
     raises=com.OperationNotDefinedError,
 )
