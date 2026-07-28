@@ -370,10 +370,9 @@ class Backend(UrlFromPath, CHBackend):
     def _read_file(self, path, *, table_name, fmt, engine):
         name = table_name or util.gen_name("read")
         path = sge.convert(str(path)).sql(self.dialect)
-        self.raw_sql(  # noqa: S608 - path is a quoted literal, name is generated
-            f"CREATE OR REPLACE TABLE {name} ENGINE = {engine} "
-            f"AS SELECT * FROM file({path}, '{fmt}')"
-        )
+        # path is a quoted literal and name is generated, so this is safe.
+        sql = f"CREATE OR REPLACE TABLE {name} ENGINE = {engine} AS SELECT * FROM file({path}, '{fmt}')"  # noqa: S608
+        self.raw_sql(sql)
         return self.table(name)
 
     def read_parquet(
