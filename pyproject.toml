@@ -519,6 +519,7 @@ markers = [
   "never: The backend will never support this / pass this test. Don't bother trying to fix it",
   "athena: Amazon Athena tests",
   "bigquery: BigQuery tests",
+  "chdb: chDB tests",
   "clickhouse: ClickHouse tests",
   "databricks: Databricks SQL tests",
   "datafusion: Apache Datafusion tests",

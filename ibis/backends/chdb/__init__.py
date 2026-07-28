@@ -47,7 +47,6 @@ from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowData, PyArrowType
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
     from pathlib import Path
 
 
@@ -119,11 +118,22 @@ class ChdbArrowConverter(PyArrowData):
 
     @classmethod
     def convert_table(cls, table: pa.Table, schema: sch.Schema) -> pa.Table:
+        target = schema.to_pyarrow()
+        # chDB emits a zero-column table for an empty result set; rebuild the
+        # declared (empty) shape instead of indexing missing columns.
+        if table.num_columns != len(schema):
+            if table.num_rows == 0:
+                return target.empty_table()
+            raise com.IbisError(
+                f"chDB returned {table.num_columns} columns, expected {len(schema)}"
+            )
         columns = [
-            cls.convert_column(table[i], dtype)
+            cls.convert_column(table.column(i), dtype)
             for i, dtype in enumerate(schema.values())
         ]
-        return pa.Table.from_arrays(columns, names=list(schema.names))
+        # Build with the target schema so field nullability matches the
+        # declared Ibis schema (chDB reports columns as non-nullable).
+        return pa.Table.from_arrays(columns, schema=target)
 
 
 # ibis dtype -> chdb.sqltypes constant, for Python scalar UDF registration.
@@ -153,9 +163,11 @@ def _chdb_sqltype(dtype: dt.DataType):
 
 
 class _Con:
-    """Adapter exposing the small ``clickhouse_connect``-shaped surface that
-    the inherited ClickHouse DDL methods (``create_table`` etc.) call directly,
-    backed by an embedded chDB connection."""
+    """Adapter over the embedded chDB connection.
+
+    Exposes the small ``clickhouse_connect``-shaped surface that the inherited
+    ClickHouse DDL methods (``create_table`` etc.) call directly.
+    """
 
     def __init__(self, session):
         self._session = session
@@ -262,7 +274,7 @@ class Backend(CHBackend, CanCreateDatabase, UrlFromPath):
         self, table_name, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
         if catalog is not None:
-            raise com.UnsupportedBackendFeatureError(
+            raise com.UnsupportedOperationError(
                 "`catalog` namespaces are not supported by chdb"
             )
         query = sge.Describe(this=sg.table(table_name, db=database))
@@ -312,7 +324,6 @@ class Backend(CHBackend, CanCreateDatabase, UrlFromPath):
         # memtable for Python() scanning and report that there is no external
         # data to ship.
         self._register_in_memory_tables_from_mapping(external_tables)
-        return None
 
     def _make_memtable_finalizer(self, name: str):
         return lambda: _unregister_memtable(name)
@@ -341,6 +352,5 @@ class Backend(CHBackend, CanCreateDatabase, UrlFromPath):
 
 
 def _pop_arrow_kwargs(kwargs: dict) -> dict:
-    """Keep only the kwargs the compiler accepts (drop limit/params passthrough
-    handled by callers)."""
+    """Keep only the ``params``/``limit`` kwargs the compiler accepts."""
     return {k: kwargs[k] for k in ("params", "limit") if k in kwargs}
