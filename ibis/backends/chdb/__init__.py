@@ -67,6 +67,25 @@ class ChdbCompiler(ClickHouseCompiler):
         return sge.Table(this=self.f.Python(sge.convert(name)))
 
 
+def _relabel_fields(arr, dtype: dt.DataType):
+    """Relabel chDB's positional struct field names to the declared Ibis names.
+
+    Descends through arrays and structs so a name-based cast lines up at every
+    nesting depth (chDB emits anonymous tuples as fields '1', '2', ...).
+    """
+    if dtype.is_struct() and pa.types.is_struct(arr.type):
+        children = [
+            _relabel_fields(arr.field(i), typ)
+            for i, typ in enumerate(dtype.types)
+        ]
+        return pa.StructArray.from_arrays(children, names=list(dtype.names))
+    if dtype.is_array() and pa.types.is_list(arr.type):
+        return pa.ListArray.from_arrays(
+            arr.offsets, _relabel_fields(arr.values, dtype.value_type)
+        )
+    return arr
+
+
 class ChdbArrowConverter(PyArrowData):
     """Restore declared Ibis types on chDB's Arrow output.
 
@@ -129,14 +148,13 @@ class ChdbArrowConverter(PyArrowData):
             )
 
         # chDB emits anonymous tuples with positional field names ('1','2',...);
-        # relabel to the declared field names (Arrow matches struct fields by name).
+        # relabel to the declared field names at every nesting depth (Arrow
+        # matches struct fields by name, incl. structs nested inside arrays).
         if dtype.is_struct() and pa.types.is_struct(column.type):
-            arr = combined(column)
-            fields = [arr.field(i) for i in range(arr.type.num_fields)]
-            renamed = pa.StructArray.from_arrays(fields, names=list(dtype.names))
+            relabeled = _relabel_fields(combined(column), dtype)
             with contextlib.suppress(Exception):
-                return renamed.cast(pa_type)
-            return renamed
+                return relabeled.cast(pa_type)
+            return relabeled
 
         if (
             dtype.is_array()
@@ -197,6 +215,8 @@ def _chdb_sqltype(dtype: dt.DataType):
         dt.Float64: st.FLOAT64,
         dt.String: st.STRING,
         dt.Boolean: st.BOOL,
+        dt.Date: st.DATE,
+        dt.Timestamp: st.DATETIME,
     }
     for ibis_type, chdb_type in mapping.items():
         if isinstance(dtype, ibis_type):
