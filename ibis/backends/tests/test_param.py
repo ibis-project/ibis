@@ -204,11 +204,6 @@ def test_scalar_param_date(backend, alltypes, value):
     reason="Nested parameter support not yet implemented for Materialize",
     # See: https://materialize.com/docs/sql/types/
 )
-@pytest.mark.notyet(
-    ["chdb"],
-    raises=AssertionError,
-    reason="chDB Arrow path drops field values of a struct nested inside an array",
-)
 def test_scalar_param_nested(con):
     param = ibis.param("struct<x: array<struct<y: array<double>>>>")
     value = OrderedDict([("x", [OrderedDict([("y", [1.0, 2.0, 3.0])])])])
