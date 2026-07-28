@@ -297,6 +297,7 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "flink",
         "impala",
@@ -369,6 +370,7 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
 @pytest.mark.notyet(
     [
         "clickhouse",
+        "chdb",
         "datafusion",
         "impala",
         "mssql",
@@ -407,6 +409,7 @@ def test_read_json_glob(con, tmp_path, ft_data):
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "flink",
         "impala",
