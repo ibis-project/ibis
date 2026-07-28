@@ -2338,7 +2338,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.notyet(
     ["chdb"],
     raises=Exception,
-    reason="chDB parser rejects the reused table alias in the correlated subquery LIMIT (MULTIPLE_EXPRESSIONS_FOR_ALIAS)",
+    reason="chDB analyzer rejects the table alias reused in the LIMIT subquery (MULTIPLE_EXPRESSIONS_FOR_ALIAS); a real ClickHouse server accepts it",
 )
 def test_dynamic_table_slice(backend, slc, expected_count_fn):
     t = backend.functional_alltypes
