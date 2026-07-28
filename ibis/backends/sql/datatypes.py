@@ -1420,6 +1420,12 @@ class ClickHouseType(SqlglotType):
         )
 
 
+class ChdbType(ClickHouseType):
+    # chDB is embedded ClickHouse; the type system is identical, only the
+    # dialect name differs so the chdb backend can register its own mapper.
+    dialect = "chdb"
+
+
 class FlinkType(SqlglotType):
     dialect = "flink"
     default_decimal_precision = 38
