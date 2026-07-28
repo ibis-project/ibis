@@ -7,6 +7,36 @@ import os
 
 import pytest
 
+from ibis.backends.tests.base import BackendTest
+
+
+class TestConf(BackendTest):
+    """Db2 backend test configuration.
+
+    Integration tests require a running Db2 instance configured via
+    environment variables (DB2_DATABASE, DB2_HOSTNAME, DB2_PORT,
+    DB2_USERNAME, DB2_PASSWORD).
+    """
+
+    supports_arrays = False
+    supports_structs = False
+    supports_json = False
+    check_dtype = False
+    returned_timestamp_unit = "us"
+    deps = ("ibm_db", "ibm_db_dbi")
+
+    @staticmethod
+    def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
+        import ibis
+
+        return ibis.db2.connect(
+            database=os.getenv("DB2_DATABASE", "SAMPLE"),
+            hostname=os.getenv("DB2_HOSTNAME", "localhost"),
+            port=int(os.getenv("DB2_PORT", "50000")),
+            username=os.getenv("DB2_USERNAME", "db2inst1"),
+            password=os.getenv("DB2_PASSWORD", "password"),
+        )
+
 
 @pytest.fixture(scope="session")
 def db2_config():

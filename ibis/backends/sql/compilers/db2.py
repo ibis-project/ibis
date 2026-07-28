@@ -8,8 +8,8 @@ from sqlglot import exp
 from sqlglot.generator import Generator
 
 import ibis.expr.operations as ops
-from ibis.backends.db2.datatypes import ibis_type_to_db2_type
 from ibis.backends.sql.compilers.base import SQLGlotCompiler
+from ibis.backends.sql.datatypes import Db2Type
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     lower_sample,
@@ -194,7 +194,7 @@ class Db2Compiler(SQLGlotCompiler):
     __slots__ = ()
 
     dialect = Db2Dialect
-    type_mapper = ibis_type_to_db2_type
+    type_mapper = Db2Type
 
     rewrites = (
         exclude_unsupported_window_frame_from_ops | lower_sample(),
@@ -297,6 +297,10 @@ class Db2Compiler(SQLGlotCompiler):
         """Visit an ArrayCollect operation."""
         # Db2 uses LISTAGG for array aggregation
         return sge.Anonymous(this="LISTAGG", expressions=[arg, sge.convert(",")])
+
+    def visit_Arbitrary(self, op, *, arg, where):
+        """Visit an Arbitrary operation using ANY_VALUE (Db2 11.1+)."""
+        return self.agg.any_value(arg, where=where)
 
     def visit_Median(self, op, *, arg, where):
         """Visit a Median operation."""

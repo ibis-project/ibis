@@ -28,22 +28,9 @@ class Backend(SQLBackend):
     """IBM Db2 backend for Ibis."""
 
     name = "db2"
+    compiler = Db2Compiler()
     supports_temporary_tables = True
     supports_python_udfs = False
-
-    @classmethod
-    def _load_compiler(cls):
-        if not hasattr(cls, "_compiler_instance"):
-            cls._compiler_instance = Db2Compiler()
-        return cls._compiler_instance
-
-    @classmethod
-    def has_operation(cls, operation, /):
-        return cls._load_compiler().has_operation(operation)
-
-    @property
-    def compiler(self) -> Db2Compiler:
-        return self._load_compiler()
 
     def __init__(self, *args, **kwargs):
         """Initialize Db2 backend."""
@@ -482,6 +469,7 @@ class Backend(SQLBackend):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         force: bool = False,
@@ -539,7 +527,8 @@ class Backend(SQLBackend):
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pd.DataFrame | ir.Table,
         *,
         database: str | None = None,
@@ -549,7 +538,7 @@ class Backend(SQLBackend):
 
         Parameters
         ----------
-        table_name : str
+        name : str
             Target table name
         obj : pd.DataFrame | ir.Table
             Data to insert
@@ -560,7 +549,7 @@ class Backend(SQLBackend):
         """
         import pandas as pd
 
-        full_name = sg.table(table_name, db=database, quoted=self.compiler.quoted).sql(
+        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
             self.dialect
         )
 
@@ -620,6 +609,7 @@ class Backend(SQLBackend):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -651,6 +641,7 @@ class Backend(SQLBackend):
     def to_pandas(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -688,13 +679,25 @@ class Backend(SQLBackend):
 
             return self._fetch_from_cursor(cursor, schema)
 
-    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
+    def execute(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> Any:
         """Execute an Ibis expression.
 
         Parameters
         ----------
         expr : ir.Expr
             Expression to execute
+        params : Mapping[ir.Scalar, Any], optional
+            Query parameters
+        limit : int | str, optional
+            Result limit
         **kwargs
             Additional arguments
 
@@ -703,7 +706,7 @@ class Backend(SQLBackend):
         Any
             Execution result
         """
-        return self.to_pandas(expr, **kwargs)
+        return self.to_pandas(expr, params=params, limit=limit, **kwargs)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Get schema from a SQL query.

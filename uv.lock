@@ -2927,7 +2927,7 @@ requires-dist = [
     { name = "shapely", marker = "extra == 'geospatial'", specifier = ">=2" },
     { name = "singlestoredb", marker = "extra == 'singlestoredb'", specifier = ">=1.0" },
     { name = "snowflake-connector-python", marker = "extra == 'snowflake'", specifier = ">=3.0.2,!=3.3.0b1" },
-    { name = "sqlglot", specifier = ">=28.5.0" },
+    { name = "sqlglot", specifier = ">=23.4,!=26.32.0" },
     { name = "toolz", specifier = ">=0.11" },
     { name = "trino", marker = "extra == 'trino'", specifier = ">=0.321" },
     { name = "typing-extensions", specifier = ">=4.3.0" },
