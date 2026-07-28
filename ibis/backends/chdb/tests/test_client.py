@@ -94,6 +94,28 @@ def test_multiple_connections_same_path(tmp_path):
     c2.disconnect()
 
 
+def test_connect_via_database_kwarg(tmp_path):
+    con = ibis.chdb.connect(database=str(tmp_path / "kw"))
+    try:
+        assert con.name == "chdb"
+        assert con.execute(ibis.memtable({"x": [1, 2, 3]}).x.sum()) == 6
+    finally:
+        con.disconnect()
+
+
+def test_connect_via_url(tmp_path):
+    # chdb://<path> must resolve to a path-based connection (not the inherited
+    # ClickHouse host/port URL parser).
+    path = tmp_path / "urldb"
+    con = ibis.connect(f"chdb://{path}")
+    try:
+        assert con.name == "chdb"
+        con.create_table("u", obj=ibis.memtable({"x": [1, 2]}), engine="Memory")
+        assert "u" in con.list_tables()
+    finally:
+        con.disconnect()
+
+
 def test_get_schema_rejects_catalog(mem):
     mem.create_table("c", obj=ibis.memtable({"x": [1]}), engine="Memory")
     with pytest.raises(com.UnsupportedOperationError):
