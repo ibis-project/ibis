@@ -1,24 +1,10 @@
-"""chDB backend — embedded ClickHouse (in-process).
+"""chDB backend — embedded (in-process) ClickHouse.
 
-chDB is an in-process build of ClickHouse. Because the SQL dialect is
-identical to ClickHouse, this backend reuses the ClickHouse compiler and the
-overwhelming majority of the ClickHouse backend's DDL/SQL construction. Only
-the transport layer differs: instead of talking to a ClickHouse server over
-HTTP via ``clickhouse_connect``, queries run against the embedded engine
-through the ``chdb`` package.
-
-Two chDB specifics are handled here:
-
-* **In-memory tables.** The ClickHouse backend ships ``ibis.memtable`` data to
-  the server as HTTP *external tables*. The embedded engine has no such
-  transport, so instead each memtable is materialized to an Arrow table,
-  injected into this module's namespace under the memtable's (unique) name,
-  and referenced from SQL through chDB's ``Python(<name>)`` table function,
-  which scans the in-process Python object directly (zero copy for Arrow).
-
-* **Arrow type round-trip.** chDB emits ``DateTime`` (second precision, no
-  scale) as Arrow ``uint32`` seconds. :class:`ChdbArrowConverter` restores the
-  declared Ibis types on the way out.
+Subclasses the ClickHouse backend to reuse its compiler and DDL/SQL, swapping
+only the transport: queries run against the embedded ``chdb`` engine instead
+of a ClickHouse server. Two chDB specifics are handled here — memtables (via
+the ``Python(<name>)`` table function, see below) and the ``DateTime``->uint32
+Arrow output fixup (:class:`ChdbArrowConverter`).
 """
 
 from __future__ import annotations
@@ -50,16 +36,9 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-# ---------------------------------------------------------------------------
-# memtable registry
-#
-# chDB's Python(name) table function resolves ``name`` by walking the calling
-# Python stack frames and looking the identifier up in each frame's globals /
-# locals. The frames that execute chdb queries live in this module, so a
-# memtable injected into this module's globals under its (globally unique)
-# name is visible to the engine. A lock guards the shared namespace because
-# chDB allows several connections in one process.
-# ---------------------------------------------------------------------------
+# chDB's Python(name) resolves ``name`` by scanning caller stack frames'
+# globals/locals; injecting memtables into this module's globals makes them
+# visible to the engine. Locked because one process may hold several connections.
 _MEMTABLE_LOCK = threading.Lock()
 
 
@@ -79,18 +58,15 @@ class ChdbCompiler(ClickHouseCompiler):
     dialect = ChDB
 
     def visit_InMemoryTable(self, op, *, name, schema, data):
-        # Reference the memtable through chDB's Python() table function. The
-        # name is emitted as a string literal so it matches chDB's identifier
-        # extraction regardless of ClickHouse identifier quoting.
+        # name as a string literal -> matches chDB's identifier extraction.
         return sge.Table(this=self.f.Python(sge.convert(name)))
 
 
 class ChdbArrowConverter(PyArrowData):
     """Restore declared Ibis types on chDB's Arrow output.
 
-    chDB emits ``DateTime`` (no scale) as Arrow ``uint32`` seconds; a plain
-    ``cast`` to ``timestamp`` is not allowed by Arrow, so integer-encoded
-    temporal columns are cast through ``int64`` first.
+    chDB emits scale-less ``DateTime`` as ``uint32`` seconds; Arrow forbids a
+    direct uint32->timestamp cast, so such columns go through ``int64`` first.
     """
 
     @classmethod
@@ -119,8 +95,7 @@ class ChdbArrowConverter(PyArrowData):
     @classmethod
     def convert_table(cls, table: pa.Table, schema: sch.Schema) -> pa.Table:
         target = schema.to_pyarrow()
-        # chDB emits a zero-column table for an empty result set; rebuild the
-        # declared (empty) shape instead of indexing missing columns.
+        # chDB returns a zero-column table for an empty result.
         if table.num_columns != len(schema):
             if table.num_rows == 0:
                 return target.empty_table()
@@ -131,8 +106,7 @@ class ChdbArrowConverter(PyArrowData):
             cls.convert_column(table.column(i), dtype)
             for i, dtype in enumerate(schema.values())
         ]
-        # Build with the target schema so field nullability matches the
-        # declared Ibis schema (chDB reports columns as non-nullable).
+        # schema= aligns field nullability (chDB columns are non-nullable).
         return pa.Table.from_arrays(columns, schema=target)
 
 
@@ -163,17 +137,17 @@ def _chdb_sqltype(dtype: dt.DataType):
 
 
 class _Con:
-    """Adapter over the embedded chDB connection.
+    """Adapt the chDB connection to a ``clickhouse_connect``-shaped surface.
 
-    Exposes the small ``clickhouse_connect``-shaped surface that the inherited
-    ClickHouse DDL methods (``create_table`` etc.) call directly.
+    The inherited ClickHouse DDL methods call these directly: ``raw_query`` /
+    ``command`` run DDL, ``query`` / ``send_query`` / ``cursor`` back execution,
+    ``close`` disconnects.
     """
 
     def __init__(self, session):
         self._session = session
 
     def raw_query(self, sql, *, external_data=None, **_):
-        # Memtables are handled via Python() injection, never external data.
         return self._session.query(sql)
 
     command = raw_query
@@ -193,8 +167,8 @@ class _Con:
 
 
 class Backend(UrlFromPath, CHBackend):
-    # UrlFromPath must precede CHBackend so its path-based `_from_url`
-    # (chdb://<path>) wins over ClickHouse's host/port URL parser.
+    # UrlFromPath first: its path-based _from_url (chdb://<path>) must win over
+    # ClickHouse's host/port one.
     name = "chdb"
     compiler = ChdbCompiler()
 
@@ -210,11 +184,9 @@ class Backend(UrlFromPath, CHBackend):
         Parameters
         ----------
         database
-            Directory for a persistent database. Defaults to an ephemeral
-            in-memory database. chDB allows several connections in one process
-            only if they all use the same path: the first connection fixes the
-            process-wide engine path, and connecting to a different path
-            afterwards raises until every connection is disconnected.
+            Directory for a persistent database; defaults to in-memory. chDB is
+            one engine per process: the first connection fixes the path, and
+            connecting to a different path raises until all are disconnected.
 
         """
         import chdb
@@ -324,9 +296,8 @@ class Backend(UrlFromPath, CHBackend):
             _register_memtable(name, memtable.data.to_pyarrow(memtable.schema))
 
     def _normalize_external_tables(self, external_tables=None):
-        # chDB has no external-table transport: register each collected
-        # memtable for Python() scanning and report that there is no external
-        # data to ship.
+        # No external-table transport: register for Python() scanning instead,
+        # and ship nothing (return None).
         self._register_in_memory_tables_from_mapping(external_tables)
 
     def _make_memtable_finalizer(self, name: str):
@@ -339,8 +310,7 @@ class Backend(UrlFromPath, CHBackend):
 
         for udf_node in expr.op().find(ops.ScalarUDF):
             if udf_node.__input_type__ != InputType.PYTHON:
-                # Only pure-Python scalar UDFs map onto chdb.create_function;
-                # builtins need no registration, pandas/pyarrow are unsupported.
+                # builtins need no registration; pandas/pyarrow are unsupported.
                 continue
             name = type(udf_node).__name__
             arg_types = [

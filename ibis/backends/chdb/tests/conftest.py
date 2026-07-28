@@ -13,13 +13,9 @@ if TYPE_CHECKING:
 
 
 class TestConf(BackendTest):
-    """Wires chDB into the shared backend test suite.
-
-    chDB is an embedded (in-process) engine, so unlike the ClickHouse backend
-    there is no service to connect to. Standard test data is loaded straight
-    into the engine from the shared parquet fixtures via ClickHouse's native
-    ``file()`` table function.
-    """
+    """Wires chDB into the shared backend test suite. Embedded engine (no
+    service); test data is loaded from the shared parquet fixtures via
+    ClickHouse's ``file()`` table function."""
 
     check_dtype = False
     supports_window_operations = False
