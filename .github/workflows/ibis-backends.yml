@@ -107,6 +107,12 @@ jobs:
               - --extra polars
             additional_deps:
               - torch
+          - name: chdb
+            title: chDB
+            serial: true
+            extras:
+              - --extra chdb
+              - --extra examples
           - name: clickhouse
             title: ClickHouse
             services:
