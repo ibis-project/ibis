@@ -47,13 +47,7 @@ with contextlib.suppress(AttributeError):
 
 
 class ChDB(ClickHouse):
-    """chDB is embedded ClickHouse; the SQL dialect is identical.
-
-    Registered as a distinct sqlglot dialect (name ``"chdb"``) so the chdb
-    backend, whose ``name`` is ``"chdb"``, can render SQL via
-    ``expr.sql("chdb")`` the same way every other backend renders via its own
-    name.
-    """
+    """Embedded ClickHouse; identical SQL dialect, registered as ``"chdb"``."""
 
 
 class DataFusion(Postgres):
