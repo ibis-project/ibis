@@ -594,6 +594,11 @@ def test_array_map(con, input, output, func):
                     raises=AssertionError,
                     reason="nulls in arrays not preserved correctly in array_map results",
                 ),
+                pytest.mark.notyet(
+                    ["chdb"],
+                    raises=AssertionError,
+                    reason="null array elements come back as NaN through the Arrow->pandas path",
+                ),
             ],
             id="nulls",
         ),
