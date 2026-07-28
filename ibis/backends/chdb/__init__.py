@@ -192,7 +192,9 @@ class _Con:
             self._session.close()
 
 
-class Backend(CHBackend, CanCreateDatabase, UrlFromPath):
+class Backend(UrlFromPath, CHBackend):
+    # UrlFromPath must precede CHBackend so its path-based `_from_url`
+    # (chdb://<path>) wins over ClickHouse's host/port URL parser.
     name = "chdb"
     compiler = ChdbCompiler()
 
@@ -202,20 +204,22 @@ class Backend(CHBackend, CanCreateDatabase, UrlFromPath):
 
         return chdb.__version__
 
-    def do_connect(self, path: str | Path | None = None, /, **_: Any) -> None:
+    def do_connect(self, database: str | Path = ":memory:", **_: Any) -> None:
         """Create an Ibis client connected to an embedded chDB engine.
 
         Parameters
         ----------
-        path
+        database
             Directory for a persistent database. Defaults to an ephemeral
-            in-memory database. Note that chDB allows multiple connections in
-            one process only if they share the same path.
+            in-memory database. chDB allows several connections in one process
+            only if they all use the same path: the first connection fixes the
+            process-wide engine path, and connecting to a different path
+            afterwards raises until every connection is disconnected.
 
         """
         import chdb
 
-        self.con = _Con(chdb.connect(":memory:" if path is None else str(path)))
+        self.con = _Con(chdb.connect(str(database)))
 
     # -- execution ---------------------------------------------------------
 
