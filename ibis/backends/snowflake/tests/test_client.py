@@ -442,6 +442,34 @@ def test_insert_dict_variants(con):
     assert len(t.execute()) == 4
 
 
+@pytest.fixture(scope="session")
+def ignore_case_con():
+    # a dedicated connection, because `_setup_session` mutates the session
+    return ibis.connect(
+        _get_url(), session_parameters={"QUOTED_IDENTIFIERS_IGNORE_CASE": True}
+    )
+
+
+def test_mixed_case_columns_ignore_case(ignore_case_con):
+    # under QUOTED_IDENTIFIERS_IGNORE_CASE snowflake folds the quoted aliases
+    # we emit to uppercase server-side, so results come back with names that
+    # don't match the ibis schema
+    expected = pd.DataFrame({"errorCode": [1, 2, 3], "eventType": list("abc")})
+    t = ibis.memtable(expected)
+
+    names = list(expected.columns)
+
+    assert ignore_case_con.to_pyarrow(t).column_names == names
+
+    with ignore_case_con.to_pyarrow_batches(t) as reader:
+        assert reader.schema.names == names
+
+    tm.assert_frame_equal(ignore_case_con.to_pandas(t), expected)
+
+    batches = list(ignore_case_con.to_pandas_batches(t))
+    tm.assert_frame_equal(pd.concat(batches, ignore_index=True), expected)
+
+
 @h.given(
     column_name=st.text(
         st.characters(
