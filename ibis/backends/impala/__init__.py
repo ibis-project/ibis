@@ -1303,7 +1303,7 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
 
         for field, values in alterations:
             if values is not None:
-                stmt = ddl.AlterPartition(qname, spec, part_schema, **{field, values})
+                stmt = ddl.AlterPartition(qname, spec, part_schema, **{field: values})
                 self._safe_exec_sql(stmt)
 
     def table_stats(self, name, database=None):
