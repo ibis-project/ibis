@@ -9,6 +9,7 @@ import hypothesis.strategies as st
 import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
+import pyarrow.csv as pcsv
 import pytest
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -443,18 +444,50 @@ def test_insert_dict_variants(con):
 
 
 def test_nested_types_empty_result(con):
-    # the connector returns None from `fetch_arrow_all` for a zero-row result;
-    # standing in for it with natively-typed empty columns blows up when the
-    # JSON extension wrapping is applied
+    # a zero-row result is the eager path's problem specifically: the connector
+    # returns None from `fetch_arrow_all`, so `to_pyarrow` has to build a
+    # stand-in table, and a natively-typed one can't carry the JSON extension
+    # wrapping. `to_pyarrow_batches` never receives a batch to cast, so it was
+    # always fine -- the asserted schemas below pin that asymmetry
+    from ibis.backends.snowflake.converter import PYARROW_JSON_TYPE
+
     lit = ibis.struct({"a": [1, 2, 3]}).cast("struct<a: array<int>>")
     t = con.tables.functional_alltypes.mutate(lit=lit).limit(0).select("id", "lit")
 
     eager = con.to_pyarrow(t)
     assert len(eager) == 0
+    assert eager.schema.field("lit").type == PYARROW_JSON_TYPE
 
     with con.to_pyarrow_batches(t) as reader:
         batched = reader.read_all()
     assert len(batched) == 0
+    assert batched.schema.field("lit").type == pa.string()
+
+
+def test_nested_types_stream_as_json_text(con, tmp_path):
+    # the batches path casts to what snowflake sends, so nested columns arrive
+    # as JSON strings rather than as the arrow types the ibis schema maps to
+    raw = {"a": [1, 2, 3], "b": "456"}
+    lit = ibis.struct(raw).cast("struct<a: array<int>, b: json>")
+    t = (
+        con.tables.functional_alltypes.mutate(lit=lit)
+        .order_by("id")
+        .limit(1)
+        .select("id", "lit")
+    )
+
+    with con.to_pyarrow_batches(t) as reader:
+        batched = reader.read_all()
+    assert batched.schema.field("lit").type == pa.string()
+    assert json.loads(batched["lit"][0].as_py()) == raw
+
+    # which is exactly what lets CSV work, with no override needed
+    out = tmp_path / "nested.csv"
+    con.to_csv(t, out)
+    assert json.loads(pcsv.read_csv(out)["lit"][0].as_py()) == raw
+
+    # meanwhile the eager path still wraps, which is what `repr` depends on
+    assert con.to_pyarrow(t)["lit"][0].as_py() == raw
 
 
 @pytest.fixture(scope="session")

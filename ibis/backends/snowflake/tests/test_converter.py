@@ -9,7 +9,7 @@ from ibis.backends.snowflake.converter import (
     SnowflakePyArrowData,
     source_schema,
 )
-from ibis.formats.pyarrow import PyArrowSchema
+from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
 
 JSON_ENCODED = ["json", "array<int64>", "map<string, int64>", "struct<a: int64>"]
 
@@ -84,3 +84,19 @@ def test_eager_path_still_wraps_in_the_extension_type(dtype):
     converted = SnowflakePyArrowData.convert_table(raw, schema)
     assert converted.schema.field("x").type == PYARROW_JSON_TYPE
     assert converted["x"][0].as_py() == {"a": 1}
+
+
+@pytest.mark.parametrize("dtype", JSON_ENCODED)
+def test_extension_type_round_trips_lossily(dtype):
+    # array, map and struct are all wrapped in the same extension type, so a
+    # schema round trip collapses every one of them to `json`. that is lossy by
+    # construction -- the extension type carries no record of what it wrapped --
+    # and this pins the contract rather than leaving it implied
+    schema = ibis.schema({"x": dtype})
+    wrapped = SnowflakePyArrowData.convert_table(
+        pa.table({"x": pa.array(['{"a": 1}'])}), schema
+    )
+    assert wrapped.schema.field("x").type == PYARROW_JSON_TYPE
+
+    assert PyArrowSchema.to_ibis(wrapped.schema) == ibis.schema({"x": "json"})
+    assert PyArrowType.to_ibis(wrapped.schema.field("x").type) == ibis.dtype("json")
