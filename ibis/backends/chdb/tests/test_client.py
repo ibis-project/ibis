@@ -83,19 +83,18 @@ def test_table_roundtrip_values(mem):
     tm.assert_frame_equal(got.reset_index(drop=True), df)
 
 
-def test_multiple_connections_same_path(tmp_path):
-    path = str(tmp_path / "shared")
-    c1 = ibis.chdb.connect(path)
+def test_multiple_connections_same_path(chdb_path):
+    c1 = ibis.chdb.connect(chdb_path)
     c1.create_table("shared", obj=ibis.memtable({"a": [1, 2]}), engine="Memory")
     # chDB permits a second connection against the same path.
-    c2 = ibis.chdb.connect(path)
+    c2 = ibis.chdb.connect(chdb_path)
     assert c2.name == "chdb"
     c1.disconnect()
     c2.disconnect()
 
 
-def test_connect_via_database_kwarg(tmp_path):
-    con = ibis.chdb.connect(database=str(tmp_path / "kw"))
+def test_connect_via_database_kwarg(chdb_path):
+    con = ibis.chdb.connect(database=chdb_path)
     try:
         assert con.name == "chdb"
         assert con.execute(ibis.memtable({"x": [1, 2, 3]}).x.sum()) == 6
@@ -103,11 +102,10 @@ def test_connect_via_database_kwarg(tmp_path):
         con.disconnect()
 
 
-def test_connect_via_url(tmp_path):
+def test_connect_via_url(chdb_path):
     # chdb://<path> must resolve to a path-based connection (not the inherited
     # ClickHouse host/port URL parser).
-    path = tmp_path / "urldb"
-    con = ibis.connect(f"chdb://{path}")
+    con = ibis.connect(f"chdb://{chdb_path}")
     try:
         assert con.name == "chdb"
         con.create_table("u", obj=ibis.memtable({"x": [1, 2]}), engine="Memory")
