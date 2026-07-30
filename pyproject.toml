@@ -89,7 +89,9 @@ bigquery = [
   "rich>=12.4.4",
 ]
 chdb = [
-  "chdb>=4.2.1",
+  # chdb itself is installed at test time (see the CI matrix), not pinned here:
+  # it requires pyarrow>=13, which is incompatible with apache-flink's <12 cap,
+  # so pinning it would make the chdb and flink extras unresolvable together.
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",

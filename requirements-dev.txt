@@ -38,8 +38,6 @@ cffi==2.0.0
 cfgv==3.5.0
 chardet==5.2.0
 charset-normalizer==3.4.4
-chdb==4.2.1
-chdb-core==26.5.0
 click==8.3.1
 clickhouse-connect==0.10.0
 cloudpickle==3.1.2
