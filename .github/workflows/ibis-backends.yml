@@ -318,11 +318,6 @@ jobs:
           - os: windows-latest
             backend:
               name: chdb
-              title: chDB
-              serial: true
-              extras:
-                - --extra chdb
-                - --extra examples
           - os: windows-latest
             backend:
               name: mysql
