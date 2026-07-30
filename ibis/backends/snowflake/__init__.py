@@ -456,7 +456,10 @@ $$ {defn["source"]} $$"""
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
-        from ibis.backends.snowflake.converter import SnowflakePyArrowData
+        from ibis.backends.snowflake.converter import (
+            SnowflakePyArrowData,
+            source_schema,
+        )
 
         self._run_pre_execute_hooks(expr)
 
@@ -466,7 +469,11 @@ $$ {defn["source"]} $$"""
 
         ibis_schema = expr.as_table().schema()
         if res is None:
-            res = ibis_schema.to_pyarrow().empty_table()
+            # the connector returns None rather than an empty table for a
+            # zero-row result; stand in for it with the schema snowflake would
+            # have sent, since the natively-typed one can't be wrapped in the
+            # JSON extension type below
+            res = source_schema(ibis_schema).empty_table()
         else:
             # snowflake can rewrite the aliases we asked for server-side, for
             # example when QUOTED_IDENTIFIERS_IGNORE_CASE is enabled, so align

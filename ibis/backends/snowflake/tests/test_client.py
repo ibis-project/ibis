@@ -442,6 +442,21 @@ def test_insert_dict_variants(con):
     assert len(t.execute()) == 4
 
 
+def test_nested_types_empty_result(con):
+    # the connector returns None from `fetch_arrow_all` for a zero-row result;
+    # standing in for it with natively-typed empty columns blows up when the
+    # JSON extension wrapping is applied
+    lit = ibis.struct({"a": [1, 2, 3]}).cast("struct<a: array<int>>")
+    t = con.tables.functional_alltypes.mutate(lit=lit).limit(0).select("id", "lit")
+
+    eager = con.to_pyarrow(t)
+    assert len(eager) == 0
+
+    with con.to_pyarrow_batches(t) as reader:
+        batched = reader.read_all()
+    assert len(batched) == 0
+
+
 @pytest.fixture(scope="session")
 def ignore_case_con():
     # a dedicated connection, because `_setup_session` mutates the session
@@ -459,10 +474,17 @@ def test_mixed_case_columns_ignore_case(ignore_case_con):
 
     names = list(expected.columns)
 
-    assert ignore_case_con.to_pyarrow(t).column_names == names
+    arrow = ignore_case_con.to_pyarrow(t)
+    assert arrow.column_names == names
+    tm.assert_frame_equal(arrow.to_pandas(), expected)
 
+    # `reader.schema` is computed client-side before the query runs, so it
+    # proves nothing on its own -- drain the reader to exercise the server
+    # round trip that actually does the folding
     with ignore_case_con.to_pyarrow_batches(t) as reader:
-        assert reader.schema.names == names
+        batched = reader.read_all()
+    assert batched.column_names == names
+    tm.assert_frame_equal(batched.to_pandas(), expected)
 
     tm.assert_frame_equal(ignore_case_con.to_pandas(t), expected)
 
