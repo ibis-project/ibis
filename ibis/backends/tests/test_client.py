@@ -1506,9 +1506,7 @@ def test_set_backend_url(url, monkeypatch):
     ],
     reason="backend doesn't support timestamp with scale parameter",
 )
-@pytest.mark.notimpl(
-    ["clickhouse", "chdb"], reason="create table isn't implemented"
-)
+@pytest.mark.notimpl(["clickhouse", "chdb"], reason="create table isn't implemented")
 @pytest.mark.notimpl(
     ["snowflake"], reason="scale not implemented in ibis's snowflake backend"
 )
