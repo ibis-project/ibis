@@ -397,9 +397,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "clickhouse": decimal.Decimal(
                     "1.10000000000000003193790845333396190208"
                 ),
-                "chdb": decimal.Decimal(
-                    "1.10000000000000003193790845333396190208"
-                ),
+                "chdb": decimal.Decimal("1.10000000000000003193790845333396190208"),
                 "oracle": 1.1,
             },
             {
