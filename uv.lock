@@ -1003,34 +1003,6 @@ wheels = [
 ]
 
 [[package]]
-name = "chdb"
-version = "4.2.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "chdb-core" },
-    { name = "pandas" },
-    { name = "pyarrow" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/91/88/85d2dbe2151d69a759f57f4e5d11d55c506e758b0e8fd0a2fa8d4e982c55/chdb-4.2.1-py3-none-any.whl", hash = "sha256:b5ae04ed5e1d6b51acfe7e2d6efbb176027ef09c3ed2255c6ca439a077a4aa1e", size = 1616586, upload-time = "2026-07-13T07:53:25.938Z" },
-]
-
-[[package]]
-name = "chdb-core"
-version = "26.5.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pandas" },
-    { name = "pyarrow" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/64/584953f24530357270bf16747cc9e0b5136d002011eb3713cded079a65e1/chdb_core-26.5.0-cp39-abi3-macosx_10_15_x86_64.whl", hash = "sha256:a4b896feb536b75b0cae0612410e3cc93e8161d41eab9bd55720303aef1aa047", size = 110710168, upload-time = "2026-06-08T03:33:44.677Z" },
-    { url = "https://files.pythonhosted.org/packages/63/f4/04fc1be6d5576aa04a22faa168351431c3689fde1b1ac51c54eca2af895f/chdb_core-26.5.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:4902bdf2e58e49567dbfcb8d9b88607edf6d472f6c21f33c4674574e0444bd28", size = 96683215, upload-time = "2026-06-08T01:52:15.76Z" },
-    { url = "https://files.pythonhosted.org/packages/ce/08/d97a17a69d54ab21b636c7de668a94e0413d3e8fe5804ffbd2e38996a1e6/chdb_core-26.5.0-cp39-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:0004a5528287d3eec757a223e851a3b68a485675881a09bb4fa7b5116035b3c7", size = 122690139, upload-time = "2026-06-08T03:17:08.205Z" },
-    { url = "https://files.pythonhosted.org/packages/a5/2d/eb9b51180f2c0934339cf94ae2c031fab7c3dc93191f95aff0f83a0ca741/chdb_core-26.5.0-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:85ddbf675b4a070aa5abb79456b0a08643273dcf3977dc39f347c8acf846c804", size = 157311782, upload-time = "2026-06-08T02:32:13.171Z" },
-]
-
-[[package]]
 name = "click"
 version = "8.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2511,7 +2483,6 @@ bigquery = [
     { name = "rich" },
 ]
 chdb = [
-    { name = "chdb" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
@@ -2784,7 +2755,6 @@ tests = [
 requires-dist = [
     { name = "atpublic", specifier = ">=2.3" },
     { name = "black", marker = "extra == 'decompiler'", specifier = ">=22.1.0" },
-    { name = "chdb", marker = "extra == 'chdb'", specifier = ">=4.2.1" },
     { name = "clickhouse-connect", extras = ["arrow", "pandas", "numpy"], marker = "extra == 'clickhouse'", specifier = ">=0.5.23" },
     { name = "databricks-sql-connector", marker = "extra == 'databricks'", specifier = ">=4" },
     { name = "datafusion", marker = "extra == 'datafusion'", specifier = ">=0.6" },
