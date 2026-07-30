@@ -41,15 +41,11 @@ def test_datetime_no_scale_becomes_timestamp(mem):
     # restores it to a proper timestamp.
     expr = mem.sql("SELECT toDateTime('2026-07-22 01:02:03') AS dt")
     assert expr.schema()["dt"].is_timestamp()
-    assert mem.execute(expr)["dt"].tolist() == [
-        datetime.datetime(2026, 7, 22, 1, 2, 3)
-    ]
+    assert mem.execute(expr)["dt"].tolist() == [datetime.datetime(2026, 7, 22, 1, 2, 3)]
 
 
 def test_datetime64_with_timezone(mem):
-    expr = mem.sql(
-        "SELECT toDateTime64('2026-07-22 01:02:03.456', 3, 'UTC') AS dt"
-    )
+    expr = mem.sql("SELECT toDateTime64('2026-07-22 01:02:03.456', 3, 'UTC') AS dt")
     got = mem.execute(expr)["dt"].tolist()[0]
     assert got == datetime.datetime(
         2026, 7, 22, 1, 2, 3, 456000, tzinfo=datetime.timezone.utc
@@ -58,9 +54,7 @@ def test_datetime64_with_timezone(mem):
 
 def test_nullable_roundtrip(mem):
     t = ibis.memtable(
-        pa.table(
-            {"x": pa.array([1, None, 3], pa.int64()), "s": ["a", None, "c"]}
-        )
+        pa.table({"x": pa.array([1, None, 3], pa.int64()), "s": ["a", None, "c"]})
     )
     res = mem.execute(t.order_by("x"))
     assert res["x"].tolist()[0] == 1
@@ -68,9 +62,7 @@ def test_nullable_roundtrip(mem):
 
 
 def test_array_column_roundtrip(mem):
-    t = ibis.memtable(
-        pa.table({"id": [1, 2], "vals": pa.array([[1, 2, 3], [4, 5]])})
-    )
+    t = ibis.memtable(pa.table({"id": [1, 2], "vals": pa.array([[1, 2, 3], [4, 5]])}))
     res = mem.execute(t.mutate(n=t.vals.length()).order_by("id"))
     assert res["n"].tolist() == [3, 2]
 

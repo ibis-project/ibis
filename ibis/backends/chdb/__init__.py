@@ -75,8 +75,7 @@ def _relabel_fields(arr, dtype: dt.DataType):
     """
     if dtype.is_struct() and pa.types.is_struct(arr.type):
         children = [
-            _relabel_fields(arr.field(i), typ)
-            for i, typ in enumerate(dtype.types)
+            _relabel_fields(arr.field(i), typ) for i, typ in enumerate(dtype.types)
         ]
         return pa.StructArray.from_arrays(children, names=list(dtype.names))
     if dtype.is_array() and pa.types.is_list(arr.type):
@@ -108,7 +107,11 @@ class ChdbArrowConverter(PyArrowData):
         n = len(column)
         # dt.null and all-null columns: chDB may return them as binary/other,
         # which Arrow won't cast; rebuild directly as nulls of the target type.
-        if dtype.is_null() or pa.types.is_null(pa_type) or (n and column.null_count == n):
+        if (
+            dtype.is_null()
+            or pa.types.is_null(pa_type)
+            or (n and column.null_count == n)
+        ):
             return pa.nulls(n, type=pa_type)
 
         # scale-less DateTime arrives as uint32 seconds; uint32->timestamp is
@@ -123,6 +126,7 @@ class ChdbArrowConverter(PyArrowData):
 
         # UUID arrives as fixed_size_binary(16) / arrow.uuid extension.
         if dtype.is_uuid():
+
             def fmt_uuid(v):
                 if v is None or isinstance(v, str):
                     return v
@@ -136,6 +140,7 @@ class ChdbArrowConverter(PyArrowData):
 
         # INET arrives as uint32 (IPv4) or fixed_size_binary(16) (IPv6).
         if dtype.is_inet():
+
             def fmt_ip(v):
                 if v is None or isinstance(v, str):
                     return v
@@ -236,17 +241,51 @@ class _Con:
 
     def __init__(self, session):
         self._session = session
+        # chDB's embedded engine keeps one process-global Arrow output buffer.
+        # Two situations leave it dirty and corrupt the *next* ArrowTable query
+        # ("Unexpected empty message" / "metadata too long" / a 0-row result):
+        #   * a query that raised -- flushed with a throwaway query, and
+        #   * a streaming query (``send_query``) left un-drained -- only its own
+        #     cancellation clears the buffer, so we hold the last stream and
+        #     cancel it before the next query if the caller abandoned it.
+        self._active_stream = None
+
+    def _flush(self) -> None:
+        with contextlib.suppress(Exception):
+            self._session.query("SELECT 1", "CSV")
+
+    def _cancel_active_stream(self) -> None:
+        stream, self._active_stream = self._active_stream, None
+        if stream is not None:
+            with contextlib.suppress(Exception):
+                stream.close()
 
     def raw_query(self, sql, *, external_data=None, **_):
-        return self._session.query(sql)
+        self._cancel_active_stream()
+        try:
+            return self._session.query(sql)
+        except Exception:
+            self._flush()
+            raise
 
     command = raw_query
 
     def query(self, sql, *, external_data=None, fmt="CSV", **_):
-        return self._session.query(sql, fmt)
+        self._cancel_active_stream()
+        try:
+            return self._session.query(sql, fmt)
+        except Exception:
+            self._flush()
+            raise
 
     def send_query(self, sql, fmt="Arrow"):
-        return self._session.send_query(sql, fmt)
+        self._cancel_active_stream()
+        try:
+            self._active_stream = self._session.send_query(sql, fmt)
+        except Exception:
+            self._flush()
+            raise
+        return self._active_stream
 
     def cursor(self):
         return self._session.cursor()
@@ -321,14 +360,23 @@ class Backend(UrlFromPath, CHBackend):
         schema = table_expr.schema()
         arrow_schema = schema.to_pyarrow()
 
-        reader = self.con.send_query(sql, "Arrow").record_batch(chunk_size)
+        # chDB's embedded engine is a process-global singleton, so a streaming
+        # query left open (partially consumed and abandoned, or drained but not
+        # cancelled) corrupts the Arrow buffer of the *next* query on any
+        # connection. Always cancel it in ``finally`` -- this runs on normal
+        # exhaustion and on GeneratorExit when the reader is dropped early.
+        stream = self.con.send_query(sql, "Arrow")
+        reader = stream.record_batch(chunk_size)
 
         def batches():
-            for batch in reader:
-                converted = ChdbArrowConverter.convert_table(
-                    pa.Table.from_batches([batch], schema=batch.schema), schema
-                )
-                yield from converted.to_batches()
+            try:
+                for batch in reader:
+                    converted = ChdbArrowConverter.convert_table(
+                        pa.Table.from_batches([batch], schema=batch.schema), schema
+                    )
+                    yield from converted.to_batches()
+            finally:
+                stream.close()
 
         return pa.ipc.RecordBatchReader.from_batches(arrow_schema, batches())
 
@@ -398,7 +446,9 @@ class Backend(UrlFromPath, CHBackend):
     def read_parquet(
         self, path, /, *, table_name=None, engine: str = "MergeTree", **_: Any
     ) -> ir.Table:
-        return self._read_file(path, table_name=table_name, fmt="Parquet", engine=engine)
+        return self._read_file(
+            path, table_name=table_name, fmt="Parquet", engine=engine
+        )
 
     def read_csv(
         self, path, /, *, table_name=None, engine: str = "MergeTree", **_: Any
