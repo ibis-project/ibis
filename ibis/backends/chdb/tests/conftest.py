@@ -56,15 +56,25 @@ class TestConf(BackendTest):
 
 
 @pytest.fixture(scope="session")
-def con(tmp_path_factory, data_dir, worker_id):
-    """Session-scoped chDB connection with the standard test dataset loaded."""
-    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
+def chdb_path(tmp_path_factory, worker_id) -> str:
+    """The single on-disk path every connection in this process must share.
+
+    chDB's embedded engine is a process-global singleton: while one connection
+    is open, connecting to a *different* path raises BAD_ARGUMENTS. Under the
+    randomized test order this means every fixture and test has to funnel
+    through one path, so they all derive it from here (the same value
+    ``TestConf.connect`` uses for the shared-suite connection).
+    """
+    return str(tmp_path_factory.getbasetemp() / f"chdb_{worker_id}")
 
 
 @pytest.fixture
-def mem(tmp_path_factory, worker_id):
-    """A fresh in-memory-ish chDB connection with no preloaded data."""
-    path = tmp_path_factory.mktemp("chdb") / f"unit_{worker_id}"
-    con = ibis.chdb.connect(str(path))
+def mem(chdb_path):
+    """A no-preloaded-data connection on the shared process path.
+
+    Unit tests work in the ``default`` database; the shared dataset lives in
+    ``ibis_testing``, so the two don't collide.
+    """
+    con = ibis.chdb.connect(chdb_path)
     yield con
     con.disconnect()
