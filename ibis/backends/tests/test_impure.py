@@ -197,9 +197,7 @@ impure_params_uncorrelated = pytest.mark.parametrize(
 
 
 # You can work around this by doing .select().cache().select()
-@pytest.mark.notyet(
-    ["clickhouse", "chdb", "athena"], reason="instances are correlated"
-)
+@pytest.mark.notyet(["clickhouse", "chdb", "athena"], reason="instances are correlated")
 @impure_params_uncorrelated
 def test_impure_uncorrelated_different_id(alltypes, impure):
     # This is the opposite of test_impure_correlated.
@@ -214,9 +212,7 @@ def test_impure_uncorrelated_different_id(alltypes, impure):
 
 
 # You can work around this by doing .select().cache().select()
-@pytest.mark.notyet(
-    ["clickhouse", "chdb", "athena"], reason="instances are correlated"
-)
+@pytest.mark.notyet(["clickhouse", "chdb", "athena"], reason="instances are correlated")
 @impure_params_uncorrelated
 def test_impure_uncorrelated_same_id(alltypes, impure):
     # Similar to test_impure_uncorrelated_different_id, but the two expressions
