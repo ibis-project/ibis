@@ -444,11 +444,8 @@ def test_insert_dict_variants(con):
 
 
 def test_nested_types_empty_result(con):
-    # a zero-row result is the eager path's problem specifically: the connector
-    # returns None from `fetch_arrow_all`, so `to_pyarrow` has to build a
-    # stand-in table, and a natively-typed one can't carry the JSON extension
-    # wrapping. `to_pyarrow_batches` never receives a batch to cast, so it was
-    # always fine -- the asserted schemas below pin that asymmetry
+    # only `to_pyarrow` is affected -- it builds a stand-in table when the
+    # connector returns None; the batches path never gets a batch to cast
     from ibis.backends.snowflake.converter import PYARROW_JSON_TYPE
 
     lit = ibis.struct({"a": [1, 2, 3]}).cast("struct<a: array<int>>")
@@ -465,8 +462,7 @@ def test_nested_types_empty_result(con):
 
 
 def test_nested_types_stream_as_json_text(con, tmp_path):
-    # the batches path casts to what snowflake sends, so nested columns arrive
-    # as JSON strings rather than as the arrow types the ibis schema maps to
+    # snowflake sends nested values as JSON text and the batches path keeps it
     raw = {"a": [1, 2, 3], "b": "456"}
     lit = ibis.struct(raw).cast("struct<a: array<int>, b: json>")
     t = (
@@ -481,12 +477,11 @@ def test_nested_types_stream_as_json_text(con, tmp_path):
     assert batched.schema.field("lit").type == pa.string()
     assert json.loads(batched["lit"][0].as_py()) == raw
 
-    # which is exactly what lets CSV work, with no override needed
     out = tmp_path / "nested.csv"
     con.to_csv(t, out)
     assert json.loads(pcsv.read_csv(out)["lit"][0].as_py()) == raw
 
-    # meanwhile the eager path still wraps, which is what `repr` depends on
+    # the eager path still wraps, which is what `repr` depends on
     assert con.to_pyarrow(t)["lit"][0].as_py() == raw
 
 
@@ -499,9 +494,8 @@ def ignore_case_con():
 
 
 def test_mixed_case_columns_ignore_case(ignore_case_con):
-    # under QUOTED_IDENTIFIERS_IGNORE_CASE snowflake folds the quoted aliases
-    # we emit to uppercase server-side, so results come back with names that
-    # don't match the ibis schema
+    # snowflake folds our quoted aliases to uppercase under this session
+    # parameter, so results come back with names the ibis schema doesn't have
     expected = pd.DataFrame({"errorCode": [1, 2, 3], "eventType": list("abc")})
     t = ibis.memtable(expected)
 
@@ -511,9 +505,8 @@ def test_mixed_case_columns_ignore_case(ignore_case_con):
     assert arrow.column_names == names
     tm.assert_frame_equal(arrow.to_pandas(), expected)
 
-    # `reader.schema` is computed client-side before the query runs, so it
-    # proves nothing on its own -- drain the reader to exercise the server
-    # round trip that actually does the folding
+    # `reader.schema` is computed client-side, so drain the reader to
+    # actually exercise the server round trip
     with ignore_case_con.to_pyarrow_batches(t) as reader:
         batched = reader.read_all()
     assert batched.column_names == names
