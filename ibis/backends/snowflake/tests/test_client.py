@@ -17,6 +17,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+from ibis.backends.snowflake.converter import PYARROW_JSON_TYPE
 from ibis.backends.snowflake.tests.conftest import _get_url
 from ibis.util import gen_name
 
@@ -444,10 +445,8 @@ def test_insert_dict_variants(con):
 
 
 def test_nested_types_empty_result(con):
-    # only `to_pyarrow` is affected -- it builds a stand-in table when the
-    # connector returns None; the batches path never gets a batch to cast
-    from ibis.backends.snowflake.converter import PYARROW_JSON_TYPE
-
+    # only `to_pyarrow` is affected: it builds a stand-in table when the
+    # connector returns None, while the batches path never gets a batch to cast
     lit = ibis.struct({"a": [1, 2, 3]}).cast("struct<a: array<int>>")
     t = con.tables.functional_alltypes.mutate(lit=lit).limit(0).select("id", "lit")
 

@@ -70,7 +70,7 @@ def test_empty_table_survives_json_wrapping():
 
 
 def test_natively_typed_empty_table_would_not_survive():
-    # guards the reason the fix above is needed: the obvious stand-in raises
+    # the natively-typed stand-in raises, which is why the fix uses wire types
     schema = ibis.schema({"arr": "array<int64>"})
     with pytest.raises(TypeError, match="Incompatible storage type"):
         SnowflakePyArrowData.convert_table(schema.to_pyarrow().empty_table(), schema)
@@ -88,10 +88,9 @@ def test_eager_path_still_wraps_in_the_extension_type(dtype):
 
 @pytest.mark.parametrize("dtype", JSON_ENCODED)
 def test_extension_type_round_trips_lossily(dtype):
-    # array, map and struct are all wrapped in the same extension type, so a
-    # schema round trip collapses every one of them to `json`. that is lossy by
-    # construction -- the extension type carries no record of what it wrapped --
-    # and this pins the contract rather than leaving it implied
+    # array, map and struct all wrap into the same extension type, which keeps
+    # no record of what it wrapped, so a schema round trip collapses every one
+    # of them to `json`
     schema = ibis.schema({"x": dtype})
     wrapped = SnowflakePyArrowData.convert_table(
         pa.table({"x": pa.array(['{"a": 1}'])}), schema
