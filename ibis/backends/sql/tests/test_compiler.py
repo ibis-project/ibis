@@ -26,3 +26,20 @@ def test_transpile_join():
         "SELECT * FROM t1 JOIN t2 ON x = y", read="duckdb", write=Trino
     )
     assert "CROSS JOIN" not in result
+
+
+def test_postgres_float_literals_are_cast():
+    # GH #11947: Postgres interprets bare numeric literals as `numeric`,
+    # which executes as `Decimal` instead of `float`; float literals must
+    # be wrapped in a cast to their ibis type
+    t = ibis.table({"x": "float64"}, name="t")
+
+    expr = t.mutate(v=ibis.literal(0.5518, type="float64"))
+    sql = ibis.to_sql(expr, dialect="postgres")
+    assert "CAST(0.5518 AS DOUBLE PRECISION)" in sql
+
+    # non-finite values are still rendered as casted string literals
+    nan_sql = ibis.to_sql(
+        t.mutate(v=ibis.literal(float("nan"), type="float64")), dialect="postgres"
+    )
+    assert "CAST('NaN' AS DOUBLE PRECISION)" in nan_sql
