@@ -25,7 +25,6 @@ pytestmark = pytest.mark.notimpl(
         "oracle",
         "polars",
         "postgres",
-        "risingwave",
         "singlestoredb",
         "snowflake",
         "sqlite",
