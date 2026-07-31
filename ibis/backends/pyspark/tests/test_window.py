@@ -110,9 +110,11 @@ def test_tumble_window_by_grouped_agg(con_streaming, tmp_path):
     dfs = [pd.read_csv(f) for f in path.glob("*.csv")]
     df = pd.concat([df for df in dfs if not df.empty])
     assert list(df.columns) == ["window_start", "window_end", "string_col", "avg"]
-    # [NOTE] The expected number of rows here is 7299 because when all the data is ready
-    # at once, no event is dropped as out of order. On the contrary, Flink discards all
-    # out-of-order events as late arrivals and only emits 610 windows.
+    # [NOTE] Every one of the 7300 rows falls into its own 30-second window, so a
+    # complete result is 7300 rows, which is what batch Spark, RisingWave and
+    # DuckDB all return. Streaming comes up one short: in append mode a window is
+    # only emitted once the watermark passes its end, and nothing arrives after
+    # the last row to advance it, so the final window never flushes.
     assert df.shape == (7299, 4)
 
 
