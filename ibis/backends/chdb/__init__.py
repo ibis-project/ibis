@@ -317,6 +317,12 @@ class Backend(UrlFromPath, CHBackend):
             one engine per process: the first connection fixes the path, and
             connecting to a different path raises until all are disconnected.
 
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.chdb.connect()
+        >>> con
+        <ibis.backends.chdb.Backend object at 0x...>
         """
         import chdb
 
