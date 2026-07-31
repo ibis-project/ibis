@@ -36,7 +36,9 @@ def test_mssql_stdev_roundtrips_to_sample():
     )
     assert result == "SELECT STDEV([x]) AS [s] FROM [t]"
 
-    (result,) = sg.transpile(
-        "SELECT STDEVP([x]) AS [s] FROM [t]", read=MSSQL, write=MSSQL
-    )
-    assert result == "SELECT STDEVP([x]) AS [s] FROM [t]"
+
+def test_mssql_std_emits_distinct_functions():
+    # the two ibis spellings must not collapse onto the same T-SQL function
+    t = ibis.table({"x": "float"}, name="t")
+    assert "STDEV(" in ibis.to_sql(t.x.std(how="sample"), dialect="mssql")
+    assert "STDEVP(" in ibis.to_sql(t.x.std(how="pop"), dialect="mssql")

@@ -360,8 +360,6 @@ class MSSQL(TSQL):
     class Generator(TSQL.Generator):
         TRANSFORMS = TSQL.Generator.TRANSFORMS.copy() | {
             sge.ApproxDistinct: rename_func("approx_count_distinct"),
-            # T-SQL's bare STDEV is the sample standard deviation, so a bare
-            # Stddev node must round-trip back to STDEV, not STDEVP.
             sge.Stddev: rename_func("stdev"),
             sge.StddevPop: rename_func("stdevp"),
             sge.StddevSamp: rename_func("stdev"),
