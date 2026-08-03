@@ -456,7 +456,10 @@ $$ {defn["source"]} $$"""
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
-        from ibis.backends.snowflake.converter import SnowflakePyArrowData
+        from ibis.backends.snowflake.converter import (
+            SnowflakePyArrowData,
+            source_schema,
+        )
 
         self._run_pre_execute_hooks(expr)
 
@@ -466,7 +469,11 @@ $$ {defn["source"]} $$"""
 
         ibis_schema = expr.as_table().schema()
         if res is None:
-            res = ibis_schema.to_pyarrow().empty_table()
+            # the connector returns None rather than an empty table for a
+            # zero-row result; stand in for it with the schema snowflake would
+            # have sent, since the natively-typed one can't be wrapped in the
+            # JSON extension type below
+            res = source_schema(ibis_schema).empty_table()
         else:
             # snowflake can rewrite the aliases we asked for server-side, for
             # example when QUOTED_IDENTIFIERS_IGNORE_CASE is enabled, so align
@@ -515,9 +522,14 @@ $$ {defn["source"]} $$"""
         chunk_size: int = 1_000_000,
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
+        from ibis.backends.snowflake.converter import source_schema
+
         self._run_pre_execute_hooks(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
-        target_schema = expr.as_table().schema().to_pyarrow()
+        # cast to what snowflake actually sends, not to the nested arrow types
+        # the ibis schema maps to: VARIANT, ARRAY and OBJECT arrive as JSON
+        # strings, and `string -> list/map/struct` is not an implemented cast
+        target_schema = source_schema(expr.as_table().schema())
 
         return pa.ipc.RecordBatchReader.from_batches(
             target_schema,
@@ -527,7 +539,7 @@ $$ {defn["source"]} $$"""
         )
 
     def _make_batch_iter(
-        self, sql: str, *, target_schema: sch.Schema, chunk_size: int
+        self, sql: str, *, target_schema: pa.Schema, chunk_size: int
     ) -> Iterator[pa.RecordBatch]:
         with self._safe_raw_sql(sql) as cur:
             yield from itertools.chain.from_iterable(

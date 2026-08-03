@@ -9,6 +9,7 @@ import hypothesis.strategies as st
 import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
+import pyarrow.csv as pcsv
 import pytest
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -16,6 +17,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+from ibis.backends.snowflake.converter import PYARROW_JSON_TYPE
 from ibis.backends.snowflake.tests.conftest import _get_url
 from ibis.util import gen_name
 
@@ -442,6 +444,46 @@ def test_insert_dict_variants(con):
     assert len(t.execute()) == 4
 
 
+def test_nested_types_empty_result(con):
+    # only `to_pyarrow` is affected: it builds a stand-in table when the
+    # connector returns None, while the batches path never gets a batch to cast
+    lit = ibis.struct({"a": [1, 2, 3]}).cast("struct<a: array<int>>")
+    t = con.tables.functional_alltypes.mutate(lit=lit).limit(0).select("id", "lit")
+
+    eager = con.to_pyarrow(t)
+    assert len(eager) == 0
+    assert eager.schema.field("lit").type == PYARROW_JSON_TYPE
+
+    with con.to_pyarrow_batches(t) as reader:
+        batched = reader.read_all()
+    assert len(batched) == 0
+    assert batched.schema.field("lit").type == pa.string()
+
+
+def test_nested_types_stream_as_json_text(con, tmp_path):
+    # snowflake sends nested values as JSON text and the batches path keeps it
+    raw = {"a": [1, 2, 3], "b": "456"}
+    lit = ibis.struct(raw).cast("struct<a: array<int>, b: json>")
+    t = (
+        con.tables.functional_alltypes.mutate(lit=lit)
+        .order_by("id")
+        .limit(1)
+        .select("id", "lit")
+    )
+
+    with con.to_pyarrow_batches(t) as reader:
+        batched = reader.read_all()
+    assert batched.schema.field("lit").type == pa.string()
+    assert json.loads(batched["lit"][0].as_py()) == raw
+
+    out = tmp_path / "nested.csv"
+    con.to_csv(t, out)
+    assert json.loads(pcsv.read_csv(out)["lit"][0].as_py()) == raw
+
+    # the eager path still wraps, which is what `repr` depends on
+    assert con.to_pyarrow(t)["lit"][0].as_py() == raw
+
+
 @pytest.fixture(scope="session")
 def ignore_case_con():
     # a dedicated connection, because `_setup_session` mutates the session
@@ -460,9 +502,8 @@ def ignore_case_con():
 
 
 def test_mixed_case_columns_ignore_case(ignore_case_con):
-    # under QUOTED_IDENTIFIERS_IGNORE_CASE snowflake folds the quoted aliases
-    # we emit to uppercase server-side, so results come back with names that
-    # don't match the ibis schema
+    # snowflake folds our quoted aliases to uppercase under this session
+    # parameter, so results come back with names the ibis schema doesn't have
     expected = pd.DataFrame({"errorCode": [1, 2, 3], "eventType": list("abc")})
     t = ibis.memtable(expected)
 
