@@ -445,8 +445,17 @@ def test_insert_dict_variants(con):
 @pytest.fixture(scope="session")
 def ignore_case_con():
     # a dedicated connection, because `_setup_session` mutates the session
+    #
+    # `create_object_udfs=False` matters here: the default re-issues
+    # `CREATE OR REPLACE FUNCTION ibis_udfs.public.*` while this session
+    # parameter is on, which folds the quoted lowercase argument names those
+    # javascript bodies reference to uppercase. `ibis_udfs` is shared across
+    # the account and the failure is swallowed into a warning, so it would
+    # break map and array tests elsewhere rather than this one.
     return ibis.connect(
-        _get_url(), session_parameters={"QUOTED_IDENTIFIERS_IGNORE_CASE": True}
+        _get_url(),
+        create_object_udfs=False,
+        session_parameters={"QUOTED_IDENTIFIERS_IGNORE_CASE": True},
     )
 
 
@@ -459,21 +468,26 @@ def test_mixed_case_columns_ignore_case(ignore_case_con):
 
     names = list(expected.columns)
 
+    # the memtable is an unordered scan over a temp table, so compare on
+    # content rather than on row order
+    def normalize(df):
+        return df.sort_values(names[0], ignore_index=True)
+
     arrow = ignore_case_con.to_pyarrow(t)
     assert arrow.column_names == names
-    tm.assert_frame_equal(arrow.to_pandas(), expected)
+    tm.assert_frame_equal(normalize(arrow.to_pandas()), expected)
 
     # `reader.schema` is computed client-side, so drain the reader to
     # actually exercise the server round trip
     with ignore_case_con.to_pyarrow_batches(t) as reader:
         batched = reader.read_all()
     assert batched.column_names == names
-    tm.assert_frame_equal(batched.to_pandas(), expected)
+    tm.assert_frame_equal(normalize(batched.to_pandas()), expected)
 
-    tm.assert_frame_equal(ignore_case_con.to_pandas(t), expected)
+    tm.assert_frame_equal(normalize(ignore_case_con.to_pandas(t)), expected)
 
     batches = list(ignore_case_con.to_pandas_batches(t))
-    tm.assert_frame_equal(pd.concat(batches, ignore_index=True), expected)
+    tm.assert_frame_equal(normalize(pd.concat(batches)), expected)
 
 
 @h.given(
