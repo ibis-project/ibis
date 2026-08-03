@@ -230,6 +230,39 @@ def test_unknown_extension_type_falls_back_to_storage(storage, expected):
     assert ibis.memtable(table).schema() == ibis.schema({"x": expected})
 
 
+@pytest.mark.parametrize(
+    ("factory", "expected"),
+    [
+        pytest.param(lambda: pa.json_(pa.string()), dt.json, id="json"),
+        pytest.param(pa.uuid, dt.uuid, id="uuid"),
+        pytest.param(pa.bool8, dt.int8, id="bool8"),
+    ],
+)
+def test_pyarrow_native_extension_types(factory, expected):
+    # the types pyarrow implements in c++ subclass `BaseExtensionType` but not
+    # `ExtensionType`, so a guard on the latter misses them entirely
+    typ = pytest.importorskip("pyarrow") and factory()
+    assert not isinstance(typ, pa.ExtensionType)
+    assert isinstance(typ, pa.BaseExtensionType)
+
+    assert PyArrowType.to_ibis(typ) == expected
+
+
+def test_parquet_json_logical_type_roundtrips_to_memtable(tmp_path):
+    # the most likely way a user meets an extension type they never created:
+    # parquet's JSON logical type reads back as `arrow.json`
+    pq = pytest.importorskip("pyarrow.parquet")
+
+    path = tmp_path / "json.parquet"
+    pq.write_table(
+        pa.table({"x": pa.array(['{"a": 1}'], pa.json_(pa.string()))}), path
+    )
+
+    table = pq.read_table(path)
+    assert table.schema.field("x").type.extension_name == "arrow.json"
+    assert ibis.memtable(table).schema() == ibis.schema({"x": "json"})
+
+
 def test_ibis_json_extension_gets_converted_to_json():
     # the snowflake backend returns JSON-encoded columns wrapped in a
     # registered `ibis.json` extension type; without a case here, feeding that
