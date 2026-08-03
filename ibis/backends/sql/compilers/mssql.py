@@ -410,6 +410,14 @@ class MSSQLCompiler(SQLGlotCompiler):
             return self.f.log(arg)
         return self.f.log(arg, base)
 
+    # T-SQL has no TANH: use the exponential identity, naming `arg` and `e` once
+    # each so nested tanh stays linear in SQL text. Input clamped to +/-20 because
+    # EXP overflow is a hard error and tanh is already exactly +/-1.0 there; NULL
+    # guarded because T-SQL LEAST/GREATEST drop NULLs (same trade as visit_Clip).
+    def visit_Tanh(self, op, *, arg):
+        e = self.f.exp(2.0 * self.f.least(self.f.greatest(arg, -20.0), 20.0))
+        return self.if_(arg.is_(NULL), NULL, 1.0 - 2.0 / (e + 1.0))
+
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
 

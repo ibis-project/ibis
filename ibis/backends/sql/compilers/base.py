@@ -379,6 +379,7 @@ class SQLGlotCompiler(abc.ABC):
         ops.StringToDate: "str_to_date",
         ops.StringToTimestamp: "str_to_time",
         ops.Tan: "tan",
+        ops.Tanh: "tanh",
         ops.Translate: "translate",
         ops.Unnest: "explode",
         ops.Uppercase: "upper",
