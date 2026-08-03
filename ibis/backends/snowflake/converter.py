@@ -87,10 +87,37 @@ else:
 
 
 try:
-    from ibis.formats.pyarrow import PyArrowData
+    from ibis.formats.pyarrow import PyArrowData, PyArrowType
 except ModuleNotFoundError:
     pass
 else:
+
+    def _is_json_encoded(dtype: dt.DataType) -> bool:
+        """Return whether snowflake hands back `dtype` as a JSON-encoded string."""
+        return (
+            dtype.is_json() or dtype.is_array() or dtype.is_map() or dtype.is_struct()
+        )
+
+    def source_schema(schema: Schema) -> pa.Schema:
+        """Return the pyarrow schema snowflake actually sends for `schema`.
+
+        Identical to `PyArrowSchema.from_ibis` except that JSON-encoded columns
+        arrive as strings: snowflake has no typed wire format for VARIANT,
+        ARRAY or OBJECT, so it serializes them and the nested arrow types the
+        ibis schema maps to never appear on the wire.
+        """
+        return pa.schema(
+            [
+                pa.field(
+                    name,
+                    pa.string()
+                    if _is_json_encoded(dtype)
+                    else PyArrowType.from_ibis(dtype),
+                    nullable=dtype.nullable,
+                )
+                for name, dtype in schema.items()
+            ]
+        )
 
     class SnowflakePyArrowData(PyArrowData):
         @classmethod
@@ -110,12 +137,7 @@ else:
 
         @classmethod
         def convert_column(cls, column: pa.Array, dtype: dt.DataType) -> pa.Array:
-            if (
-                dtype.is_json()
-                or dtype.is_array()
-                or dtype.is_map()
-                or dtype.is_struct()
-            ):
+            if _is_json_encoded(dtype):
                 if isinstance(column, pa.ChunkedArray):
                     column = column.combine_chunks()
 
@@ -124,11 +146,6 @@ else:
 
         @classmethod
         def convert_scalar(cls, scalar: pa.Scalar, dtype: dt.DataType) -> pa.Scalar:
-            if (
-                dtype.is_json()
-                or dtype.is_array()
-                or dtype.is_map()
-                or dtype.is_struct()
-            ):
+            if _is_json_encoded(dtype):
                 return pa.ExtensionScalar.from_storage(PYARROW_JSON_TYPE, scalar)
             return super().convert_scalar(scalar, dtype)
