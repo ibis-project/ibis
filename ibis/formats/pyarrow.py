@@ -108,6 +108,16 @@ class PyArrowType(TypeMapper):
             return dt.Map(key_dtype, value_dtype, nullable=nullable)
         elif pa.types.is_dictionary(typ):
             return cls.to_ibis(typ.value_type)
+        elif isinstance(typ, pa.ExtensionType) and typ.extension_name == "ibis.json":
+            # the snowflake backend wraps JSON-encoded columns in a registered
+            # extension type whose storage is JSON text; `json` rather than the
+            # `string` storage keeps the fact that the text is parseable, which
+            # is what the extension scalar's `as_py` relies on
+            #
+            # the element types don't survive: array, map and struct are all
+            # wrapped in the same extension type, so they all come back as
+            # `json` rather than as themselves
+            return dt.JSON(nullable=nullable)
         elif (
             isinstance(typ, pa.ExtensionType)
             and type(typ).__module__ == "geoarrow.types.type_pyarrow"
@@ -156,6 +166,12 @@ class PyArrowType(TypeMapper):
                 geotype = "geometry"
 
             return dt.GeoSpatial(geotype, srid, nullable)
+        elif isinstance(typ, pa.ExtensionType):
+            # an extension type we don't recognize is still readable as
+            # whatever it's stored as, which is what every consumer that hasn't
+            # registered it sees anyway; falling through would reach the lookup
+            # below and raise `TypeError: unhashable type`
+            return cls.to_ibis(typ.storage_type, nullable=nullable)
         else:
             return _from_pyarrow_types[typ](nullable=nullable)
 
