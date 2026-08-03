@@ -99,12 +99,19 @@ else:
         )
 
     def source_schema(schema: Schema) -> pa.Schema:
-        """Return the pyarrow schema snowflake actually sends for `schema`.
+        """Return the pyarrow schema snowflake sends for the JSON-encoded part of `schema`.
 
         Identical to `PyArrowSchema.from_ibis` except that JSON-encoded columns
         arrive as strings: snowflake has no typed wire format for VARIANT,
         ARRAY or OBJECT, so it serializes them and the nested arrow types the
         ibis schema maps to never appear on the wire.
+
+        Geospatial columns are the one known gap. GEOGRAPHY and GEOMETRY also
+        arrive as text, but this returns the geoarrow extension type
+        `PyArrowType.from_ibis` maps them to, so casting to it fails the same
+        way the nested types did. That is unchanged from what the batches path
+        cast to before, and fixing it needs a live account to pin down which
+        of GeoJSON, WKT and WKB `GEOGRAPHY_OUTPUT_FORMAT` is producing.
         """
         return pa.schema(
             [
