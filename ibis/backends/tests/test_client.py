@@ -378,6 +378,7 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
         "bigquery",
         "clickhouse",
         "datafusion",
+        "db2",
         "druid",
         "duckdb",
         "exasol",
@@ -822,6 +823,7 @@ def test_insert_from_memtable(con, temp_table):
     [
         "bigquery",
         "clickhouse",
+        "db2",
         "druid",
         "exasol",
         "impala",
@@ -869,6 +871,7 @@ def test_list_database_contents(con):
         "bigquery": {"ibis_gbq_testing"},
         "clickhouse": {"system", "default", "ibis_testing"},
         "datafusion": {"public"},
+        "db2": set(),
         "duckdb": {"pg_catalog", "main", "information_schema"},
         "exasol": {"EXASOL"},
         "flink": {"default_database"},
@@ -910,6 +913,11 @@ def test_list_database_contents(con):
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="unsigned integers are not supported",
+)
+@pytest.mark.notyet(
+    ["db2"],
+    raises=AssertionError,
+    reason="Db2 maps unsigned integer types to signed equivalents; schema does not roundtrip",
 )
 @pytest.mark.notimpl(
     ["athena"], raises=com.UnsupportedOperationError, reason="no temp tables"
