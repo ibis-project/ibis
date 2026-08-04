@@ -468,9 +468,8 @@ $$ {defn["source"]} $$"""
         if res is None:
             res = ibis_schema.to_pyarrow().empty_table()
         else:
-            # snowflake can rewrite the aliases we asked for server-side, for
-            # example when QUOTED_IDENTIFIERS_IGNORE_CASE is enabled, so align
-            # the result on position rather than on name
+            # snowflake can rewrite the aliases we asked for, so align on
+            # position rather than on name
             res = res.rename_columns(list(ibis_schema.names))
 
         return expr.__pyarrow_result__(res, data_mapper=SnowflakePyArrowData)
@@ -496,8 +495,7 @@ $$ {defn["source"]} $$"""
         target_schema = expr.as_table().schema()
 
         def convert(df: pd.DataFrame) -> pd.DataFrame:
-            # snowflake can rewrite the aliases we asked for server-side, so
-            # align the result on position rather than on name
+            # see `to_pyarrow`; align on position rather than on name
             df.columns = list(target_schema.names)
             return SnowflakePandasData.convert_table(df, target_schema)
 

@@ -444,14 +444,8 @@ def test_insert_dict_variants(con):
 
 @pytest.fixture(scope="session")
 def ignore_case_con():
-    # a dedicated connection, because `_setup_session` mutates the session
-    #
-    # `create_object_udfs=False` matters here: the default re-issues
-    # `CREATE OR REPLACE FUNCTION ibis_udfs.public.*` while this session
-    # parameter is on, which folds the quoted lowercase argument names those
-    # javascript bodies reference to uppercase. `ibis_udfs` is shared across
-    # the account and the failure is swallowed into a warning, so it would
-    # break map and array tests elsewhere rather than this one.
+    # a dedicated connection, because `_setup_session` mutates the session;
+    # skip the UDFs, which would be rebuilt with their argument names folded
     return ibis.connect(
         _get_url(),
         create_object_udfs=False,
@@ -460,8 +454,7 @@ def ignore_case_con():
 
 
 def _drain_pyarrow_batches(con, t):
-    # `reader.schema` is computed client-side before the query is issued, so
-    # asserting on it would pass without ever contacting the server
+    # drain rather than check `reader.schema`, which is computed client-side
     with con.to_pyarrow_batches(t) as reader:
         return reader.read_all().to_pandas()
 
@@ -478,20 +471,14 @@ def _drain_pyarrow_batches(con, t):
     ],
 )
 def test_mixed_case_columns_ignore_case(ignore_case_con, export):
-    # under QUOTED_IDENTIFIERS_IGNORE_CASE snowflake folds the quoted aliases
-    # we emit to uppercase server-side, so results come back with names that
-    # don't match the ibis schema
-    #
-    # `to_pyarrow` and `to_pandas_batches` are the two that were broken;
-    # the other two are here as regression coverage, since they were already
-    # positional
+    # snowflake folds the quoted aliases we emit to uppercase server-side, so
+    # results come back with names the ibis schema doesn't have
     expected = pd.DataFrame({"errorCode": [1, 2, 3], "eventType": list("abc")})
     t = ibis.memtable(expected)
 
     result = export(ignore_case_con, t)
 
     assert list(result.columns) == list(expected.columns)
-    # an unordered scan over a temp table, so compare content, not row order
     tm.assert_frame_equal(result.sort_values("errorCode", ignore_index=True), expected)
 
 
