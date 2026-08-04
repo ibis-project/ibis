@@ -2722,6 +2722,13 @@ docs = [
     { name = "scikit-learn", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "seaborn" },
 ]
+pyarrow = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas" },
+    { name = "pyarrow" },
+    { name = "pyarrow-hotfix" },
+]
 tests = [
     { name = "cloudpickle" },
     { name = "filelock" },
@@ -2937,6 +2944,12 @@ docs = [
     { name = "rich", specifier = ">=13.8.1" },
     { name = "scikit-learn", specifier = ">=1.3,<2" },
     { name = "seaborn", specifier = ">=0.12.2,<1" },
+]
+pyarrow = [
+    { name = "numpy", specifier = ">=1.23.2,<3" },
+    { name = "pandas", specifier = ">=1.5.3,<3" },
+    { name = "pyarrow", specifier = ">=10.0.1" },
+    { name = "pyarrow-hotfix", specifier = ">=0.4" },
 ]
 tests = [
     { name = "cloudpickle" },
