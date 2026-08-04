@@ -459,35 +459,40 @@ def ignore_case_con():
     )
 
 
-def test_mixed_case_columns_ignore_case(ignore_case_con):
+def _drain_pyarrow_batches(con, t):
+    # `reader.schema` is computed client-side before the query is issued, so
+    # asserting on it would pass without ever contacting the server
+    with con.to_pyarrow_batches(t) as reader:
+        return reader.read_all().to_pandas()
+
+
+@pytest.mark.parametrize(
+    "export",
+    [
+        param(lambda con, t: con.to_pyarrow(t).to_pandas(), id="to_pyarrow"),
+        param(_drain_pyarrow_batches, id="to_pyarrow_batches"),
+        param(lambda con, t: con.to_pandas(t), id="to_pandas"),
+        param(
+            lambda con, t: pd.concat(con.to_pandas_batches(t)), id="to_pandas_batches"
+        ),
+    ],
+)
+def test_mixed_case_columns_ignore_case(ignore_case_con, export):
     # under QUOTED_IDENTIFIERS_IGNORE_CASE snowflake folds the quoted aliases
     # we emit to uppercase server-side, so results come back with names that
     # don't match the ibis schema
+    #
+    # `to_pyarrow` and `to_pandas_batches` are the two that were broken;
+    # the other two are here as regression coverage, since they were already
+    # positional
     expected = pd.DataFrame({"errorCode": [1, 2, 3], "eventType": list("abc")})
     t = ibis.memtable(expected)
 
-    names = list(expected.columns)
+    result = export(ignore_case_con, t)
 
-    # the memtable is an unordered scan over a temp table, so compare on
-    # content rather than on row order
-    def normalize(df):
-        return df.sort_values(names[0], ignore_index=True)
-
-    arrow = ignore_case_con.to_pyarrow(t)
-    assert arrow.column_names == names
-    tm.assert_frame_equal(normalize(arrow.to_pandas()), expected)
-
-    # `reader.schema` is computed client-side, so drain the reader to
-    # actually exercise the server round trip
-    with ignore_case_con.to_pyarrow_batches(t) as reader:
-        batched = reader.read_all()
-    assert batched.column_names == names
-    tm.assert_frame_equal(normalize(batched.to_pandas()), expected)
-
-    tm.assert_frame_equal(normalize(ignore_case_con.to_pandas(t)), expected)
-
-    batches = list(ignore_case_con.to_pandas_batches(t))
-    tm.assert_frame_equal(normalize(pd.concat(batches)), expected)
+    assert list(result.columns) == list(expected.columns)
+    # an unordered scan over a temp table, so compare content, not row order
+    tm.assert_frame_equal(result.sort_values("errorCode", ignore_index=True), expected)
 
 
 @h.given(

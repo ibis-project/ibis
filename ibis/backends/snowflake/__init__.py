@@ -496,7 +496,8 @@ $$ {defn["source"]} $$"""
         target_schema = expr.as_table().schema()
 
         def convert(df: pd.DataFrame) -> pd.DataFrame:
-            # see the comment in `to_pyarrow` about positional alignment
+            # snowflake can rewrite the aliases we asked for server-side, so
+            # align the result on position rather than on name
             df.columns = list(target_schema.names)
             return SnowflakePandasData.convert_table(df, target_schema)
 
