@@ -76,21 +76,17 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: choco install graphviz
 
-      - name: install numpy/pandas/pyarrow
-        if: matrix.pyarrow
-        run: pip install numpy pandas pyarrow pyarrow-hotfix
-
       - uses: extractions/setup-just@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: run all core tests and run benchmarks once parallel
         if: matrix.os != 'windows-latest'
-        run: just ci-check "--extra visualization --extra decompiler" -m "'core or benchmark'" --numprocesses auto -rfEs
+        run: just ci-check "--extra visualization --extra decompiler ${{ matrix.pyarrow && '--group pyarrow' || '' }}" -m "'core or benchmark'" --numprocesses auto -rfEs
 
       - name: run all core tests and run benchmarks once serial
         if: matrix.os == 'windows-latest'
-        run: just ci-check "--extra visualization --extra decompiler" -m "'core or benchmark'" -rfEs
+        run: just ci-check "--extra visualization --extra decompiler ${{ matrix.pyarrow && '--group pyarrow' || '' }}" -m "'core or benchmark'" -rfEs
 
       - name: upload code coverage
         if: success()
