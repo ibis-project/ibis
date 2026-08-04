@@ -445,7 +445,8 @@ def test_insert_dict_variants(con):
 @pytest.fixture(scope="session")
 def ignore_case_con():
     # a dedicated connection, because `_setup_session` mutates the session;
-    # skip the UDFs, which would be rebuilt with their argument names folded
+    # skip the UDFs, which this parameter would replace in the account-shared
+    # `ibis_udfs` with their arguments uppercased, failing only at call time
     return ibis.connect(
         _get_url(),
         create_object_udfs=False,
