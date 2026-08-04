@@ -117,9 +117,12 @@ class PyArrowType(TypeMapper):
             # snowflake backend wraps JSON-encoded columns in `ibis.json`,
             # whose storage is likewise JSON text
             #
-            # `json` rather than the `string` storage keeps the fact that the
-            # text is parseable, which is what the ibis extension scalar's
-            # `as_py` relies on
+            # both map to `json` rather than to their `string` storage for
+            # plain fidelity: the column is JSON and ibis has a type for that.
+            # the cost is that backends without `json` support are worse off
+            # than they would be with `string` -- polars, for one, raises
+            # `Converting json to polars is not supported yet` -- but that is
+            # how every other `json` column already behaves there
             #
             # for `ibis.json` the element types don't survive: array, map and
             # struct are all wrapped in the same extension type, so they all
@@ -181,6 +184,10 @@ class PyArrowType(TypeMapper):
 
             return dt.GeoSpatial(geotype, srid, nullable)
         elif isinstance(typ, pa.BaseExtensionType):
+            # keep this last: every extension branch above is more specific,
+            # and hoisting this one would quietly turn geometry columns into
+            # `binary` and JSON columns into `string`
+            #
             # an extension type we don't recognize is still readable as
             # whatever it's stored as, which is what every consumer that hasn't
             # registered it sees anyway; falling through would reach the lookup

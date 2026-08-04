@@ -263,47 +263,46 @@ def test_parquet_json_logical_type_roundtrips_to_memtable(tmp_path):
     assert ibis.memtable(table).schema() == ibis.schema({"x": "json"})
 
 
-def test_ibis_json_extension_gets_converted_to_json():
-    # the snowflake backend returns JSON-encoded columns wrapped in a
-    # registered `ibis.json` extension type; without a case here, feeding that
-    # output back to `memtable` raises `TypeError: unhashable type: 'JSONType'`
-    converter = pytest.importorskip("ibis.backends.snowflake.converter")
+class IbisJSONType(pa.ExtensionType):
+    """Stand-in for the type the snowflake backend wraps JSON columns in.
 
-    assert PyArrowType.to_ibis(converter.PYARROW_JSON_TYPE) == dt.json
-    assert PyArrowType.to_ibis(converter.PYARROW_JSON_TYPE, nullable=False) == dt.JSON(
-        nullable=False
-    )
+    Defined here rather than imported so that these tests exercise the
+    contract core actually implements -- an extension named `ibis.json` maps
+    to `json` -- without importing a backend for its global registration side
+    effect. Left unregistered: registration only matters for deserializing
+    IPC and parquet, and registering a second `ibis.json` would collide with
+    the backend's if it were imported in the same session.
+    """
+
+    def __init__(self):
+        super().__init__(pa.string(), "ibis.json")
+
+    def __arrow_ext_serialize__(self):
+        return b""
+
+    @classmethod
+    def __arrow_ext_deserialize__(cls, storage_type, serialized):
+        return cls()
+
+
+def test_ibis_json_extension_gets_converted_to_json():
+    # without a case for it, feeding a wrapped column back to `memtable`
+    # raised `TypeError: unhashable type: 'JSONType'`
+    typ = IbisJSONType()
+
+    assert PyArrowType.to_ibis(typ) == dt.json
+    assert PyArrowType.to_ibis(typ, nullable=False) == dt.JSON(nullable=False)
 
 
 def test_ibis_json_extension_roundtrips_through_memtable():
-    converter = pytest.importorskip("ibis.backends.snowflake.converter")
-
+    typ = IbisJSONType()
     table = pa.table(
         {
             "i": pa.array([1]),
-            "js": pa.ExtensionArray.from_storage(
-                converter.PYARROW_JSON_TYPE, pa.array(['{"a": 1}'])
-            ),
+            "js": pa.ExtensionArray.from_storage(typ, pa.array(['{"a": 1}'])),
         }
     )
     assert ibis.memtable(table).schema() == ibis.schema({"i": "int64", "js": "json"})
-
-
-@pytest.mark.parametrize(
-    "dtype", ["json", "array<int64>", "map<string, int64>", "struct<a: int64>"]
-)
-def test_ibis_json_extension_roundtrips_lossily(dtype):
-    # the snowflake converter wraps every JSON-encoded dtype in the same
-    # extension type, which keeps no record of what it wrapped, so array, map
-    # and struct all come back as `json` rather than as themselves
-    converter = pytest.importorskip("ibis.backends.snowflake.converter")
-
-    schema = ibis.schema({"x": dtype})
-    wrapped = converter.SnowflakePyArrowData.convert_table(
-        pa.table({"x": pa.array(['{"a": 1}'])}), schema
-    )
-    assert wrapped.schema.field("x").type == converter.PYARROW_JSON_TYPE
-    assert PyArrowSchema.to_ibis(wrapped.schema) == ibis.schema({"x": "json"})
 
 
 def test_geoarrow_gets_converted_to_geo():
