@@ -442,42 +442,37 @@ def test_insert_dict_variants(con):
     assert len(t.execute()) == 4
 
 
-@pytest.fixture(scope="session")
-def ignore_case_con():
-    # a dedicated connection, because `_setup_session` mutates the session;
-    # skip the UDFs, which this parameter would replace in the account-shared
-    # `ibis_udfs` with their arguments uppercased, failing only at call time
-    return ibis.connect(
-        _get_url(),
-        create_object_udfs=False,
-        session_parameters={"QUOTED_IDENTIFIERS_IGNORE_CASE": True},
-    )
-
-
-def _drain_pyarrow_batches(con, t):
-    # drain rather than check `reader.schema`, which is computed client-side
-    with con.to_pyarrow_batches(t) as reader:
-        return reader.read_all().to_pandas()
-
-
 @pytest.mark.parametrize(
     "export",
     [
         param(lambda con, t: con.to_pyarrow(t).to_pandas(), id="to_pyarrow"),
-        param(_drain_pyarrow_batches, id="to_pyarrow_batches"),
+        param(
+            lambda con, t: con.to_pyarrow_batches(t).read_all().to_pandas(),
+            id="to_pyarrow_batches",
+        ),
         param(lambda con, t: con.to_pandas(t), id="to_pandas"),
         param(
             lambda con, t: pd.concat(con.to_pandas_batches(t)), id="to_pandas_batches"
         ),
     ],
 )
-def test_mixed_case_columns_ignore_case(ignore_case_con, export):
-    # snowflake folds the quoted aliases we emit to uppercase server-side, so
-    # results come back with names the ibis schema doesn't have
+def test_mixed_case_columns_ignore_case(export):
+    # on a connection with QUOTED_IDENTIFIERS_IGNORE_CASE, columns asked for as
+    # errorCode, ErrorCode and ERRORCODE all come back as ERRORCODE, so they
+    # have to be put back to the case the ibis schema has
+    con = ibis.connect(
+        _get_url(),
+        # a dedicated connection, because `_setup_session` mutates the session,
+        # and without this it would also replace the account-shared `ibis_udfs`
+        # functions with their arguments uppercased, failing only at call time
+        create_object_udfs=False,
+        session_parameters={"QUOTED_IDENTIFIERS_IGNORE_CASE": True},
+    )
+
     expected = pd.DataFrame({"errorCode": [1, 2, 3], "eventType": list("abc")})
     t = ibis.memtable(expected)
 
-    result = export(ignore_case_con, t)
+    result = export(con, t)
 
     assert list(result.columns) == list(expected.columns)
     tm.assert_frame_equal(result.sort_values("errorCode", ignore_index=True), expected)
