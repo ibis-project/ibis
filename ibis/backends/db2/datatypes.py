@@ -67,7 +67,7 @@ def parse_db2_type(type_string: str) -> dt.DataType:
     Examples
     --------
     >>> parse_db2_type("VARCHAR(100)")
-    String(nullable=True)
+    String(length=None, nullable=True)
     >>> parse_db2_type("DECIMAL(10,2)")
     Decimal(precision=10, scale=2, nullable=True)
     """

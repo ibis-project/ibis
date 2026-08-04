@@ -37,6 +37,7 @@ class Backend(SQLBackend):
         super().__init__(*args, **kwargs)
         self._connection = None
         self._cursor = None
+        self._conn_str = None  # stored so _reconnect() can open a fresh connection
 
     @property
     def version(self) -> str:
@@ -128,6 +129,8 @@ class Backend(SQLBackend):
         conn_str = ";".join(conn_str_parts)
 
         try:
+            # Store connection string for later reconnects (e.g. after DDL)
+            self._conn_str = conn_str
             # Connect using ibm_db
             ibm_db_conn = ibm_db.connect(conn_str, "", "")
             # Wrap with DBI-compliant interface
@@ -192,6 +195,10 @@ class Backend(SQLBackend):
         kwargs.update(kwarg_overrides)
         return self.connect(**kwargs)
 
+    def table(self, name: str, /, *, database: tuple[str, str] | str | None = None):
+        """Return a table expression, normalising the name to uppercase for Db2."""
+        return super().table(name.upper(), database=database)
+
     def disconnect(self) -> None:
         """Disconnect from the database."""
         if self._cursor:
@@ -200,6 +207,22 @@ class Backend(SQLBackend):
         if self._connection:
             self._connection.close()
             self._connection = None
+
+    def _reconnect(self) -> None:
+        """Close and immediately reopen the connection using the stored DSN.
+
+        ibm_db_dbi's catalog views (e.g. SYSCAT.COLUMNS) are not always
+        visible on the same connection directly after a DDL commit.  A fresh
+        connection guarantees up-to-date catalog visibility and also clears
+        any internal driver state left over from DDL execution.
+        """
+        import ibm_db
+        import ibm_db_dbi
+
+        self.disconnect()
+        ibm_db_conn = ibm_db.connect(self._conn_str, "", "")
+        self._connection = ibm_db_dbi.Connection(ibm_db_conn)
+        self._cursor = self._connection.cursor()
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str, **kwargs: Any):
@@ -272,12 +295,13 @@ class Backend(SQLBackend):
         """
 
         if like:
-            query += f" AND TABNAME LIKE '{like}'"
+            query += f" AND UPPER(TABNAME) LIKE UPPER('{like}')"
 
         query += " ORDER BY TABNAME"
 
         with self._safe_raw_sql(query) as cursor:
-            return [row[0] for row in cursor.fetchall()]
+            # Db2 stores names in uppercase; return lowercase for ibis convention
+            return [row[0].lower() for row in cursor.fetchall()]
 
     def list_databases(self, like: str | None = None) -> list[str]:
         """List schemas in the database.
@@ -341,18 +365,28 @@ class Backend(SQLBackend):
 
         cursor = self._connection.cursor()
         try:
-            # Use exact table name - no uppercasing since we always quote in CREATE
+            # SYSCAT.COLUMNS stores unquoted names in UPPERCASE and quoted names
+            # verbatim.  Try the name as-given first (handles both quoted-lowercase
+            # tables created by create_table and any other exact-case names), then
+            # fall back to UPPERCASE (handles tables from unquoted DDL / data load).
             cursor.execute(query, (table_name, schema_name))
             rows = cursor.fetchall()
+            if not rows:
+                cursor.execute(query, (table_name.upper(), schema_name))
+                rows = cursor.fetchall()
         finally:
             cursor.close()
 
         if not rows:
             raise exc.IbisError(f"Table not found: {table_name}")
 
+        type_mapper = self.compiler.type_mapper
         fields = {}
         for col_name, type_name, length, scale, nulls in rows:
-            # Build type string with parameters
+            # Reconstruct the full type string so SQLGlot's Db2 dialect parser
+            # can handle it — this delegates all type parsing to the same
+            # type_mapper (Db2Type / SqlglotType.from_string) that the rest of
+            # the compiler uses, rather than duplicating the mapping by hand.
             if type_name in ("DECIMAL", "NUMERIC"):
                 type_str = f"{type_name}({length},{scale})"
             elif type_name in ("VARCHAR", "CHAR", "VARBINARY"):
@@ -360,13 +394,9 @@ class Backend(SQLBackend):
             else:
                 type_str = type_name
 
-            from ibis.backends.db2.datatypes import parse_db2_type
-
-            ibis_type = parse_db2_type(type_str)
-            # Set nullable based on NULLS column
-            ibis_type = ibis_type(nullable=(nulls == "Y"))
-            # Column names are stored in exact case as created (quoted)
-            fields[col_name] = ibis_type
+            ibis_type = type_mapper.from_string(type_str, nullable=(nulls == "Y"))
+            # Return column names in lowercase for ibis convention
+            fields[col_name.lower()] = ibis_type
 
         return sch.Schema(fields)
 
@@ -414,6 +444,11 @@ class Backend(SQLBackend):
         if obj is None and schema is None:
             raise exc.IbisError("Either obj or schema must be provided")
 
+        # Db2 stores unquoted identifiers in UPPERCASE in SYSCAT.  Normalise
+        # the name to uppercase now so the quoted DDL ("NAME") also stores an
+        # uppercase name and self.table() / get_schema() can always find it.
+        name = name.upper()
+
         if schema is None:
             if isinstance(obj, pd.DataFrame):
                 schema = sch.infer(obj)
@@ -432,12 +467,18 @@ class Backend(SQLBackend):
         if overwrite:
             self.drop_table(name, database=database, force=True)
 
-        # Build column definitions
-        col_defs = []
-        from ibis.backends.db2.datatypes import ibis_type_to_db2_type
+        # Build column definitions — delegate type rendering to the compiler's
+        # type_mapper (Db2Type) so that the same SQLGlot Db2 dialect that drives
+        # SELECT generation also drives CREATE TABLE column types.
+        import ibis.expr.datatypes as dt
 
+        col_defs = []
+        type_mapper = self.compiler.type_mapper
         for col_name, col_type in schema.items():
-            db2_type = ibis_type_to_db2_type(col_type)
+            # Accept string type names (e.g. "int32") in addition to DataType objects
+            if isinstance(col_type, str):
+                col_type = dt.dtype(col_type)
+            db2_type = type_mapper.to_string(col_type)
             nullable = "NULL" if col_type.nullable else "NOT NULL"
             # sg.to_identifier(..., quoted=True) is the same quoting primitive
             # SQLGlot uses for column references, so column names always match
@@ -451,8 +492,14 @@ class Backend(SQLBackend):
 
         with self._safe_raw_sql(create_sql):
             pass
-        # Commit the CREATE TABLE statement
+        # Commit the CREATE TABLE statement so it is visible to new connections.
         self._connection.commit()
+
+        # Reconnect: ibm_db_dbi's catalog views (SYSCAT.COLUMNS) are not
+        # always visible on the same connection immediately after a DDL commit.
+        # A fresh connection guarantees the table is readable before we try
+        # to inspect its schema via self.table().
+        self._reconnect()
 
         # Insert data if provided
         if obj is not None:
@@ -485,6 +532,7 @@ class Backend(SQLBackend):
         force : bool, default False
             Suppress errors if table doesn't exist
         """
+        name = name.upper()
         full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
             self.dialect
         )
@@ -500,7 +548,6 @@ class Backend(SQLBackend):
                         WHERE TABNAME = ?
                         AND TABSCHEMA = ?
                     """
-                    # Use exact name - no uppercasing since we always quote in CREATE
                     cursor.execute(check_sql, (name, database.upper()))
                 else:
                     check_sql = """
@@ -509,7 +556,6 @@ class Backend(SQLBackend):
                         WHERE TABNAME = ?
                         AND TABSCHEMA = CURRENT SCHEMA
                     """
-                    # Use exact name - no uppercasing since we always quote in CREATE
                     cursor.execute(check_sql, (name,))
 
                 exists = cursor.fetchone()[0] > 0
@@ -549,6 +595,7 @@ class Backend(SQLBackend):
         """
         import pandas as pd
 
+        name = name.upper()
         full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
             self.dialect
         )

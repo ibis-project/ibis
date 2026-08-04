@@ -3,9 +3,16 @@
 from __future__ import annotations
 
 import sqlglot.expressions as sge
-from db2_sqlglot import Db2 as Db2BaseDialect
 from sqlglot import exp
 from sqlglot.generator import Generator
+
+try:
+    from db2_sqlglot import Db2 as _Db2BaseDialect
+
+    _DB2_SQLGLOT_AVAILABLE = True
+except ImportError:
+    _Db2BaseDialect = None
+    _DB2_SQLGLOT_AVAILABLE = False
 
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import SQLGlotCompiler
@@ -20,7 +27,7 @@ class Db2Generator(Generator):
     """Custom SQL generator for Db2."""
 
     TRANSFORMS = {
-        **Generator.TRANSFORMS,  # noqa: keep spread — Generator is sqlglot base
+        **Generator.TRANSFORMS,
         exp.DateAdd: lambda self, e: self.func(
             "DATE_ADD", e.this, self.sql(e, "expression"), self.sql(e, "unit")
         ),
@@ -150,42 +157,45 @@ class Db2Generator(Generator):
         return self.func("POWER", expression.this, expression.expression)
 
 
-class Db2Dialect(Db2BaseDialect):
-    """Db2 SQL dialect for SQLGlot, extending the base dialect from db2_sqlglot."""
+if _DB2_SQLGLOT_AVAILABLE:
 
-    class Generator(Db2BaseDialect.Generator, Db2Generator):
-        """Extended Db2 generator with Ibis-specific customisations.
+    class Db2Dialect(_Db2BaseDialect):
+        """Db2 SQL dialect for SQLGlot, extending the base dialect from db2_sqlglot."""
 
-        Inherits from both ``Db2BaseDialect.Generator`` (for dialect-level
-        flags such as ``LIMIT_FETCH`` and correct ``limit_sql`` / ``offset_sql``
-        / ``fetch_sql``) and ``Db2Generator`` (for Ibis-specific TRANSFORMS and
-        TYPE_MAPPING overrides).  Python MRO places ``Db2BaseDialect.Generator``
-        before the plain ``sqlglot.Generator`` base, so pagination clauses are
-        generated correctly by the dialect without any hand-rolled overrides.
-        """
+        class Generator(_Db2BaseDialect.Generator, Db2Generator):
+            """Extended Db2 generator with Ibis-specific customisations.
 
-        TYPE_MAPPING = {
-            **Db2BaseDialect.Generator.TYPE_MAPPING,
-            **Db2Generator.TYPE_MAPPING,
-        }
+            Inherits from both ``Db2BaseDialect.Generator`` (for dialect-level
+            flags such as ``LIMIT_FETCH`` and correct ``limit_sql`` /
+            ``offset_sql`` / ``fetch_sql``) and ``Db2Generator`` (for
+            Ibis-specific TRANSFORMS and TYPE_MAPPING overrides).
+            """
 
-        TRANSFORMS = {
-            **Db2BaseDialect.Generator.TRANSFORMS,
-            **Db2Generator.TRANSFORMS,
-        }
+            TYPE_MAPPING = {
+                **_Db2BaseDialect.Generator.TYPE_MAPPING,
+                **Db2Generator.TYPE_MAPPING,
+            }
 
-    class Parser(Db2BaseDialect.Parser):
-        """Extended Db2 parser with Ibis-specific customisations."""
+            TRANSFORMS = {
+                **_Db2BaseDialect.Generator.TRANSFORMS,
+                **Db2Generator.TRANSFORMS,
+            }
 
-        FUNCTIONS = {
-            **Db2BaseDialect.Parser.FUNCTIONS,
-            "LOCATE": exp.StrPosition.from_arg_list,
-            "LISTAGG": exp.GroupConcat.from_arg_list,
-            "DAYS_BETWEEN": exp.DateDiff.from_arg_list,
-            "REGEXP_LIKE": lambda args: exp.RegexpLike(
-                this=args[0], expression=args[1]
-            ),
-        }
+        class Parser(_Db2BaseDialect.Parser):
+            """Extended Db2 parser with Ibis-specific customisations."""
+
+            FUNCTIONS = {
+                **_Db2BaseDialect.Parser.FUNCTIONS,
+                "LOCATE": exp.StrPosition.from_arg_list,
+                "LISTAGG": exp.GroupConcat.from_arg_list,
+                "DAYS_BETWEEN": exp.DateDiff.from_arg_list,
+                "REGEXP_LIKE": lambda args: exp.RegexpLike(
+                    this=args[0], expression=args[1]
+                ),
+            }
+
+else:
+    from sqlglot.dialects.dialect import Dialect as Db2Dialect
 
 
 class Db2Compiler(SQLGlotCompiler):
