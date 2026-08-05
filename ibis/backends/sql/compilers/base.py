@@ -613,12 +613,6 @@ class SQLGlotCompiler(abc.ABC):
             An ibis operation
         params
             A mapping of expressions to concrete values
-        compiler
-            An instance of SQLGlotCompiler
-        translate_rel
-            Relation node translator
-        translate_val
-            Value node translator
 
         Returns
         -------
