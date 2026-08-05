@@ -197,6 +197,32 @@ def test_geo_gets_converted_to_geoarrow(ibis_type):
     )
 
 
+def test_ibis_json_extension_gets_converted_to_json():
+    # the snowflake backend returns JSON-encoded columns wrapped in a
+    # registered `ibis.json` extension type; without a case here, feeding that
+    # output back to `memtable` raises `TypeError: unhashable type: 'JSONType'`
+    converter = pytest.importorskip("ibis.backends.snowflake.converter")
+
+    assert PyArrowType.to_ibis(converter.PYARROW_JSON_TYPE) == dt.json
+    assert PyArrowType.to_ibis(converter.PYARROW_JSON_TYPE, nullable=False) == dt.JSON(
+        nullable=False
+    )
+
+
+def test_ibis_json_extension_roundtrips_through_memtable():
+    converter = pytest.importorskip("ibis.backends.snowflake.converter")
+
+    table = pa.table(
+        {
+            "i": pa.array([1]),
+            "js": pa.ExtensionArray.from_storage(
+                converter.PYARROW_JSON_TYPE, pa.array(['{"a": 1}'])
+            ),
+        }
+    )
+    assert ibis.memtable(table).schema() == ibis.schema({"i": "int64", "js": "json"})
+
+
 def test_geoarrow_gets_converted_to_geo():
     gat = pytest.importorskip("geoarrow.types")
 

@@ -108,6 +108,14 @@ class PyArrowType(TypeMapper):
             return dt.Map(key_dtype, value_dtype, nullable=nullable)
         elif pa.types.is_dictionary(typ):
             return cls.to_ibis(typ.value_type)
+        elif isinstance(typ, pa.ExtensionType) and typ.extension_name == "ibis.json":
+            # the snowflake backend wraps JSON-encoded columns in a registered
+            # extension type whose storage is a JSON string; map it back so its
+            # own arrow output can be fed to `memtable` and friends
+            #
+            # this is lossy: array, map and struct columns are all wrapped in
+            # the same extension type, so they all come back as `json`
+            return dt.JSON(nullable=nullable)
         elif (
             isinstance(typ, pa.ExtensionType)
             and type(typ).__module__ == "geoarrow.types.type_pyarrow"
