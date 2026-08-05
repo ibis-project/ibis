@@ -494,7 +494,7 @@ $$ {defn["source"]} $$"""
         sql = self.compile(expr, limit=limit, params=params)
         target_schema = expr.as_table().schema()
 
-        def df_to_result(df: pd.DataFrame) -> pd.DataFrame | pd.Series | Any:
+        def format_result(df: pd.DataFrame) -> pd.DataFrame | pd.Series | Any:
             # snowflake can rewrite the aliases we asked for, so align on
             # position rather than on name
             df.columns = list(target_schema.names)
@@ -503,7 +503,7 @@ $$ {defn["source"]} $$"""
             )
 
         with self._safe_raw_sql(sql) as cur:
-            yield from map(df_to_result, cur.fetch_pandas_batches())
+            yield from map(format_result, cur.fetch_pandas_batches())
 
     def to_pyarrow_batches(
         self,

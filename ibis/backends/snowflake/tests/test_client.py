@@ -456,10 +456,10 @@ def test_insert_dict_variants(con):
         ),
     ],
 )
-def test_mixed_case_columns_ignore_case(export):
-    # on a connection with QUOTED_IDENTIFIERS_IGNORE_CASE, columns asked for as
-    # errorCode, ErrorCode and ERRORCODE all come back as ERRORCODE, so they
-    # have to be put back to the case the ibis schema has
+def test_non_uppercase_columns_ignore_case(export):
+    # with QUOTED_IDENTIFIERS_IGNORE_CASE set, snowflake returns all columns
+    # uppercased regardless of their original case, so check they're renamed
+    # back to match
     con = ibis.connect(
         _get_url(),
         # a dedicated connection, because `_setup_session` mutates the session,
