@@ -1702,10 +1702,24 @@ array_concat_agg_order_by_notimpl = pytest.mark.notimpl(
 )
 
 
+@pytest.fixture
+def array_concat_agg_con(con_no_data):
+    """Avoid registering RisingWave memtables until concatenation compiles."""
+    if con_no_data.name == "risingwave":
+        t = ibis.table({"arr": "array<int64>"}, name="t")
+        try:
+            con_no_data.compile(t.arr.concat_agg())
+        except com.OperationNotDefinedError:
+            # Markers become xfails after fixture setup, but RisingWave registers
+            # memtables as persistent tables whose actors can exhaust the cluster.
+            pytest.xfail("RisingWave cannot compile array concatenating aggregates")
+    return con_no_data
+
+
 @builtin_array
 @array_concat_agg_notimpl
 @array_concat_agg_order_by_notimpl
-def test_array_concat_agg(con_no_data):
+def test_array_concat_agg(array_concat_agg_con):
     """Concatenate grouped arrays in input-array order."""
     t = ibis.memtable(
         {
@@ -1720,7 +1734,7 @@ def test_array_concat_agg(con_no_data):
         .order_by("group")
     )
 
-    assert con_no_data.to_pyarrow(expr).to_pylist() == [
+    assert array_concat_agg_con.to_pyarrow(expr).to_pylist() == [
         {"group": "a", "result": [1, 2, 3]},
         {"group": "b", "result": [4, 5]},
     ]
@@ -1865,7 +1879,7 @@ def test_array_concat_agg_distinct_order_by_rejected(dialect):
     raises=(AssertionError, ClickHouseDatabaseError),
     reason="ClickHouse arrays are not nullable",
 )
-def test_array_concat_agg_null_input_arrays(con_no_data):
+def test_array_concat_agg_null_input_arrays(array_concat_agg_con):
     """Ignore null input arrays by default, including all-null groups."""
     t = ibis.memtable(
         {
@@ -1877,8 +1891,8 @@ def test_array_concat_agg_null_input_arrays(con_no_data):
     t = t.mutate(arr=ibis.ifelse(t.is_null, ibis.null("array<int64>"), t.arr))
     expr = t.group_by("group").agg(result=t.arr.concat_agg()).order_by("group")
 
-    empty = [] if con_no_data.name == "bigquery" else None
-    assert con_no_data.to_pyarrow(expr).to_pylist() == [
+    empty = [] if array_concat_agg_con.name == "bigquery" else None
+    assert array_concat_agg_con.to_pyarrow(expr).to_pylist() == [
         {"group": "a", "result": [1]},
         {"group": "b", "result": empty},
     ]
@@ -1891,14 +1905,14 @@ def test_array_concat_agg_null_input_arrays(con_no_data):
     raises=GoogleBadRequest,
     reason="BigQuery does not allow a final array containing null elements",
 )
-def test_array_concat_agg_null_elements(con_no_data):
+def test_array_concat_agg_null_elements(array_concat_agg_con):
     """Preserve null elements nested within non-null input arrays."""
     t = ibis.memtable(
         {"arr": [[1, None], [2]]},
         schema={"arr": "array<int64>"},
     )
 
-    result = con_no_data.to_pyarrow(t.arr.concat_agg()).as_py()
+    result = array_concat_agg_con.to_pyarrow(t.arr.concat_agg()).as_py()
     assert Counter(result) == Counter([1, None, 2])
 
 
@@ -1909,7 +1923,7 @@ def test_array_concat_agg_null_elements(con_no_data):
     raises=com.UnsupportedOperationError,
     reason="backend cannot retain null input arrays",
 )
-def test_array_concat_agg_include_null(con_no_data):
+def test_array_concat_agg_include_null(array_concat_agg_con):
     """Retain null input arrays as empty contributions when supported."""
     t = ibis.memtable(
         {
@@ -1925,7 +1939,7 @@ def test_array_concat_agg_include_null(con_no_data):
         .order_by("group")
     )
 
-    assert con_no_data.to_pyarrow(expr).to_pylist() == [
+    assert array_concat_agg_con.to_pyarrow(expr).to_pylist() == [
         {"group": "a", "result": [1]},
         {"group": "b", "result": []},
     ]
@@ -1939,14 +1953,14 @@ def test_array_concat_agg_include_null(con_no_data):
     raises=com.UnsupportedOperationError,
     reason="backend cannot retain null input arrays",
 )
-def test_array_concat_agg_include_null_order_limit(con_no_data):
+def test_array_concat_agg_include_null_order_limit(array_concat_agg_con):
     """Count retained null arrays when ordering and limiting inputs."""
     t = ibis.memtable(
         {"arr": [[], [1]], "is_null": [True, False], "order": [0, 1]},
     )
     t = t.mutate(arr=ibis.ifelse(t.is_null, ibis.null("array<int64>"), t.arr))
 
-    result = con_no_data.to_pyarrow(
+    result = array_concat_agg_con.to_pyarrow(
         t.arr.concat_agg(include_null=True, order_by=t.order, limit=1)
     ).as_py()
 
@@ -1956,7 +1970,7 @@ def test_array_concat_agg_include_null_order_limit(con_no_data):
 @builtin_array
 @array_concat_agg_notimpl
 @array_concat_agg_order_by_notimpl
-def test_array_concat_agg_filter_order_limit(con_no_data):
+def test_array_concat_agg_filter_order_limit(array_concat_agg_con):
     """Filter, order, and limit input arrays before concatenation."""
     t = ibis.memtable(
         {
@@ -1967,7 +1981,7 @@ def test_array_concat_agg_filter_order_limit(con_no_data):
     )
     expr = t.arr.concat_agg(where=t.keep, order_by=t.order, limit=2)
 
-    assert con_no_data.to_pyarrow(expr).as_py() == [1, 2]
+    assert array_concat_agg_con.to_pyarrow(expr).as_py() == [1, 2]
 
 
 @builtin_array
@@ -1981,25 +1995,27 @@ def test_array_concat_agg_filter_order_limit(con_no_data):
         pytest.param(0, True, None, id="all-filtered-zero"),
     ],
 )
-def test_array_concat_agg_limit(con_no_data, limit, filtered, expected):
+def test_array_concat_agg_limit(array_concat_agg_con, limit, filtered, expected):
     """Apply input-array limits while preserving empty-group semantics."""
     t = ibis.memtable({"arr": [[1], [1], [1]], "keep": [False, False, False]})
 
     where = t.keep if filtered else None
-    result = con_no_data.to_pyarrow(t.arr.concat_agg(where=where, limit=limit)).as_py()
+    result = array_concat_agg_con.to_pyarrow(
+        t.arr.concat_agg(where=where, limit=limit)
+    ).as_py()
 
-    if expected is None and con_no_data.name == "bigquery":
+    if expected is None and array_concat_agg_con.name == "bigquery":
         expected = []
     assert result == expected
 
 
 @builtin_array
 @array_concat_agg_notimpl
-def test_array_concat_agg_filter(con_no_data):
+def test_array_concat_agg_filter(array_concat_agg_con):
     """Filter input arrays before concatenation."""
     t = ibis.memtable({"arr": [[1], [2], [3]], "keep": [True, True, False]})
 
-    result = con_no_data.to_pyarrow(t.arr.concat_agg(where=t.keep)).as_py()
+    result = array_concat_agg_con.to_pyarrow(t.arr.concat_agg(where=t.keep)).as_py()
 
     assert sorted(result) == [1, 2]
 
@@ -2011,11 +2027,11 @@ def test_array_concat_agg_filter(con_no_data):
     raises=com.UnsupportedOperationError,
     reason="backend cannot aggregate distinct arrays",
 )
-def test_array_concat_agg_distinct(con_no_data):
+def test_array_concat_agg_distinct(array_concat_agg_con):
     """Deduplicate whole input arrays before concatenation."""
     t = ibis.memtable({"arr": [[2, 3], [1, 2], [2, 3]]})
 
-    result = con_no_data.to_pyarrow(t.arr.concat_agg(distinct=True)).as_py()
+    result = array_concat_agg_con.to_pyarrow(t.arr.concat_agg(distinct=True)).as_py()
 
     assert sorted(result) == [1, 2, 2, 3]
 
@@ -2057,11 +2073,11 @@ def test_array_concat_agg_distinct(con_no_data):
         ),
     ],
 )
-def test_array_concat_agg_distinct_order_by(con_no_data, order, expected):
+def test_array_concat_agg_distinct_order_by(array_concat_agg_con, order, expected):
     """Order distinct input arrays where the backend can do so."""
     t = ibis.memtable({"arr": [[2], [1], [2]], "key": [2, 1, 0]})
 
-    result = con_no_data.to_pyarrow(
+    result = array_concat_agg_con.to_pyarrow(
         t.arr.concat_agg(distinct=True, order_by=t[order])
     ).as_py()
 
@@ -2075,11 +2091,11 @@ def test_array_concat_agg_distinct_order_by(con_no_data, order, expected):
     raises=com.UnsupportedOperationError,
     reason="backend cannot combine filtering and distinct array aggregation",
 )
-def test_array_concat_agg_filter_distinct(con_no_data):
+def test_array_concat_agg_filter_distinct(array_concat_agg_con):
     """Filter and deduplicate whole input arrays before concatenation."""
     t = ibis.memtable({"arr": [[1], [1], [2], [3]], "keep": [True, True, True, False]})
 
-    result = con_no_data.to_pyarrow(
+    result = array_concat_agg_con.to_pyarrow(
         t.arr.concat_agg(where=t.keep, distinct=True)
     ).as_py()
 
@@ -2093,11 +2109,13 @@ def test_array_concat_agg_filter_distinct(con_no_data):
     raises=com.UnsupportedOperationError,
     reason="backend cannot aggregate distinct arrays",
 )
-def test_array_concat_agg_distinct_limit(con_no_data):
+def test_array_concat_agg_distinct_limit(array_concat_agg_con):
     """Limit whole input arrays after deduplication."""
     t = ibis.memtable({"arr": [[1, 1], [1, 1], [2, 2], [3, 3]]})
 
-    result = con_no_data.to_pyarrow(t.arr.concat_agg(distinct=True, limit=2)).as_py()
+    result = array_concat_agg_con.to_pyarrow(
+        t.arr.concat_agg(distinct=True, limit=2)
+    ).as_py()
 
     chunks = {tuple(result[i : i + 2]) for i in range(0, len(result), 2)}
     assert len(result) == 4
