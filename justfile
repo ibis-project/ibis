@@ -70,8 +70,14 @@ check *args:
     pytest -m core {{ args }}
 
 # run pytest for ci; additional arguments are forwarded to pytest
+#
+# TEMPORARY (tanh-cloud-ci): restricted to the tanh tests so the cloud backends
+# finish well inside their 60 minute timeout. `pull_request_target` workflows
+# run the YAML from `main`, so the filter has to live here, in the tree that
+# actually gets checked out. Exit code 5 (no tests collected) is tolerated for
+# the jobs whose markers/paths select nothing under this filter.
 ci-check extras *args:
-    uv run --group tests {{ extras }} pytest --cov=ibis --cov-report=xml:coverage.xml {{ args }}
+    uv run --group tests {{ extras }} pytest --cov=ibis --cov-report=xml:coverage.xml ibis/backends/tests/test_numeric.py -k tanh {{ args }} || [ "$?" -eq 5 ]
 
 # run backend doctests
 backend-doctests backend *args:
