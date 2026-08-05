@@ -469,13 +469,13 @@ def test_non_uppercase_columns_ignore_case(export):
         session_parameters={"QUOTED_IDENTIFIERS_IGNORE_CASE": True},
     )
 
-    expected = pd.DataFrame({"errorCode": [1, 2, 3], "eventType": list("abc")})
+    expected = pd.DataFrame({"digits": [1, 2, 3], "nonDigits": list("abc")})
     t = ibis.memtable(expected)
 
     result = export(con, t)
 
     assert list(result.columns) == list(expected.columns)
-    tm.assert_frame_equal(result.sort_values("errorCode", ignore_index=True), expected)
+    tm.assert_frame_equal(result.sort_values("digits", ignore_index=True), expected)
 
 
 @h.given(
