@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import sys
+
 import pandas as pd
 import pandas.testing as tm
 import pytest
 
 import ibis
 import ibis.common.exceptions as com
+from ibis.backends.chdb import _import_chdb
 
 
 def test_connect_and_version(mem):
@@ -126,3 +129,17 @@ def test_sql_method(mem):
     # ClickHouse/chDB columns are non-nullable by default
     assert t.schema().names == ("n",)
     assert t.schema()["n"].is_integer()
+
+
+def test_current_database(mem):
+    # chDB can't reuse ClickHouse's current_database (it reads clickhouse_connect
+    # result_rows); assert the value directly so a regression can't slip through.
+    assert mem.current_database == "default"
+
+
+def test_missing_chdb_raises_actionable_error(monkeypatch):
+    # chdb is intentionally absent from the extra; a missing engine must point
+    # the user at `pip install chdb`, not raise a bare ModuleNotFoundError.
+    monkeypatch.setitem(sys.modules, "chdb", None)
+    with pytest.raises(ImportError, match="pip install chdb"):
+        _import_chdb()

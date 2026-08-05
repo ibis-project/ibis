@@ -57,6 +57,21 @@ def _unregister_memtable(name: str) -> None:
         globals().pop(name, None)
 
 
+def _import_chdb():
+    # chdb is intentionally not in the ``ibis-framework[chdb]`` extra (it pins
+    # pyarrow>=13, which is incompatible with the flink extra), so it may be
+    # absent even after installing the extra. Fail with an actionable message.
+    try:
+        import chdb
+    except ImportError as e:
+        raise ImportError(
+            "The chdb backend requires the `chdb` package, which is not "
+            "installed. Install it with `python -m pip install chdb`."
+        ) from e
+    else:
+        return chdb
+
+
 class ChdbCompiler(ClickHouseCompiler):
     """ClickHouse compiler that renders in-memory tables as ``Python(name)``."""
 
@@ -303,9 +318,7 @@ class Backend(UrlFromPath, CHBackend):
 
     @property
     def version(self) -> str:
-        import chdb
-
-        return chdb.__version__
+        return _import_chdb().__version__
 
     def do_connect(self, database: str | Path = ":memory:", **_: Any) -> None:
         """Create an Ibis client connected to an embedded chDB engine.
@@ -324,9 +337,7 @@ class Backend(UrlFromPath, CHBackend):
         >>> con
         <ibis.backends.chdb.Backend object at 0x...>
         """
-        import chdb
-
-        self.con = _Con(chdb.connect(str(database)))
+        self.con = _Con(_import_chdb().connect(str(database)))
 
     # -- execution ---------------------------------------------------------
 
@@ -437,6 +448,14 @@ class Backend(UrlFromPath, CHBackend):
         result = self.raw_sql(query, fmt="ArrowTable")
         return self._filter_with_like(result.column("name").to_pylist(), like)
 
+    @property
+    def current_database(self) -> str:
+        # Override ClickHouse's implementation: it reads clickhouse_connect's
+        # ``result_rows``, which the embedded chDB result object doesn't expose.
+        query = sg.select(self.compiler.f.currentDatabase())
+        result = self.raw_sql(query, fmt="ArrowTable")
+        return result.column(0).to_pylist()[0]
+
     # -- file readers ------------------------------------------------------
     # The inherited ClickHouse readers stream files over clickhouse_connect;
     # the embedded engine instead reads the local path via file() directly.
@@ -495,7 +514,7 @@ class Backend(UrlFromPath, CHBackend):
     # -- user-defined functions -------------------------------------------
 
     def _register_udfs(self, expr: ir.Expr) -> None:
-        import chdb
+        chdb = _import_chdb()
 
         for udf_node in expr.op().find(ops.ScalarUDF):
             if udf_node.__input_type__ != InputType.PYTHON:
