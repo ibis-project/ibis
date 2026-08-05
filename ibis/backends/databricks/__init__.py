@@ -259,7 +259,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
 
         return self.table(name, database=(catalog, database))
 
-    def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
+    def table(
+        self, name: str, /, *, database: str | tuple[str, str] | None = None
+    ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
 
         # TODO: set these to better defaults
@@ -438,15 +440,17 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
     def create_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
-        name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
-        with self._safe_raw_sql(sge.Create(this=name, kind="SCHEMA", replace=force)):
+        full_name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
+        with self._safe_raw_sql(
+            sge.Create(this=full_name, kind="SCHEMA", replace=force)
+        ):
             pass
 
     def drop_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
-        name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
-        with self._safe_raw_sql(sge.Drop(this=name, kind="SCHEMA", replace=force)):
+        full_name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
+        with self._safe_raw_sql(sge.Drop(this=full_name, kind="SCHEMA", replace=force)):
             pass
 
     def list_tables(
@@ -469,7 +473,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
-        limit: int | str | None = None,
+        limit: int | None = None,
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
@@ -511,7 +515,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
-        limit: int | str | None = None,
+        limit: int | None = None,
         **kwargs: Any,
     ) -> pa.Table:
         self._run_pre_execute_hooks(expr)
@@ -530,7 +534,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         if (table := cursor.fetchall_arrow()) is None:
             table = schema.to_pyarrow().empty_table()
         df = table.to_pandas(timestamp_as_object=True)
-        df.columns = list(schema.names)
+        df.columns = list(schema)
         return df
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
