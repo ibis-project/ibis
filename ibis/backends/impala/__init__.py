@@ -1334,8 +1334,8 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
         **kwargs: Any,
     ) -> pa.Table:
         import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
 
+        from ibis.common import import_to_try_pyarrow_hotfix  # noqa: F401
         from ibis.formats.pyarrow import PyArrowData
 
         self._run_pre_execute_hooks(expr)
