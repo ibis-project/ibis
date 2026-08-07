@@ -303,6 +303,10 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_StrRight(self, op, *, arg, nchars):
         return self.f.substr(arg, -nchars)
 
+    def visit_StringByteLength(self, op, *, arg):
+        """Count bytes in Trino's UTF-8 encoded binary representation."""
+        return self.f.length(self.f.to_utf8(arg))
+
     def visit_EndsWith(self, op, *, arg, end):
         return self.f.substr(arg, -self.f.length(end)).eq(end)
 
