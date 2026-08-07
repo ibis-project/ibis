@@ -1,0 +1,7 @@
+SELECT
+  IIF([t1].[Any(a)] <> 0, 1, 0) AS [Any(a)]
+FROM (
+  SELECT
+    MAX(IIF([t0].[a] <> 0, 1, 0)) OVER (PARTITION BY [t0].[x] ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS [Any(a)]
+  FROM [t] AS [t0]
+) AS [t1]
