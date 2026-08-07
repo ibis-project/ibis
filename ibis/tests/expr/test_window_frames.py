@@ -218,6 +218,92 @@ def test_window_builder_between():
     assert w9.how == "range"
 
 
+@pytest.mark.parametrize(
+    ("value", "magnitude"),
+    [
+        (
+            ibis.interval(months=-1, days=1),
+            ibis.interval(months=1, days=-1),
+        ),
+        (
+            ibis.interval(months=-1, days=-1),
+            ibis.interval(months=1, days=1),
+        ),
+        (
+            ibis.interval(months=-1, days=28),
+            ibis.interval(months=1, days=-28),
+        ),
+        (
+            ibis.interval(days=1) - ibis.interval(months=1),
+            ibis.interval(days=-1) - ibis.interval(months=-1),
+        ),
+        (
+            ibis.interval(years=-1, months=12, days=-1),
+            ibis.interval(years=1, months=-12, days=1),
+        ),
+    ],
+)
+def test_window_builder_between_negative_compound_interval(value, magnitude):
+    window = bl.WindowBuilder().between(value, 0)
+
+    zero = ibis.literal(0).cast(value.type())
+    assert window.start == ops.WindowBoundary(magnitude, preceding=True)
+    assert window.end == ops.WindowBoundary(zero, preceding=False)
+    assert window.how == "range"
+
+
+def test_window_builder_between_positive_compound_interval():
+    value = ibis.interval(months=1, days=1)
+    window = bl.WindowBuilder().between(0, value)
+
+    zero = ibis.literal(0).cast(value.type())
+    assert window.start == ops.WindowBoundary(zero, preceding=False)
+    assert window.end == ops.WindowBoundary(value, preceding=False)
+    assert window.how == "range"
+
+
+def test_window_builder_between_negated_negative_compound_interval():
+    value = -ibis.interval(months=-1, days=1)
+    magnitude = ibis.interval(months=1, days=-1)
+    window = bl.WindowBuilder().between(0, value)
+
+    zero = ibis.literal(0).cast(value.type())
+    assert window.start == ops.WindowBoundary(zero, preceding=False)
+    assert window.end == ops.WindowBoundary(magnitude, preceding=False)
+    assert window.how == "range"
+
+
+def test_window_builder_between_ambiguous_compound_interval():
+    value = ibis.interval(years=-1, days=361)
+    window = bl.WindowBuilder().between(0, value)
+
+    zero = ibis.literal(0).cast(value.type())
+    assert window.start == ops.WindowBoundary(zero, preceding=False)
+    assert window.end == ops.WindowBoundary(value, preceding=False)
+    assert window.how == "range"
+
+
+@pytest.mark.parametrize(
+    ("dialect", "magnitude"),
+    [
+        ("bigquery", "INTERVAL '-1' DAY + INTERVAL '1' MONTH"),
+        ("duckdb", "INTERVAL '-1' DAY + INTERVAL '1' MONTH"),
+        ("postgres", "INTERVAL '-1 DAY' + INTERVAL '1 MONTH'"),
+    ],
+)
+def test_compound_interval_window_sql(dialect, magnitude):
+    table = ibis.table({"date": "timestamp", "value": "float64"}, name="t")
+    window = ibis.window(
+        order_by="date",
+        between=(ibis.interval(months=-1, days=1), 0),
+    )
+    expression = table.mutate(total=table.value.sum().over(window))
+
+    sql = " ".join(ibis.to_sql(expression, dialect=dialect).split())
+
+    assert f"RANGE BETWEEN {magnitude} preceding" in sql
+
+
 def test_window_api_supports_value_expressions(t):
     w = ibis.window(between=(t.d, t.d + 1), group_by=t.b, order_by=t.c)
     func = t.a.sum().over(w).op()
