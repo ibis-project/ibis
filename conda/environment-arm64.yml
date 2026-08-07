@@ -64,6 +64,7 @@ dependencies:
   - py-cpuinfo<10,>=9
   - pyarrow-hotfix>=0.4
   - pyarrow>=10.0.1
+  - pyarrow-tests
   - pydata-google-auth>=1.4.0
   - pydruid>=0.6.7
   - pyexasol>=0.25.2
