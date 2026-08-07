@@ -24,6 +24,14 @@ dtypes = [
     ("BINARY", dt.binary),
     ("TIME", dt.time),
     ("BOOLEAN", dt.boolean),
+    # VECTOR(<element>, <dimension>): fixed-length numeric vectors.
+    # https://docs.snowflake.com/en/sql-reference/data-types-vector
+    # FLOAT/INT inside VECTOR are documented as 32-bit, so the element
+    # type narrows to Float32/Int32 even though scalar Snowflake FLOAT
+    # otherwise resolves to Float64.
+    ("VECTOR(FLOAT, 4)", dt.Array(dt.Float32(nullable=False), length=4)),
+    ("VECTOR(FLOAT, 512)", dt.Array(dt.Float32(nullable=False), length=512)),
+    ("VECTOR(INT, 8)", dt.Array(dt.Int32(nullable=False), length=8)),
 ]
 
 
@@ -78,6 +86,11 @@ user_dtypes = [
     ("VARIANT", dt.json),
     ("OBJECT", dt.Map(dt.string, dt.json)),
     ("ARRAY", dt.Array(dt.json)),
+    # VECTOR round-trip via CREATE TEMP TABLE: exercises the full path
+    # from Snowflake's information-schema-style metadata back through
+    # ``SnowflakeType.from_string``.
+    ("VECTOR(FLOAT, 4)", dt.Array(dt.Float32(nullable=False), length=4)),
+    ("VECTOR(INT, 8)", dt.Array(dt.Int32(nullable=False), length=8)),
 ]
 
 
@@ -121,6 +134,39 @@ def test_extract_timestamp_from_table(con, snowflake_type, ibis_type):
 
     t = con.table(name)
     assert t.schema() == expected_schema
+
+
+def test_vector_column_pyarrow_passthrough_for_fixed_size_arrays():
+    """``SnowflakePyArrowData.convert_column`` must pass fixed-length array
+    columns through unchanged.
+
+    Snowflake's VECTOR(<element>, <dimension>) deserializes natively to
+    pyarrow ``fixed_size_list<element>[length]`` via the Snowflake Python
+    connector. Without the fixed-size-list pass-through, the converter
+    routes the column through the JSON-extension wrapping path -- which
+    raises ``ArrowNotImplementedError: Unsupported cast from
+    fixed_size_list<...> to utf8`` because the storage type of
+    ``PYARROW_JSON_TYPE`` is ``utf8``.
+
+    This test exercises the converter directly with a synthetic
+    fixed-size-list pyarrow column and the matching
+    ``Array(Float32, length=N)`` ibis dtype, so it runs without any
+    Snowflake connection.
+    """
+    import pyarrow as pa
+
+    from ibis.backends.snowflake.converter import SnowflakePyArrowData
+
+    column = pa.array(
+        [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]],
+        type=pa.list_(pa.float32(), list_size=4),
+    )
+    dtype = dt.Array(dt.Float32(nullable=False), length=4)
+
+    result = SnowflakePyArrowData.convert_column(column, dtype)
+
+    assert result is column, "fixed-size-list columns should pass through unchanged"
+    assert result.to_pylist() == [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]
 
 
 def test_array_discovery(con):
