@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import math
 import string
 import textwrap
 from functools import partial, reduce
@@ -651,6 +652,14 @@ $$""".format(
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():
             return self.cast("".join(map(r"\x{:0>2x}".format, value)), dt.binary)
+        elif dtype.is_floating():
+            if math.isnan(value) or math.isinf(value):
+                # let the default implementation wrap these in a cast
+                return None
+            # Postgres interprets bare numeric literals as `numeric` (decimal),
+            # which round-trips as `Decimal` instead of `float`; cast to the
+            # literal's actual type to preserve float semantics.
+            return self.cast(sge.convert(value), dtype)
         elif dtype.is_time():
             to_int32 = partial(self.cast, to=dt.int32)
             to_float64 = partial(self.cast, to=dt.float64)
