@@ -92,6 +92,11 @@ sqlite:
       - any-glob-to-any-file: "ibis/backends/sqlite/**"
       - any-glob-to-any-file: "ibis/backends/sql/compilers/sqlite/**"
 
+starrocks:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/starrocks/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/starrocks.py"
+
 trino:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/trino/**"

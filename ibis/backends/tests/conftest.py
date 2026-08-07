@@ -32,7 +32,9 @@ def combine_marks(marks: list) -> callable:
 
 NO_ARRAY_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["sqlite", "mysql", "exasol"], reason="No array support", raises=Exception
+        ["sqlite", "mysql", "starrocks", "exasol"],
+        reason="No array support",
+        raises=Exception,
     ),
     pytest.mark.never(
         ["mssql"],
@@ -44,7 +46,7 @@ NO_ARRAY_SUPPORT_MARKS = [
         ),
     ),
     pytest.mark.never(
-        ["mysql", "singlestoredb"],
+        ["mysql", "singlestoredb", "starrocks"],
         reason="No array support",
         raises=(
             com.UnsupportedBackendType,
@@ -70,7 +72,8 @@ NO_ARRAY_SUPPORT = combine_marks(NO_ARRAY_SUPPORT_MARKS)
 
 NO_STRUCT_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["mysql", "singlestoredb", "sqlite", "mssql"], reason="No struct support"
+        ["mysql", "singlestoredb", "starrocks", "sqlite", "mssql"],
+        reason="No struct support",
     ),
     pytest.mark.notyet(
         ["impala", "materialize"], reason="Backend doesn't yet support struct types"
@@ -81,7 +84,7 @@ NO_STRUCT_SUPPORT = combine_marks(NO_STRUCT_SUPPORT_MARKS)
 
 NO_MAP_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["sqlite", "mysql", "singlestoredb", "mssql"],
+        ["sqlite", "mysql", "singlestoredb", "starrocks", "mssql"],
         reason="Unlikely to ever add map support",
     ),
     pytest.mark.notyet(
@@ -136,7 +139,9 @@ NO_MERGE_SUPPORT_MARKS = [
         reason="MERGE INTO is not supported",
     ),
     pytest.mark.notyet(
-        ["mysql"], raises=MySQLProgrammingError, reason="MERGE INTO is not supported"
+        ["mysql", "starrocks"],
+        raises=MySQLProgrammingError,
+        reason="MERGE INTO is not supported",
     ),
     pytest.mark.notyet(
         ["singlestoredb"],
