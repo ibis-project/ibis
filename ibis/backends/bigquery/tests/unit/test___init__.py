@@ -1,14 +1,77 @@
 from __future__ import annotations
 
+import concurrent.futures
 from datetime import date
 
+import google.api_core.exceptions
 import pytest
 from google.cloud.bigquery import QueryJobConfig
 from google.cloud.bigquery.query import ScalarQueryParameter
 from google.cloud.bigquery.table import TableReference
 
 import ibis
-from ibis.backends.bigquery import _merge_params_into_config
+from ibis.backends.bigquery import Backend, _merge_params_into_config
+
+
+def test_session_creation_is_bounded(mocker):
+    """Bound session creation at the request, job, and polling layers."""
+    client = mocker.Mock(project="billing-project", default_query_job_config=None)
+    storage_client = mocker.Mock()
+    query = client.query.return_value
+    query.destination = TableReference.from_string(
+        "billing-project.anonymous_dataset.anonymous_table"
+    )
+
+    backend = Backend()
+    backend.do_connect(client=client, storage_client=storage_client)
+
+    backend._make_session()
+
+    client.query.assert_called_once_with(
+        "SELECT 1",
+        job_config=mocker.ANY,
+        project="billing-project",
+        timeout=60.0,
+    )
+    query.result.assert_called_once_with(timeout=60.0)
+    assert client.query.call_args.kwargs["job_config"].to_api_repr() == {
+        "query": {"useQueryCache": False},
+        "jobTimeoutMs": "60000",
+    }
+
+
+@pytest.mark.parametrize(
+    ("cancel_error", "expected_error"),
+    [
+        pytest.param(
+            google.api_core.exceptions.GoogleAPICallError("cancellation failed"),
+            concurrent.futures.TimeoutError,
+            id="api-error",
+        ),
+        pytest.param(
+            RuntimeError("cancellation failed"),
+            RuntimeError,
+            id="unexpected-error",
+        ),
+    ],
+)
+def test_session_creation_timeout_cancels_job(mocker, cancel_error, expected_error):
+    """Bound cancellation and suppress only expected API failures."""
+    client = mocker.Mock(project="billing-project", default_query_job_config=None)
+    storage_client = mocker.Mock()
+    query = client.query.return_value
+    query.result.side_effect = concurrent.futures.TimeoutError
+    query.cancel.side_effect = cancel_error
+
+    backend = Backend()
+    backend.do_connect(client=client, storage_client=storage_client)
+
+    with pytest.raises(expected_error):
+        backend._make_session()
+
+    query.cancel.assert_called_once()
+    cancel_kwargs = query.cancel.call_args.kwargs
+    assert (cancel_kwargs["timeout"], cancel_kwargs["retry"].timeout) == (5.0, 5.0)
 
 
 @pytest.mark.parametrize(
