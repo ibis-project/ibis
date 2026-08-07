@@ -611,7 +611,9 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
-        if from_.is_timestamp() and to.is_integer():
+        if from_.is_string() and to.is_json():
+            return self.f.parse_json(arg)
+        elif from_.is_timestamp() and to.is_integer():
             return self.f.unix_micros(arg)
         elif from_.is_numeric() and to.is_timestamp():
             if from_.is_integer():
@@ -630,6 +632,14 @@ class BigQueryCompiler(SQLGlotCompiler):
         elif from_.is_floating() and to.is_integer():
             return self.cast(self.f.trunc(arg), dt.int64)
         return super().visit_Cast(op, arg=arg, to=to)
+
+    def visit_TryCast(self, op, *, arg, to):
+        if op.arg.dtype.is_string() and to.is_json():
+            return self.f.anon["SAFE.PARSE_JSON"](arg)
+        return super().visit_TryCast(op, arg=arg, to=to)
+
+    def visit_ToJSONArray(self, op, *, arg):
+        return self.f.anon["JSON_QUERY_ARRAY"](arg)
 
     def visit_JSONGetItem(self, op, *, arg, index):
         return arg[index]
