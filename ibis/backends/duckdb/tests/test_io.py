@@ -142,36 +142,6 @@ def test_read_json(con, data_dir, tmp_path):
 
 
 @pytest.fixture(scope="session")
-def pgurl():  # pragma: no cover
-    pgcon = ibis.postgres.connect(
-        user="postgres",
-        password="postgres",  # noqa: S106
-        host="localhost",
-    )
-
-    df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 1.0], "y": ["a", "b", "c", "a"]})
-
-    pgcon.create_table("duckdb_test", df, overwrite=True)
-    yield pgcon.con.info
-
-    pgcon.drop_table("duckdb_test", force=True)
-
-
-@pytest.mark.skipif(
-    os.environ.get("DUCKDB_POSTGRES") is None, reason="avoiding CI shenanigans"
-)
-def test_read_postgres(con, pgurl):  # pragma: no cover
-    # we don't run this test in CI, only locally, to avoid bringing a postgres
-    # container up just for this test.  To run locally set env variable to True
-    # and once a postgres container is up run the test.
-    table = con.read_postgres(
-        f"postgres://{pgurl.user}:{pgurl.password}@{pgurl.host}:{pgurl.port}",
-        table_name="duckdb_test",
-    )
-    assert table.count().execute()
-
-
-@pytest.fixture(scope="session")
 def mysqlurl():  # pragma: no cover
     mysqlcon = ibis.mysql.connect(
         user="ibis",
