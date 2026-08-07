@@ -16,6 +16,7 @@ from ibis.common.typing import get_defining_scope
 from ibis.config import _default_backend
 from ibis.config import options as opts
 from ibis.expr.format import pretty
+from ibis.expr.operations.util import find_backend
 from ibis.expr.types.rich import capture_rich_renderable, to_rich
 from ibis.util import experimental
 
@@ -286,26 +287,6 @@ class Expr(Immutable, Coercible):
     def op(self) -> ops.Node:
         return self._arg
 
-    def _find_backends(self) -> tuple[list[BaseBackend], bool]:
-        """Return the possible backends for an expression.
-
-        Returns
-        -------
-        list[BaseBackend]
-            A list of the backends found.
-        """
-
-        backends = set()
-        has_unbound = False
-        node_types = (ops.UnboundTable, ops.DatabaseTable, ops.SQLQueryResult)
-        for table in self.op().find(node_types):
-            if isinstance(table, ops.UnboundTable):
-                has_unbound = True
-            else:
-                backends.add(table.source)
-
-        return list(backends), has_unbound
-
     def _find_backend(self, *, use_default: bool = False) -> BaseBackend:
         """Find the backend attached to an expression.
 
@@ -322,27 +303,17 @@ class Expr(Immutable, Coercible):
         BaseBackend
             A backend that is attached to the expression
         """
-        backends, has_unbound = self._find_backends()
-
-        if not backends:
-            if has_unbound:
+        backend = find_backend(self)
+        if backend is None:
+            if not use_default:
                 raise IbisError(
-                    "Expression contains unbound tables and therefore cannot "
-                    "be executed. Use `<backend>.execute(expr)` to execute "
+                    "Expression depends on no backends, please execute "
                     "against an explicit backend, or rebuild the expression "
                     "using bound tables instead."
                 )
-            default = _default_backend() if use_default else None
-            if default is None:
-                raise IbisError(
-                    "Expression depends on no backends, and found no default"
-                )
-            return default
-
-        if len(backends) > 1:
-            raise IbisError("Multiple backends found for this expression")
-
-        return backends[0]
+            else:
+                backend = _default_backend()
+        return backend
 
     def get_backend(self) -> BaseBackend:
         """Get the current Ibis backend of the expression.
