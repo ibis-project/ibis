@@ -107,6 +107,14 @@ jobs:
               - --extra polars
             additional_deps:
               - torch
+          - name: chdb
+            title: chDB
+            serial: true
+            extras:
+              - --extra chdb
+              - --extra examples
+            additional_deps:
+              - "'chdb>=4.2.1'"
           - name: clickhouse
             title: ClickHouse
             services:
@@ -309,6 +317,9 @@ jobs:
             python-version: "3.14"
             backend:
               name: duckdb
+          - os: windows-latest
+            backend:
+              name: chdb
           - os: windows-latest
             backend:
               name: mysql

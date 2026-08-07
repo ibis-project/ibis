@@ -52,6 +52,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -71,6 +72,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -90,6 +92,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -109,6 +112,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -128,6 +132,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -147,6 +152,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -166,6 +172,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -185,6 +192,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "INT64",
                 "clickhouse": "UInt8",
+                "chdb": "UInt8",
                 "impala": "TINYINT",
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
@@ -204,6 +212,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "FLOAT64",
                 "clickhouse": "Float64",
+                "chdb": "Float64",
                 "impala": "DECIMAL(2,1)",
                 "snowflake": "INTEGER",
                 "sqlite": "real",
@@ -230,6 +239,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "FLOAT64",
                 "clickhouse": "Float64",
+                "chdb": "Float64",
                 "impala": "DECIMAL(2,1)",
                 "snowflake": "INTEGER",
                 "sqlite": "real",
@@ -249,6 +259,7 @@ pa = pytest.importorskip("pyarrow")
             {
                 "bigquery": "FLOAT64",
                 "clickhouse": "Float64",
+                "chdb": "Float64",
                 "impala": "DECIMAL(2,1)",
                 "snowflake": "INTEGER",
                 "sqlite": "real",
@@ -320,7 +331,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     reason="precision must be specified; clickhouse doesn't have a default",
                     raises=NotImplementedError,
                 ),
@@ -345,6 +356,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "mysql": decimal.Decimal("1.1"),
                 "singlestoredb": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal("1.1"),
+                "chdb": decimal.Decimal("1.1"),
                 "mssql": decimal.Decimal("1.1"),
                 "druid": decimal.Decimal("1.1"),
                 "datafusion": decimal.Decimal("1.1"),
@@ -356,6 +368,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": "NUMERIC",
                 "clickhouse": "Decimal(38, 9)",
+                "chdb": "Decimal(38, 9)",
                 "snowflake": "DECIMAL",
                 "impala": "DECIMAL(38,9)",
                 "sqlite": "real",
@@ -384,11 +397,13 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "clickhouse": decimal.Decimal(
                     "1.10000000000000003193790845333396190208"
                 ),
+                "chdb": decimal.Decimal("1.10000000000000003193790845333396190208"),
                 "oracle": 1.1,
             },
             {
                 "bigquery": "BIGNUMERIC",
                 "clickhouse": "Decimal(76, 38)",
+                "chdb": "Decimal(76, 38)",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
                 "athena": "decimal(2,1)",
@@ -470,7 +485,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
                 ),
@@ -548,7 +563,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
                 ),
@@ -629,7 +644,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
                 ),

@@ -1420,6 +1420,11 @@ class ClickHouseType(SqlglotType):
         )
 
 
+class ChdbType(ClickHouseType):
+    # embedded ClickHouse: identical type system, distinct dialect name.
+    dialect = "chdb"
+
+
 class FlinkType(SqlglotType):
     dialect = "flink"
     default_decimal_precision = 38

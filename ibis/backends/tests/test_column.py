@@ -9,6 +9,7 @@ import ibis.common.exceptions as com
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "exasol",
         "impala",
