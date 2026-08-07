@@ -129,6 +129,18 @@ in
     buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.unixODBC ];
   });
 
+  # ibm_db bundles libdb2.so which dynamically links libcrypt and libpam —
+  # both are absent from the Nix sandbox by default.
+  ibm-db = prev.ibm-db.overrideAttrs (attrs: {
+    buildInputs =
+      attrs.buildInputs or [ ]
+      ++ lib.optionals stdenv.isLinux [
+        pkgs.libxcrypt-legacy # provides libcrypt.so.1
+        pkgs.pam # provides libpam.so.0
+      ];
+    autoPatchelfIgnoreMissingDeps = true;
+  });
+
   pyspark = prev.pyspark.overrideAttrs (
     attrs:
     let
