@@ -12,6 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
+from ibis import util
 from ibis.common.patterns import CoercionError
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.operations.analytic import Analytic  # noqa: TC001
@@ -20,9 +21,59 @@ from ibis.expr.operations.generic import Literal
 from ibis.expr.operations.numeric import Negate
 from ibis.expr.operations.reductions import Reduction  # noqa: TC001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TC001
+from ibis.expr.operations.temporal import IntervalAdd, IntervalSubtract
 
 T = TypeVar("T", bound=dt.Numeric | dt.Interval, covariant=True)
 S = TypeVar("S", bound=ds.DataShape, default=ds.Any, covariant=True)
+
+_NS_PER_DAY = 24 * 60 * 60 * 1_000_000_000
+_MONTH_UNITS = frozenset({"Y", "Q", "M"})
+
+
+def _interval_components(value):
+    """Return exact month and nanosecond components for a literal interval tree."""
+    if isinstance(value, Literal) and value.dtype.is_interval():
+        if value.value is None:
+            return None
+        unit = value.dtype.unit.short
+        if unit in _MONTH_UNITS:
+            return util.convert_unit(value.value, unit, "M"), 0
+        return 0, util.convert_unit(value.value, unit, "ns")
+    elif isinstance(value, IntervalAdd):
+        left = _interval_components(value.left)
+        right = _interval_components(value.right)
+        if left is not None and right is not None:
+            return left[0] + right[0], left[1] + right[1]
+    elif isinstance(value, IntervalSubtract):
+        left = _interval_components(value.left)
+        right = _interval_components(value.right)
+        if left is not None and right is not None:
+            return left[0] - right[0], left[1] - right[1]
+    elif isinstance(value, Negate):
+        if (components := _interval_components(value.arg)) is not None:
+            return -components[0], -components[1]
+
+    return None
+
+
+def _rewrite_interval(value, sign=1):
+    """Distribute negation to interval literals for portable SQL generation."""
+    if isinstance(value, Literal):
+        return value.copy(value=sign * value.value)
+    elif isinstance(value, IntervalAdd):
+        return IntervalAdd(
+            _rewrite_interval(value.left, sign),
+            _rewrite_interval(value.right, sign),
+        )
+    elif isinstance(value, IntervalSubtract):
+        return IntervalSubtract(
+            _rewrite_interval(value.left, sign),
+            _rewrite_interval(value.right, sign),
+        )
+    elif isinstance(value, Negate):
+        return _rewrite_interval(value.arg, -sign)
+    else:
+        raise AssertionError(f"Unsupported literal interval operation: {type(value)}")
 
 
 @public
@@ -52,11 +103,21 @@ class WindowBoundary(Value[T, S]):
 
         if isinstance(arg, cls):
             return arg
-        elif isinstance(arg, Negate):
-            return cls(arg.arg, preceding=True)
         elif isinstance(arg, Literal):
             new = arg.copy(value=abs(arg.value))
             return cls(new, preceding=arg.value < 0)
+        elif (components := _interval_components(arg)) is not None:
+            months, nanoseconds = components
+            month_bounds = sorted(
+                (months * 28 * _NS_PER_DAY, months * 31 * _NS_PER_DAY)
+            )
+            lower = month_bounds[0] + nanoseconds
+            upper = month_bounds[1] + nanoseconds
+            if lower < 0 and upper <= 0:
+                return cls(_rewrite_interval(arg, sign=-1), preceding=True)
+            return cls(_rewrite_interval(arg), preceding=False)
+        elif isinstance(arg, Negate):
+            return cls(arg.arg, preceding=True)
         elif isinstance(arg, Value):
             return cls(arg, preceding=False)
         else:
