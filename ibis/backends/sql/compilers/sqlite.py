@@ -482,6 +482,16 @@ class SQLiteCompiler(SQLGlotCompiler):
             self.f.mod(self.cast(self.f.strftime("%w", arg) + 6, dt.int64), 7), dt.int64
         )
 
+    def visit_IsoDayOfWeekIndex(self, op, *, arg):
+        # return self.cast(self.f.strftime("%u", arg), dt.int64)
+        return (
+            self.cast(
+                self.f.mod(self.cast(self.f.strftime("%w", arg) + 6, dt.int64), 7),
+                dt.int64,
+            )
+            + 1
+        )
+
     def visit_DayOfWeekName(self, op, *, arg):
         return sge.Case(
             this=self.f.strftime("%w", arg),
