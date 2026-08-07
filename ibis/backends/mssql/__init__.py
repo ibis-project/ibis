@@ -662,10 +662,7 @@ GO"""
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        properties = []
-
         if temp:
-            properties.append(sge.TemporaryProperty())
             catalog, db = None, None
 
         if obj is not None:
@@ -690,33 +687,23 @@ GO"""
 
         quoted = self.compiler.quoted
         raw_table = sg.table(temp_name, catalog=catalog, db=db, quoted=False)
+        # A global temporary table is identified by a `##` prefix on the name,
+        # not by a `TEMPORARY` property.
+        target_table = sg.table(
+            "##" * bool(temp) + temp_name, catalog=catalog, db=db, quoted=quoted
+        )
         target = sge.Schema(
-            this=sg.table(
-                "#" * bool(temp) + temp_name, catalog=catalog, db=db, quoted=quoted
-            ),
+            this=target_table,
             expressions=schema.to_sqlglot_column_defs(self.dialect),
         )
 
-        create_stmt = sge.Create(
-            kind="TABLE",
-            this=target,
-            properties=sge.Properties(expressions=properties),
-        )
+        create_stmt = sge.Create(kind="TABLE", this=target)
 
         this = sg.table(name, catalog=catalog, db=db, quoted=quoted)
         raw_this = sg.table(name, catalog=catalog, db=db, quoted=False)
         with self._safe_ddl(create_stmt) as cur:
             if query is not None:
-                # You can specify that a table is temporary for the sqlglot `Create` but not
-                # for the subsequent `Insert`, so we need to shove a `#` in
-                # front of the table identifier.
-                _table = sg.table(
-                    "##" * bool(temp) + temp_name,
-                    catalog=catalog,
-                    db=db,
-                    quoted=self.compiler.quoted,
-                )
-                insert_stmt = sge.Insert(this=_table, expression=query).sql(
+                insert_stmt = sge.Insert(this=target_table, expression=query).sql(
                     self.dialect
                 )
                 cur.execute(insert_stmt)
