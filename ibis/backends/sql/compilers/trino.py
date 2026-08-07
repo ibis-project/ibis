@@ -79,7 +79,6 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.Log10: "log10",
         ops.IsNan: "is_nan",
         ops.IsInf: "is_infinite",
-        ops.Strftime: "date_format",
         ops.ExtractEpochSeconds: "to_unixtime",
         ops.ExtractWeekOfYear: "week_of_year",
         ops.ExtractDayOfYear: "day_of_year",
