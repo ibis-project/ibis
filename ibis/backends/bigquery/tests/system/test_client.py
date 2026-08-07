@@ -371,6 +371,22 @@ def test_fully_qualified_table_creation(con, project_id, dataset_id, temp_table)
     assert t.get_name() == f"{project_id}.{dataset_id}.{temp_table}"
 
 
+def test_fully_qualified_view_creation(con, project_id, dataset_id):
+    database = f"{project_id}.{dataset_id}"
+    name = gen_name("view")
+    expr = con.table("functional_alltypes").limit(1)
+
+    try:
+        view = con.create_view(name, expr, database=database)
+
+        assert view.get_name() == f"{database}.{name}"
+        assert name in con.list_tables(database=database)
+        assert view.schema() == expr.schema()
+        assert len(view.execute()) == 1
+    finally:
+        con.drop_view(name, database=database, force=True)
+
+
 def test_fully_qualified_memtable_compile(project_id, dataset_id):
     new_bq_con = ibis.bigquery.connect(project_id=project_id, dataset_id=dataset_id)
     # New connection shouldn't have __session_dataset populated after
