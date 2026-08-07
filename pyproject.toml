@@ -633,6 +633,7 @@ ignore = [
   "UP045",   # Using X | None breaks Python 3.9
   "S101",    # ignore "Use of `assert` detected"
   "PLC0415", # allow imports to not be at the top of a file
+  "PLW0603", # using global statement is of course bad, but we don't need a warning for it
 ]
 # none of these codes will be automatically fixed by ruff
 unfixable = [
