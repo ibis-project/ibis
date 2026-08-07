@@ -185,6 +185,34 @@ class BaseSparkTestConf(abc.ABC):
 
         df_time_indexed.createTempView("time_indexed_table")
 
+        nested_json_table = s.createDataFrame(
+            [
+                [
+                    "llm",
+                    """[
+                    {
+                        "description": "version 1",
+                        "details": {
+                            "major_version": 1,
+                            "released": true,
+                            "accurate_rate": 0.83
+                        }
+                    },
+                    {
+                        "description": "version 2",
+                        "details": {
+                            "major_version": 2,
+                            "released": false,
+                            "accurate_rate": 0.97
+                        }
+                    }
+                    ]""",
+                ],
+            ],
+            ["product", "version_detail"],
+        )
+        nested_json_table.createTempView("nested_json_table")
+
         if not IS_SPARK_REMOTE:
             # TODO(cpcloud): understand why this doesn't work with spark connect
             df_interval = s.createDataFrame(
