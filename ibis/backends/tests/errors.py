@@ -121,6 +121,7 @@ except ImportError:
     TrinoUserError = None
 
 try:
+    from psycopg2.errors import ActiveSqlTransaction as PsycoPg2ActiveSqlTransaction
     from psycopg2.errors import ArraySubscriptError as PsycoPg2ArraySubscriptError
     from psycopg2.errors import DivisionByZero as PsycoPg2DivisionByZero
     from psycopg2.errors import IndeterminateDatatype as PsycoPg2IndeterminateDatatype
@@ -133,11 +134,13 @@ try:
     from psycopg2.errors import SyntaxError as PsycoPg2SyntaxError
     from psycopg2.errors import UndefinedObject as PsycoPg2UndefinedObject
 except ImportError:
-    PsycoPg2SyntaxError = PsycoPg2IndeterminateDatatype = (
-        PsycoPg2InvalidTextRepresentation
-    ) = PsycoPg2DivisionByZero = PsycoPg2InternalError = PsycoPg2ProgrammingError = (
-        PsycoPg2OperationalError
-    ) = PsycoPg2UndefinedObject = PsycoPg2ArraySubscriptError = None
+    PsycoPg2ActiveSqlTransaction = PsycoPg2SyntaxError = (
+        PsycoPg2IndeterminateDatatype
+    ) = PsycoPg2InvalidTextRepresentation = PsycoPg2DivisionByZero = (
+        PsycoPg2InternalError
+    ) = PsycoPg2ProgrammingError = PsycoPg2OperationalError = (
+        PsycoPg2UndefinedObject
+    ) = PsycoPg2ArraySubscriptError = None
 
 try:
     from psycopg.errors import ArraySubscriptError as PsycoPgArraySubscriptError
