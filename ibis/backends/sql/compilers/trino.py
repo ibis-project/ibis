@@ -589,6 +589,11 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
+        if from_.is_string() and to.is_json():
+            # `CAST(varchar AS JSON)` wraps the string as a JSON string scalar
+            # instead of parsing its contents as JSON; `JSON_PARSE` is the
+            # function that parses the varchar as JSON text.
+            return self.f.json_parse(arg)
         if from_.is_numeric() and to.is_timestamp():
             tz = to.timezone or "UTC"
             if from_.is_integer():

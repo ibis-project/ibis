@@ -21,6 +21,15 @@ def test_window_with_row_number_compiles():
     assert ibis.to_sql(expr)
 
 
+def test_trino_string_to_json_cast_uses_json_parse():
+    # GH #12073: `CAST(varchar AS JSON)` wraps the string as a JSON string
+    # scalar rather than parsing its contents, so field access returns NULL
+    t = ibis.table({"raw": "string"}, name="events")
+    sql = ibis.to_sql(t.select(a=t.raw.cast("json")), dialect="trino")
+    assert "JSON_PARSE" in sql
+    assert "CAST" not in sql
+
+
 def test_transpile_join():
     (result,) = sg.transpile(
         "SELECT * FROM t1 JOIN t2 ON x = y", read="duckdb", write=Trino
