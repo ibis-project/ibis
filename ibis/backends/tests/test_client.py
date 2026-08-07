@@ -27,6 +27,7 @@ import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.conftest import NO_MERGE_SUPPORT
 from ibis.backends.tests.errors import (
+    ArrowInvalid,
     ArrowTypeError,
     DatabricksServerOperationError,
     ExaQueryError,
@@ -1308,6 +1309,11 @@ def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
 
 
 @pytest.mark.parametrize("is_jupyter", [True, False])
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
     pytest.importorskip("rich")
 
@@ -2046,6 +2052,7 @@ def test_memtable_registered_exactly_once(con, mocker):
     spy.assert_called_once_with(t.op())
 
 
+@pytest.mark.filterwarnings("ignore::ResourceWarning")
 def test_stateful_data_is_loaded_once(
     con, data_dir, tmp_path_factory, worker_id, mocker
 ):
