@@ -357,8 +357,8 @@ compute-version:
 # bump the version number in necessary files
 bump-version:
     #!/usr/bin/env bash
+    set -euo pipefail
     ibis_dev_version="$(just compute-version)"
-    toml set pyproject.toml project.version "$ibis_dev_version" | sponge pyproject.toml
-    sed -i 's/__version__ = .\+/__version__ = "'$ibis_dev_version'"/g' ibis/__init__.py
+    python -c 'import re, sys; v=sys.argv[1]; [open(p,"w").write(t) for p,n in [("pyproject.toml","version"),("ibis/__init__.py","__version__")] for t,c in [re.subn(rf"(?m)^{n} = .+", f"{n} = \"{v}\"", open(p).read())] if c==1 or sys.exit(f"expected exactly 1 {n} assignment in {p}, found {c}")]' "$ibis_dev_version"
     just lock > /dev/null
     echo "$ibis_dev_version"
