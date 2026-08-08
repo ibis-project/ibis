@@ -56,7 +56,7 @@ jobs:
           - "3.14"
     steps:
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: install python
         uses: actions/setup-python@v6
@@ -505,7 +505,7 @@ jobs:
         run: choco install sqlite
 
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - uses: extractions/setup-just@v3
         env:
@@ -608,7 +608,7 @@ jobs:
               - grpcio-status
     steps:
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - uses: actions/setup-java@v5
         with:
