@@ -272,7 +272,7 @@ geospatial = [
 [dependency-groups]
 pyarrow = [
   "numpy>=1.23.2,<3",
-  "pandas>=1.5.3,<3",
+  "pandas>=1.5.3,<4",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
 ]
