@@ -2947,7 +2947,7 @@ docs = [
 ]
 pyarrow = [
     { name = "numpy", specifier = ">=1.23.2,<3" },
-    { name = "pandas", specifier = ">=1.5.3,<3" },
+    { name = "pandas", specifier = ">=1.5.3,<4" },
     { name = "pyarrow", specifier = ">=10.0.1" },
     { name = "pyarrow-hotfix", specifier = ">=0.4" },
 ]
