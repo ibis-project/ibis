@@ -27,6 +27,9 @@ except ImportError:
         None
     )
 
+# chDB surfaces engine errors (DB::Exception) as a builtin RuntimeError.
+ChdbError = RuntimeError
+
 try:
     from pyexasol.exceptions import ExaQueryError
 except ImportError:

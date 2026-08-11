@@ -10,6 +10,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
+    ChdbError,
     ClickHouseDatabaseError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
@@ -1150,7 +1151,7 @@ def test_first_last(backend):
 @pytest.mark.notyet(
     ["clickhouse"], raises=ClickHouseDatabaseError, reason="not supported by ClickHouse"
 )
-@pytest.mark.notyet(["chdb"], raises=Exception, reason="not supported by ClickHouse")
+@pytest.mark.notyet(["chdb"], raises=ChdbError, reason="not supported by ClickHouse")
 @pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="not supported by DataFusion"
 )
