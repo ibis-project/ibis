@@ -20,6 +20,7 @@ import ibis.expr.datatypes as dt
 from ibis.backends import _get_backend_names
 from ibis.backends.tests.errors import (
     ArrowInvalid,
+    ArrowNotImplementedError,
     DuckDBInvalidInputException,
     ExaQueryError,
     GoogleBadRequest,
@@ -889,9 +890,14 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     reason="not supported in hive",
                 ),
                 pytest.mark.notyet(
-                    ["datafusion", "chdb"],
+                    ["datafusion"],
                     raises=Exception,
                     reason="pyarrow.lib.ArrowNotImplementedError: Unsupported cast",
+                ),
+                pytest.mark.notyet(
+                    ["chdb"],
+                    raises=ArrowNotImplementedError,
+                    reason="unsupported cast from int64 to interval",
                 ),
                 pytest.mark.notimpl(
                     ["oracle"],
