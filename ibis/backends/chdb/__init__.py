@@ -10,10 +10,8 @@ Arrow output fixup (:class:`ChdbArrowConverter`).
 from __future__ import annotations
 
 import contextlib
-import importlib
 import re
 import threading
-import types
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
@@ -31,9 +29,8 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import UrlFromPath
 from ibis.backends.clickhouse import Backend as CHBackend
-from ibis.backends.sql.compilers import ClickHouseCompiler
+from ibis.backends.sql.compilers import ChdbCompiler
 from ibis.backends.sql.compilers.base import C
-from ibis.backends.sql.dialects import ChDB
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowData, PyArrowType
 
@@ -70,16 +67,6 @@ def _import_chdb():
         ) from e
     else:
         return chdb
-
-
-class ChdbCompiler(ClickHouseCompiler):
-    """ClickHouse compiler that renders in-memory tables as ``Python(name)``."""
-
-    dialect = ChDB
-
-    def visit_InMemoryTable(self, op, *, name, schema, data):
-        # name as a string literal -> matches chDB's identifier extraction.
-        return sge.Table(this=self.f.Python(sge.convert(name)))
 
 
 def _relabel_fields(arr, dtype: dt.DataType):
@@ -316,6 +303,10 @@ class Backend(UrlFromPath, CHBackend):
     name = "chdb"
     compiler = ChdbCompiler()
 
+    @classmethod
+    def register_options(cls) -> None:
+        """The chDB backend exposes no configurable options."""
+
     @property
     def version(self) -> str:
         return _import_chdb().__version__
@@ -418,8 +409,8 @@ class Backend(UrlFromPath, CHBackend):
             if re.search(r"\bUNKNOWN_TABLE\b", str(e)):
                 raise com.TableNotFound(table_name) from e
             raise
-        names = table.column("name").to_pylist()
-        types = table.column("type").to_pylist()
+        names = table["name"].to_pylist()
+        types = table["type"].to_pylist()
         type_mapper = self.compiler.type_mapper
         return sch.Schema(dict(zip(names, map(type_mapper.from_string, types))))
 
@@ -441,12 +432,12 @@ class Backend(UrlFromPath, CHBackend):
             database = sge.convert(database)
         query = query.where(C.database.eq(database).or_(C.is_temporary))
         result = self.raw_sql(query, fmt="ArrowTable")
-        return self._filter_with_like(result.column("name").to_pylist(), like)
+        return self._filter_with_like(result["name"].to_pylist(), like)
 
     def list_databases(self, *, like: str | None = None) -> list[str]:
         query = sg.select(C.name).from_(sg.table("databases", db="system"))
         result = self.raw_sql(query, fmt="ArrowTable")
-        return self._filter_with_like(result.column("name").to_pylist(), like)
+        return self._filter_with_like(result["name"].to_pylist(), like)
 
     @property
     def current_database(self) -> str:
@@ -536,10 +527,3 @@ class Backend(UrlFromPath, CHBackend):
 def _pop_arrow_kwargs(kwargs: dict) -> dict:
     """Keep only the ``params``/``limit`` kwargs the compiler accepts."""
     return {k: kwargs[k] for k in ("params", "limit") if k in kwargs}
-
-
-# Let ibis.to_sql(expr, dialect="chdb") resolve a compiler the same way it does
-# for built-in backends (getattr(compilers, name).compiler).
-_compilers = importlib.import_module("ibis.backends.sql.compilers")
-if not hasattr(_compilers, "chdb"):
-    _compilers.chdb = types.SimpleNamespace(compiler=Backend.compiler)

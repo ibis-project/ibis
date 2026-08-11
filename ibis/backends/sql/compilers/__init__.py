@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__ = [
     "AthenaCompiler",
     "BigQueryCompiler",
+    "ChdbCompiler",
     "ClickHouseCompiler",
     "DataFusionCompiler",
     "DatabricksCompiler",
@@ -25,6 +26,7 @@ __all__ = [
 
 from ibis.backends.sql.compilers.athena import AthenaCompiler
 from ibis.backends.sql.compilers.bigquery import BigQueryCompiler
+from ibis.backends.sql.compilers.chdb import ChdbCompiler
 from ibis.backends.sql.compilers.clickhouse import ClickHouseCompiler
 from ibis.backends.sql.compilers.databricks import DatabricksCompiler
 from ibis.backends.sql.compilers.datafusion import DataFusionCompiler
