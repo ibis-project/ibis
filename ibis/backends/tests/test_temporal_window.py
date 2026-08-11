@@ -12,6 +12,7 @@ pytestmark = pytest.mark.notimpl(
     [
         "athena",
         "bigquery",
+        "chdb",
         "clickhouse",
         "databricks",
         "datafusion",
