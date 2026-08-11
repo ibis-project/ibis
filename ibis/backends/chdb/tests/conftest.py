@@ -26,23 +26,31 @@ class TestConf(BackendTest):
     deps = ("chdb",)
 
     @property
-    def native_bool(self) -> bool:
-        return True
-
-    @property
     def test_files(self) -> Iterable[Path]:
         return self.data_dir.joinpath("parquet").glob("*.parquet")
-
-    @property
-    def ddl_script(self) -> Iterable[str]:
-        parquet_dir = self.data_dir / "parquet"
-        for stmt in super().ddl_script:
-            yield stmt.format(parquet_dir=parquet_dir)
 
     def _load_data(self, *, database: str = "ibis_testing", **_: Any) -> None:
         con = self.connection.con
         con.raw_query(f"CREATE DATABASE IF NOT EXISTS {database} ENGINE = Atomic")
         con.raw_query(f"USE {database}")
+        parquet = self.data_dir / "parquet"
+        for name, select in (
+            ("diamonds", "SELECT *"),
+            ("batting", "SELECT *"),
+            ("awards_players", "SELECT *"),
+            # timestamp_col carries a tz that chDB must drop
+            (
+                "functional_alltypes",
+                "SELECT * REPLACE(CAST(CAST(timestamp_col AS Nullable(String)) "
+                "AS Nullable(DateTime)) AS timestamp_col)",
+            ),
+            ("astronauts", "SELECT *"),
+        ):
+            path = parquet / f"{name}.parquet"
+            con.raw_query(
+                f"CREATE OR REPLACE TABLE {name} ENGINE = Memory AS "
+                f"{select} FROM file('{path}', 'Parquet')"
+            )
         for stmt in self.ddl_script:
             if stmt.strip():
                 con.raw_query(stmt)
