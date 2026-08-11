@@ -21,9 +21,9 @@ pip install 'ibis-framework[chdb]' chdb
 ```
 
 ::: {.callout-note}
-`chdb` is installed on its own rather than pulled in by the `chdb` extra: it
-requires `pyarrow>=13`, which is incompatible with the pins of some other
-backends, so bundling it would make the extras unresolvable together.
+Unlike other backends, the `chdb` package is not pulled in by the `chdb`
+extra, so install it separately as shown above. If it is missing, connecting
+raises an error pointing you at `pip install chdb`.
 :::
 
 And connect:
