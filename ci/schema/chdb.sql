@@ -1,21 +1,6 @@
--- {parquet_dir} is filled in by the chdb TestConf.ddl_script (embedded chDB
--- reads the shared parquet fixtures directly from the local filesystem)
-CREATE OR REPLACE TABLE ibis_testing.diamonds ENGINE = Memory AS
-SELECT * FROM file('{parquet_dir}/diamonds.parquet', 'Parquet');
-
-CREATE OR REPLACE TABLE ibis_testing.batting ENGINE = Memory AS
-SELECT * FROM file('{parquet_dir}/batting.parquet', 'Parquet');
-
-CREATE OR REPLACE TABLE ibis_testing.awards_players ENGINE = Memory AS
-SELECT * FROM file('{parquet_dir}/awards_players.parquet', 'Parquet');
-
-CREATE OR REPLACE TABLE ibis_testing.functional_alltypes ENGINE = Memory AS
-SELECT * REPLACE(CAST(CAST(timestamp_col AS Nullable(String)) AS Nullable(DateTime)) AS timestamp_col)
-FROM file('{parquet_dir}/functional_alltypes.parquet', 'Parquet');
-
-CREATE OR REPLACE TABLE ibis_testing.astronauts ENGINE = Memory AS
-SELECT * FROM file('{parquet_dir}/astronauts.parquet', 'Parquet');
-
+-- The parquet-backed fixtures (diamonds, batting, awards_players,
+-- functional_alltypes, astronauts) are loaded from the local filesystem by the
+-- chdb TestConf._load_data. Only the literal-valued tables live here.
 CREATE OR REPLACE TABLE ibis_testing.tzone (
     ts Nullable(DateTime),
     key Nullable(String),
