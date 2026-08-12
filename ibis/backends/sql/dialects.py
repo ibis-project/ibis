@@ -47,7 +47,10 @@ with contextlib.suppress(AttributeError):
 
 
 class ChDB(ClickHouse):
-    """Embedded ClickHouse; identical SQL dialect, registered as ``"chdb"``."""
+    """Subclass of ClickHouse dialect for chDB.
+
+    This is here to allow referring to the ClickHouse dialect as "chdb".
+    """
 
 
 class DataFusion(Postgres):
