@@ -71,27 +71,27 @@ hierarchy. This is provided as a reference, note that when using Ibis, we will
 use the terms `catalog` and `database` and map them onto the appropriate fields.
 
 
-| Backend      | Catalog      | Database |
-|--------------|--------------|----------|
-| athena       | data catalog | database |
-| bigquery     | project      | dataset  |
-| clickhouse   | N/A          | database |
-| databricks   | catalog      | schema   |
-| datafusion   | catalog      | schema   |
-| druid        | N/A          | N/A      |
-| duckdb       | database     | schema   |
-| exasol       | N/A          | schema   |
-| flink        | catalog      | database |
-| impala       | N/A          | database |
-| materialize  | database     | schema   |
-| mssql        | database     | schema   |
-| mysql        | N/A          | database |
-| oracle       | N/A          | schema   |
-| polars       | N/A          | N/A      |
-| postgres     | database     | schema   |
-| pyspark      | catalog      | database |
-| risingwave   | database     | schema   |
+| Backend       | Catalog      | Database |
+|---------------|--------------|----------|
+| athena        | data catalog | database |
+| bigquery      | project      | dataset  |
+| clickhouse    | N/A          | database |
+| databricks    | catalog      | schema   |
+| datafusion    | catalog      | schema   |
+| druid         | N/A          | schema   |
+| duckdb        | database     | schema   |
+| exasol        | N/A          | schema   |
+| flink         | catalog      | database |
+| impala        | N/A          | database |
+| materialize   | database     | schema   |
+| mssql         | database     | schema   |
+| mysql         | N/A          | database |
+| oracle        | database     | schema   |
+| polars        | N/A          | N/A      |
+| postgres      | database     | schema   |
+| pyspark       | catalog      | database |
+| risingwave    | database     | schema   |
 | singlestoredb | N/A          | database |
-| snowflake    | database     | schema   |
-| sqlite       | N/A          | schema   |
-| trino        | catalog      | schema   |
+| snowflake     | database     | schema   |
+| sqlite        | N/A          | schema   |
+| trino         | catalog      | schema   |
