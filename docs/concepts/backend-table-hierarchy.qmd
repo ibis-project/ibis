@@ -91,7 +91,7 @@ use the terms `catalog` and `database` and map them onto the appropriate fields.
 | postgres     | database     | schema   |
 | pyspark      | catalog      | database |
 | risingwave   | database     | schema   |
-| singlestoredb| N/A          | database |
+| singlestoredb | N/A          | database |
 | snowflake    | database     | schema   |
 | sqlite       | N/A          | schema   |
 | trino        | catalog      | schema   |
