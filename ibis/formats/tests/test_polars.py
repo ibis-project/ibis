@@ -175,3 +175,7 @@ def test_convert_table():
 
 def test_array_type():
     assert PolarsType.to_ibis(pl.Array(pl.Int64, 2)) == dt.Array(dt.int64)
+
+
+def test_object_type_to_ibis():
+    assert PolarsType.to_ibis(pl.Object) == dt.Unknown()
