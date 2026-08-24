@@ -690,8 +690,6 @@ class Expr(Immutable, Coercible):
         This method is eager and will execute the associated expression
         immediately.
 
-        See https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html for details.
-
         Parameters
         ----------
         path
@@ -699,7 +697,15 @@ class Expr(Immutable, Coercible):
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
-            Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
+            Additional, backend-specific keyword arguments.
+
+        Notes
+        -----
+        Which `kwargs` are accepted depends on the backend. Backends with a
+        native Parquet writer take that writer's options, while backends using
+        the default PyArrow-based implementation forward `kwargs` to
+        [`pyarrow.parquet.ParquetWriter`](https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html).
+        See the `to_parquet` method of the backend you are using for details.
 
         Examples
         --------
@@ -792,8 +798,6 @@ class Expr(Immutable, Coercible):
         This method is eager and will execute the associated expression
         immediately.
 
-        See https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html for details.
-
         Parameters
         ----------
         directory
@@ -801,7 +805,15 @@ class Expr(Immutable, Coercible):
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
-            Additional keyword arguments passed to pyarrow.dataset.write_dataset
+            Additional, backend-specific keyword arguments.
+
+        Notes
+        -----
+        Which `kwargs` are accepted depends on the backend. Backends with a
+        native Parquet writer take that writer's options, while backends using
+        the default PyArrow-based implementation forward `kwargs` to
+        [`pyarrow.dataset.write_dataset`](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html).
+        See the `to_parquet_dir` method of the backend you are using for details.
         """
         self._find_backend(use_default=True).to_parquet_dir(
             self, directory, params=params, **kwargs
@@ -821,8 +833,6 @@ class Expr(Immutable, Coercible):
         This method is eager and will execute the associated expression
         immediately.
 
-        See https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html for details.
-
         Parameters
         ----------
         path
@@ -830,7 +840,15 @@ class Expr(Immutable, Coercible):
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
-            Additional keyword arguments passed to pyarrow.csv.CSVWriter
+            Additional, backend-specific keyword arguments.
+
+        Notes
+        -----
+        Which `kwargs` are accepted depends on the backend. Backends with a
+        native CSV writer take that writer's options, while backends using the
+        default PyArrow-based implementation forward `kwargs` to
+        [`pyarrow.csv.CSVWriter`](https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html).
+        See the `to_csv` method of the backend you are using for details.
         """
         self._find_backend(use_default=True).to_csv(self, path, params=params, **kwargs)
 
@@ -855,7 +873,15 @@ class Expr(Immutable, Coercible):
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
-            Additional keyword arguments passed to deltalake.writer.write_deltalake method
+            Additional, backend-specific keyword arguments.
+
+        Notes
+        -----
+        Which `kwargs` are accepted depends on the backend. Backends with a
+        native Delta Lake writer take that writer's options, while backends
+        using the default implementation forward `kwargs` to
+        [`deltalake.write_deltalake`](https://delta-io.github.io/delta-rs/api/delta_writer/).
+        See the `to_delta` method of the backend you are using for details.
         """
         self._find_backend(use_default=True).to_delta(
             self, path, params=params, **kwargs
