@@ -206,7 +206,7 @@ t.relocate("sex", "year")
 
 The `.sample()` method can be used to sample rows from a table:
 
-:::{.callout-info}
+:::{.callout-note}
 Number of rows returned may vary by invocation.
 :::
 
