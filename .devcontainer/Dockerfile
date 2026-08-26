@@ -3,7 +3,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.12.4 /uv /uvx /bin/
 ARG USERNAME=vscode
 
 RUN apt-get update && \
-  apt-get install -y --no-install-recommends libgdal-dev python3-dev openjdk-17-jdk && \
+  apt-get install -y --no-install-recommends libgdal-dev python3-dev default-jdk && \
   rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install pipx --no-cache-dir
