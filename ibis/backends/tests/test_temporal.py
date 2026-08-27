@@ -1434,55 +1434,43 @@ def test_string_as_date(alltypes, fmt):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
-# https://github.com/ibis-project/ibis/issues/12004
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=PsycoPgInternalError,
-    reason="Materialize doesn't have to_date() function - backend limitation",
-)
-@pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
-    raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notyet(
-    ["flink"],
-    raises=AssertionError,
-    reason="Flink misinterprets strftime-style format strings, producing a wrong date",
-)
-def test_string_as_date_single_digit_month_day(con):
-    expr = ibis.literal("1/2/2021").as_date("%m/%d/%Y")
-    result = con.execute(expr)
-    expected = datetime.date(2021, 1, 2)
-    if isinstance(result, (pd.Timestamp, datetime.datetime)):
-        result = result.date()
-    assert result == expected
-
-
-# https://github.com/ibis-project/ibis/issues/12004
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=PsycoPgInternalError,
-    reason="Materialize doesn't have to_date() function - backend limitation",
-)
-@pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
-    raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notyet(
-    ["flink"],
-    raises=AssertionError,
-    reason="Flink misinterprets strftime-style format strings, producing a wrong date",
-)
-def test_string_as_date_single_digit_month_day_column(con):
+def build_single_digit_date_col(con):
     # con.sql() creates a column (not a literal), then .as_date() is applied.
-    t0 = con.sql("SELECT '1/1/2026' AS raw_date")
-    # Use t0.columns[0] to handle backends that uppercase column names (e.g. Oracle)
-    t1 = t0.mutate(parsed_date=t0[t0.columns[0]].as_date("%m/%d/%Y"))
-    result = t1.execute().at[0, "parsed_date"]
-    expected = datetime.date(2026, 1, 1)
-    if isinstance(result, (pd.Timestamp, datetime.datetime)):
-        result = result.date()
-    assert result == expected
+    t = con.sql("SELECT '1/2/2021' AS raw_date")
+    # Use t.columns[0] to handle backends that uppercase column names (e.g. Oracle)
+    return t[t.columns[0]].as_date("%m/%d/%Y")
+
+
+# https://github.com/ibis-project/ibis/issues/12004
+@pytest.mark.parametrize(
+    "expr_fn",
+    [
+        param(lambda _: ibis.literal("1/2/2021").as_date("%m/%d/%Y"), id="literal"),
+        param(build_single_digit_date_col, id="column"),
+    ],
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have to_date() function - backend limitation",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=AssertionError,
+    reason="Flink misinterprets strftime-style format strings, producing a wrong date",
+)
+def test_string_as_date_single_digit_month_day(backend, con, expr_fn):
+    expr = expr_fn(con).name("parsed_date").as_table()
+    result = con.execute(expr)
+
+    golden = pd.Series([datetime.date(2021, 1, 2)], name="parsed_date").astype(
+        result.parsed_date.dtype
+    )
+    backend.assert_series_equal(golden, result.parsed_date)
 
 
 @pytest.mark.notyet(
