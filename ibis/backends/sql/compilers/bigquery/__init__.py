@@ -110,10 +110,14 @@ def _force_quote_table(table: sge.Table) -> sge.Table:
 def lower_pivot_longer_bigquery(_, **kwargs):
     """Use BigQuery's native `UNPIVOT` when there's a single `names_to` column.
 
-    `UNPIVOT` only ever produces a single name column, so a `PivotLonger`
-    call that needs more than one `names_to` column (e.g., from a
-    multi-group `names_pattern`) can't be expressed natively and falls back
-    to the generic struct-packing/unnesting implementation.
+    Both forms of `UNPIVOT` (single- and multi-column) produce exactly one
+    name column; BigQuery's "multi-column" form instead melts several
+    *value* columns at once (e.g. unpivoting `(lo, hi)` pairs into a single
+    `(lo, hi)` per row), which isn't something `PivotLonger` can ask for in
+    the first place (`values_to` is always a single column). So a
+    `PivotLonger` call that needs more than one `names_to` column (e.g.,
+    from a multi-group `names_pattern`) can't be expressed by either form
+    and falls back to the generic struct-packing/unnesting implementation.
     """
     if len(_.names_to) != 1:
         return _.to_generic().op()
@@ -1096,7 +1100,16 @@ class BigQueryCompiler(SQLGlotCompiler):
         )
 
     def visit_PivotLonger(
-        self, op, *, parent, pivot_columns, names_to, values_to, names, pivot_values
+        self,
+        op,
+        *,
+        parent,
+        pivot_columns,
+        names_to,
+        values_to,
+        names,
+        pivot_values,
+        values_drop_na,
     ):
         quoted = self.quoted
         (name_column,) = names_to
@@ -1131,10 +1144,10 @@ class BigQueryCompiler(SQLGlotCompiler):
                 sge.In(this=sg.column(name_column, quoted=quoted), expressions=in_exprs)
             ],
             unpivot=True,
-            # ibis's generic `PivotLonger` lowering keeps rows with NULL
-            # values (unlike BigQuery's default EXCLUDE NULLS), so match
-            # that here to stay a drop-in replacement
-            include_nulls=True,
+            # `values_drop_na=False` (ibis's default) keeps rows with NULL
+            # values, unlike BigQuery's own default of EXCLUDE NULLS, so
+            # match that here to stay a drop-in replacement
+            include_nulls=not values_drop_na,
         )
         inner.set("pivots", [pivot])
 

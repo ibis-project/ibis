@@ -530,6 +530,7 @@ class PivotLonger(Relation):
     values_to: str
     names: FrozenOrderedDict[str, VarTuple[Any]]
     pivot_values: FrozenOrderedDict[str, Value]
+    values_drop_na: bool = False
 
     @attribute
     def values(self):
@@ -556,9 +557,12 @@ class PivotLonger(Relation):
             pieces.append(ibis.struct(row))
 
         keep = [name for name in parent.columns if name not in self.pivot_columns]
-        return parent.select(*keep, __pivoted__=ibis.array(pieces).unnest()).unpack(
+        result = parent.select(*keep, __pivoted__=ibis.array(pieces).unnest()).unpack(
             "__pivoted__"
         )
+        if self.values_drop_na:
+            result = result.drop_null(self.values_to)
+        return result
 
     @attribute
     def schema(self):

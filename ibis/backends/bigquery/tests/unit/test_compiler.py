@@ -721,6 +721,17 @@ def test_pivot_longer_uses_native_unpivot(snapshot):
     snapshot.assert_match(result, "out.sql")
 
 
+def test_pivot_longer_values_drop_na_uses_exclude_nulls(snapshot):
+    t = ibis.table(dict(artist="string", wk1="int64", wk2="int64"), name="t")
+    expr = t.pivot_longer(
+        ["wk1", "wk2"], names_to="week", values_to="rank", values_drop_na=True
+    )
+    result = to_sql(expr)
+    assert "EXCLUDE NULLS" in result
+    assert "INCLUDE NULLS" not in result
+    snapshot.assert_match(result, "out.sql")
+
+
 def test_pivot_longer_multi_names_to_falls_back(snapshot):
     # UNPIVOT only ever produces a single name column, so a call needing
     # more than one `names_to` column can't be expressed natively.

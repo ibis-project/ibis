@@ -4218,6 +4218,7 @@ class Table(Expr, FixedTextJupyterMixin):
         ) = None,
         values_to: str = "value",
         values_transform: Callable[[ir.Value], ir.Value] | Deferred | None = None,
+        values_drop_na: bool = False,
     ) -> Table:
         r"""Transform a table from wider to longer.
 
@@ -4239,6 +4240,9 @@ class Table(Expr, FixedTextJupyterMixin):
         values_transform
             Apply a function to the value column. This can be a lambda or
             deferred expression.
+        values_drop_na
+            If `True`, drop rows where the resulting `values_to` column is
+            `NULL`.
 
         Returns
         -------
@@ -4538,6 +4542,7 @@ class Table(Expr, FixedTextJupyterMixin):
             values_to=values_to,
             names=names,
             pivot_values=pivot_values,
+            values_drop_na=values_drop_na,
         ).to_expr()
 
     @util.experimental
