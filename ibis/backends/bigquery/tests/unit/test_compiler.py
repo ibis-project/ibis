@@ -711,3 +711,38 @@ def test_unreasonably_long_name():
         match="BigQuery does not allow column names longer than 300 characters",
     ):
         ibis.to_sql(expr, dialect="bigquery")
+
+
+def test_pivot_longer_uses_native_unpivot(snapshot):
+    t = ibis.table(dict(artist="string", wk1="int64", wk2="int64"), name="t")
+    expr = t.pivot_longer(["wk1", "wk2"], names_to="week", values_to="rank")
+    result = to_sql(expr)
+    assert "UNPIVOT" in result
+    snapshot.assert_match(result, "out.sql")
+
+
+def test_pivot_longer_multi_names_to_falls_back(snapshot):
+    # UNPIVOT only ever produces a single name column, so a call needing
+    # more than one `names_to` column can't be expressed natively.
+    t = ibis.table(dict(id="int64", x_a="int64", x_b="int64"), name="t")
+    expr = t.pivot_longer(
+        ["x_a", "x_b"],
+        names_to=["metric", "grp"],
+        names_pattern=r"(x)_(a|b)",
+        values_to="val",
+    )
+    result = to_sql(expr)
+    assert "UNPIVOT" not in result
+    snapshot.assert_match(result, "out.sql")
+
+
+def test_pivot_longer_casts_mismatched_types(snapshot):
+    # BigQuery's UNPIVOT IN-list requires every column to share the exact
+    # same type; ibis's schema unifies int64/float64 columns to float64, so
+    # each column must be cast before entering the IN-list to match.
+    t = ibis.table(dict(artist="string", wk1="int64", wk2="float64"), name="t")
+    expr = t.pivot_longer(["wk1", "wk2"], names_to="week", values_to="rank")
+    result = to_sql(expr)
+    assert result.count("CAST(") == 2
+    assert "AS FLOAT64" in result
+    snapshot.assert_match(result, "out.sql")

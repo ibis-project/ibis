@@ -4517,24 +4517,28 @@ class Table(Expr, FixedTextJupyterMixin):
         elif isinstance(values_transform, Deferred):
             values_transform = values_transform.resolve
 
-        pieces = []
+        pivot_columns = []
+        names = {}
+        pivot_values = {}
 
         for pivot_col in pivot_cols:
             col_name = pivot_col.get_name()
             match_result = names_pattern.match(col_name)
-            row = {
-                name: names_transform[name](value)
+            pivot_columns.append(col_name)
+            names[col_name] = tuple(
+                names_transform[name](value)
                 for name, value in zip(names_to, match_result.groups())
-            }
-            row[values_to] = values_transform(pivot_col)
-            pieces.append(ibis.struct(row))
+            )
+            pivot_values[col_name] = values_transform(pivot_col)
 
-        # nest into an array of structs to zip unnests together
-        pieces = ibis.array(pieces)
-
-        return self.select(~pivot_sel, __pivoted__=pieces.unnest()).unpack(
-            "__pivoted__"
-        )
+        return ops.PivotLonger(
+            parent=self,
+            pivot_columns=pivot_columns,
+            names_to=names_to,
+            values_to=values_to,
+            names=names,
+            pivot_values=pivot_values,
+        ).to_expr()
 
     @util.experimental
     def pivot_wider(
