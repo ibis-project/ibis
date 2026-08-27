@@ -4242,12 +4242,29 @@ class Table(Expr, FixedTextJupyterMixin):
             deferred expression.
         values_drop_na
             If `True`, drop rows where the resulting `values_to` column is
-            `NULL`.
+            `NULL`. Rows are kept by default, unlike BigQuery's own `UNPIVOT`
+            (see Notes).
 
         Returns
         -------
         Table
             Pivoted table
+
+        Notes
+        -----
+        On BigQuery, a call with a single `names_to` column compiles to a
+        native `UNPIVOT` instead of the generic unnest-based implementation
+        used on other backends. This is a compilation detail only: output is
+        identical either way. One default differs from BigQuery's own SQL:
+        BigQuery's `UNPIVOT` excludes `NULL` values by default, but
+        `pivot_longer` keeps them by default (`values_drop_na=False`), to
+        stay consistent across backends. Set `values_drop_na=True` to get
+        BigQuery's `EXCLUDE NULLS` behavior (this also drops nulls on other
+        backends, so results stay consistent).
+
+        A `names_to` with more than one column (e.g. from a multi-group
+        `names_pattern`) always uses the generic implementation on BigQuery
+        too, since `UNPIVOT` only ever produces a single name column.
 
         Examples
         --------
