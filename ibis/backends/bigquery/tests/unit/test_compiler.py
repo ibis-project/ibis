@@ -718,6 +718,11 @@ def test_pivot_longer_uses_native_unpivot(snapshot):
     expr = t.pivot_longer(["wk1", "wk2"], names_to="week", values_to="rank")
     result = to_sql(expr)
     assert "UNPIVOT" in result
+    # default (values_drop_na=False) keeps NULLs, matching pivot_longer's
+    # behavior on every other backend, unlike UNPIVOT's own EXCLUDE NULLS
+    # default -- must be stated explicitly, not left to BigQuery's default.
+    assert "INCLUDE NULLS" in result
+    assert "EXCLUDE NULLS" not in result
     snapshot.assert_match(result, "out.sql")
 
 
