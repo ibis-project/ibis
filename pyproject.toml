@@ -142,8 +142,9 @@ exasol = [
   "rich>=12.4.4",
 ]
 flink = [
-  # adding apache-flink would lock pyarrow to an old version (for all backends),
-  # due to the transitional dependency apache-beam imposing a low upper bound.
+  # apache-flink is installed separately at test time (see the CI matrix), not
+  # pinned here: it publishes no wheels for Python 3.13+, and its transitive
+  # apache-beam dependency caps pyarrow, which would apply to all backends.
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
@@ -446,10 +447,6 @@ filterwarnings = [
   "ignore:invalid escape sequence:DeprecationWarning",
   # geopandas raises user warning on geometry column
   "ignore:Geometry is in a geographic CRS",
-  # `is_sparse` deprecation was addressed in pyarrow 13.0.0 (see https://github.com/apache/arrow/pull/35366),
-  # but flink requires apache-beam<2.49, which caps its pyarrow dependency (see https://github.com/apache/beam/blob/v2.48.0/sdks/python/setup.py#L144)
-  "ignore:is_sparse is deprecated and will be removed in a future version:FutureWarning",
-  "ignore:is_sparse is deprecated and will be removed in a future version:DeprecationWarning",
   # google-api-core
   "ignore:Please install grpcio-status to obtain helpful grpc error messages.",
   # dateutil tz
@@ -459,10 +456,9 @@ filterwarnings = [
   # pandas 2.2 warnings
   'ignore:DataFrameGroupBy\.apply operated on the grouping columns\. This behavior is deprecated:DeprecationWarning',
   'ignore:Downcasting object dtype arrays on \.fillna, \.ffill, \.bfill is deprecated:FutureWarning',
-  # pandas 2.2 warnings coming directly from the way flink uses pandas
-  "ignore:Passing a BlockManager to DataFrame is deprecated:DeprecationWarning",
-  # flink is STILL using pkg_resources
-  "ignore:pkg_resources is deprecated as an API.:UserWarning",
+  # pyflink's @Deprecated decorator warns when it is *applied*, so importing
+  # any pyflink module warns for every deprecated API it defines
+  'ignore:.+ has been deprecated since version \d+\.\d+\.\d+:DeprecationWarning',
   # snowpark logging warnings
   "ignore:The 'warn' method is deprecated, use 'warning' instead:DeprecationWarning",
   # botocore is still using utcnow
@@ -482,8 +478,6 @@ filterwarnings = [
   "ignore:Unable to set session timezone to UTC:UserWarning",
   # BigQuery dropping support for 3.10 in Oct 2026
   "ignore:You are using a Python version .+ which Google will stop supporting.+:FutureWarning",
-  # flink deprecation warning
-  "ignore:.+setName.+:DeprecationWarning",
   # flink deprecation warning (can't use the specific type because it's a
   # dependency [pyparsing] that only shows up in flink)
   "ignore:.*deprecated - use.*:",
