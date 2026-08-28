@@ -110,14 +110,9 @@ def _force_quote_table(table: sge.Table) -> sge.Table:
 def lower_pivot_longer_bigquery(_, **kwargs):
     """Use BigQuery's native `UNPIVOT` when there's a single `names_to` column.
 
-    Both forms of `UNPIVOT` (single- and multi-column) produce exactly one
-    name column; BigQuery's "multi-column" form instead melts several
-    *value* columns at once (e.g. unpivoting `(lo, hi)` pairs into a single
-    `(lo, hi)` per row), which isn't something `PivotLonger` can ask for in
-    the first place (`values_to` is always a single column). So a
-    `PivotLonger` call that needs more than one `names_to` column (e.g.,
-    from a multi-group `names_pattern`) can't be expressed by either form
-    and falls back to the generic struct-packing/unnesting implementation.
+    Both forms of `UNPIVOT` only ever produce one name column, so a
+    `PivotLonger` with more than one (e.g. from a multi-group
+    `names_pattern`) falls back to the generic implementation.
     """
     if len(_.names_to) != 1:
         return _.to_generic().op()
@@ -1118,13 +1113,8 @@ class BigQueryCompiler(SQLGlotCompiler):
         excludes = [sg.column(c, quoted=quoted) for c in pivot_columns]
         star = sge.Column(this=sge.Star(**{EXCEPT_ARG: excludes}), table=table)
 
-        # apply `values_transform` (already compiled into `pivot_values`) in
-        # place of each pivoted column, so UNPIVOT only has to melt them.
-        #
-        # unlike ibis's own struct/array unification, BigQuery's UNPIVOT
-        # requires every column in the IN-list to share the *exact* same
-        # type (e.g. INT64 and FLOAT64 side by side is a hard error), so
-        # cast each one to the value column's resolved output type first
+        # UNPIVOT's IN-list requires every column to share the exact same
+        # type, so cast each pivoted column to the value column's type first
         value_type = self.type_mapper.from_ibis(op.schema[values_to])
         renamed = [
             sge.Cast(this=pivot_values[c], to=value_type).as_(c, quoted=quoted)
@@ -1144,19 +1134,14 @@ class BigQueryCompiler(SQLGlotCompiler):
                 sge.In(this=sg.column(name_column, quoted=quoted), expressions=in_exprs)
             ],
             unpivot=True,
-            # `values_drop_na=False` (ibis's default) keeps rows with NULL
-            # values, unlike BigQuery's own default of EXCLUDE NULLS, so
-            # match that here to stay a drop-in replacement
+            # ibis defaults to keeping NULLs, opposite of UNPIVOT's own default
             include_nulls=not values_drop_na,
         )
         inner.set("pivots", [pivot])
 
-        # BigQuery's UNPIVOT always places the melted columns as
-        # `..., value_col, name_col` (matching the `value FOR name` clause
-        # order), but ibis's `PivotLonger.schema` declares `..., name_col,
-        # value_col` (`to_generic()`'s struct field order). Result columns
-        # are matched to the schema positionally, so `SELECT *` here would
-        # mislabel the two columns; select them explicitly in schema order.
+        # UNPIVOT's output order is [value_col, name_col], but the schema
+        # expects [name_col, value_col]; select explicitly to avoid a
+        # positional mismatch from `SELECT *`.
         keep = [c for c in op.schema.names if c not in (name_column, values_to)]
         cols = [sg.column(c, quoted=quoted) for c in keep]
         cols.append(sg.column(name_column, quoted=quoted))

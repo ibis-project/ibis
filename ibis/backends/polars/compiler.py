@@ -287,9 +287,6 @@ def aggregation(op, **kw):
 
 @translate.register(ops.PivotLonger)
 def pivot_longer(op, **kw):
-    # Polars has no native unpivot construct wired into `translate`, unlike
-    # SQLGlotCompiler backends (which lower via `LOWERED_OPS`); fall back to
-    # the backend-agnostic struct/array/unnest expansion.
     return translate(op.to_generic().op(), **kw)
 
 

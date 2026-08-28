@@ -537,15 +537,7 @@ class PivotLonger(Relation):
         return self.parent.fields
 
     def to_generic(self):
-        """Expand into the struct-packing/unnesting implementation.
-
-        This is the backend-agnostic definition of `PivotLonger`: build one
-        struct per pivoted column, collect them into an array, and unnest.
-        Used both as the default lowering for backends without a native
-        unpivot construct, and as the fallback for `PivotLonger` shapes a
-        backend's native unpivot can't express (e.g., more than one
-        `names_to` column).
-        """
+        """Expand into the backend-agnostic struct/array/unnest implementation."""
         import ibis
 
         parent = self.parent.to_expr()
