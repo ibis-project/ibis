@@ -538,7 +538,7 @@ class PivotLonger(Relation):
 
     def to_generic(self):
         """Expand into the backend-agnostic struct/array/unnest implementation."""
-        import ibis
+        from ibis.expr.types import array, struct
 
         parent = self.parent.to_expr()
 
@@ -546,10 +546,10 @@ class PivotLonger(Relation):
         for col in self.pivot_columns:
             row = dict(zip(self.names_to, self.names[col]))
             row[self.values_to] = self.pivot_values[col].to_expr()
-            pieces.append(ibis.struct(row))
+            pieces.append(struct(row))
 
         keep = [name for name in parent.columns if name not in self.pivot_columns]
-        result = parent.select(*keep, __pivoted__=ibis.array(pieces).unnest()).unpack(
+        result = parent.select(*keep, __pivoted__=array(pieces).unnest()).unpack(
             "__pivoted__"
         )
         if self.values_drop_na:

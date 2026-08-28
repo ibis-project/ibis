@@ -107,7 +107,7 @@ def _force_quote_table(table: sge.Table) -> sge.Table:
 
 
 @replace(p.PivotLonger)
-def lower_pivot_longer_bigquery(_, **kwargs):
+def pivot_longer_to_unpivot(_, **kwargs):
     """Use BigQuery's native `UNPIVOT` when there's a single `names_to` column.
 
     Both forms of `UNPIVOT` only ever produce one name column, so a
@@ -137,7 +137,7 @@ class BigQueryCompiler(SQLGlotCompiler):
     supports_qualify = True
 
     LOWERED_OPS = {
-        ops.PivotLonger: lower_pivot_longer_bigquery,
+        ops.PivotLonger: pivot_longer_to_unpivot,
         ops.Sample: lower_sample(
             supported_methods=("block",),
             supports_seed=False,
