@@ -48,6 +48,11 @@ impala:
       - any-glob-to-any-file: "ibis/backends/impala/**"
       - any-glob-to-any-file: "ibis/backends/sql/compilers/impala/**"
 
+db2:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/db2/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/db2/**"
+
 mssql:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/mssql/**"

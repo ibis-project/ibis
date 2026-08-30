@@ -96,6 +96,16 @@ clickhouse = [
   "pandas>=1.5.3,<4",
   "rich>=12.4.4",
 ]
+db2 = [
+  "ibm_db>=3.0.0",
+  "db2-sqlglot-dialect>=1.0.0",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4",
+  "packaging>=21.3",
+]
 databricks = [
   "databricks-sql-connector>=4",
   "pyarrow>=10.0.1",
@@ -332,6 +342,7 @@ bigquery = "ibis.backends.bigquery"
 clickhouse = "ibis.backends.clickhouse"
 databricks = "ibis.backends.databricks"
 datafusion = "ibis.backends.datafusion"
+db2 = "ibis.backends.db2"
 druid = "ibis.backends.druid"
 duckdb = "ibis.backends.duckdb"
 exasol = "ibis.backends.exasol"
@@ -383,6 +394,7 @@ addopts = [
 ]
 norecursedirs = [
   "**/snapshots",
+  "**/temp",
   ".benchmarks",
   ".direnv",
   ".git",
@@ -512,6 +524,7 @@ markers = [
   "clickhouse: ClickHouse tests",
   "databricks: Databricks SQL tests",
   "datafusion: Apache Datafusion tests",
+  "db2: IBM Db2 tests",
   "druid: Apache Druid tests",
   "duckdb: DuckDB tests",
   "exasol: ExasolDB tests",
