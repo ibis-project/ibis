@@ -324,10 +324,25 @@ def warn_deprecated(name, *, instead, as_of="", removed_in="", stacklevel=1):
 
 
 def append_admonition(
-    func: Callable, *, msg: str, body: str = "", kind: str = "warning"
+    docstr: str | None, *, msg: str, body: str = "", kind: str = "warning"
 ) -> str:
-    """Append a `kind` admonition with `msg` to `func`'s docstring."""
-    if docstr := func.__doc__:
+    """Append a `kind` admonition with `msg` to `docstr`.
+
+    Takes the docstring rather than the callable so that the documentation
+    build can reproduce the same admonition from a statically parsed
+    decorator, without importing the module that defines it.
+    """
+    lines = [f"::: {{.callout-{kind}}}", f"## {msg}"]
+
+    # the body is part of the callout, so it goes inside the fence; indenting it
+    # would turn it into a code block
+    if body:
+        lines += ["", body]
+
+    lines.append(":::")
+    admonition_doc = "\n".join(lines)
+
+    if docstr:
         preamble, *rest = docstr.split("\n\n", maxsplit=1)
 
         # count leading spaces and add them to the deprecation warning so the
@@ -336,18 +351,10 @@ def append_admonition(
             1 for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
         )
 
-        lines = [f"::: {{.callout-{kind}}}", f"## {msg}", ":::"]
-        admonition_doc = textwrap.indent("\n".join(lines), leading_spaces)
-
-        if body:
-            rest = [indent(body, spaces=len(leading_spaces) + 4), *rest]
-
-        docstr = "\n\n".join([preamble, admonition_doc, *rest])
+        docstr = "\n\n".join(
+            [preamble, textwrap.indent(admonition_doc, leading_spaces), *rest]
+        )
     else:
-        lines = [f"::: {{.callout-{kind}}}", f"## {msg}", ":::"]
-        admonition_doc = "\n".join(lines)
-        if body:
-            admonition_doc += f"\n\n{indent(body, spaces=4)}"
         docstr = admonition_doc
     return docstr
 
@@ -360,7 +367,7 @@ def deprecated(*, instead: str, as_of: str = "", removed_in: str = ""):
             func.__qualname__, instead=instead, as_of=as_of, removed_in=removed_in
         )
 
-        func.__doc__ = append_admonition(func, msg=f"DEPRECATED: {msg}")
+        func.__doc__ = append_admonition(func.__doc__, msg=f"DEPRECATED: {msg}")
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -378,15 +385,15 @@ def deprecated(*, instead: str, as_of: str = "", removed_in: str = ""):
     return decorator
 
 
-def backend_sensitive(
-    *,
-    msg: str = "This operation differs between backends.",
-    why: str = "",
-):
+BACKEND_SENSITIVE_MSG = "This operation differs between backends."
+EXPERIMENTAL_MSG = "This API is experimental and subject to change."
+
+
+def backend_sensitive(*, msg: str = BACKEND_SENSITIVE_MSG, why: str = ""):
     """Indicate that an API may be sensitive to a backend."""
 
     def wrapper(func):
-        func.__doc__ = append_admonition(func, msg=msg, body=why, kind="info")
+        func.__doc__ = append_admonition(func.__doc__, msg=msg, body=why, kind="note")
         return func
 
     return wrapper
@@ -395,9 +402,7 @@ def backend_sensitive(
 def experimental(func):
     """Decorate a callable to add warning about API instability in docstring."""
 
-    func.__doc__ = append_admonition(
-        func, msg="This API is experimental and subject to change."
-    )
+    func.__doc__ = append_admonition(func.__doc__, msg=EXPERIMENTAL_MSG)
     return func
 
 

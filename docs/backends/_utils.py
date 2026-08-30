@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import json
+import sys
 from functools import cache, partial
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from quartodoc import MdRenderer, get_object
+
+# these pages are rendered with the docs directory as the working directory's
+# sibling, so make the shared renderer helpers importable
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+from _renderer import apply_admonitions
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -66,7 +74,9 @@ def render_method(*, member, renderer: MdRenderer) -> Iterator[str]:
         yield f"`{name}({', '.join(params)})`"
     yield "\n"
 
-    yield get_renderer(header_level + 1).render(find_member_with_docstring(member))
+    documented = find_member_with_docstring(member)
+    apply_admonitions(documented)
+    yield get_renderer(header_level + 1).render(documented)
 
 
 def render_methods(obj, *methods: str, level: int) -> None:
