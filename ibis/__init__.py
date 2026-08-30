@@ -9,6 +9,7 @@ from typing import Any
 
 from ibis import examples, util
 from ibis.backends import BaseBackend
+from ibis.common import exceptions as exceptions
 from ibis.common.exceptions import IbisError
 from ibis.config import options
 from ibis.expr import api
@@ -19,6 +20,7 @@ from ibis.expr.operations import udf
 __all__ = [  # noqa: PLE0604
     "api",
     "examples",
+    "exceptions",
     "ir",
     "udf",
     "util",
