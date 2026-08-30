@@ -285,6 +285,11 @@ def aggregation(op, **kw):
     return func()
 
 
+@translate.register(ops.PivotLonger)
+def pivot_longer(op, **kw):
+    return translate(op.to_generic().op(), **kw)
+
+
 @translate.register(PandasRename)
 def rename(op, **kw):
     parent = translate(op.parent, **kw)

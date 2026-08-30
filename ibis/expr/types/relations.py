@@ -4218,6 +4218,7 @@ class Table(Expr, FixedTextJupyterMixin):
         ) = None,
         values_to: str = "value",
         values_transform: Callable[[ir.Value], ir.Value] | Deferred | None = None,
+        values_drop_na: bool = False,
     ) -> Table:
         r"""Transform a table from wider to longer.
 
@@ -4239,11 +4240,24 @@ class Table(Expr, FixedTextJupyterMixin):
         values_transform
             Apply a function to the value column. This can be a lambda or
             deferred expression.
+        values_drop_na
+            If `True`, drop rows where the resulting `values_to` column is
+            `NULL`. Rows are kept by default, unlike BigQuery's own `UNPIVOT`
+            (see Notes).
 
         Returns
         -------
         Table
             Pivoted table
+
+        Notes
+        -----
+        On BigQuery, a single-column `names_to` compiles to a native
+        `UNPIVOT` instead of the generic unnest-based implementation used on
+        other backends; output is identical either way. BigQuery's own
+        `UNPIVOT` excludes `NULL` values by default, but `pivot_longer` keeps
+        them by default (`values_drop_na=False`) to stay consistent across
+        backends. Set `values_drop_na=True` for `EXCLUDE NULLS` behavior.
 
         Examples
         --------
@@ -4517,24 +4531,29 @@ class Table(Expr, FixedTextJupyterMixin):
         elif isinstance(values_transform, Deferred):
             values_transform = values_transform.resolve
 
-        pieces = []
+        pivot_columns = []
+        names = {}
+        pivot_values = {}
 
         for pivot_col in pivot_cols:
             col_name = pivot_col.get_name()
             match_result = names_pattern.match(col_name)
-            row = {
-                name: names_transform[name](value)
+            pivot_columns.append(col_name)
+            names[col_name] = tuple(
+                names_transform[name](value)
                 for name, value in zip(names_to, match_result.groups())
-            }
-            row[values_to] = values_transform(pivot_col)
-            pieces.append(ibis.struct(row))
+            )
+            pivot_values[col_name] = values_transform(pivot_col)
 
-        # nest into an array of structs to zip unnests together
-        pieces = ibis.array(pieces)
-
-        return self.select(~pivot_sel, __pivoted__=pieces.unnest()).unpack(
-            "__pivoted__"
-        )
+        return ops.PivotLonger(
+            parent=self,
+            pivot_columns=pivot_columns,
+            names_to=names_to,
+            values_to=values_to,
+            names=names,
+            pivot_values=pivot_values,
+            values_drop_na=values_drop_na,
+        ).to_expr()
 
     @util.experimental
     def pivot_wider(

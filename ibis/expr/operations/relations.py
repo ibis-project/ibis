@@ -520,4 +520,45 @@ class TableUnnest(Relation):
         return Schema(base)
 
 
+@public
+class PivotLonger(Relation):
+    """Pivot a table from wide to long."""
+
+    parent: Relation
+    pivot_columns: VarTuple[str]
+    names_to: VarTuple[str]
+    values_to: str
+    names: FrozenOrderedDict[str, VarTuple[Any]]
+    pivot_values: FrozenOrderedDict[str, Value]
+    values_drop_na: bool = False
+
+    @attribute
+    def values(self):
+        return self.parent.fields
+
+    def to_generic(self):
+        """Expand into the backend-agnostic struct/array/unnest implementation."""
+        from ibis.expr.types import array, struct
+
+        parent = self.parent.to_expr()
+
+        pieces = []
+        for col in self.pivot_columns:
+            row = dict(zip(self.names_to, self.names[col]))
+            row[self.values_to] = self.pivot_values[col].to_expr()
+            pieces.append(struct(row))
+
+        keep = [name for name in parent.columns if name not in self.pivot_columns]
+        result = parent.select(*keep, __pivoted__=array(pieces).unnest()).unpack(
+            "__pivoted__"
+        )
+        if self.values_drop_na:
+            result = result.drop_null(self.values_to)
+        return result
+
+    @attribute
+    def schema(self):
+        return self.to_generic().schema()
+
+
 # TODO(kszucs): support t.select(*t) syntax by implementing Table.__iter__()
