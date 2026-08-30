@@ -124,10 +124,15 @@ def filter_to_select(_, **kwargs):
     )
 
 
+def is_constant(value: ops.Value) -> bool:
+    return not value.relations and not value.find(ops.Impure, filter=ops.Value)
+
+
 @replace(p.Sort)
 def sort_to_select(_, **kwargs):
     """Convert a Sort node to a Select node."""
-    return Select(_.parent, selections=_.values, sort_keys=_.keys)
+    non_constant_keys = tuple(key for key in _.keys if not is_constant(key.expr))
+    return Select(_.parent, selections=_.values, sort_keys=non_constant_keys)
 
 
 @replace(p.Distinct)
