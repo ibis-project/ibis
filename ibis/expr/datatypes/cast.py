@@ -148,9 +148,27 @@ def higher_precedence(left: dt.DataType, right: dt.DataType) -> dt.DataType:
 
 
 @public
-def highest_precedence(dtypes: Iterable[dt.DataType]) -> dt.DataType:
-    """Compute the highest precedence of `dtypes`."""
-    if collected := list(dtypes):
+def highest_precedence(dtypes: Iterable[dt.DataType | str | type]) -> dt.DataType:
+    """Compute the highest precedence of `dtypes`.
+
+    Parameters
+    ----------
+    dtypes
+        An iterable of things convertible to datatypes.
+
+    Returns
+    -------
+    DataType
+        The highest precedence datatype.
+        If no datatypes are provided, return `dt.null`
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.highest_precedence_dtype([int, "int8"])
+    Int64(nullable=True)
+    """
+    if collected := [dt.dtype(typ) for typ in dtypes]:
         return functools.reduce(higher_precedence, collected)
     else:
         return dt.null
