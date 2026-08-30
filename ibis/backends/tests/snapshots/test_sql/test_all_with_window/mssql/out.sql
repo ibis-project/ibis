@@ -1,0 +1,7 @@
+SELECT
+  IIF([t1].[All(a)] <> 0, 1, 0) AS [All(a)]
+FROM (
+  SELECT
+    MIN(IIF([t0].[a] <> 0, 1, 0)) OVER (PARTITION BY [t0].[x] ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS [All(a)]
+  FROM [t] AS [t0]
+) AS [t1]
