@@ -19,6 +19,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as exc
+from ibis.backends.tests.errors import ArrowInvalid
 
 
 @pytest.fixture
@@ -36,6 +37,11 @@ def table(backend):
 
 
 @pytest.mark.notimpl(["polars"])
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_interactive_execute_on_repr(table, queries):
     repr(table.bigint_col.sum())
     assert len(queries) >= 1
@@ -56,6 +62,11 @@ def test_repr_png_is_not_none_in_not_interactive(table, monkeypatch):
 
 
 @pytest.mark.notimpl(["polars"])
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_default_limit(table, queries):
     repr(table.select("id", "bool_col"))
 
@@ -63,6 +74,11 @@ def test_default_limit(table, queries):
 
 
 @pytest.mark.notimpl(["polars"])
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_respect_set_limit(table, queries):
     repr(table.select("id", "bool_col").limit(10))
 
@@ -70,6 +86,11 @@ def test_respect_set_limit(table, queries):
 
 
 @pytest.mark.notimpl(["polars"])
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
+)
 def test_disable_query_limit(table, queries, monkeypatch):
     assert ibis.options.sql.default_limit is None
 

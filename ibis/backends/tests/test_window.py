@@ -10,10 +10,12 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
+    ArrowInvalid,
     ClickHouseDatabaseError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
+    MySQLProgrammingError,
     PsycoPg2InternalError,
     Py4JJavaError,
     PyDruidProgrammingError,
@@ -969,7 +971,7 @@ def test_ungrouped_unbounded_window(
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notyet(
     ["mysql"],
-    raises=MySQLOperationalError,
+    raises=(MySQLOperationalError, MySQLProgrammingError),
     reason="https://github.com/tobymao/sqlglot/issues/2779",
 )
 @pytest.mark.notyet(
@@ -1151,7 +1153,7 @@ def test_first_last(backend):
     ["impala"], raises=ImpalaHiveServer2Error, reason="not supported by Impala"
 )
 @pytest.mark.notyet(
-    ["mysql"], raises=MySQLOperationalError, reason="not supported by MySQL"
+    ["mysql"], raises=MySQLProgrammingError, reason="not supported by MySQL"
 )
 @pytest.mark.notyet(
     ["singlestoredb"],
@@ -1297,6 +1299,11 @@ def test_windowed_order_by_sequence_is_preserved(con):
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="Window function with empty PARTITION BY is not supported due to performance issues",
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=ArrowInvalid,
+    reason="ADBC MySQL driver returns opaque type for NULL",
 )
 def test_duplicate_ordered_sum(con):
     expr = (

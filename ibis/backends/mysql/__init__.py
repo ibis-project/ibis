@@ -6,19 +6,17 @@ import contextlib
 import getpass
 import warnings
 from functools import cached_property
-from operator import itemgetter
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import unquote_plus
 
-import MySQLdb
 import sqlglot as sg
 import sqlglot.expressions as sge
-from MySQLdb import ProgrammingError
-from MySQLdb.constants import ER
+from adbc_driver_manager import dbapi as adbc_dbapi
 
 import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -30,7 +28,7 @@ from ibis.backends import (
     SupportsTempTables,
 )
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import STAR, TRUE, C, RenameTable
+from ibis.backends.sql.compilers.base import RenameTable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -70,7 +68,10 @@ class Backend(
 
     @cached_property
     def version(self):
-        return ".".join(map(str, self.con._server_version))
+        with self.con.cursor() as cur:
+            cur.execute("SELECT VERSION()")
+            result = cur.fetch_arrow_table()
+        return result.column(0)[0].as_py()
 
     def do_connect(
         self,
@@ -78,7 +79,8 @@ class Backend(
         user: str | None = None,
         password: str | None = None,
         port: int = 3306,
-        autocommit: bool = True,
+        database: str | None = None,
+        autocommit: Literal[True] = True,
         **kwargs,
     ) -> None:
         """Create an Ibis client using the passed connection parameters.
@@ -93,10 +95,13 @@ class Backend(
             Password
         port
             Port
+        database
+            Database to connect to
         autocommit
-            Autocommit mode
+            Whether to use autocommit mode. Only ``True`` is supported at this
+            time due to a limitation of the ADBC MySQL driver.
         kwargs
-            Additional keyword arguments passed to `MySQLdb.connect`
+            Additional keyword arguments
 
         Examples
         --------
@@ -126,32 +131,34 @@ class Backend(
           year            int32
           month           int32
         """
-        self.con = MySQLdb.connect(
-            user=user or getpass.getuser(),
-            host="127.0.0.1" if host == "localhost" else host,
-            port=port,
-            password=password or "",
-            autocommit=autocommit,
-            **kwargs,
+        user = user or getpass.getuser()
+        host = "127.0.0.1" if host == "localhost" else host
+        password = password or ""
+
+        # Also accept db from kwargs for backwards compat
+        if database is None:
+            db = kwargs.pop("db", None)
+            if db is not None:
+                warnings.warn(
+                    "Passing `db` is deprecated, use `database` instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                database = db
+
+        autocommit = bool(autocommit)
+        if not autocommit:
+            raise ValueError(
+                "The MySQL backend only supports `autocommit=True` at this time. "
+                "See https://github.com/ibis-project/ibis/pull/11958 for details."
+            )
+
+        uri = f"{user}:{password}@tcp({host}:{port})/{database or ''}"
+        self.con = adbc_dbapi.connect(
+            driver="mysql", db_kwargs={"uri": uri}, autocommit=autocommit
         )
 
         self._post_connect()
-
-    @util.experimental
-    @classmethod
-    def from_connection(cls, con: MySQLdb.Connection, /) -> Backend:
-        """Create an Ibis client from an existing connection to a MySQL database.
-
-        Parameters
-        ----------
-        con
-            An existing connection to a MySQL database.
-        """
-        new_backend = cls()
-        new_backend._can_reconnect = False
-        new_backend.con = con
-        new_backend._post_connect()
-        return new_backend
 
     def _post_connect(self) -> None:
         with self.con.cursor() as cur:
@@ -160,82 +167,88 @@ class Backend(
             except Exception as e:  # noqa: BLE001
                 warnings.warn(f"Unable to set session timezone to UTC: {e}")
 
+    @classmethod
+    def from_connection(cls, con: adbc_dbapi.Connection, /, **kwargs) -> Backend:
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def disconnect(self) -> None:
+        self.con.close()
+
     @property
     def current_database(self) -> str:
-        with self._safe_raw_sql(sg.select(self.compiler.f.database())) as cur:
-            [(database,)] = cur.fetchall()
-        return database
+        sql = sg.select(self.compiler.f.database()).sql(self.dialect)
+        with self.con.cursor() as cur:
+            cur.execute(sql)
+            table = cur.fetch_arrow_table()
+        return table.column(0)[0].as_py()
 
     def list_databases(self, *, like: str | None = None) -> list[str]:
         # In MySQL, "database" and "schema" are synonymous
-        with self._safe_raw_sql("SHOW DATABASES") as cur:
-            databases = list(map(itemgetter(0), cur.fetchall()))
+        result = self.con.adbc_get_objects(depth="catalogs").read_all()
+        databases = result.column("catalog_name").to_pylist()
         return self._filter_with_like(databases, like)
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
-        from ibis.backends.mysql.datatypes import _type_from_cursor_info
+    @staticmethod
+    def _schema_from_adbc_execute_schema(pyarrow_schema) -> sch.Schema:
+        from ibis.formats.pyarrow import PyArrowType
 
-        char_set_info = self.con.get_character_set_info()
-        multi_byte_maximum_length = char_set_info["mbmaxlen"]
+        fields = {}
+        for field in pyarrow_schema:
+            meta = {k.decode(): v.decode() for k, v in (field.metadata or {}).items()}
+            db_type = meta.get("sql.database_type_name", "")
 
-        sql = (
-            sg.select(STAR)
-            .from_(
-                sg.parse_one(query, dialect=self.dialect).subquery(
-                    sg.to_identifier(
-                        util.gen_name("query_schema"), quoted=self.compiler.quoted
-                    )
+            if db_type.startswith("UNSIGNED"):
+                base = db_type.removeprefix("UNSIGNED ").lower()
+                fields[field.name] = sc.mysql.MySQLType.from_string(
+                    f"{base} unsigned", nullable=field.nullable
                 )
-            )
-            .limit(0)
-            .sql(self.dialect)
-        )
-        with self.begin() as cur:
-            cur.execute(sql)
-            descr, flags = cur.description, cur.description_flags
+            elif db_type == "DECIMAL":
+                p = int(meta["sql.precision"])
+                s = int(meta["sql.scale"])
+                fields[field.name] = dt.Decimal(p, s, nullable=field.nullable)
+            elif db_type in ("DATETIME", "TIMESTAMP"):
+                scale = int(meta.get("sql.fractional_seconds_precision", 0))
+                tz = "UTC" if db_type == "TIMESTAMP" else None
+                fields[field.name] = dt.Timestamp(
+                    timezone=tz, scale=scale or None, nullable=field.nullable
+                )
+            elif db_type == "YEAR":
+                fields[field.name] = dt.UInt8(nullable=field.nullable)
+            elif db_type == "SET":
+                fields[field.name] = dt.Array(dt.string, nullable=field.nullable)
+            else:
+                fields[field.name] = PyArrowType.to_ibis(field.type, field.nullable)
 
-        items = {}
-        for (name, type_code, _, _, field_length, scale, _), raw_flags in zip(
-            descr, flags
-        ):
-            items[name] = _type_from_cursor_info(
-                flags=raw_flags,
-                type_code=type_code,
-                field_length=field_length,
-                scale=scale,
-                multi_byte_maximum_length=multi_byte_maximum_length,
-            )
-        return sch.Schema(items)
+        return sch.Schema(fields)
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        with self.con.cursor() as cur:
+            pyarrow_schema = cur.adbc_execute_schema(str(query))
+        return self._schema_from_adbc_execute_schema(pyarrow_schema)
 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
         table = sg.table(
             name, db=database, catalog=catalog, quoted=self.compiler.quoted
-        ).sql(self.dialect)
-
-        with self.begin() as cur:
-            try:
-                cur.execute(sge.Describe(this=table).sql(self.dialect))
-            except ProgrammingError as e:
-                if e.args[0] == ER.NO_SUCH_TABLE:
-                    raise com.TableNotFound(name) from e
-            else:
-                result = cur.fetchall()
-
-        type_mapper = self.compiler.type_mapper
-        fields = {
-            name: type_mapper.from_string(type_string, nullable=is_nullable == "YES")
-            for name, type_string, is_nullable, *_ in result
-        }
-
-        return sch.Schema(fields)
+        )
+        query = sg.select("*").from_(table).sql(self.dialect)
+        try:
+            return self._get_schema_using_query(query)
+        except Exception as e:
+            if getattr(e, "sqlstate", None) == "42S02":
+                raise com.TableNotFound(name) from e
+            raise
 
     def create_database(self, name: str, force: bool = False) -> None:
         sql = sge.Create(
             kind="DATABASE", exists=force, this=sg.to_identifier(name)
         ).sql(self.name)
-        with self.begin() as cur:
+        with self.con.cursor() as cur:
             cur.execute(sql)
 
     def drop_database(
@@ -244,32 +257,17 @@ class Backend(
         sql = sge.Drop(
             kind="DATABASE", exists=force, this=sg.table(name, catalog=catalog)
         ).sql(self.name)
-        with self.begin() as cur:
+        with self.con.cursor() as cur:
             cur.execute(sql)
 
     @contextlib.contextmanager
     def begin(self):
-        con = self.con
-        cur = con.cursor()
-        autocommit = con.get_autocommit()
-
-        if not autocommit:
-            con.begin()
-
+        cur = self.con.cursor()
         try:
             yield cur
-        except Exception:
-            if not autocommit:
-                con.rollback()
-            raise
-        else:
-            if not autocommit:
-                con.commit()
         finally:
             cur.close()
 
-    # TODO(kszucs): should make it an abstract method or remove the use of it
-    # from .execute()
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
         with self.raw_sql(*args, **kwargs) as result:
@@ -279,24 +277,13 @@ class Backend(
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
 
-        con = self.con
-        autocommit = con.get_autocommit()
-
-        cursor = con.cursor()
-
-        if not autocommit:
-            con.begin()
-
+        cursor = self.con.cursor()
         try:
             cursor.execute(query, **kwargs)
         except Exception:
-            if not autocommit:
-                con.rollback()
             cursor.close()
             raise
         else:
-            if not autocommit:
-                con.commit()
             return cursor
 
     # TODO: disable positional arguments
@@ -307,34 +294,24 @@ class Backend(
     ) -> list[str]:
         if database is not None:
             table_loc = self._to_sqlglot_table(database)
+            # In MySQL, catalog and db are both "database"
+            catalog = table_loc.catalog or table_loc.db
         else:
-            table_loc = sge.Table(
-                db=sg.to_identifier(self.current_database, quoted=self.compiler.quoted),
-                catalog=None,
-            )
+            catalog = self.current_database
 
-        conditions = [TRUE]
+        result = self.con.adbc_get_objects(
+            depth="tables", catalog_filter=catalog
+        ).read_all()
+        catalogs = result.to_pydict()
+        tables = [
+            table["table_name"]
+            for schemas in catalogs.get("catalog_db_schemas", [])
+            if schemas is not None
+            for schema in schemas
+            for table in schema.get("db_schema_tables") or []
+        ]
 
-        if (sg_cat := table_loc.args["catalog"]) is not None:
-            sg_cat.args["quoted"] = False
-        if (sg_db := table_loc.args["db"]) is not None:
-            sg_db.args["quoted"] = False
-        if table_loc.catalog or table_loc.db:
-            conditions = [C.table_schema.eq(sge.convert(table_loc.sql(self.name)))]
-
-        col = "table_name"
-        sql = (
-            sg.select(col)
-            .from_(sg.table("tables", db="information_schema"))
-            .distinct()
-            .where(*conditions)
-            .sql(self.name)
-        )
-
-        with self._safe_raw_sql(sql) as cur:
-            out = cur.fetchall()
-
-        return self._filter_with_like(map(itemgetter(0), out), like)
+        return self._filter_with_like(tables, like)
 
     def execute(
         self,
@@ -366,8 +343,18 @@ class Backend(
 
         schema = table.schema()
 
-        with self._safe_raw_sql(sql) as cur:
-            result = self._fetch_from_cursor(cur, schema)
+        with self.con.cursor() as cur:
+            cur.execute(sql)
+            arrow_table = cur.fetch_arrow_table()
+
+        import pandas as pd
+
+        from ibis.formats.pandas import PandasData
+
+        df = arrow_table.to_pandas(timestamp_as_object=False)
+        if df.empty:
+            df = pd.DataFrame(columns=schema.names)
+        result = PandasData.convert_table(df, schema)
         return expr.__pandas_result__(result)
 
     def create_table(
@@ -460,33 +447,10 @@ class Backend(
                 f"got null typed columns: {null_columns}"
             )
 
-        name = op.name
-        quoted = self.compiler.quoted
-        dialect = self.dialect
+        arrow_table = op.data.to_pyarrow(schema)
 
-        create_stmt = sg.exp.Create(
-            kind="TABLE",
-            this=sg.exp.Schema(
-                this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot_column_defs(dialect),
-            ),
-            properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-        )
-        create_stmt_sql = create_stmt.sql(dialect)
-
-        df = op.data.to_frame()
-        # nan can not be used with MySQL
-        df = df.replace(float("nan"), None)
-
-        data = df.itertuples(index=False)
-        sql = self._build_insert_template(
-            name, schema=schema, columns=True, placeholder="%s"
-        )
-        with self.begin() as cur:
-            cur.execute(create_stmt_sql)
-
-            if not df.empty:
-                cur.executemany(sql, data)
+        with self.con.cursor() as cur:
+            cur.adbc_ingest(op.name, arrow_table, mode="create", temporary=True)
 
     @util.experimental
     def to_pyarrow_batches(
@@ -503,22 +467,18 @@ class Backend(
 
         self._run_pre_execute_hooks(expr)
 
-        schema = expr.as_table().schema()
-        with self._safe_raw_sql(
-            self.compile(expr, limit=limit, params=params)
-        ) as cursor:
-            df = self._fetch_from_cursor(cursor, schema)
-        table = pa.Table.from_pandas(
-            df, schema=schema.to_pyarrow(), preserve_index=False
-        )
-        return table.to_reader(max_chunksize=chunk_size)
+        table_expr = expr.as_table()
+        sql = self.compile(table_expr, limit=limit, params=params)
+        target_schema = table_expr.schema().to_pyarrow()
 
-    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
-        import pandas as pd
+        cur = self.raw_sql(sql)
+        reader = cur.fetch_record_batch()
 
-        from ibis.backends.mysql.converter import MySQLPandasData
+        def batch_producer():
+            try:
+                for batch in reader:
+                    yield batch.rename_columns(target_schema.names)
+            finally:
+                cur.close()
 
-        df = pd.DataFrame.from_records(
-            cursor.fetchall(), columns=schema.names, coerce_float=True
-        )
-        return MySQLPandasData.convert_table(df, schema)
+        return pa.ipc.RecordBatchReader.from_batches(target_schema, batch_producer())
