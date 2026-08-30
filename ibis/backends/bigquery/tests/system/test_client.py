@@ -85,6 +85,18 @@ def test_array_collect(struct_table):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.parametrize(
+    "builder",
+    [
+        pytest.param(lambda t: t.id.collect(where=t.id < 0)[:2], id="empty"),
+        pytest.param(lambda t: t.id.nullif(t.id).collect()[:2], id="all-null"),
+    ],
+)
+def test_collect_slice_empty(alltypes, builder):
+    """Return an empty array when no values reach the bounded aggregate."""
+    assert builder(alltypes).execute() == []
+
+
 def test_count_distinct_with_filter(alltypes):
     expr = alltypes.string_col.nunique(where=alltypes.string_col.cast("int64") > 1)
     result = expr.execute()
