@@ -64,6 +64,8 @@ EXTERNAL_DATA_SCOPES = [
 ]
 CLIENT_ID = "546535678771-gvffde27nd83kfl6qbrnletqvkdmsese.apps.googleusercontent.com"
 CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"  # noqa: S105
+_SESSION_CREATION_TIMEOUT_SECONDS = 60.0
+_SESSION_CANCELLATION_TIMEOUT_SECONDS = 5.0
 
 
 def _create_user_agent(application_name: str) -> str:
@@ -768,11 +770,30 @@ class Backend(
 
     def _make_session(self) -> tuple[str, str]:
         if (client := getattr(self, "client", None)) is not None:
-            job_config = bq.QueryJobConfig(use_query_cache=False)
-            query = client.query(
-                "SELECT 1", job_config=job_config, project=self.billing_project
+            timeout = _SESSION_CREATION_TIMEOUT_SECONDS
+            # Ask BigQuery to stop the bootstrap job even if the client stops polling.
+            job_config = bq.QueryJobConfig(
+                use_query_cache=False,
+                job_timeout_ms=int(timeout * 1_000),
             )
-            query.result()
+            # Bound both the initial API request and the subsequent result polling.
+            query = client.query(
+                "SELECT 1",
+                job_config=job_config,
+                project=self.billing_project,
+                timeout=timeout,
+            )
+            try:
+                query.result(timeout=timeout)
+            except concurrent.futures.TimeoutError:
+                cancel_timeout = _SESSION_CANCELLATION_TIMEOUT_SECONDS
+                # Cancellation is best-effort, but its request and retries must also be bounded.
+                with contextlib.suppress(google.api_core.exceptions.GoogleAPIError):
+                    query.cancel(
+                        retry=bq.DEFAULT_RETRY.with_timeout(cancel_timeout),
+                        timeout=cancel_timeout,
+                    )
+                raise
 
             return bq.DatasetReference(
                 project=query.destination.project,
