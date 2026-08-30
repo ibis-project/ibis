@@ -1331,10 +1331,9 @@ def test_integer_to_timestamp(backend, con, unit):
     reason="Materialize doesn't support to_timestamp(text, format) - backend limitation",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_string_as_timestamp(alltypes, fmt):
     table = alltypes
     result = table.mutate(date=table.date_string_col.as_timestamp(fmt)).execute()
@@ -1422,10 +1421,9 @@ def test_string_as_timestamp_with_time(con):
     reason="Materialize doesn't have to_date() function - backend limitation",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_string_as_date(alltypes, fmt):
     table = alltypes
     result = table.mutate(date=table.date_string_col.as_date(fmt)).execute()
@@ -1434,6 +1432,45 @@ def test_string_as_date(alltypes, fmt):
     # format string assumes that we are using pandas' strftime
     for i, val in enumerate(result["date"]):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
+
+
+def build_single_digit_date_col(con):
+    # con.sql() creates a column (not a literal), then .as_date() is applied.
+    t = con.sql("SELECT '1/2/2021' AS raw_date")
+    # Use t.columns[0] to handle backends that uppercase column names (e.g. Oracle)
+    return t[t.columns[0]].as_date("%m/%d/%Y")
+
+
+# https://github.com/ibis-project/ibis/issues/12004
+@pytest.mark.parametrize(
+    "expr_fn",
+    [
+        param(lambda _: ibis.literal("1/2/2021").as_date("%m/%d/%Y"), id="literal"),
+        param(build_single_digit_date_col, id="column"),
+    ],
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have to_date() function - backend limitation",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=AssertionError,
+    reason="Flink misinterprets strftime-style format strings, producing a wrong date",
+)
+def test_string_as_date_single_digit_month_day(backend, con, expr_fn):
+    expr = expr_fn(con).name("parsed_date").as_table()
+    result = con.execute(expr)
+
+    golden = pd.Series([datetime.date(2021, 1, 2)], name="parsed_date").astype(
+        result.parsed_date.dtype
+    )
+    backend.assert_series_equal(golden, result.parsed_date)
 
 
 @pytest.mark.notyet(
