@@ -115,6 +115,7 @@ def test_schema_from_numpy(numpy_schema):
         assert NumpyType.from_ibis(ibis_schema[name]) == numpy_type
 
 
+@pytest.mark.parametrize("nullable", [True, False, None])
 @pytest.mark.parametrize(
     ("numpy_dtype", "ibis_dtype"),
     [
@@ -135,8 +136,10 @@ def test_schema_from_numpy(numpy_schema):
         (np.datetime64, dt.timestamp),
     ],
 )
-def test_dtype_from_numpy(numpy_dtype, ibis_dtype):
-    assert NumpyType.to_ibis(np.dtype(numpy_dtype)) == ibis_dtype
+def test_dtype_from_numpy(numpy_dtype, ibis_dtype, nullable):
+    if nullable is False:
+        ibis_dtype = ibis_dtype.copy(nullable=False)
+    assert NumpyType.to_ibis(np.dtype(numpy_dtype), nullable=nullable) == ibis_dtype
 
 
 def test_dtype_from_numpy_dtype_timedelta():

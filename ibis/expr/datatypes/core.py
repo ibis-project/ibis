@@ -112,7 +112,7 @@ class DataType(Concrete, Coercible):
         return castable(self, to, **kwargs)
 
     @classmethod
-    def from_string(cls, value: str, nullable: bool = True) -> Self:
+    def from_string(cls, value: str, nullable: bool | None = None) -> Self:
         from ibis.expr.datatypes.parse import parse
 
         try:
@@ -120,12 +120,12 @@ class DataType(Concrete, Coercible):
         except SyntaxError:
             raise TypeError(f"{value!r} cannot be parsed as a datatype")
 
-        if not nullable:
+        if nullable is not None:
             return typ.copy(nullable=nullable)
         return typ
 
     @classmethod
-    def from_typehint(cls, typ, nullable=True) -> Self:
+    def from_typehint(cls, typ, nullable: bool = True) -> Self:
         # All types are nullable by default
         # (eg `ibis.dtype(int)` results in `Int64(nullable=True)`),
         # so if we are handed Union[None, T], simplify it to T.
@@ -193,7 +193,7 @@ class DataType(Concrete, Coercible):
             raise TypeError(f"Value {typ!r} is not a valid datatype")
 
     @classmethod
-    def from_numpy(cls, numpy_type: np.dtype, nullable: bool = True) -> Self:
+    def from_numpy(cls, numpy_type: np.dtype, nullable: bool | None = None) -> Self:
         """Return the equivalent ibis datatype."""
         from ibis.formats.numpy import NumpyType
 
@@ -201,7 +201,7 @@ class DataType(Concrete, Coercible):
 
     @classmethod
     def from_pandas(
-        cls, pandas_type: np.dtype | ExtensionDtype, nullable: bool = True
+        cls, pandas_type: np.dtype | ExtensionDtype, nullable: bool | None = None
     ) -> Self:
         """Return the equivalent ibis datatype."""
         from ibis.formats.pandas import PandasType
@@ -209,14 +209,18 @@ class DataType(Concrete, Coercible):
         return PandasType.to_ibis(pandas_type, nullable=nullable)
 
     @classmethod
-    def from_pyarrow(cls, arrow_type: pa.DataType, nullable: bool = True) -> Self:
+    def from_pyarrow(
+        cls, arrow_type: pa.DataType, nullable: bool | None = None
+    ) -> Self:
         """Return the equivalent ibis datatype."""
         from ibis.formats.pyarrow import PyArrowType
 
         return PyArrowType.to_ibis(arrow_type, nullable=nullable)
 
     @classmethod
-    def from_polars(cls, polars_type: pl.DataType, nullable: bool = True) -> Self:
+    def from_polars(
+        cls, polars_type: pl.DataType, nullable: bool | None = None
+    ) -> Self:
         """Return the equivalent ibis datatype."""
         from ibis.formats.polars import PolarsType
 
@@ -1104,51 +1108,58 @@ Includes:
 
 
 @overload
-def dtype(value: type[int] | Literal["int"], nullable: bool = True) -> Int64: ...
+def dtype(value: type[int] | Literal["int"], nullable: bool | None = None) -> Int64: ...
 @overload
 def dtype(
-    value: type[str] | Literal["str", "string"], nullable: bool = True
+    value: type[str] | Literal["str", "string"], nullable: bool | None = None
 ) -> String: ...
 @overload
 def dtype(
-    value: type[bool] | Literal["bool", "boolean"], nullable: bool = True
+    value: type[bool] | Literal["bool", "boolean"], nullable: bool | None = None
 ) -> Boolean: ...
 @overload
-def dtype(value: type[bytes] | Literal["bytes"], nullable: bool = True) -> Binary: ...
-@overload
-def dtype(value: type[Real] | Literal["float"], nullable: bool = True) -> Float64: ...
+def dtype(
+    value: type[bytes] | Literal["bytes"], nullable: bool | None = None
+) -> Binary: ...
 @overload
 def dtype(
-    value: type[pydecimal.Decimal] | Literal["decimal"], nullable: bool = True
+    value: type[Real] | Literal["float"], nullable: bool | None = None
+) -> Float64: ...
+@overload
+def dtype(
+    value: type[pydecimal.Decimal] | Literal["decimal"], nullable: bool | None = None
 ) -> Decimal: ...
 @overload
 def dtype(
-    value: type[pydatetime.datetime] | Literal["timestamp"], nullable: bool = True
+    value: type[pydatetime.datetime] | Literal["timestamp"],
+    nullable: bool | None = None,
 ) -> Timestamp: ...
 @overload
 def dtype(
-    value: type[pydatetime.date] | Literal["date"], nullable: bool = True
+    value: type[pydatetime.date] | Literal["date"], nullable: bool | None = None
 ) -> Date: ...
 @overload
 def dtype(
-    value: type[pydatetime.time] | Literal["time"], nullable: bool = True
+    value: type[pydatetime.time] | Literal["time"], nullable: bool | None = None
 ) -> Time: ...
 @overload
 def dtype(
-    value: type[pydatetime.timedelta] | Literal["interval"], nullable: bool = True
+    value: type[pydatetime.timedelta] | Literal["interval"],
+    nullable: bool | None = None,
 ) -> Interval: ...
 @overload
 def dtype(
-    value: type[pyuuid.UUID] | Literal["uuid"], nullable: bool = True
+    value: type[pyuuid.UUID] | Literal["uuid"], nullable: bool | None = None
 ) -> UUID: ...
 @overload
 def dtype(
-    value: IntoDtype,
-    nullable: bool = True,
+    value: DataType | str | np.dtype | ExtensionDtype | pl.DataType | pa.DataType,
+    nullable: bool | None = None,
 ) -> DataType: ...
 
 
-def dtype(value: IntoDtype, nullable: bool = True) -> DataType:
+@lazy_singledispatch
+def dtype(value, nullable: bool | None = None) -> DataType:
     """Create a DataType object.
 
     Parameters
@@ -1158,21 +1169,42 @@ def dtype(value: IntoDtype, nullable: bool = True) -> DataType:
         strings, python type annotations, numpy dtypes, pandas dtypes, and
         pyarrow types.
     nullable
-        Whether the type should be nullable. Defaults to True.
-        If `value` is a string prefixed by "!", the type is always non-nullable.
+        Whether the resulting type should be nullable.
+        If `None`, we try to infer nullability from the input value.
+        For example, if `value` is a string starting with '!', the resulting type
+        will be non-nullable.
+        For inputs without an explicit nullability (like the python type `int` or
+        numpy dtype of `np.int32`), we default to `nullable=True`.
 
     Examples
     --------
     >>> import ibis
     >>> ibis.dtype("int32")
     Int32(nullable=True)
+
+    Prefixing the type with "!" makes it non-nullable:
+
     >>> ibis.dtype("!int32")
     Int32(nullable=False)
-    >>> ibis.dtype("array<float>")
-    Array(value_type=Float64(nullable=True), length=None, nullable=True)
+
+    We support a rich string syntax for nested and parametric types:
+
+    >>> ibis.dtype("array<!float>")
+    Array(value_type=Float64(nullable=False), length=None, nullable=True)
+    >>> ibis.dtype("!struct<a: interval('s'), b: !bool>")
+    Struct([('a', Interval(unit=<IntervalUnit.SECOND: 's'>, nullable=True)), ('b', Boolean(nullable=False))], nullable=False)
+    >>> ibis.dtype("map<timestamp('America/Anchorage', 6), boolean>")
+    Map(key_type=Timestamp(timezone='America/Anchorage', scale=6, nullable=True), value_type=Boolean(nullable=True), nullable=True)
+
+    The function is idempotent (AKA is a no-op when passed a DataType):
+    >>> t = ibis.dtype("int32")
+    >>> ibis.dtype(t) is t
+    True
 
     DataType objects may also be created from Python types:
 
+    >>> ibis.dtype(int)
+    Int64(nullable=True)
     >>> ibis.dtype(int, nullable=False)
     Int64(nullable=False)
     >>> ibis.dtype(list[float])
@@ -1183,45 +1215,61 @@ def dtype(value: IntoDtype, nullable: bool = True) -> DataType:
     >>> import pyarrow as pa
     >>> ibis.dtype(pa.int32())
     Int32(nullable=True)
+    >>> ibis.dtype(pa.int32(), nullable=False)
+    Int32(nullable=False)
+
+    The `nullable` parameter may be used to override the nullability:
+
+    >>> ibis.dtype("!int32", nullable=True)
+    Int32(nullable=True)
+    >>> i = ibis.dtype("int32")
+    >>> i
+    Int32(nullable=True)
+    >>> ibis.dtype(i, nullable=False)
+    Int32(nullable=False)
 
     """
     return _dtype(value, nullable=nullable)
 
 
 @lazy_singledispatch
-def _dtype(value, nullable=True) -> DataType:
+def _dtype(value, nullable: bool | None = None) -> DataType:
+    if nullable is None:
+        nullable = True
     return DataType.from_typehint(value, nullable)
 
 
 @_dtype.register(DataType)
-def from_datatype(value: DataType, nullable: bool = True) -> DataType:
-    # TODO: need change nullable to default of None, which means don't change.
-    # And if non-null, then do `return value.copy(nullable=nullable)`
-    return value
+def from_datatype(value: DataType, nullable: bool | None = None) -> DataType:
+    if nullable is None:
+        return value
+    return value.copy(nullable=nullable)
 
 
 @_dtype.register(str)
-def from_string(value, nullable: bool = True) -> DataType:
+def from_string(value: str, nullable: bool | None = None) -> DataType:
     return DataType.from_string(value, nullable)
 
 
 @_dtype.register("numpy.dtype")
-def from_numpy_dtype(value, nullable=True) -> DataType:
+def from_numpy_dtype(value: np.dtype, nullable: bool | None = None) -> DataType:
     return DataType.from_numpy(value, nullable)
 
 
 @_dtype.register("pandas.core.dtypes.base.ExtensionDtype")
-def from_pandas_extension_dtype(value, nullable=True) -> DataType:
+def from_pandas_extension_dtype(
+    value: ExtensionDtype, nullable: bool | None = None
+) -> DataType:
     return DataType.from_pandas(value, nullable)
 
 
 @_dtype.register("pyarrow.lib.DataType")
-def from_pyarrow(value, nullable=True) -> DataType:
+def from_pyarrow(value: pa.DataType, nullable: bool | None = None) -> DataType:
     return DataType.from_pyarrow(value, nullable)
 
 
 @_dtype.register("polars.datatypes.classes.DataTypeClass")
-def from_polars(value, nullable=True) -> DataType:
+def from_polars(value: pl.DataType, nullable: bool | None = None) -> DataType:
     return DataType.from_polars(value, nullable)
 
 
