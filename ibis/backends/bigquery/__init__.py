@@ -1212,10 +1212,8 @@ class Backend(
 
         if partition_by is not None:
             properties.append(
-                sge.PartitionedByProperty(
-                    this=sge.Tuple(
-                        expressions=list(map(sg.to_identifier, partition_by))
-                    )
+                sg.parse_one(
+                    partition_by, into=sge.PartitionedByProperty, read="bigquery"
                 )
             )
 
