@@ -10,6 +10,7 @@ from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
+import ibis.expr.datatypes as dt
 from ibis.conftest import LINUX, MACOS, SANDBOXED, WINDOWS
 
 duckdb = pytest.importorskip("duckdb")
@@ -554,3 +555,23 @@ def test_cache_geometry(con, monkeypatch):
     data = data.select(geom=data.x.point(data.y)).cache()
     result = data.execute()
     assert result.at[0, "geom"] == shapely.Point(1, 2)
+
+
+def test_cache_preserves_geospatial_subtype(con, monkeypatch):
+    """`.cache()` must not coarsen `point:geometry` into `geospatial:geometry`.
+
+    DuckDB has a single `GEOMETRY` type, so the geometry subtype Ibis inferred
+    for the expression cannot survive a round trip through storage and has to
+    be carried over from the expression being cached.
+
+    ibis issue #11973
+    """
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    data = ibis.memtable({"x": [1.0], "y": [2.0]})
+    expr = data.select(geom=data.x.point(data.y))
+
+    assert expr.schema()["geom"] == dt.Point(geotype="geometry")
+
+    with expr.cache() as cached:
+        assert cached.schema() == expr.schema()
+        assert cached.schema().equals(expr.schema())
