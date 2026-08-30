@@ -108,6 +108,33 @@ class PyArrowType(TypeMapper):
             return dt.Map(key_dtype, value_dtype, nullable=nullable)
         elif pa.types.is_dictionary(typ):
             return cls.to_ibis(typ.value_type)
+        elif isinstance(typ, pa.BaseExtensionType) and typ.extension_name in (
+            "arrow.json",
+            "ibis.json",
+        ):
+            # `arrow.json` is pyarrow's own canonical type, and is what parquet
+            # files written with the JSON logical type read back as. the
+            # snowflake backend wraps JSON-encoded columns in `ibis.json`,
+            # whose storage is likewise JSON text
+            #
+            # both map to `json` rather than to their `string` storage for
+            # plain fidelity: the column is JSON and ibis has a type for that.
+            # the cost is that backends without `json` support are worse off
+            # than they would be with `string` -- polars, for one, raises
+            # `Converting json to polars is not supported yet` -- but that is
+            # how every other `json` column already behaves there
+            #
+            # for `ibis.json` the element types don't survive: array, map and
+            # struct are all wrapped in the same extension type, so they all
+            # come back as `json` rather than as themselves
+            return dt.JSON(nullable=nullable)
+        elif (
+            isinstance(typ, pa.BaseExtensionType)
+            and typ.extension_name == "arrow.uuid"
+        ):
+            # storage is `fixed_size_binary(16)`, which has no ibis equivalent,
+            # so the fallback below would raise rather than degrade
+            return dt.UUID(nullable=nullable)
         elif (
             isinstance(typ, pa.ExtensionType)
             and type(typ).__module__ == "geoarrow.types.type_pyarrow"
@@ -156,6 +183,21 @@ class PyArrowType(TypeMapper):
                 geotype = "geometry"
 
             return dt.GeoSpatial(geotype, srid, nullable)
+        elif isinstance(typ, pa.BaseExtensionType):
+            # keep this last: every extension branch above is more specific,
+            # and hoisting this one would quietly turn geometry columns into
+            # `binary` and JSON columns into `string`
+            #
+            # an extension type we don't recognize is still readable as
+            # whatever it's stored as, which is what every consumer that hasn't
+            # registered it sees anyway; falling through would reach the lookup
+            # below and raise `TypeError: unhashable type`
+            #
+            # `BaseExtensionType` rather than `ExtensionType`: the latter only
+            # covers types defined in python, so the ones pyarrow implements in
+            # c++ -- `arrow.json`, `arrow.uuid`, `arrow.bool8`, `arrow.opaque`,
+            # `arrow.fixed_shape_tensor` -- would miss it
+            return cls.to_ibis(typ.storage_type, nullable=nullable)
         else:
             return _from_pyarrow_types[typ](nullable=nullable)
 
