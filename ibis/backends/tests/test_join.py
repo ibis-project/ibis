@@ -406,3 +406,20 @@ def test_positional_join(backend, con):
     result = con.execute(j)
     expected = pd.DataFrame({"x": [1, 2, 3], "x_right": [3, 2, 1]})
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "preds",
+    [
+        pytest.param(ibis._.x.upper(), id="single"),
+        pytest.param([ibis._.x.upper()], id="single-list"),
+        pytest.param([ibis._.x.upper(), ibis._.x.lower()], id="multiple"),
+    ],
+)
+def test_join_deferred(backend: BackendTest, con, preds):
+    t1 = ibis.memtable({"x": ["a", "b", "c"]})
+    t2 = ibis.memtable({"x": ["A", "B", "Z"]})
+    j = t1.inner_join(t2, predicates=preds)
+    result = con.execute(j)
+    expected = pd.DataFrame({"x": ["a", "b"], "x_right": ["A", "B"]})
+    backend.assert_frame_equal(result, expected)
