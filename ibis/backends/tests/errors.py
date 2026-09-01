@@ -140,6 +140,7 @@ except ImportError:
     ) = PsycoPg2UndefinedObject = PsycoPg2ArraySubscriptError = None
 
 try:
+    from psycopg.errors import ActiveSqlTransaction as PsycoPgActiveSqlTransaction
     from psycopg.errors import ArraySubscriptError as PsycoPgArraySubscriptError
     from psycopg.errors import DivisionByZero as PsycoPgDivisionByZero
     from psycopg.errors import IndeterminateDatatype as PsycoPgIndeterminateDatatype
@@ -156,7 +157,9 @@ except ImportError:
         PsycoPgInvalidTextRepresentation
     ) = PsycoPgDivisionByZero = PsycoPgInternalError = PsycoPgProgrammingError = (
         PsycoPgOperationalError
-    ) = PsycoPgUndefinedObject = PsycoPgArraySubscriptError = None
+    ) = PsycoPgUndefinedObject = PsycoPgArraySubscriptError = (
+        PsycoPgActiveSqlTransaction
+    ) = None
 
 try:
     from MySQLdb import NotSupportedError as MySQLNotSupportedError
