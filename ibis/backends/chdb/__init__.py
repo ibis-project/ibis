@@ -24,6 +24,7 @@ from ibis import util
 from ibis.backends import UrlFromPath
 from ibis.backends.chdb import _memtables
 from ibis.backends.clickhouse import Backend as CHBackend
+from ibis.backends.clickhouse import _to_memtable
 from ibis.backends.sql.compilers import ChdbCompiler
 from ibis.backends.sql.compilers.base import C
 from ibis.expr.operations.udf import InputType
@@ -235,23 +236,25 @@ class _Con:
     ``close`` disconnects.
     """
 
+    # chDB's embedded engine keeps one process-global Arrow output buffer.
+    # Two situations leave it dirty and corrupt the *next* ArrowTable query
+    # ("Unexpected empty message" / "metadata too long" / a 0-row result):
+    #   * a query that raised -- flushed with a throwaway query, and
+    #   * a streaming query (``send_query``) left un-drained -- only its own
+    #     cancellation clears the buffer, so the last stream is tracked at
+    #     class level (the buffer is shared by every connection) and cancelled
+    #     before the next query if the caller abandoned it.
+    _active_stream = None
+
     def __init__(self, session):
         self._session = session
-        # chDB's embedded engine keeps one process-global Arrow output buffer.
-        # Two situations leave it dirty and corrupt the *next* ArrowTable query
-        # ("Unexpected empty message" / "metadata too long" / a 0-row result):
-        #   * a query that raised -- flushed with a throwaway query, and
-        #   * a streaming query (``send_query``) left un-drained -- only its own
-        #     cancellation clears the buffer, so we hold the last stream and
-        #     cancel it before the next query if the caller abandoned it.
-        self._active_stream = None
 
     def _flush(self) -> None:
         with contextlib.suppress(Exception):
             self._session.query("SELECT 1", "CSV")
 
     def _cancel_active_stream(self) -> None:
-        stream, self._active_stream = self._active_stream, None
+        stream, _Con._active_stream = _Con._active_stream, None
         if stream is not None:
             with contextlib.suppress(Exception):
                 stream.close()
@@ -272,11 +275,11 @@ class _Con:
     def send_query(self, sql, fmt="Arrow"):
         self._cancel_active_stream()
         try:
-            self._active_stream = _memtables._send_query(self._session, sql, fmt)
+            _Con._active_stream = _memtables._send_query(self._session, sql, fmt)
         except Exception:
             self._flush()
             raise
-        return self._active_stream
+        return _Con._active_stream
 
     def cursor(self):
         return self._session.cursor()
@@ -346,7 +349,7 @@ class Backend(UrlFromPath, CHBackend):
         return ChdbArrowConverter.convert_table(result, table.schema())
 
     def to_pyarrow(self, expr, /, **kwargs) -> pa.Table:
-        table = self._fetch_arrow(expr, **_pop_arrow_kwargs(kwargs))
+        table = self._fetch_arrow(expr, **_filter_arrow_kwargs(kwargs))
         return expr.__pyarrow_result__(table, data_mapper=ChdbArrowConverter)
 
     def to_pyarrow_batches(
@@ -354,7 +357,7 @@ class Backend(UrlFromPath, CHBackend):
     ) -> pa.ipc.RecordBatchReader:
         table_expr = expr.as_table()
         self._run_pre_execute_hooks(table_expr)
-        sql = self.compile(table_expr, **kwargs)
+        sql = self.compile(table_expr, **_filter_arrow_kwargs(kwargs))
         self._log(sql)
         schema = table_expr.schema()
         arrow_schema = schema.to_pyarrow()
@@ -380,7 +383,7 @@ class Backend(UrlFromPath, CHBackend):
         return pa.ipc.RecordBatchReader.from_batches(arrow_schema, batches())
 
     def execute(self, expr, /, **kwargs):
-        table = self._fetch_arrow(expr, **_pop_arrow_kwargs(kwargs))
+        table = self._fetch_arrow(expr, **_filter_arrow_kwargs(kwargs))
         df = table.to_pandas(timestamp_as_object=True)
         return expr.__pandas_result__(df, schema=expr.as_table().schema())
 
@@ -440,9 +443,10 @@ class Backend(UrlFromPath, CHBackend):
     # the embedded engine instead reads the local path via file() directly.
     def _read_file(self, path, *, table_name, fmt, engine):
         name = table_name or util.gen_name("read")
+        quoted = sg.table(name, quoted=self.compiler.quoted).sql(self.dialect)
         path = sge.convert(str(path)).sql(self.dialect)
-        # path is a quoted literal and name is generated, so this is safe.
-        sql = f"CREATE OR REPLACE TABLE {name} ENGINE = {engine} AS SELECT * FROM file({path}, '{fmt}')"  # noqa: S608
+        # the engine cannot be quoted: ClickHouse rejects e.g. `File(Native)`
+        sql = f"CREATE OR REPLACE TABLE {quoted} ENGINE = {engine} AS SELECT * FROM file({path}, '{fmt}')"  # noqa: S608
         self.raw_sql(sql)
         return self.table(name)
 
@@ -477,7 +481,7 @@ class Backend(UrlFromPath, CHBackend):
     def _register_in_memory_tables_from_mapping(self, external_tables) -> list[str]:
         names = []
         for name, obj in (external_tables or {}).items():
-            memtable = obj if isinstance(obj, ops.InMemoryTable) else obj.op()
+            memtable = _to_memtable(obj)
             _memtables._register(name, memtable.data.to_pyarrow(memtable.schema))
             names.append(name)
         return names
@@ -510,6 +514,6 @@ class Backend(UrlFromPath, CHBackend):
             )
 
 
-def _pop_arrow_kwargs(kwargs: dict) -> dict:
+def _filter_arrow_kwargs(kwargs: dict) -> dict:
     """Keep only the ``params``/``limit`` kwargs the compiler accepts."""
     return {k: kwargs[k] for k in ("params", "limit") if k in kwargs}
