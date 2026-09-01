@@ -79,10 +79,14 @@ def _relabel_fields(arr, dtype: dt.DataType):
         children = [
             _relabel_fields(arr.field(i), typ) for i, typ in enumerate(dtype.types)
         ]
-        return pa.StructArray.from_arrays(children, names=list(dtype.names))
+        return pa.StructArray.from_arrays(
+            children, names=list(dtype.names), mask=arr.is_null()
+        )
     if dtype.is_array() and pa.types.is_list(arr.type):
         return pa.ListArray.from_arrays(
-            arr.offsets, _relabel_fields(arr.values, dtype.value_type)
+            arr.offsets,
+            _relabel_fields(arr.values, dtype.value_type),
+            mask=arr.is_null(),
         )
     return arr
 
