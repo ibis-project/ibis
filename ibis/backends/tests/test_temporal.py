@@ -1359,8 +1359,8 @@ def test_string_as_timestamp(alltypes, fmt):
     raises=com.OperationNotDefinedError,
 )
 def test_string_as_temporal_with_format(con, method, value, fmt):
-    # `%M` (minutes) collides with the month-name token in MySQL/Trino-family
-    # formats, and Flink needs a Java pattern rather than a strftime one.
+    # `%M` (minutes) reads as a month name in MySQL/Trino-family formats, where
+    # it silently returned NULL; Flink needs a Java pattern, not a strftime one.
     expr = getattr(ibis.literal(value), method)(fmt)
     assert con.execute(expr).strftime(fmt) == value
 
