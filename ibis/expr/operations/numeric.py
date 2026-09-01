@@ -334,6 +334,11 @@ class Tan(TrigonometricUnary):
 
 
 @public
+class Tanh(TrigonometricUnary):
+    """Returns the hyperbolic tangent of x."""
+
+
+@public
 class BitwiseNot(Unary):
     """Bitwise NOT operation."""
 
