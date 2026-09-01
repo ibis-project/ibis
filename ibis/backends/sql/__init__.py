@@ -805,9 +805,12 @@ class SQLBackend(BaseBackend):
         # alias the compiler assigned to the target table so outer-vs-inner
         # column scoping survives in the DELETE.
         target_table = compiled.find(sge.From).this.copy()
-        query = sge.Delete(this=target_table, where=where_clause)
+        query = self._aliased_delete_query(target_table, where_clause)
         alias = target_table.alias
-        if alias and not self._delete_preserves_alias(query, alias, self.dialect):
+        if alias and not (
+            self._supports_aliased_delete
+            and self._delete_preserves_alias(query, alias, self.dialect)
+        ):
             raise exc.UnsupportedOperationError(
                 f"The {self.name} backend cannot express a DELETE whose "
                 "predicate contains subqueries: its SQL dialect does not "
@@ -817,6 +820,17 @@ class SQLBackend(BaseBackend):
                 "delete first."
             )
         return query
+
+    # Whether the dialect's server accepts an alias on the DELETE target.
+    # sqlglot's generators render the alias for some dialects whose servers
+    # reject it, so the render/re-parse check alone cannot be trusted.
+    _supports_aliased_delete: bool = True
+
+    def _aliased_delete_query(
+        self, target_table: sge.Table, where_clause: sge.Where
+    ) -> sge.Delete:
+        """Build a DELETE that keeps the target table's alias."""
+        return sge.Delete(this=target_table, where=where_clause)
 
     @staticmethod
     def _delete_preserves_alias(query: sge.Delete, alias: str, dialect) -> bool:

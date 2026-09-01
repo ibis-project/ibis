@@ -68,6 +68,10 @@ class Backend(
     name = "risingwave"
     compiler = sc.risingwave.compiler
     supports_python_udfs = False
+    # RisingWave's parser rejects any alias on a DELETE target even though
+    # sqlglot's risingwave dialect renders one, so the base class's
+    # render/re-parse check cannot detect the limitation.
+    _supports_aliased_delete = False
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         kwargs = {}

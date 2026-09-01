@@ -99,6 +99,17 @@ class Backend(
             [(version,)] = cur.fetchall()
         return version
 
+    def _aliased_delete_query(
+        self, target_table: sge.Table, where_clause: sge.Where
+    ) -> sge.Delete:
+        # T-SQL rejects `DELETE FROM t AS alias`; it spells an aliased DELETE
+        # as `DELETE alias FROM t AS alias ...`.
+        return sge.Delete(
+            this=target_table,
+            tables=[sg.to_identifier(target_table.alias, quoted=self.compiler.quoted)],
+            where=where_clause,
+        )
+
     def do_connect(
         self,
         host: str = "localhost",
