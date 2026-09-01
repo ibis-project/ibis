@@ -12,8 +12,10 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     MySQLProgrammingError,
     PsycoPg2InternalError,
+    PsycoPgActiveSqlTransaction,
     PsycoPgSyntaxError,
     Py4JJavaError,
+    PySparkAnalysisException,
     PySparkUnsupportedOperationException,
     SingleStoreDBOperationalError,
     SingleStoreDBProgrammingError,
@@ -168,14 +170,18 @@ NO_MERGE_SUPPORT_MARKS = [
 NO_MERGE_SUPPORT = combine_marks(NO_MERGE_SUPPORT_MARKS)
 
 NO_DELETE_SUPPORT_MARKS = [
-    pytest.mark.notimpl(["polars"], reason="`delete` method not implemented"),
-    pytest.mark.notyet(
-        ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
+    pytest.mark.notimpl(
+        ["polars"], raises=AttributeError, reason="`delete` method not implemented"
     ),
     pytest.mark.notyet(
         ["materialize"],
-        raises=Exception,
+        raises=PsycoPgActiveSqlTransaction,
         reason="Materialize restricts DML within transaction blocks",
+    ),
+    pytest.mark.notyet(
+        ["pyspark"],
+        raises=PySparkAnalysisException,
+        reason="Spark catalog v1 tables do not support DELETE (needs Delta/Iceberg)",
     ),
     # Subquery predicates raise UnsupportedOperationError client-side on
     # trino because its dialect cannot express the aliased DELETE they need;
