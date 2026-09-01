@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 import ibis
+from ibis import util
 from ibis.backends.tests.base import BackendTest
 
 if TYPE_CHECKING:
@@ -13,10 +14,6 @@ if TYPE_CHECKING:
 
 
 class TestConf(BackendTest):
-    """Wires chDB into the shared backend test suite. Embedded engine (no
-    service); test data is loaded from the shared parquet fixtures via
-    ClickHouse's ``file()`` table function."""
-
     check_dtype = False
     returned_timestamp_unit = "s"
     supports_json = False
@@ -65,24 +62,18 @@ class TestConf(BackendTest):
 
 @pytest.fixture(scope="session")
 def chdb_path(tmp_path_factory, worker_id) -> str:
-    """The single on-disk path every connection in this process must share.
-
-    chDB's embedded engine is a process-global singleton: while one connection
-    is open, connecting to a *different* path raises BAD_ARGUMENTS. Under the
-    randomized test order this means every fixture and test has to funnel
-    through one path, so they all derive it from here (the same value
-    ``TestConf.connect`` uses for the shared-suite connection).
-    """
+    # chDB allows one engine path per process; every connection funnels
+    # through this one.
     return str(tmp_path_factory.getbasetemp() / f"chdb_{worker_id}")
 
 
 @pytest.fixture
 def mem(chdb_path):
-    """A no-preloaded-data connection on the shared process path.
-
-    Unit tests work in the ``default`` database; the shared dataset lives in
-    ``ibis_testing``, so the two don't collide.
-    """
+    # isolated per-test database on the shared engine path
     con = ibis.chdb.connect(chdb_path)
+    name = f"ibis_unit_{util.guid()}"
+    con.raw_sql(f"CREATE DATABASE {name} ENGINE = Atomic")
+    con.con.raw_query(f"USE {name}")
     yield con
+    con.raw_sql(f"DROP DATABASE IF EXISTS {name}")
     con.disconnect()

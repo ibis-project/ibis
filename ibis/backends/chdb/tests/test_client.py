@@ -131,10 +131,14 @@ def test_sql_method(mem):
     assert t.schema()["n"].is_integer()
 
 
-def test_current_database(mem):
+def test_current_database(chdb_path):
     # chDB can't reuse ClickHouse's current_database (it reads clickhouse_connect
     # result_rows); assert the value directly so a regression can't slip through.
-    assert mem.current_database == "default"
+    con = ibis.chdb.connect(chdb_path)
+    try:
+        assert con.current_database == "default"
+    finally:
+        con.disconnect()
 
 
 def test_missing_chdb_raises_actionable_error(monkeypatch):
