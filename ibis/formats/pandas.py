@@ -212,13 +212,34 @@ class PandasData(DataMapper):
             return s
 
     @classmethod
+    def _convert_datetime_resolution(cls, s, pandas_type):
+        """Align an already-datetime series with the declared resolution.
+
+        Backends hand back whatever resolution their source used -- pyarrow
+        preserves it rather than coercing to nanoseconds -- so a series can
+        disagree with `PandasType.from_ibis`. Values outside the declared
+        resolution's range are only representable at a coarser one, so leave
+        those alone rather than raising.
+        """
+        if s.dtype == pandas_type:
+            return s
+        try:
+            return s.astype(pandas_type)
+        except (pd.errors.OutOfBoundsDatetime, ValueError, TypeError):
+            return s
+
+    @classmethod
     def convert_Timestamp(cls, s, dtype, pandas_type):
         if isinstance(pandas_type, pd.DatetimeTZDtype) and isinstance(
             s.dtype, pd.DatetimeTZDtype
         ):
-            return s if s.dtype == pandas_type else s.dt.tz_convert(dtype.timezone)
+            if s.dtype != pandas_type:
+                s = s.dt.tz_convert(dtype.timezone)
+            return cls._convert_datetime_resolution(s, pandas_type)
         elif pdt.is_datetime64_dtype(s.dtype):
-            return s.dt.tz_localize(dtype.timezone)
+            return cls._convert_datetime_resolution(
+                s.dt.tz_localize(dtype.timezone), pandas_type
+            )
         else:
             try:
                 return s.astype(pandas_type)
