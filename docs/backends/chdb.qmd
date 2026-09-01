@@ -7,7 +7,7 @@ execute:
 [https://github.com/chdb-io/chdb](https://github.com/chdb-io/chdb)
 
 chDB is an embedded, in-process build of ClickHouse. This backend runs the
-ClickHouse engine inside your Python process — no server required — and reuses
+ClickHouse engine inside your Python process—no server required—and reuses
 Ibis's ClickHouse SQL compiler and type system.
 
 ![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-local files | pandas | PyArrow-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-CSV | pandas | Parquet | PyArrow-orange?style=flat-square)

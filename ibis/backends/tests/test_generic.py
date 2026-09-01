@@ -20,7 +20,6 @@ from ibis import _
 from ibis.backends.tests.errors import (
     ArrowInvalid,
     ArrowTypeError,
-    ChdbError,
     ClickHouseDatabaseError,
     ExaQueryError,
     GoogleBadRequest,
@@ -2338,7 +2337,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
 @pytest.mark.notyet(
     ["chdb"],
-    raises=ChdbError,
+    raises=RuntimeError,
     reason="chDB analyzer rejects the table alias reused in the LIMIT subquery (MULTIPLE_EXPRESSIONS_FOR_ALIAS); a real ClickHouse server accepts it",
 )
 def test_dynamic_table_slice(backend, slc, expected_count_fn):
