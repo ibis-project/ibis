@@ -628,7 +628,9 @@ class Backend(
         create_stmt_sql = create_stmt.sql(self.dialect)
 
         df = op.data.to_frame()
-        data = df.itertuples(index=False)
+        # psycopg2 would transmit NaN as a floating-point NaN value, which
+        # RisingWave sorts above every number; deliver NULLs as None instead
+        data = df.replace({float("nan"): None}).itertuples(index=False)
         sql = self._build_insert_template(
             name, schema=schema, columns=True, placeholder="%s"
         )

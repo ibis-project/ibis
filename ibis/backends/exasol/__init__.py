@@ -302,7 +302,10 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
         data = df.itertuples(index=False, name=None)
 
         def process_item(item: Any):
-            """Handle inserting timestamps with timezones."""
+            """Handle inserting timestamps with timezones and NULLs."""
+            if isinstance(item, float) and item != item:
+                # pyexasol serializes NaN into invalid JSON; deliver NULL
+                return None
             if isinstance(item, datetime.datetime):
                 if item.tzinfo is not None:
                     item = item.tz_convert("UTC").tz_localize(None)

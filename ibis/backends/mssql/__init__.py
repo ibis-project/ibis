@@ -777,7 +777,8 @@ GO"""
         )
 
         df = op.data.to_frame()
-        data = df.itertuples(index=False)
+        # pyodbc rejects NaN as a float parameter value; deliver NULLs as None
+        data = df.replace({float("nan"): None}).itertuples(index=False)
 
         insert_stmt = self._build_insert_template(name, schema=schema, columns=True)
         with self._safe_ddl(create_stmt) as cur:
