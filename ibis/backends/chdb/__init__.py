@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import contextlib
 import re
-import threading
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
@@ -28,6 +27,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import UrlFromPath
+from ibis.backends.chdb import _memtables
 from ibis.backends.clickhouse import Backend as CHBackend
 from ibis.backends.sql.compilers import ChdbCompiler
 from ibis.backends.sql.compilers.base import C
@@ -36,22 +36,6 @@ from ibis.formats.pyarrow import PyArrowData, PyArrowType
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-# chDB's Python(name) resolves ``name`` by scanning caller stack frames'
-# globals/locals; injecting memtables into this module's globals makes them
-# visible to the engine. Locked because one process may hold several connections.
-_MEMTABLE_LOCK = threading.Lock()
-
-
-def _register_memtable(name: str, table: pa.Table) -> None:
-    with _MEMTABLE_LOCK:
-        globals()[name] = table
-
-
-def _unregister_memtable(name: str) -> None:
-    with _MEMTABLE_LOCK:
-        globals().pop(name, None)
 
 
 def _import_chdb():
@@ -267,19 +251,14 @@ class _Con:
                 stream.close()
 
     def raw_query(self, sql, *, external_data=None, **_):
-        self._cancel_active_stream()
-        try:
-            return self._session.query(sql)
-        except Exception:
-            self._flush()
-            raise
+        return self.query(sql)
 
     command = raw_query
 
     def query(self, sql, *, external_data=None, fmt="CSV", **_):
         self._cancel_active_stream()
         try:
-            return self._session.query(sql, fmt)
+            return _memtables._query(self._session, sql, fmt)
         except Exception:
             self._flush()
             raise
@@ -287,7 +266,7 @@ class _Con:
     def send_query(self, sql, fmt="Arrow"):
         self._cancel_active_stream()
         try:
-            self._active_stream = self._session.send_query(sql, fmt)
+            self._active_stream = _memtables._send_query(self._session, sql, fmt)
         except Exception:
             self._flush()
             raise
@@ -339,9 +318,13 @@ class Backend(UrlFromPath, CHBackend):
     def raw_sql(self, query, external_tables=None, fmt: str = "CSV", **kwargs):
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
-        self._register_in_memory_tables_from_mapping(external_tables)
+        names = self._register_in_memory_tables_from_mapping(external_tables)
         self._log(query)
-        return self.con.query(query, fmt=fmt)
+        try:
+            return self.con.query(query, fmt=fmt)
+        finally:
+            for name in names:
+                _memtables._unregister(name)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query, external_tables=None, **kwargs):
@@ -491,12 +474,15 @@ class Backend(UrlFromPath, CHBackend):
     # -- in-memory tables --------------------------------------------------
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        _register_memtable(op.name, op.data.to_pyarrow(op.schema))
+        _memtables._register(op.name, op.data.to_pyarrow(op.schema))
 
-    def _register_in_memory_tables_from_mapping(self, external_tables) -> None:
+    def _register_in_memory_tables_from_mapping(self, external_tables) -> list[str]:
+        names = []
         for name, obj in (external_tables or {}).items():
             memtable = obj if isinstance(obj, ops.InMemoryTable) else obj.op()
-            _register_memtable(name, memtable.data.to_pyarrow(memtable.schema))
+            _memtables._register(name, memtable.data.to_pyarrow(memtable.schema))
+            names.append(name)
+        return names
 
     def _normalize_external_tables(self, external_tables=None):
         # No external-table transport: register for Python() scanning instead,
@@ -504,7 +490,7 @@ class Backend(UrlFromPath, CHBackend):
         self._register_in_memory_tables_from_mapping(external_tables)
 
     def _make_memtable_finalizer(self, name: str):
-        return lambda: _unregister_memtable(name)
+        return lambda: _memtables._unregister(name)
 
     # -- user-defined functions -------------------------------------------
 
