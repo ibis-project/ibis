@@ -263,7 +263,7 @@ class FlinkCompiler(SQLGlotCompiler):
                     for v in value.values()
                 )
             )
-            return self.cast(self.f.map_from_arrays(keys, values), dtype)
+            return self.cast(sge.Map(keys=keys, values=values), dtype)
         elif dtype.is_timestamp():
             return self.cast(
                 value.replace(tzinfo=None).isoformat(sep=" ", timespec="microseconds"),
@@ -590,7 +590,7 @@ class FlinkCompiler(SQLGlotCompiler):
         )
 
     def visit_Map(self, op: ops.Map, *, keys, values):
-        return self.cast(self.f.map_from_arrays(keys, values), op.dtype)
+        return self.cast(sge.Map(keys=keys, values=values), op.dtype)
 
     def visit_MapMerge(self, op: ops.MapMerge, *, left, right):
         left_keys = self.f.map_keys(left)
@@ -602,7 +602,7 @@ class FlinkCompiler(SQLGlotCompiler):
         keys = self.f.array_concat(left_keys, right_keys)
         values = self.f.array_concat(left_values, right_values)
 
-        return self.cast(self.f.map_from_arrays(keys, values), op.dtype)
+        return self.cast(sge.Map(keys=keys, values=values), op.dtype)
 
     def visit_StructColumn(self, op, *, names, values):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)
