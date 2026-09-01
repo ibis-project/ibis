@@ -78,6 +78,18 @@ def test_struct_type(mem):
     assert expr.schema()["t"].is_struct()
 
 
+def test_null_struct_row_preserved(mem):
+    # a null struct row must come back as None, not the underlying tuple values
+    t = ibis.memtable({"i": [1, 2, 3]})
+    expr = t.select(
+        x=ibis.struct({"a": t.i, "b": t.i.cast("string")}).nullif(
+            ibis.struct({"a": 2, "b": "2"})
+        )
+    )
+    result = mem.to_pyarrow(expr).column("x").to_pylist()
+    assert result == [{"a": 1, "b": "1"}, None, {"a": 3, "b": "3"}]
+
+
 def test_decimal_arithmetic(mem):
     t = ibis.memtable({"p": [Decimal("1.50"), Decimal("2.25")]})
     res = mem.execute(t.p.sum())
