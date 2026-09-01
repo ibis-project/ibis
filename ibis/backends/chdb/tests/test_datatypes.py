@@ -13,26 +13,24 @@ import ibis
 
 
 @pytest.mark.parametrize(
-    ("sql", "family", "value"),
+    ("sql", "expected_type", "value"),
     [
-        ("toInt8(-8)", "integer", -8),
-        ("toInt32(-320000)", "integer", -320000),
-        ("toInt64(-6400000000)", "integer", -6400000000),
-        ("toUInt64(18446744073709551615)", "integer", 18446744073709551615),
-        ("toFloat32(0.5)", "floating", 0.5),
-        ("toFloat64(2.25)", "floating", 2.25),
-        ("true", "boolean", True),
-        ("'héllo宝'", "string", "héllo宝"),
-        ("toDate('2026-07-22')", "date", pd.Timestamp("2026-07-22")),
-        ("toDecimal64(123.4567, 4)", "decimal", Decimal("123.4567")),
-        ("[1, 2, 3]", "array", [1, 2, 3]),
+        ("toInt8(-8)", "!int8", -8),
+        ("toInt32(-320000)", "!int32", -320000),
+        ("toInt64(-6400000000)", "!int64", -6400000000),
+        ("toUInt64(18446744073709551615)", "!uint64", 18446744073709551615),
+        ("toFloat32(0.5)", "!float32", 0.5),
+        ("toFloat64(2.25)", "!float64", 2.25),
+        ("true", "!boolean", True),
+        ("'héllo宝'", "!string", "héllo宝"),
+        ("toDate('2026-07-22')", "!date", pd.Timestamp("2026-07-22")),
+        ("toDecimal64(123.4567, 4)", "!decimal(18, 4)", Decimal("123.4567")),
+        ("[1, 2, 3]", "!array<!uint8>", [1, 2, 3]),
     ],
 )
-def test_scalar_type_roundtrip(mem, sql, family, value):
+def test_scalar_type_roundtrip(mem, sql, expected_type, value):
     expr = mem.sql(f"SELECT {sql} AS c")
-    dtype = expr.schema()["c"]
-    # chDB columns are non-nullable; compare the type family, not nullability.
-    assert getattr(dtype, f"is_{family}")()
+    assert expr.schema()["c"] == ibis.dtype(expected_type)
     assert mem.execute(expr)["c"].tolist() == [value]
 
 
@@ -75,7 +73,8 @@ def test_map_type(mem):
 
 def test_struct_type(mem):
     expr = mem.sql("SELECT tuple(1, 'x') AS t")
-    assert expr.schema()["t"].is_struct()
+    assert expr.schema()["t"] == ibis.dtype("!struct<f0: !uint8, f1: !string>")
+    assert mem.to_pyarrow(expr).column("t").to_pylist() == [{"f0": 1, "f1": "x"}]
 
 
 def test_null_struct_row_preserved(mem):
