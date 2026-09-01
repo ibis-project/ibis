@@ -5,6 +5,7 @@ import polars.testing
 import pytest
 
 import ibis
+import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import PolarsSQLInterfaceError
 from ibis.util import gen_name
 
@@ -82,3 +83,15 @@ def test_compile_with_memtable(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
     result = con.compile(t)
     assert isinstance(result, pl.LazyFrame)
+
+
+def test_polars_object_dtype_memtable():
+    class CustomObj:
+        def __init__(self, x):
+            self.x = x
+
+    df = pl.DataFrame({"a": [1, 2], "b": [CustomObj(1), CustomObj(2)]})
+    con = ibis.polars.connect()
+    t = con.create_table("custom_obj_table", df)
+    assert t.schema()["a"] == dt.int64
+    assert t.schema()["b"] == dt.Unknown(nullable=True)
