@@ -381,6 +381,15 @@ keys = pytest.mark.parametrize(
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+                pytest.mark.notyet(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    # NullPointerException: keyType.getSqlTypeName().getFamily()
+                    # null, type is ROW
+                    reason="type inference for COALESCE trips over ROW map keys",
+                    # `map_contains` with struct keys works, `get` doesn't
+                    strict=False,
+                ),
             ],
             id="struct",
         ),
