@@ -110,8 +110,6 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.RegexSearch: "regexp",
         ops.StrRight: "right",
         ops.StringLength: "char_length",
-        ops.StringToDate: "to_date",
-        ops.StringToTimestamp: "to_timestamp",
         ops.TypeOf: "typeof",
     }
 
@@ -224,6 +222,22 @@ class FlinkCompiler(SQLGlotCompiler):
 
         expr = sge.Values(expressions=expressions, alias=alias)
         return sg.select(*columns).from_(expr)
+
+    def _java_time_format(self, format_str) -> str:
+        # TO_DATE/TO_TIMESTAMP take a Java pattern (`yyyy-MM-dd`), not strftime
+        if not isinstance(format_str, ops.Literal):
+            raise com.UnsupportedOperationError(
+                f"format string must be a literal; got: {type(format_str).__name__}"
+            )
+        return sg.time.format_time(
+            format_str.value, Flink.INVERSE_TIME_MAPPING, Flink.INVERSE_TIME_TRIE
+        )
+
+    def visit_StringToDate(self, op, *, arg, format_str):
+        return self.f.anon.to_date(arg, self._java_time_format(op.format_str))
+
+    def visit_StringToTimestamp(self, op, *, arg, format_str):
+        return self.f.anon.to_timestamp(arg, self._java_time_format(op.format_str))
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():

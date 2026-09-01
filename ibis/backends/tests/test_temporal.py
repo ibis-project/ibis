@@ -1275,11 +1275,6 @@ def test_integer_to_timestamp(backend, con, unit):
                     ),
                     raises=SnowflakeProgrammingError,
                 ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=ValueError,
-                    reason="Datetime formatting style is not supported.",
-                ),
             ],
         ),
         param(
@@ -1345,24 +1340,29 @@ def test_string_as_timestamp(alltypes, fmt):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
+@pytest.mark.parametrize(
+    ("method", "value", "fmt"),
+    [
+        param("as_date", "2021-01-02", "%Y-%m-%d", id="date"),
+        param(
+            "as_timestamp", "2021-01-02 03:04:05", "%Y-%m-%d %H:%M:%S", id="timestamp"
+        ),
+    ],
+)
 @pytest.mark.notyet(
     ["materialize"],
     raises=PsycoPgInternalError,
-    reason="Materialize doesn't support to_timestamp(text, format) - backend limitation",
+    reason="Materialize doesn't support to_date/to_timestamp with a format",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-def test_string_as_timestamp_with_time(con):
-    # Regression test: a format with a time component exercises ``%M`` (minutes),
-    # which collides with the month-name token in MySQL/Trino-family format codes
-    # (minutes is ``%i``).  Previously MySQL/Trino/SingleStoreDB read the minutes
-    # field as a month name and silently returned NULL (or errored on Trino).
-    expr = ibis.literal("2021-01-02 03:04:05").as_timestamp("%Y-%m-%d %H:%M:%S")
-    result = con.execute(expr)
-    assert result.replace(tzinfo=None) == datetime.datetime(2021, 1, 2, 3, 4, 5)
+def test_string_as_temporal_with_format(con, method, value, fmt):
+    # `%M` (minutes) reads as a month name in MySQL/Trino-family formats, where
+    # it silently returned NULL; Flink needs a Java pattern, not a strftime one.
+    expr = getattr(ibis.literal(value), method)(fmt)
+    assert con.execute(expr).strftime(fmt) == value
 
 
 @pytest.mark.parametrize(
@@ -1372,11 +1372,6 @@ def test_string_as_timestamp_with_time(con):
         param(
             "%m/%d/%y",
             id="mysql_format",
-            marks=pytest.mark.never(
-                ["flink"],
-                raises=ValueError,
-                reason="Datetime formatting style is not supported.",
-            ),
         ),
         param(
             "MM/dd/yy",
