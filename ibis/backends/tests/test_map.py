@@ -379,11 +379,6 @@ keys = pytest.mark.parametrize(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
                 mark_notyet_postgres,
-                pytest.mark.notyet(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="does not support selecting struct key from map",
-                ),
                 mark_notyet_snowflake,
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],

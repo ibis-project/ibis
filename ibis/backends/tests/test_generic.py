@@ -1334,9 +1334,6 @@ def test_memtable_construct_from_pyarrow(backend, con, monkeypatch):
     )
 
 
-@pytest.mark.notimpl(
-    ["flink"], raises=TypeError, reason="doesn't support pyarrow objects yet"
-)
 def test_memtable_construct_from_pyarrow_c_stream(con):
     pa = pytest.importorskip("pyarrow")
 
@@ -1947,7 +1944,6 @@ bool_to_string_notimpl = [
             {"a": 0, "b": "1"},
             {"a": "0", "b": 1},
             marks=[
-                pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError),
