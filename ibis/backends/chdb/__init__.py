@@ -1,16 +1,11 @@
-"""chDB backend — embedded (in-process) ClickHouse.
-
-Subclasses the ClickHouse backend to reuse its compiler and DDL/SQL, swapping
-only the transport: queries run against the embedded ``chdb`` engine instead
-of a ClickHouse server. Two chDB specifics are handled here — memtables (via
-the ``Python(<name>)`` table function, see below) and the ``DateTime``->uint32
-Arrow output fixup (:class:`ChdbArrowConverter`).
-"""
+"""chDB backend: the ClickHouse backend running against the embedded engine."""
 
 from __future__ import annotations
 
 import contextlib
+import ipaddress
 import re
+import uuid
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
@@ -75,21 +70,37 @@ def _relabel_fields(arr, dtype: dt.DataType):
     return arr
 
 
-class ChdbArrowConverter(PyArrowData):
-    """Restore declared Ibis types on chDB's Arrow output.
+def _combined(col):
+    return col.combine_chunks() if isinstance(col, pa.ChunkedArray) else col
 
-    chDB emits scale-less ``DateTime`` as ``uint32`` seconds; Arrow forbids a
-    direct uint32->timestamp cast, so such columns go through ``int64`` first.
+
+def _fmt_uuid(v):
+    if v is None or isinstance(v, str):
+        return v
+    if isinstance(v, uuid.UUID):
+        return str(v)
+    return str(uuid.UUID(bytes=bytes(v)))
+
+
+def _fmt_ip(v):
+    if v is None or isinstance(v, str):
+        return v
+    if isinstance(v, (bytes, bytearray)):
+        return str(ipaddress.ip_address(bytes(v)))
+    return str(ipaddress.ip_address(v))
+
+
+class ChdbArrowConverter(PyArrowData):
+    """Restore the declared Ibis types on chDB's raw Arrow output.
+
+    chDB's Arrow output diverges from the declared types in several ways --
+    scale-less ``DateTime`` arrives as uint32 seconds, structs carry positional
+    field names, UUID/INET arrive as binary, nullable scalars as unions -- so
+    each column is coerced back to the type Ibis expects.
     """
 
     @classmethod
     def convert_column(cls, column: pa.ChunkedArray, dtype: dt.DataType):
-        import ipaddress
-        import uuid as uuidlib
-
-        def combined(col):
-            return col.combine_chunks() if isinstance(col, pa.ChunkedArray) else col
-
         pa_type = PyArrowType.from_ibis(dtype)
         if column.type == pa_type:
             return column
@@ -116,40 +127,23 @@ class ChdbArrowConverter(PyArrowData):
 
         # UUID arrives as fixed_size_binary(16) / arrow.uuid extension.
         if dtype.is_uuid():
-
-            def fmt_uuid(v):
-                if v is None or isinstance(v, str):
-                    return v
-                if isinstance(v, uuidlib.UUID):
-                    return str(v)
-                return str(uuidlib.UUID(bytes=bytes(v)))
-
             return pa.array(
-                [fmt_uuid(v) for v in combined(column).to_pylist()], type=pa_type
+                [_fmt_uuid(v) for v in _combined(column).to_pylist()], type=pa_type
             )
 
         # INET arrives as uint32 (IPv4) or fixed_size_binary(16) (IPv6).
         if dtype.is_inet():
-
-            def fmt_ip(v):
-                if v is None or isinstance(v, str):
-                    return v
-                if isinstance(v, (bytes, bytearray)):
-                    return str(ipaddress.ip_address(bytes(v)))
-                return str(ipaddress.ip_address(v))
-
             return pa.array(
-                [fmt_ip(v) for v in combined(column).to_pylist()], type=pa_type
+                [_fmt_ip(v) for v in _combined(column).to_pylist()], type=pa_type
             )
 
         # chDB emits anonymous tuples with positional field names ('1','2',...);
         # relabel to the declared field names at every nesting depth (Arrow
         # matches struct fields by name, incl. structs nested inside arrays).
         if dtype.is_struct() and pa.types.is_struct(column.type):
-            relabeled = _relabel_fields(combined(column), dtype)
-            with contextlib.suppress(Exception):
-                return relabeled.cast(pa_type)
-            return relabeled
+            column = _relabel_fields(_combined(column), dtype)
+            if column.type == pa_type:
+                return column
 
         if (
             dtype.is_array()
@@ -164,16 +158,28 @@ class ChdbArrowConverter(PyArrowData):
 
         # nullable values come back as a dense union; resolve to plain values.
         if pa.types.is_union(column.type):
-            return pa.array(combined(column).to_pylist(), type=pa_type)
+            return pa.array(_combined(column).to_pylist(), type=pa_type)
 
-        # generic: safe cast, then unsafe (e.g. signed<->unsigned), then rebuild.
-        with contextlib.suppress(Exception):
-            return column.cast(pa_type)
-        with contextlib.suppress(Exception):
+        # same-width signedness flip (e.g. bitNot yields unsigned): a two's
+        # complement reinterpretation, so an unsafe cast is value-preserving.
+        if (
+            pa.types.is_integer(column.type)
+            and pa.types.is_integer(pa_type)
+            and column.type.bit_width == pa_type.bit_width
+        ):
             return pc.cast(column, pa_type, safe=False)
-        with contextlib.suppress(Exception):
-            return pa.array(combined(column).to_pylist(), type=pa_type)
-        return column
+
+        # generic: safe cast, then a value-checked rebuild; fail loudly rather
+        # than returning a mistyped or silently truncated column.
+        with contextlib.suppress(pa.ArrowInvalid, pa.ArrowNotImplementedError):
+            return column.cast(pa_type)
+        try:
+            return pa.array(_combined(column).to_pylist(), type=pa_type)
+        except Exception as e:
+            raise com.IbisError(
+                f"chDB returned Arrow type {column.type}, which cannot be "
+                f"converted to the expected type {pa_type}"
+            ) from e
 
     @classmethod
     def convert_table(cls, table: pa.Table, schema: sch.Schema) -> pa.Table:
@@ -313,8 +319,6 @@ class Backend(UrlFromPath, CHBackend):
         """
         self.con = _Con(_import_chdb().connect(str(database)))
 
-    # -- execution ---------------------------------------------------------
-
     def raw_sql(self, query, external_tables=None, fmt: str = "CSV", **kwargs):
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
@@ -380,8 +384,6 @@ class Backend(UrlFromPath, CHBackend):
         df = table.to_pandas(timestamp_as_object=True)
         return expr.__pandas_result__(df, schema=expr.as_table().schema())
 
-    # -- metadata ----------------------------------------------------------
-
     def get_schema(
         self, table_name, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
@@ -434,10 +436,8 @@ class Backend(UrlFromPath, CHBackend):
         result = self.raw_sql(query, fmt="ArrowTable")
         return result.column(0).to_pylist()[0]
 
-    # -- file readers ------------------------------------------------------
     # The inherited ClickHouse readers stream files over clickhouse_connect;
     # the embedded engine instead reads the local path via file() directly.
-
     def _read_file(self, path, *, table_name, fmt, engine):
         name = table_name or util.gen_name("read")
         path = sge.convert(str(path)).sql(self.dialect)
@@ -471,8 +471,6 @@ class Backend(UrlFromPath, CHBackend):
         query = self._build_insert_from_table(target=name, source=obj, db=database)
         self.raw_sql(query)
 
-    # -- in-memory tables --------------------------------------------------
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         _memtables._register(op.name, op.data.to_pyarrow(op.schema))
 
@@ -491,8 +489,6 @@ class Backend(UrlFromPath, CHBackend):
 
     def _make_memtable_finalizer(self, name: str):
         return lambda: _memtables._unregister(name)
-
-    # -- user-defined functions -------------------------------------------
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         chdb = _import_chdb()
