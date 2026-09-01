@@ -6,8 +6,8 @@ import pandas as pd
 import pyarrow as pa
 
 import ibis
-import ibis.backends.chdb as chdb_backend
 from ibis import _
+from ibis.backends.chdb import _memtables
 
 
 def test_memtable_renders_as_python_table_function(mem):
@@ -79,6 +79,6 @@ def test_memtable_cleaned_up_after_finalize(mem):
     t = ibis.memtable({"x": [1, 2, 3]})
     name = t.op().name
     mem.execute(t.count())
-    assert name in vars(chdb_backend)
+    assert name in vars(_memtables)
     mem._make_memtable_finalizer(name)()
-    assert name not in vars(chdb_backend)
+    assert name not in vars(_memtables)
