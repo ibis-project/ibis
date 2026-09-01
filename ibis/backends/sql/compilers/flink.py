@@ -224,8 +224,7 @@ class FlinkCompiler(SQLGlotCompiler):
         return sg.select(*columns).from_(expr)
 
     def _java_time_format(self, format_str) -> str:
-        # Flink's TO_DATE/TO_TIMESTAMP take a Java (SimpleDateFormat) pattern,
-        # e.g. `yyyy-MM-dd`, not a Python strftime format.
+        # TO_DATE/TO_TIMESTAMP take a Java pattern (`yyyy-MM-dd`), not strftime
         if not isinstance(format_str, ops.Literal):
             raise com.UnsupportedOperationError(
                 f"format string must be a literal; got: {type(format_str).__name__}"
