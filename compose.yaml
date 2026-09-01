@@ -411,10 +411,23 @@ services:
       - exasol:/data
 
   flink-jobmanager:
-    image: flink:${FLINK_VERSION}
+    # the jobmanager needs the PyFlink jar too: since Flink 2.0 the client
+    # submits a StreamGraph, so the jobmanager is the one deserializing nodes
+    # like ArrowSourceFunction
+    image: ibis-flink-${FLINK_VERSION}
+    build:
+      context: ./docker/flink
+      args:
+        FLINK_VERSION: ${FLINK_VERSION}
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
+    healthcheck:
+      interval: 2s
+      retries: 60
+      test:
+        - CMD-SHELL
+        - curl -fsS http://localhost:8081/overview
     ports:
       - 8081:8081
     command: jobmanager
@@ -436,7 +449,14 @@ services:
         taskmanager.memory.network.min: 512mb
         taskmanager.memory.network.max: 2gb
     depends_on:
-      - flink-jobmanager
+      flink-jobmanager:
+        condition: service_healthy
+    healthcheck:
+      interval: 2s
+      retries: 60
+      test:
+        - CMD-SHELL
+        - curl -fsS http://flink-jobmanager:8081/overview | grep -q '"slots-available":[1-9]'
     command: taskmanager
     networks:
       - flink

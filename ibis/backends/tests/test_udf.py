@@ -7,7 +7,7 @@ from pytest import mark, param
 import ibis.common.exceptions as com
 from ibis import _, udf
 from ibis.backends.tests.errors import Py4JJavaError, PySparkPythonException
-from ibis.conftest import IS_SPARK_REMOTE
+from ibis.conftest import FLINK_WORKER_PYTHON_VERSION, IS_SPARK_REMOTE
 
 no_python_udfs = mark.notimpl(
     [
@@ -27,11 +27,14 @@ no_python_udfs = mark.notimpl(
         "athena",
     ]
 )
+# python UDFs are pickled by the client and unpickled by the taskmanager, so
+# the two interpreters have to agree; the taskmanager runs whatever python the
+# flink image's base ships (see docker/flink/Dockerfile)
 cloudpickle_version_mismatch = mark.notimpl(
     ["flink"],
-    condition=sys.version_info >= (3, 11),
+    condition=sys.version_info[:2] != FLINK_WORKER_PYTHON_VERSION,
     raises=Py4JJavaError,
-    reason="Docker image has Python 3.10, results in `cloudpickle` version mismatch",
+    reason="`cloudpickle` cannot unpickle a UDF pickled by a different python",
 )
 
 

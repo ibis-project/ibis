@@ -420,10 +420,27 @@ class Backend(
         kwargs
             Keyword arguments
         """
+        from pyflink.table.types import create_arrow_schema
+
+        from ibis.backends.flink.datatypes import get_field_data_types
+
         self._run_pre_execute_hooks(expr)
 
         sql = self.compile(expr.as_table(), params=params, **kwargs)
-        df = self._table_env.sql_query(sql).to_pandas()
+        table = self._table_env.sql_query(sql)
+        df = table.to_pandas()
+
+        if df.empty:
+            # for an empty result pyflink skips arrow entirely and hands back
+            # `DataFrame.from_records([], columns=...)`, whose columns are all
+            # object dtype; rebuild it from the schema so that an empty result
+            # has the same dtypes a non-empty one would have, in particular the
+            # same datetime resolution
+            pyflink_schema = table.get_schema()
+            arrow_schema = create_arrow_schema(
+                pyflink_schema.get_field_names(), get_field_data_types(pyflink_schema)
+            )
+            df = arrow_schema.empty_table().to_pandas()
 
         return expr.__pandas_result__(df)
 
