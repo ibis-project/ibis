@@ -1340,42 +1340,29 @@ def test_string_as_timestamp(alltypes, fmt):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
+@pytest.mark.parametrize(
+    ("method", "value", "fmt"),
+    [
+        param("as_date", "2021-01-02", "%Y-%m-%d", id="date"),
+        param(
+            "as_timestamp", "2021-01-02 03:04:05", "%Y-%m-%d %H:%M:%S", id="timestamp"
+        ),
+    ],
+)
 @pytest.mark.notyet(
     ["materialize"],
     raises=PsycoPgInternalError,
-    reason="Materialize doesn't support to_timestamp(text, format) - backend limitation",
-)
-@pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
-    raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-def test_string_as_timestamp_with_time(con):
-    # Regression test: a format with a time component exercises ``%M`` (minutes),
-    # which collides with the month-name token in MySQL/Trino-family format codes
-    # (minutes is ``%i``).  Previously MySQL/Trino/SingleStoreDB read the minutes
-    # field as a month name and silently returned NULL (or errored on Trino).
-    expr = ibis.literal("2021-01-02 03:04:05").as_timestamp("%Y-%m-%d %H:%M:%S")
-    result = con.execute(expr)
-    assert result.replace(tzinfo=None) == datetime.datetime(2021, 1, 2, 3, 4, 5)
-
-
-@pytest.mark.notyet(
-    ["materialize"],
-    raises=PsycoPgInternalError,
-    reason="Materialize doesn't have to_date() function",
+    reason="Materialize doesn't support to_date/to_timestamp with a format",
 )
 @pytest.mark.notimpl(
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-def test_string_as_date_with_format(con):
-    # Flink mangled the format and returned a wrong date for padded input.
-    expr = ibis.literal("2021-01-02").as_date("%Y-%m-%d")
-    result = con.execute(expr)
-    if isinstance(result, (pd.Timestamp, datetime.datetime)):
-        result = result.date()
-    assert result == datetime.date(2021, 1, 2)
+def test_string_as_temporal_with_format(con, method, value, fmt):
+    # `%M` (minutes) collides with the month-name token in MySQL/Trino-family
+    # formats, and Flink needs a Java pattern rather than a strftime one.
+    expr = getattr(ibis.literal(value), method)(fmt)
+    assert con.execute(expr).strftime(fmt) == value
 
 
 @pytest.mark.parametrize(
