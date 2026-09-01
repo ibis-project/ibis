@@ -20,6 +20,9 @@ ARM64 = platform.machine() in ("arm64", "aarch64")
 CI = os.environ.get("CI") is not None
 SPARK_REMOTE = os.environ.get("SPARK_REMOTE")
 IS_SPARK_REMOTE = bool(SPARK_REMOTE)
+# python that flink's taskmanager runs UDFs with: the version shipped by the
+# ubuntu release the flink image is built on (see docker/flink/Dockerfile)
+FLINK_WORKER_PYTHON_VERSION = (3, 12)
 
 
 @pytest.fixture(autouse=True)

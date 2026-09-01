@@ -759,17 +759,7 @@ def test_array_filter_with_index_lambda(con, input, output, predicate):
 @pytest.mark.parametrize(
     ("col", "value"),
     [
-        param(
-            "x",
-            1,
-            marks=[
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="unknown; NPE during execution",
-                )
-            ],
-        ),
+        ("x", 1),
         ("y", "a"),
     ],
 )
