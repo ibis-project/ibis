@@ -695,7 +695,7 @@ class SQLBackend(BaseBackend):
         self,
         name: str,
         /,
-        where: ir.BooleanValue | Callable | bool,
+        where: ir.BooleanValue | Callable,
         *,
         database: str | None = None,
     ) -> None:
@@ -718,18 +718,10 @@ class SQLBackend(BaseBackend):
             Table name
         where
             Boolean predicate specifying which rows to delete. Required.
-            Accepts `ir.BooleanValue`, `Deferred` (`ibis._.col > val`),
-            callable (`lambda t: ...`), or a literal `bool`.
+            Accepts `ir.BooleanValue`, `Deferred` (`ibis._.col > val`), or a
+            callable (`lambda t: ...`).
 
             To delete all rows, use `truncate_table()` instead.
-
-            ::: {.callout-warning}
-            ## A literal `True` predicate deletes every row.
-
-            Passing `where=True` is a valid boolean predicate and is **not**
-            caught by the `where=None` safety check: it compiles to
-            `DELETE ... WHERE TRUE` and removes all rows from the table.
-            :::
         database
             Name of the attached database that the table is located in.
 
@@ -741,6 +733,12 @@ class SQLBackend(BaseBackend):
             raise exc.IbisInputError(
                 "`delete` requires a `where` predicate. "
                 "To delete all rows, use `truncate_table()` instead."
+            )
+        if isinstance(where, bool):
+            raise exc.IbisInputError(
+                "`delete` does not accept a literal bool as its `where` "
+                "predicate: `True` would delete every row (use "
+                "`truncate_table()` instead) and `False` would delete nothing."
             )
         if isinstance(where, (tuple, list, set)):
             raise exc.IbisInputError(
