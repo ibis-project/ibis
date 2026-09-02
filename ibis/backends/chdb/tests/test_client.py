@@ -23,7 +23,6 @@ def test_list_tables_like(mem):
 
 
 def test_multiple_connections_same_path(chdb_path):
-    # chDB permits a second connection against the same path.
     c1 = ibis.chdb.connect(chdb_path)
     c2 = ibis.chdb.connect(chdb_path)
     assert c1.execute(ibis.memtable({"a": [1, 2]}).a.sum()) == 3

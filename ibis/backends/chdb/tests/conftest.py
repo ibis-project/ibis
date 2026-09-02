@@ -64,8 +64,7 @@ class TestConf(BackendTest):
 
 @pytest.fixture(scope="session")
 def chdb_path(tmp_path_factory, worker_id) -> str:
-    # chDB allows one engine path per process; every connection funnels
-    # through this one.
+    # the same per-worker engine path TestConf.connect uses
     return str(tmp_path_factory.getbasetemp() / f"chdb_{worker_id}")
 
 
