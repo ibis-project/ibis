@@ -122,7 +122,7 @@ def test_create_table(backend, con, temp_table, func, sch):
             True,
             id="temp overwrite",
             marks=[
-                pytest.mark.notyet(["clickhouse"], reason="Can't specify both"),
+                pytest.mark.notyet(["clickhouse", "chdb"], reason="Can't specify both"),
                 pytest.mark.notyet(
                     [
                         "pyspark",
@@ -403,6 +403,11 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
     raises=NotImplementedError,
     reason="rename_table() method not implemented in Materialize backend (could be added using ALTER...RENAME).",
     # Ref: https://materialize.com/docs/sql/alter-rename/
+)
+@pytest.mark.notimpl(
+    ["chdb"],
+    raises=NotImplementedError,
+    reason="rename_table() method not implemented in chdb backend",
 )
 def test_rename_table(con, temp_table, temp_table_orig):
     schema = ibis.schema({"a": "string", "b": "bool", "c": "int32"})
@@ -822,6 +827,7 @@ def test_insert_from_memtable(con, temp_table):
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "druid",
         "exasol",
         "impala",
@@ -868,6 +874,7 @@ def test_list_database_contents(con):
     test_databases = {
         "bigquery": {"ibis_gbq_testing"},
         "clickhouse": {"system", "default", "ibis_testing"},
+        "chdb": {"system", "default", "ibis_testing"},
         "datafusion": {"public"},
         "duckdb": {"pg_catalog", "main", "information_schema"},
         "exasol": {"EXASOL"},
@@ -1102,6 +1109,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "duckdb",
                         "exasol",
                         "impala",
@@ -1136,6 +1144,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "exasol",
                         "impala",
                         "materialize",
@@ -1497,7 +1506,7 @@ def test_set_backend_url(url, monkeypatch):
     ],
     reason="backend doesn't support timestamp with scale parameter",
 )
-@pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
+@pytest.mark.notimpl(["clickhouse", "chdb"], reason="create table isn't implemented")
 @pytest.mark.notimpl(
     ["snowflake"], reason="scale not implemented in ibis's snowflake backend"
 )
@@ -1730,7 +1739,7 @@ def test_close_connection(con):
 
 
 @pytest.mark.notyet(
-    ["clickhouse"],
+    ["clickhouse", "chdb"],
     raises=AttributeError,
     reason="JSON extension is experimental and not enabled by default in testing",
 )
@@ -1999,7 +2008,9 @@ def test_insert_into_table_missing_columns(con, temp_table):
 
 @pytest.mark.notyet(["druid"], raises=AssertionError, reason="can't drop tables")
 @pytest.mark.notyet(
-    ["clickhouse"], raises=AssertionError, reason="memtables are assembled every time"
+    ["clickhouse", "chdb"],
+    raises=AssertionError,
+    reason="memtables are assembled every time",
 )
 @pytest.mark.notyet(
     ["bigquery"], raises=AssertionError, reason="test is flaky", strict=False

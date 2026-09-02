@@ -2482,6 +2482,14 @@ bigquery = [
     { name = "pydata-google-auth" },
     { name = "rich" },
 ]
+chdb = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas" },
+    { name = "pyarrow" },
+    { name = "pyarrow-hotfix" },
+    { name = "rich" },
+]
 clickhouse = [
     { name = "clickhouse-connect", extra = ["arrow", "numpy", "pandas"] },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -2763,6 +2771,7 @@ requires-dist = [
     { name = "mysqlclient", marker = "extra == 'mysql'", specifier = ">=2.2.4" },
     { name = "numpy", marker = "extra == 'athena'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'bigquery'", specifier = ">=1.23.2,<3" },
+    { name = "numpy", marker = "extra == 'chdb'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'clickhouse'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'databricks'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'datafusion'", specifier = ">=1.23.2,<3" },
@@ -2790,6 +2799,7 @@ requires-dist = [
     { name = "packaging", marker = "extra == 'sqlite'", specifier = ">=21.3" },
     { name = "pandas", marker = "extra == 'athena'", specifier = ">=1.5.3,<4" },
     { name = "pandas", marker = "extra == 'bigquery'", specifier = ">=1.5.3,<4" },
+    { name = "pandas", marker = "extra == 'chdb'", specifier = ">=1.5.3,<4" },
     { name = "pandas", marker = "extra == 'clickhouse'", specifier = ">=1.5.3,<4" },
     { name = "pandas", marker = "extra == 'databricks'", specifier = ">=1.5.3,<4" },
     { name = "pandas", marker = "extra == 'datafusion'", specifier = ">=1.5.3,<4" },
@@ -2820,6 +2830,7 @@ requires-dist = [
     { name = "psycopg2", marker = "extra == 'risingwave'", specifier = ">=2.8.4" },
     { name = "pyarrow", marker = "extra == 'athena'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'bigquery'", specifier = ">=10.0.1" },
+    { name = "pyarrow", marker = "extra == 'chdb'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'clickhouse'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'databricks'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'datafusion'", specifier = ">=10.0.1" },
@@ -2842,6 +2853,7 @@ requires-dist = [
     { name = "pyarrow", marker = "extra == 'trino'", specifier = ">=10.0.1" },
     { name = "pyarrow-hotfix", marker = "extra == 'athena'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'bigquery'", specifier = ">=0.4" },
+    { name = "pyarrow-hotfix", marker = "extra == 'chdb'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'clickhouse'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'databricks'", specifier = ">=0.4" },
     { name = "pyarrow-hotfix", marker = "extra == 'datafusion'", specifier = ">=0.4" },
@@ -2873,6 +2885,7 @@ requires-dist = [
     { name = "regex", marker = "extra == 'sqlite'", specifier = ">=2021.7.6" },
     { name = "rich", marker = "extra == 'athena'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'bigquery'", specifier = ">=12.4.4" },
+    { name = "rich", marker = "extra == 'chdb'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'clickhouse'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'databricks'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'datafusion'", specifier = ">=12.4.4" },
@@ -2902,7 +2915,7 @@ requires-dist = [
     { name = "typing-extensions", specifier = ">=4.3.0" },
     { name = "tzdata", specifier = ">=2022.7" },
 ]
-provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "materialize", "oracle", "polars", "postgres", "pyspark", "singlestoredb", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
+provides-extras = ["athena", "bigquery", "chdb", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "materialize", "oracle", "polars", "postgres", "pyspark", "singlestoredb", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
 
 [package.metadata.requires-dev]
 dev = [

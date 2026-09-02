@@ -61,6 +61,7 @@ aggregate_test_params = [
                     "postgres",
                     "risingwave",
                     "clickhouse",
+                    "chdb",
                     "impala",
                     "duckdb",
                     "polars",
@@ -102,6 +103,7 @@ aggregate_test_params = [
                 [
                     "bigquery",
                     "clickhouse",
+                    "chdb",
                     "datafusion",
                     "impala",
                     "mysql",
@@ -337,6 +339,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "datafusion",
                         "impala",
                         "mysql",
@@ -404,6 +407,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     [
                         "bigquery",
                         "clickhouse",
+                        "chdb",
                         "databricks",
                         "datafusion",
                         "druid",
@@ -584,6 +588,7 @@ def test_reduction_ops(
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
+                        "chdb",
                         "exasol",
                         "flink",
                         "postgres",
@@ -631,7 +636,7 @@ def test_first_last(alltypes, method, filtered, include_null):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "exasol", "flink", "pyspark", "sqlite", "databricks"],
+    ["clickhouse", "chdb", "exasol", "flink", "pyspark", "sqlite", "databricks"],
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.notimpl(
@@ -654,7 +659,7 @@ def test_first_last(alltypes, method, filtered, include_null):
             True,
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "exasol", "flink", "postgres", "snowflake"],
+                    ["clickhouse", "chdb", "exasol", "flink", "postgres", "snowflake"],
                     raises=com.UnsupportedOperationError,
                     reason="`include_null=True` is not supported",
                 ),
@@ -1043,7 +1048,7 @@ def test_approx_quantile(con, filtered, multi):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=(ValueError, AttributeError),
                     reason="ClickHouse only implements `sample` correlation coefficient",
                 ),
@@ -1126,7 +1131,7 @@ def test_approx_quantile(con, filtered, multi):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=ValueError,
                     reason="ClickHouse only implements `sample` correlation coefficient",
                 ),
@@ -1230,6 +1235,11 @@ def test_median(alltypes, df):
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,
+    reason="doesn't support median of strings",
+)
+@pytest.mark.notyet(
+    ["chdb"],
+    raises=RuntimeError,
     reason="doesn't support median of strings",
 )
 @pytest.mark.notyet(
@@ -1400,6 +1410,7 @@ def test_group_concat(
 @pytest.mark.notimpl(
     [
         "clickhouse",
+        "chdb",
         "datafusion",
         "druid",
         "flink",
@@ -1434,12 +1445,12 @@ def gen_test_collect_marks(distinct, filtered, ordered, include_null):
         yield pytest.mark.notimpl(["datafusion"], raises=com.UnsupportedOperationError)
     if ordered:
         yield pytest.mark.notimpl(
-            ["clickhouse", "pyspark", "flink", "databricks"],
+            ["clickhouse", "chdb", "pyspark", "flink", "databricks"],
             raises=com.UnsupportedOperationError,
         )
     if include_null:
         yield pytest.mark.notimpl(
-            ["clickhouse", "pyspark", "snowflake", "databricks"],
+            ["clickhouse", "chdb", "pyspark", "snowflake", "databricks"],
             raises=com.UnsupportedOperationError,
         )
 
@@ -1577,6 +1588,7 @@ def agg_to_ndarray(s: pd.Series) -> np.ndarray:
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "duckdb",
         "impala",
@@ -1633,6 +1645,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "duckdb",
         "impala",
@@ -1766,6 +1779,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
 @pytest.mark.notyet(["clickhouse"], raises=ClickHouseDatabaseError)
+@pytest.mark.notyet(["chdb"], raises=RuntimeError)
 @pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)

@@ -9,14 +9,11 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import unquote_plus
 
-import clickhouse_connect as cc
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
-from clickhouse_connect.driver.exceptions import DatabaseError
-from clickhouse_connect.driver.external import ExternalData
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -41,14 +38,33 @@ if TYPE_CHECKING:
     from pathlib import Path
     from urllib.parse import ParseResult
 
+    import clickhouse_connect as cc
     import pandas as pd
     import polars as pl
+    from clickhouse_connect.driver.external import ExternalData
 
     from ibis.expr.api import IntoMemtable
 
 
 def _to_memtable(v):
     return ibis.memtable(v).op() if not isinstance(v, ops.InMemoryTable) else v
+
+
+def _import_clickhouse_connect():
+    # deferred so that the chdb backend, whose extra doesn't pull
+    # clickhouse-connect, can import this module without it
+    try:
+        import clickhouse_connect
+        import clickhouse_connect.driver.exceptions
+        import clickhouse_connect.driver.external
+    except ImportError as e:
+        raise ImportError(
+            "The clickhouse backend requires the `clickhouse-connect` package, "
+            "which is not installed. Install it with "
+            "`python -m pip install 'ibis-framework[clickhouse]'`."
+        ) from e
+    else:
+        return clickhouse_connect
 
 
 class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLoader):
@@ -138,6 +154,8 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
         >>> client
         <ibis.backends.clickhouse.Backend object at 0x...>
         """
+        cc = _import_clickhouse_connect()
+
         if settings is None:
             settings = {}
 
@@ -221,6 +239,8 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
 
     def _normalize_external_tables(self, external_tables=None) -> ExternalData | None:
         """Merge registered external tables with any new external tables."""
+        ExternalData = _import_clickhouse_connect().driver.external.ExternalData
+
         external_data = ExternalData()
         n = 0
         type_mapper = self.compiler.type_mapper
@@ -503,6 +523,8 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
             raise com.UnsupportedOperationError(
                 "`catalog` namespaces are not supported by ClickHouse"
             )
+        DatabaseError = _import_clickhouse_connect().driver.exceptions.DatabaseError
+
         query = sge.Describe(this=sg.table(table_name, db=database))
         try:
             with self._safe_raw_sql(query) as results:
