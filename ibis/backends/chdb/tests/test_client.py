@@ -2,12 +2,34 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
+import textwrap
 
 import pytest
 
 import ibis
 import ibis.common.exceptions as com
+
+
+def test_imports_without_clickhouse_connect():
+    # the chdb extra doesn't pull clickhouse-connect, so the backend must
+    # import cleanly without it (the clickhouse imports are deferred)
+    code = textwrap.dedent(
+        """
+        import sys
+
+        sys.modules["clickhouse_connect"] = None
+        import ibis.backends.chdb
+
+        print("ok")
+        """
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=False
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "ok"
 
 
 def test_raw_sql(mem):
