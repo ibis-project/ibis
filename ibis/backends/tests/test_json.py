@@ -82,6 +82,25 @@ def test_json_literal(con):
     assert result == {"scale": 100}
 
 
+@pytest.mark.notimpl(["polars"])
+@pytest.mark.notyet(
+    ["sqlite"],
+    reason="Syntax error near 'AS'",
+)
+@pytest.mark.notyet(
+    ["flink"],
+    reason="Calcite validation error casting a JSON array getitem result to another type",
+)
+def test_json_string_cast(con):
+    # GH #12073: casting a string containing JSON text to json must parse
+    # its contents rather than wrapping the string itself as a JSON scalar
+    # (this is easy to get wrong on backends, like Trino, that have a
+    # dedicated JSON-parsing function distinct from a generic CAST).
+    expr = ibis.literal('{"a": 1}').cast("json")["a"].cast("int")
+    result = con.execute(expr)
+    assert result == 1
+
+
 @pytest.mark.notimpl(["mysql", "risingwave"])
 @pytest.mark.notimpl(["mysql", "singlestoredb", "risingwave"])
 @pytest.mark.notyet(["bigquery", "sqlite"], reason="doesn't support maps")
