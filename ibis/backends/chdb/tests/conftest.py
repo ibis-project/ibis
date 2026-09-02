@@ -26,10 +26,8 @@ class TestConf(BackendTest):
     def test_files(self) -> Iterable[Path]:
         return self.data_dir.joinpath("parquet").glob("*.parquet")
 
-    def _load_data(self, *, database: str = "ibis_testing", **_: Any) -> None:
-        con = self.connection.con
-        con.raw_query(f"CREATE DATABASE IF NOT EXISTS {database} ENGINE = Atomic")
-        con.raw_query(f"USE {database}")
+    @property
+    def ddl_script(self) -> Iterable[str]:
         parquet = self.data_dir / "parquet"
         for name, select in (
             ("diamonds", "SELECT *"),
@@ -43,11 +41,16 @@ class TestConf(BackendTest):
             ),
             ("astronauts", "SELECT *"),
         ):
-            path = parquet / f"{name}.parquet"
-            con.raw_query(
+            yield (
                 f"CREATE OR REPLACE TABLE {name} ENGINE = Memory AS "
-                f"{select} FROM file('{path}', 'Parquet')"
+                f"{select} FROM file('{parquet / f'{name}.parquet'}', 'Parquet')"
             )
+        yield from super().ddl_script
+
+    def _load_data(self, *, database: str = "ibis_testing", **_: Any) -> None:
+        con = self.connection.con
+        con.raw_query(f"CREATE DATABASE IF NOT EXISTS {database} ENGINE = Atomic")
+        con.raw_query(f"USE {database}")
         for stmt in self.ddl_script:
             if stmt.strip():
                 con.raw_query(stmt)
