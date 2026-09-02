@@ -200,7 +200,6 @@ class ChdbArrowConverter(PyArrowData):
         return pa.Table.from_arrays(columns, schema=target)
 
 
-# ibis dtype -> chdb.sqltypes constant, for Python scalar UDF registration.
 def _chdb_sqltype(dtype: dt.DataType):
     from chdb import sqltypes as st
 
