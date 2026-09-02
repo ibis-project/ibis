@@ -57,8 +57,7 @@ class TestConf(BackendTest):
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw: Any):
-        # Persistent on-disk db per worker (tmpdir is a TempPathFactory) so the
-        # process's several connections share one path, as chDB requires.
+        # one persistent path per worker: chDB allows one engine path per process
         path = tmpdir.getbasetemp() / f"chdb_{worker_id}"
         return ibis.chdb.connect(str(path), **kw)
 
