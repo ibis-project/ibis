@@ -23,6 +23,7 @@ from ibis.backends import (
     UrlFromPath,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import C
 from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all
@@ -534,15 +535,13 @@ class Backend(
 
                 if in_memory:
                     cur.execute(
-                        sge.Drop(kind="TABLE", this=obj.get_name(), exists=True).sql(
+                        Drop(kind="TABLE", this=obj.get_name(), exists=True).sql(
                             dialect
                         )
                     )
 
             if overwrite:
-                cur.execute(
-                    sge.Drop(kind="TABLE", this=table, exists=True).sql(dialect)
-                )
+                cur.execute(Drop(kind="TABLE", this=table, exists=True).sql(dialect))
                 # SQLite's ALTER TABLE statement doesn't support using a
                 # fully-qualified table reference after RENAME TO. Since we
                 # never rename between databases, we only need the table name
@@ -568,7 +567,7 @@ class Backend(
         database: str | None = None,
         force: bool = False,
     ) -> None:
-        drop_stmt = sg.exp.Drop(
+        drop_stmt = Drop(
             kind="TABLE",
             this=sg.table(name, catalog=database, quoted=self.compiler.quoted),
             exists=force,
@@ -589,7 +588,7 @@ class Backend(
 
         stmts = []
         if overwrite:
-            stmts.append(sge.Drop(kind="VIEW", this=view, exists=True).sql(self.name))
+            stmts.append(Drop(kind="VIEW", this=view, exists=True).sql(self.name))
         stmts.append(
             sge.Create(
                 this=view, kind="VIEW", replace=False, expression=self.compile(obj)

@@ -29,6 +29,7 @@ from ibis.backends.impala.udf import (
     wrap_udf,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -380,7 +381,7 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
         create_sql = sge.Create(
             kind="VIEW", this=ident, exists=True, expression=query, dialect=self.dialect
         )
-        drop_sql = sge.Drop(kind="VIEW", this=ident, exists=True)
+        drop_sql = Drop(kind="VIEW", this=ident, exists=True)
 
         with self._safe_raw_sql(create_sql):
             pass

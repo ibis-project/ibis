@@ -34,6 +34,7 @@ from ibis.backends import (
 )
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import STAR
 
 if TYPE_CHECKING:
@@ -677,7 +678,7 @@ $$ {defn["source"]} $$"""
             raise com.UnsupportedOperationError(
                 "Dropping the current catalog is not supported because its behavior is undefined"
             )
-        drop_stmt = sge.Drop(
+        drop_stmt = Drop(
             this=sg.to_identifier(name, quoted=self.compiler.quoted),
             kind="DATABASE",
             exists=force,
@@ -735,7 +736,7 @@ $$ {defn["source"]} $$"""
                 "Dropping the current database is not supported because its behavior is undefined"
             )
 
-        drop_stmt = sge.Drop(
+        drop_stmt = Drop(
             this=sg.table(name, db=catalog, quoted=self.compiler.quoted),
             kind="SCHEMA",
             exists=force,

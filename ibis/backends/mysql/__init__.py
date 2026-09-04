@@ -30,6 +30,7 @@ from ibis.backends import (
     SupportsTempTables,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import STAR, TRUE, C, RenameTable
 
 if TYPE_CHECKING:
@@ -241,7 +242,7 @@ class Backend(
     def drop_database(
         self, name: str, *, catalog: str | None = None, force: bool = False
     ) -> None:
-        sql = sge.Drop(
+        sql = Drop(
             kind="DATABASE", exists=force, this=sg.table(name, catalog=catalog)
         ).sql(self.name)
         with self.begin() as cur:
@@ -434,7 +435,7 @@ class Backend(
                 cur.execute(sge.Insert(this=table_expr, expression=query).sql(dialect))
 
             if overwrite:
-                cur.execute(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
+                cur.execute(Drop(kind="TABLE", this=this, exists=True).sql(dialect))
                 cur.execute(
                     sge.Alter(
                         kind="TABLE",

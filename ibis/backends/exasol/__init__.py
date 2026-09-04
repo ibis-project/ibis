@@ -21,6 +21,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, NoExampleLoader
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
@@ -260,7 +261,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
             this=table,
             expression=sg.parse_one(query, dialect=dialect),
         )
-        drop_view = sg.exp.Drop(kind="VIEW", this=table).sql(dialect)
+        drop_view = Drop(kind="VIEW", this=table).sql(dialect)
         describe = sg.exp.Describe(this=table).sql(dialect)
         type_mapper = self.compiler.type_mapper
         con = self.con
@@ -316,13 +317,13 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
 
     def _clean_up_tmp_table(self, name: str) -> None:
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)
-        drop_sql = sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True)
+        drop_sql = Drop(kind="TABLE", this=ident, exists=True, cascade=True)
         with self._safe_raw_sql(drop_sql):
             pass
 
     def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)
-        drop_sql = sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True).sql(
+        drop_sql = Drop(kind="TABLE", this=ident, exists=True, cascade=True).sql(
             self.dialect
         )
 
@@ -424,7 +425,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
 
             if overwrite:
                 self.con.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
+                    Drop(kind="TABLE", this=this, exists=True).sql(self.name)
                 )
                 self.con.execute(
                     f"RENAME TABLE {table_expr.sql(self.name)} TO {this.sql(self.name)}"
@@ -451,7 +452,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
             raise NotImplementedError(
                 "`catalog` argument is not supported for the Exasol backend"
             )
-        drop_schema = sg.exp.Drop(
+        drop_schema = Drop(
             kind="SCHEMA",
             this=sg.to_identifier(name, quoted=self.compiler.quoted),
             exists=force,

@@ -29,6 +29,7 @@ from ibis.backends import (
     PyArrowExampleLoader,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
@@ -559,7 +560,7 @@ class Backend(
         create_view = sg.exp.Create(kind="VIEW", this=this, expression=sg_expr).sql(
             dialect
         )
-        drop_view = sg.exp.Drop(kind="VIEW", this=this).sql(dialect)
+        drop_view = Drop(kind="VIEW", this=this).sql(dialect)
 
         metadata_query = (
             sg.select(
@@ -615,7 +616,7 @@ class Backend(
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)
 
         truncate = sge.TruncateTable(expressions=[ident]).sql(dialect)
-        drop = sge.Drop(kind="TABLE", this=ident).sql(dialect)
+        drop = Drop(kind="TABLE", this=ident).sql(dialect)
 
         with self.begin() as bind:
             # global temporary tables cannot be dropped without first truncating them
@@ -637,7 +638,7 @@ class Backend(
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)
 
         truncate = sge.TruncateTable(expressions=[ident]).sql(dialect)
-        drop = sge.Drop(kind="TABLE", this=ident).sql(dialect)
+        drop = Drop(kind="TABLE", this=ident).sql(dialect)
 
         def finalizer(con=self.con, name: str = name) -> None:
             cursor = con.cursor()

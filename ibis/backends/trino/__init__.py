@@ -27,6 +27,7 @@ from ibis.backends import (
     NoExampleLoader,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import AlterTable, C, RenameTable
 
 if TYPE_CHECKING:
@@ -367,7 +368,7 @@ class Backend(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         with self._safe_raw_sql(
-            sge.Drop(
+            Drop(
                 this=sg.table(name, catalog=catalog, quoted=self.compiler.quoted),
                 kind="SCHEMA",
                 exists=force,
@@ -497,9 +498,7 @@ class Backend(
             if overwrite:
                 # drop the original table
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=orig_table_ref, exists=True).sql(
-                        self.name
-                    )
+                    Drop(kind="TABLE", this=orig_table_ref, exists=True).sql(self.name)
                 )
 
                 # rename the new table to the original table name

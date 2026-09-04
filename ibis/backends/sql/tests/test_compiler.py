@@ -4,6 +4,7 @@ import sqlglot as sg
 
 import ibis
 from ibis import _
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.dialects import Trino
 
 
@@ -26,3 +27,9 @@ def test_transpile_join():
         "SELECT * FROM t1 JOIN t2 ON x = y", read="duckdb", write=Trino
     )
     assert "CROSS JOIN" not in result
+
+
+def test_drop_includes_the_table():
+    # GH #12101: sqlglot 30.18 renamed Drop's this kwarg to tables
+    stmt = Drop(kind="TABLE", this=sg.table("t", quoted=True), exists=True)
+    assert stmt.sql("duckdb") == 'DROP TABLE IF EXISTS "t"'
