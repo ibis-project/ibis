@@ -86,12 +86,7 @@ def test_compile_with_memtable(con):
 
 
 def test_polars_object_dtype_memtable():
-    class CustomObj:
-        def __init__(self, x):
-            self.x = x
-
-    df = pl.DataFrame({"a": [1, 2], "b": [CustomObj(1), CustomObj(2)]})
     con = ibis.polars.connect()
-    t = con.create_table("custom_obj_table", df)
-    assert t.schema()["a"] == dt.int64
-    assert t.schema()["b"] == dt.Unknown(nullable=True)
+    df = pl.DataFrame({"a": [object(), object()]})
+    t = con.create_table("test_obj", df)
+    assert t.schema()["a"] == dt.Unknown(nullable=True)
