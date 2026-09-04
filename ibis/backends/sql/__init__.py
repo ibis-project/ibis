@@ -14,6 +14,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import BaseBackend
+from ibis.backends.sql._compat import Drop
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -269,7 +270,7 @@ class SQLBackend(BaseBackend):
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        src = sge.Drop(
+        src = Drop(
             this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             kind="VIEW",
             exists=force,
@@ -339,7 +340,7 @@ class SQLBackend(BaseBackend):
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        drop_stmt = sge.Drop(
+        drop_stmt = Drop(
             kind="TABLE",
             this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             exists=force,
@@ -801,7 +802,7 @@ class SQLBackend(BaseBackend):
 
     def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         this = sg.table(name, quoted=self.compiler.quoted)
-        drop_stmt = sge.Drop(kind="TABLE", this=this, exists=True)
+        drop_stmt = Drop(kind="TABLE", this=this, exists=True)
         drop_sql = drop_stmt.sql(self.dialect)
 
         def finalizer(drop_sql=drop_sql, con=self.con) -> None:

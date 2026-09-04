@@ -34,6 +34,7 @@ from ibis.backends import (
 )
 from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import C
 
 if TYPE_CHECKING:
@@ -543,9 +544,7 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
     def drop_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
-        src = sge.Drop(
-            this=sg.table(name, catalog=catalog), kind="DATABASE", exists=force
-        )
+        src = Drop(this=sg.table(name, catalog=catalog), kind="DATABASE", exists=force)
         with self._safe_raw_sql(src):
             pass
 

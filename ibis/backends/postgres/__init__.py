@@ -30,6 +30,7 @@ from ibis.backends import (
     SupportsTempTables,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import TRUE, C, ColGen
 
 if TYPE_CHECKING:
@@ -510,7 +511,7 @@ ORDER BY a.attnum ASC"""
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         ).sql(self.dialect)
 
-        drop_stmt = sge.Drop(kind="VIEW", this=sg.table(name), exists=True).sql(
+        drop_stmt = Drop(kind="VIEW", this=sg.table(name), exists=True).sql(
             self.dialect
         )
 
@@ -552,7 +553,7 @@ ORDER BY a.attnum ASC"""
                 f"{self.name} does not support dropping a database in a different catalog"
             )
 
-        sql = sge.Drop(
+        sql = Drop(
             kind="SCHEMA",
             this=sg.table(name),
             exists=force,
@@ -654,7 +655,7 @@ ORDER BY a.attnum ASC"""
             stmts.append(sge.Insert(this=table_expr, expression=query).sql(dialect))
 
         if overwrite:
-            stmts.append(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
+            stmts.append(Drop(kind="TABLE", this=this, exists=True).sql(dialect))
             stmts.append(
                 f"ALTER TABLE IF EXISTS {table_expr.sql(dialect)} RENAME TO {this_no_catalog.sql(dialect)}"
             )
@@ -679,7 +680,7 @@ ORDER BY a.attnum ASC"""
         database: str | None = None,
         force: bool = False,
     ) -> None:
-        drop_stmt = sg.exp.Drop(
+        drop_stmt = Drop(
             kind="TABLE",
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
             exists=force,

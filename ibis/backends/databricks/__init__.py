@@ -27,6 +27,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, PyArrowExampleLoader, UrlFromPath
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import STAR, AlterTable, RenameTable
 from ibis.backends.sql.datatypes import DatabricksType
 
@@ -234,7 +235,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
 
             if overwrite:
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=final_table, exists=True).sql(dialect)
+                    Drop(kind="TABLE", this=final_table, exists=True).sql(dialect)
                 )
                 if temp:
                     cur.execute(
@@ -246,9 +247,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
                         ).sql(dialect)
                     )
                     cur.execute(
-                        sge.Drop(kind="TABLE", this=initial_table, exists=True).sql(
-                            dialect
-                        )
+                        Drop(kind="TABLE", this=initial_table, exists=True).sql(dialect)
                     )
                 else:
                     cur.execute(
@@ -338,7 +337,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
             # clean up the temporary view
             with self.con.cursor() as cur:
                 cur.execute(
-                    sge.Drop(this=view_name, kind="VIEW", exists=True).sql(self.dialect)
+                    Drop(this=view_name, kind="VIEW", exists=True).sql(self.dialect)
                 )
 
         js = json.loads(out)
@@ -446,7 +445,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
-        with self._safe_raw_sql(sge.Drop(this=name, kind="SCHEMA", replace=force)):
+        with self._safe_raw_sql(Drop(this=name, kind="SCHEMA", replace=force)):
             pass
 
     def list_tables(

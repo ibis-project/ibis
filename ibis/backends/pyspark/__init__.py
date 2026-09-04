@@ -34,6 +34,7 @@ from ibis.backends import (
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import AlterTable, RenameTable
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
@@ -565,7 +566,7 @@ class Backend(
             database does not exist
 
         """
-        sql = sge.Drop(
+        sql = Drop(
             kind="DATABASE",
             exists=force,
             this=sg.to_identifier(name, quoted=self.compiler.quoted),

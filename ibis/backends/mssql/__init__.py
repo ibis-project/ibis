@@ -30,6 +30,7 @@ from ibis.backends import (
     PyArrowExampleLoader,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql._compat import Drop
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
@@ -477,7 +478,7 @@ GO"""
 
     def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         with self._safe_ddl(
-            sge.Drop(
+            Drop(
                 kind="DATABASE",
                 this=sg.to_identifier(name, quoted=self.compiler.quoted),
                 exists=force,
@@ -546,7 +547,7 @@ GO"""
                 )
 
             cur.execute(
-                sge.Drop(
+                Drop(
                     kind="SCHEMA",
                     exists=force,
                     this=sg.to_identifier(name, quoted=quoted),
@@ -723,7 +724,7 @@ GO"""
 
             if overwrite:
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
+                    Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
                 )
                 old = raw_table.sql(self.dialect)
                 new = raw_this.sql(self.dialect)
