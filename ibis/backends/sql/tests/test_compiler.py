@@ -14,7 +14,7 @@ def test_window_with_row_number_compiles():
     expr = (
         ibis.memtable({"a": range(30)})
         .mutate(id=ibis.row_number())
-        .sample(fraction=0.25, seed=0)
+        .sample(0.25, seed=0)
         .mutate(is_test=_.id.isin(_.id))
         .filter(~_.is_test)
     )
@@ -26,3 +26,18 @@ def test_transpile_join():
         "SELECT * FROM t1 JOIN t2 ON x = y", read="duckdb", write=Trino
     )
     assert "CROSS JOIN" not in result
+
+
+def test_mssql_stddev_transpile():
+    from ibis.backends.sql.dialects import MSSQL
+
+    (stdev_result,) = sg.transpile(
+        "SELECT STDEV([x]) AS [s] FROM [t]", read=MSSQL, write=MSSQL
+    )
+    assert "STDEV([x])" in stdev_result
+    assert "STDEVP" not in stdev_result
+
+    (stdevp_result,) = sg.transpile(
+        "SELECT STDEVP([x]) AS [s] FROM [t]", read=MSSQL, write=MSSQL
+    )
+    assert "STDEVP([x])" in stdevp_result
