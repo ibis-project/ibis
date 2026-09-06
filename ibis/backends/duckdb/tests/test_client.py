@@ -518,3 +518,25 @@ def test_basic_enum_schema_inference(con, converter):
     t = con.table(name)
     assert t.e.type() == dt.string
     assert set(converter(t.e)) == {"a", "b"}
+
+
+def test_drop_view_round_trip(con):
+    """Regression test for #12108.
+
+    sqlglot 30 renamed `Drop.this` to `Drop.tables` and silently ignores the
+    unknown kwarg, so drop statements rendered a nameless
+    `DROP VIEW IF EXISTS`, which raises a syntax error on execute.
+    """
+    name = gen_name("drop_view_regression")
+    con.create_view(name, ibis.literal(1).name("x"))
+    con.drop_view(name)
+    assert name not in con.list_tables()
+
+
+def test_drop_table_round_trip(con):
+    """The table flavor of #12108: `drop_table` must keep its target name."""
+    name = gen_name("drop_table_regression")
+    con.create_table(name, pa.table({"x": [1, 2]}))
+    con.drop_table(name)
+    assert name not in con.list_tables()
+    con.drop_table(name, force=True)

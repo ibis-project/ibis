@@ -26,6 +26,27 @@ if TYPE_CHECKING:
     from ibis.expr.schema import IntoSchema
 
 
+def drop_statement(
+    *,
+    kind: str,
+    this: str | sg.Expression,
+    exists: bool = False,
+    **kwargs: Any,
+) -> sge.Drop:
+    """Build a `DROP` statement, compatible with all supported sqlglot versions.
+
+    sqlglot 30 renamed `Drop.this` to `Drop.tables` (now a list) and silently
+    ignores unknown kwargs, so which argument carries the drop target depends
+    on the installed version.
+    """
+    from packaging.version import parse as vparse
+
+    if vparse(sg.__version__) >= vparse("30"):
+        target = this if isinstance(this, sge.Expression) else sg.to_identifier(this)
+        return sge.Drop(kind=kind, tables=[target], exists=exists, **kwargs)
+    return sge.Drop(kind=kind, this=this, exists=exists, **kwargs)
+
+
 class SQLBackend(BaseBackend):
     compiler: ClassVar[SQLGlotCompiler]
     name: ClassVar[str]
@@ -269,7 +290,7 @@ class SQLBackend(BaseBackend):
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        src = sge.Drop(
+        src = drop_statement(
             this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             kind="VIEW",
             exists=force,
@@ -339,7 +360,7 @@ class SQLBackend(BaseBackend):
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        drop_stmt = sge.Drop(
+        drop_stmt = drop_statement(
             kind="TABLE",
             this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             exists=force,
@@ -801,7 +822,7 @@ class SQLBackend(BaseBackend):
 
     def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         this = sg.table(name, quoted=self.compiler.quoted)
-        drop_stmt = sge.Drop(kind="TABLE", this=this, exists=True)
+        drop_stmt = drop_statement(kind="TABLE", this=this, exists=True)
         drop_sql = drop_stmt.sql(self.dialect)
 
         def finalizer(drop_sql=drop_sql, con=self.con) -> None:

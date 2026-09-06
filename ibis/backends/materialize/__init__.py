@@ -12,6 +12,7 @@ import ibis
 import ibis.expr.operations as ops
 from ibis.backends.materialize.api import mz_now, mz_top_k
 from ibis.backends.postgres import Backend as PostgresBackend
+from ibis.backends.sql import drop_statement
 from ibis.backends.sql.compilers.materialize import MaterializeCompiler
 
 __all__ = ("Backend", "mz_now", "mz_top_k")
@@ -528,7 +529,9 @@ ORDER BY a.attnum ASC"""  # noqa: S608
 
         # Handle overwrite with RENAME (separate transaction)
         if overwrite:
-            drop_stmt = sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect)
+            drop_stmt = drop_statement(kind="TABLE", this=this, exists=True).sql(
+                dialect
+            )
             rename_stmt = f"ALTER TABLE IF EXISTS {table_expr.sql(dialect)} RENAME TO {this_no_catalog.sql(dialect)}"
 
             with con.cursor() as cursor:
@@ -647,7 +650,7 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         """
         # Note: sqlglot's 'catalog' parameter maps to Materialize's database
         # and sqlglot's 'db' parameter maps to Materialize's schema
-        drop_stmt = sge.Drop(
+        drop_stmt = drop_statement(
             this=sg.table(
                 name, catalog=database, db=schema, quoted=self.compiler.quoted
             ),
@@ -1421,7 +1424,7 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         # and sqlglot's 'db' parameter maps to Materialize's schema
         sink_table = sg.table(name, catalog=database, db=schema, quoted=quoted)
 
-        drop_stmt = sge.Drop(
+        drop_stmt = drop_statement(
             this=sink_table,
             kind="SINK",
             exists=force,
@@ -1618,7 +1621,7 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         # and sqlglot's 'db' parameter maps to Materialize's schema
         conn_table = sg.table(name, catalog=database, db=schema, quoted=quoted)
 
-        drop_stmt = sge.Drop(
+        drop_stmt = drop_statement(
             this=conn_table,
             kind="CONNECTION",
             exists=force,
@@ -1812,7 +1815,7 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         # and sqlglot's 'db' parameter maps to Materialize's schema
         secret_table = sg.table(name, catalog=database, db=schema, quoted=quoted)
 
-        drop_stmt = sge.Drop(
+        drop_stmt = drop_statement(
             this=secret_table,
             kind="SECRET",
             exists=force,
@@ -2010,7 +2013,7 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         quoted = self.compiler.quoted
         cluster_id = sg.to_identifier(name, quoted=quoted)
 
-        drop_stmt = sge.Drop(
+        drop_stmt = drop_statement(
             this=cluster_id,
             kind="CLUSTER",
             exists=force,
@@ -2293,7 +2296,7 @@ ORDER BY a.attnum ASC"""  # noqa: S608
         quoted = self.compiler.quoted
         idx_name = sg.table(name, quoted=quoted)
 
-        drop_cmd = sge.Drop(
+        drop_cmd = drop_statement(
             this=idx_name,
             kind="INDEX",
             exists=force,

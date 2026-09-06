@@ -29,7 +29,7 @@ from ibis.backends import (
     PyArrowExampleLoader,
     SupportsTempTables,
 )
-from ibis.backends.sql import SQLBackend
+from ibis.backends.sql import SQLBackend, drop_statement
 from ibis.backends.sql.compilers.base import TRUE, C, ColGen
 
 if TYPE_CHECKING:
@@ -510,7 +510,7 @@ ORDER BY a.attnum ASC"""
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         ).sql(self.dialect)
 
-        drop_stmt = sge.Drop(kind="VIEW", this=sg.table(name), exists=True).sql(
+        drop_stmt = drop_statement(kind="VIEW", this=sg.table(name), exists=True).sql(
             self.dialect
         )
 
@@ -552,7 +552,7 @@ ORDER BY a.attnum ASC"""
                 f"{self.name} does not support dropping a database in a different catalog"
             )
 
-        sql = sge.Drop(
+        sql = drop_statement(
             kind="SCHEMA",
             this=sg.table(name),
             exists=force,
@@ -654,7 +654,9 @@ ORDER BY a.attnum ASC"""
             stmts.append(sge.Insert(this=table_expr, expression=query).sql(dialect))
 
         if overwrite:
-            stmts.append(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
+            stmts.append(
+                drop_statement(kind="TABLE", this=this, exists=True).sql(dialect)
+            )
             stmts.append(
                 f"ALTER TABLE IF EXISTS {table_expr.sql(dialect)} RENAME TO {this_no_catalog.sql(dialect)}"
             )

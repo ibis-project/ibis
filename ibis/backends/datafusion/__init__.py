@@ -31,7 +31,7 @@ from ibis.backends import (
     NoUrl,
     SupportsTempTables,
 )
-from ibis.backends.sql import SQLBackend
+from ibis.backends.sql import SQLBackend, drop_statement
 from ibis.backends.sql.compilers.base import C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
@@ -385,7 +385,9 @@ class Backend(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         db_name = sg.table(name, db=catalog)
-        with self._safe_raw_sql(sge.Drop(kind="SCHEMA", this=db_name, exists=force)):
+        with self._safe_raw_sql(
+            drop_statement(kind="SCHEMA", this=db_name, exists=force)
+        ):
             pass
 
     def list_tables(

@@ -22,7 +22,7 @@ from ibis.backends import (
     PyArrowExampleLoader,
     SupportsTempTables,
 )
-from ibis.backends.sql import SQLBackend
+from ibis.backends.sql import SQLBackend, drop_statement
 from ibis.backends.sql.compilers.singlestoredb import compiler
 
 if TYPE_CHECKING:
@@ -254,7 +254,7 @@ class Backend(
         >>> con.drop_database("my_database")  # doctest: +SKIP
         >>> con.drop_database("my_database", force=True)  # doctest: +SKIP
         """
-        sql = sge.Drop(
+        sql = drop_statement(
             kind="DATABASE", exists=force, this=sg.table(name, catalog=catalog)
         ).sql(self.dialect)
         with self.begin() as cur:
@@ -606,7 +606,9 @@ class Backend(
                 # For temporary tables with overwrite, drop the existing table first
                 try:
                     cur.execute(
-                        sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect)
+                        drop_statement(kind="TABLE", this=this, exists=True).sql(
+                            dialect
+                        )
                     )
                 except Exception:
                     # Ignore errors if table doesn't exist
@@ -620,7 +622,9 @@ class Backend(
                 # Only use rename strategy for non-temporary tables
                 final_this = sg.table(name, catalog=database, quoted=quoted)
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=final_this, exists=True).sql(dialect)
+                    drop_statement(kind="TABLE", this=final_this, exists=True).sql(
+                        dialect
+                    )
                 )
                 self.rename_table(temp_name, name)
 
@@ -654,7 +658,7 @@ class Backend(
         force
             Use IF EXISTS clause when dropping
         """
-        drop_stmt = sge.Drop(
+        drop_stmt = drop_statement(
             kind="TABLE",
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
             exists=force,

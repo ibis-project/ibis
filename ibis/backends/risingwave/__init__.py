@@ -27,7 +27,7 @@ from ibis.backends import (
     HasCurrentDatabase,
     NoExampleLoader,
 )
-from ibis.backends.sql import SQLBackend
+from ibis.backends.sql import SQLBackend, drop_statement
 from ibis.backends.sql.compilers.base import TRUE, C, ColGen
 from ibis.util import experimental
 
@@ -321,7 +321,7 @@ class Backend(
             expression=sg.parse_one(query, read=self.dialect),
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         )
-        drop_stmt = sge.Drop(kind="VIEW", this=sg.table(name), exists=True).sql(
+        drop_stmt = drop_statement(kind="VIEW", this=sg.table(name), exists=True).sql(
             self.dialect
         )
 
@@ -360,7 +360,7 @@ class Backend(
                 f"{self.name} does not support dropping a database in a different catalog"
             )
 
-        sql = sge.Drop(
+        sql = drop_statement(
             kind="SCHEMA",
             this=sg.table(name),
             exists=force,
@@ -715,7 +715,7 @@ class Backend(
         force
             If `False`, an exception is raised if the view does not exist.
         """
-        src = sge.Drop(
+        src = drop_statement(
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="MATERIALIZED VIEW",
             exists=force,
@@ -806,7 +806,7 @@ class Backend(
         force
             If `False`, an exception is raised if the source does not exist.
         """
-        src = sge.Drop(
+        src = drop_statement(
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="SOURCE",
             exists=force,
@@ -897,7 +897,7 @@ class Backend(
         force
             If `False`, an exception is raised if the source does not exist.
         """
-        src = sge.Drop(
+        src = drop_statement(
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
             kind="SINK",
             exists=force,

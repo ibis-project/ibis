@@ -33,7 +33,7 @@ from ibis.backends import (
     SupportsTempTables,
 )
 from ibis.backends.clickhouse.converter import ClickHousePandasData
-from ibis.backends.sql import SQLBackend
+from ibis.backends.sql import SQLBackend, drop_statement
 from ibis.backends.sql.compilers.base import C
 
 if TYPE_CHECKING:
@@ -543,7 +543,7 @@ class Backend(SupportsTempTables, SQLBackend, CanCreateDatabase, DirectExampleLo
     def drop_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
-        src = sge.Drop(
+        src = drop_statement(
             this=sg.table(name, catalog=catalog), kind="DATABASE", exists=force
         )
         with self._safe_raw_sql(src):

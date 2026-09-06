@@ -31,7 +31,7 @@ from ibis.backends import (
     SupportsTempTables,
     UrlFromPath,
 )
-from ibis.backends.sql import SQLBackend
+from ibis.backends.sql import SQLBackend, drop_statement
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
 from ibis.expr.operations.udf import InputType
 
@@ -236,14 +236,16 @@ class Backend(
 
                 if in_memory:
                     cur.execute(
-                        sge.Drop(kind="VIEW", this=table.get_name(), exists=True).sql(
-                            dialect
-                        )
+                        drop_statement(
+                            kind="VIEW", this=table.get_name(), exists=True
+                        ).sql(dialect)
                     )
 
             if overwrite:
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=final_table, exists=True).sql(dialect)
+                    drop_statement(kind="TABLE", this=final_table, exists=True).sql(
+                        dialect
+                    )
                 )
                 # TODO: This branching should be removed once DuckDB >=0.9.3 is
                 # our lower bound (there's an upstream bug in 0.9.2 that
@@ -260,9 +262,9 @@ class Backend(
                         ).sql(dialect)
                     )
                     cur.execute(
-                        sge.Drop(kind="TABLE", this=initial_table, exists=True).sql(
-                            dialect
-                        )
+                        drop_statement(
+                            kind="TABLE", this=initial_table, exists=True
+                        ).sql(dialect)
                     )
                 else:
                     cur.execute(
@@ -537,7 +539,9 @@ class Backend(
             )
 
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
-        with self._safe_raw_sql(sge.Drop(this=name, kind="SCHEMA", replace=force)):
+        with self._safe_raw_sql(
+            drop_statement(this=name, kind="SCHEMA", replace=force)
+        ):
             pass
 
     @util.experimental

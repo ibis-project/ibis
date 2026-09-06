@@ -25,7 +25,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, NoExampleLoader, UrlFromPath
-from ibis.backends.sql import SQLBackend
+from ibis.backends.sql import SQLBackend, drop_statement
 from ibis.backends.sql.compilers.base import AlterTable, RenameTable
 
 if TYPE_CHECKING:
@@ -448,7 +448,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
 
     def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         this = sg.table(name, quoted=self.compiler.quoted)
-        drop_stmt = sge.Drop(kind="TABLE", this=this, exists=True)
+        drop_stmt = drop_statement(kind="TABLE", this=this, exists=True)
         drop_sql = drop_stmt.sql(self.dialect)
         path = f"{self._memtable_volume_path}/{name}"
 
@@ -487,7 +487,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
-        sql = sge.Drop(this=name, kind="SCHEMA", exists=force)
+        sql = drop_statement(this=name, kind="SCHEMA", exists=force)
         with self._safe_raw_sql(sql, unload=False):
             pass
 
@@ -577,7 +577,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
             kind="VIEW",
             expression=sg.parse_one(query, dialect=dialect),
         )
-        drop_view = sge.Drop(
+        drop_view = drop_statement(
             kind="VIEW", this=sg.to_identifier(view_name, quoted=quoted)
         ).sql(dialect)
 

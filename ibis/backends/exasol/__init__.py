@@ -20,7 +20,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, NoExampleLoader
-from ibis.backends.sql import SQLBackend
+from ibis.backends.sql import SQLBackend, drop_statement
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
@@ -316,15 +316,15 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
 
     def _clean_up_tmp_table(self, name: str) -> None:
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)
-        drop_sql = sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True)
+        drop_sql = drop_statement(kind="TABLE", this=ident, exists=True, cascade=True)
         with self._safe_raw_sql(drop_sql):
             pass
 
     def _make_memtable_finalizer(self, name: str) -> Callable[..., None]:
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)
-        drop_sql = sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True).sql(
-            self.dialect
-        )
+        drop_sql = drop_statement(
+            kind="TABLE", this=ident, exists=True, cascade=True
+        ).sql(self.dialect)
 
         def finalizer(con=self.con, drop_sql=drop_sql) -> None:
             # use try finally because sqlite3's cursor doesn't support the
@@ -424,7 +424,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
 
             if overwrite:
                 self.con.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
+                    drop_statement(kind="TABLE", this=this, exists=True).sql(self.name)
                 )
                 self.con.execute(
                     f"RENAME TABLE {table_expr.sql(self.name)} TO {this.sql(self.name)}"

@@ -29,7 +29,7 @@ from ibis.backends import (
     PyArrowExampleLoader,
     SupportsTempTables,
 )
-from ibis.backends.sql import SQLBackend
+from ibis.backends.sql import SQLBackend, drop_statement
 from ibis.backends.sql.compilers.base import STAR, TRUE, C, RenameTable
 
 if TYPE_CHECKING:
@@ -241,7 +241,7 @@ class Backend(
     def drop_database(
         self, name: str, *, catalog: str | None = None, force: bool = False
     ) -> None:
-        sql = sge.Drop(
+        sql = drop_statement(
             kind="DATABASE", exists=force, this=sg.table(name, catalog=catalog)
         ).sql(self.name)
         with self.begin() as cur:
@@ -434,7 +434,9 @@ class Backend(
                 cur.execute(sge.Insert(this=table_expr, expression=query).sql(dialect))
 
             if overwrite:
-                cur.execute(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
+                cur.execute(
+                    drop_statement(kind="TABLE", this=this, exists=True).sql(dialect)
+                )
                 cur.execute(
                     sge.Alter(
                         kind="TABLE",
