@@ -597,7 +597,15 @@ class TrinoCompiler(SQLGlotCompiler):
                 return self.f.from_unixtime_nanos(
                     self.cast(arg, dt.Decimal(38, 9)) * 1_000_000_000
                 )
+        elif from_.is_string() and to.is_timestamp():
+            return self.cast(self.f.from_iso8601_timestamp(arg), to)
         return super().visit_Cast(op, arg=arg, to=to)
+
+    def visit_TryCast(self, op, *, arg, to):
+        from_ = op.arg.dtype
+        if from_.is_string() and to.is_timestamp():
+            return self.f["try"](self.cast(self.f.from_iso8601_timestamp(arg), to))
+        return super().visit_TryCast(op, arg=arg, to=to)
 
     def visit_CountDistinctStar(self, op, *, arg, where):
         make_col = partial(sg.column, table=arg.alias_or_name, quoted=self.quoted)
