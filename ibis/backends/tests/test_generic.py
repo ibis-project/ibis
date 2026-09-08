@@ -1854,6 +1854,8 @@ def test_hexdigest(backend, alltypes):
         param("float", "int", 0.0, 0, id="float_to_int"),
         param("string", "int", "0", 0, id="string_to_int"),
         param("string", "float", "0", 0.0, id="string_to_float"),
+        param("bool", "string", True, "true", id="bool_to_string"),
+        param("bool", "string", False, "false", id="bool_to_string_false"),
         param(
             "array<int>",
             "array<string>",

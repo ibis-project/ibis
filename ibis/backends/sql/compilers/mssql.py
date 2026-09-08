@@ -421,6 +421,24 @@ class MSSQLCompiler(SQLGlotCompiler):
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
 
+        if from_.is_boolean() and to.is_string():
+            # MSSQL has no boolean type, so CAST(bool AS VARCHAR) renders
+            # '1'/'0' while other backends render 'true'/'false'. A bare BIT
+            # column is not a valid CASE condition in T-SQL, so compare
+            # against the underlying values instead. NULL matches neither
+            # branch and stays NULL.
+            return sge.Case(
+                ifs=[
+                    sge.If(
+                        this=sge.EQ(this=arg, expression=sge.convert(1)),
+                        true=sge.Literal.string("true"),
+                    ),
+                    sge.If(
+                        this=sge.EQ(this=arg, expression=sge.convert(0)),
+                        true=sge.Literal.string("false"),
+                    ),
+                ]
+            )
         if to.is_boolean():
             # no such thing as a boolean in MSSQL
             return arg

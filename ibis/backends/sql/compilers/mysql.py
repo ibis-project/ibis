@@ -111,6 +111,16 @@ class MySQLCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
+        if from_.is_boolean() and to.is_string():
+            # MySQL renders booleans as integers, so CAST(bool AS CHAR) renders
+            # '1'/'0' while other backends render 'true'/'false'. NULL falls
+            # through the CASE and stays NULL.
+            return sge.Case(
+                ifs=[
+                    sge.If(this=arg, true=sge.Literal.string("true")),
+                    sge.If(this=sge.Not(this=arg), true=sge.Literal.string("false")),
+                ]
+            )
         if (from_.is_json() or from_.is_string()) and to.is_json():
             # MariaDB does not support casting to JSON because it's an alias
             # for TEXT (except when casting of course!)
