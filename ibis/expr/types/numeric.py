@@ -642,6 +642,27 @@ class NumericValue(Value):
         """
         return ops.Tan(self).to_expr()
 
+    def tanh(self) -> NumericValue:
+        """Compute the hyperbolic tangent of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t.values.tanh()
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Tanh(values) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ float64      │
+        ├──────────────┤
+        │    -0.761594 │
+        │     0.000000 │
+        │     0.761594 │
+        └──────────────┘
+        """
+        return ops.Tanh(self).to_expr()
+
     def __add__(self, other: Number | NumericValue | ibis.Deferred) -> NumericValue:
         """Add `self` with `other`."""
         return _binop(ops.Add, self, other)
