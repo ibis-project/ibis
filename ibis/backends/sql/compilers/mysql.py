@@ -368,5 +368,13 @@ class MySQLCompiler(SQLGlotCompiler):
             NULL,
         )
 
+    # MySQL has no TANH: use the exponential identity, naming `arg` and `e` once
+    # each so nested tanh stays linear in SQL text. Input clamped to +/-20 because
+    # EXP overflow is a hard out-of-range error and tanh is already exactly
+    # +/-1.0 there. No NULL guard needed: MySQL LEAST/GREATEST propagate NULL.
+    def visit_Tanh(self, op, *, arg):
+        e = self.f.exp(2.0 * self.f.least(self.f.greatest(arg, -20.0), 20.0))
+        return 1.0 - 2.0 / (e + 1.0)
+
 
 compiler = MySQLCompiler()

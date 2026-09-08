@@ -1173,6 +1173,7 @@ _unary = {
     ops.Sin: operator.methodcaller("sin"),
     ops.Sqrt: operator.methodcaller("sqrt"),
     ops.Tan: operator.methodcaller("tan"),
+    ops.Tanh: operator.methodcaller("tanh"),
     ops.BitwiseNot: operator.invert,
 }
 

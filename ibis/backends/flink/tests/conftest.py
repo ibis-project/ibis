@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import csv
+import operator
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
@@ -190,11 +192,16 @@ def csv_source_configs():
 def functional_alltypes_no_header(tmpdir_factory, data_dir):
     file = tmpdir_factory.mktemp("data") / "functional_alltypes.csv"
     with (
-        open(data_dir / "csv" / "functional_alltypes.csv") as reader,
-        open(str(file), mode="w") as writer,
+        open(data_dir / "csv" / "functional_alltypes.csv", newline="") as reader,
+        open(str(file), mode="w", newline="") as writer,
     ):
-        reader.readline()  # read the first line and discard it
-        writer.writelines(reader)
+        rows = csv.reader(reader)
+        ts_index = next(rows).index("timestamp_col")
+        # the table below declares a watermark on `timestamp_col`, so feed it in
+        # timestamp order or most of the file is discarded as late arrivals
+        csv.writer(writer, lineterminator="\n").writerows(
+            sorted(rows, key=operator.itemgetter(ts_index))
+        )
     return file
 
 
