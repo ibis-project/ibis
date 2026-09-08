@@ -73,6 +73,11 @@ def test_uuid_literal(con, backend, value):
 @pytest.mark.never(
     ["mysql"], raises=AssertionError, reason="MySQL generates version 1 UUIDs"
 )
+@pytest.mark.notimpl(
+    ["db2"],
+    raises=ValueError,
+    reason="DB2 UUID implementation returns wrong byte length",
+)
 def test_uuid_function(con):
     obj = con.execute(ibis.uuid())
     assert isinstance(obj, uuid.UUID)

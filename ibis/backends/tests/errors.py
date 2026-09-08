@@ -209,3 +209,8 @@ try:
     from pyathena.error import OperationalError as PyAthenaOperationalError
 except ImportError:
     PyAthenaDatabaseError = PyAthenaOperationalError = None
+
+try:
+    from ibm_db_dbi import DatabaseError as IbmDb2Error
+except ImportError:
+    IbmDb2Error = None
