@@ -236,6 +236,13 @@ jobs:
               - --extra polars
             services:
               - oracle
+          - name: db2
+            title: IBM Db2
+            serial: true
+            extras:
+              - --extra db2
+            services:
+              - db2
           - name: flink
             title: Flink
             serial: true
@@ -305,6 +312,13 @@ jobs:
                 - --extra decompiler
                 - --extra polars
         exclude:
+          - python-version: "3.14"
+            backend:
+              name: db2
+          - os: windows-latest
+            python-version: "3.14"
+            backend:
+              name: datafusion
           - os: windows-latest
             python-version: "3.14"
             backend:
@@ -387,6 +401,15 @@ jobs:
               sys-deps:
                 - libgeos-dev
                 - libpq5
+          - os: windows-latest
+            backend:
+              name: db2
+              title: IBM Db2
+              serial: true
+              extras:
+                - --extra db2
+              services:
+                - db2
           # TODO(deepyaman): Test whether this works upon releasing https://github.com/cloudera/impyla/commit/bf1f94c3c4106ded6267d2485c1e939775a6a87f
           - os: ubuntu-latest
             python-version: "3.14"

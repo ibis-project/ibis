@@ -36,6 +36,7 @@ no_udfs = [
         [
             "bigquery",
             "clickhouse",
+            "db2",
             "druid",
             "exasol",
             "impala",

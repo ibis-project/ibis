@@ -9,6 +9,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
+from ibis.backends.tests.errors import IbmDb2Error
 
 np = pytest.importorskip("numpy")
 pa = pytest.importorskip("pyarrow")
@@ -54,7 +55,7 @@ def check_eq(left, right, how, **kwargs):
         # TODO: mysql and singlestoredb will likely never support full outer join
         # syntax, but we might be able to work around that using
         # LEFT JOIN UNION RIGHT JOIN
-        param("outer", marks=sqlite_right_or_full_mark),
+        param("outer", marks=[sqlite_right_or_full_mark]),
     ],
 )
 @pytest.mark.notimpl(["druid"])
@@ -106,6 +107,7 @@ def test_mutating_join(batting, awards_players, how):
 @pytest.mark.parametrize("how", ["semi", "anti"])
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notyet(["flink"], reason="Flink doesn't support semi joins or anti joins")
+@pytest.mark.notimpl(["db2"])
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting.filter(batting.yearID == 2015)
     right = awards_players.filter(awards_players.lgID == "NL").drop("yearID", "lgID")
@@ -189,6 +191,11 @@ def test_semi_join_topk(con, batting, awards_players, func):
     ["mssql", "singlestoredb"],
     raises=com.IbisTypeError,
     reason="postgres can't handle null types columns",
+)
+@pytest.mark.notimpl(
+    ["db2"],
+    raises=IbmDb2Error,
+    reason='Db2 emits SQL0204N "NULL" is an undefined name for untyped null columns',
 )
 def test_join_with_pandas(batting, awards_players):
     batting_filt = batting.filter(lambda t: t.yearID < 1900)
@@ -379,6 +386,7 @@ def test_join_conflicting_columns(backend, con):
         "bigquery",
         "clickhouse",
         "datafusion",
+        "db2",
         "druid",
         "exasol",
         "flink",

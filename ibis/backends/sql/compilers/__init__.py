@@ -6,6 +6,7 @@ __all__ = [
     "ClickHouseCompiler",
     "DataFusionCompiler",
     "DatabricksCompiler",
+    "Db2Compiler",
     "DruidCompiler",
     "DuckDBCompiler",
     "ExasolCompiler",
@@ -21,13 +22,16 @@ __all__ = [
     "SQLiteCompiler",
     "SnowflakeCompiler",
     "TrinoCompiler",
+    "db2",
 ]
 
+from ibis.backends.sql.compilers import db2
 from ibis.backends.sql.compilers.athena import AthenaCompiler
 from ibis.backends.sql.compilers.bigquery import BigQueryCompiler
 from ibis.backends.sql.compilers.clickhouse import ClickHouseCompiler
 from ibis.backends.sql.compilers.databricks import DatabricksCompiler
 from ibis.backends.sql.compilers.datafusion import DataFusionCompiler
+from ibis.backends.sql.compilers.db2 import Db2Compiler
 from ibis.backends.sql.compilers.druid import DruidCompiler
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 from ibis.backends.sql.compilers.exasol import ExasolCompiler
