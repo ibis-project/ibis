@@ -18,6 +18,32 @@ from ibis import udf
 pytest.importorskip("clickhouse_connect")
 
 
+@pytest.mark.parametrize(
+    ("builder", "expected"),
+    [
+        param(lambda t: t.id.collect()[:0], "arraySlice(groupArray(1)", id="empty"),
+        param(lambda t: t.id.collect()[:2], "groupArray(2)", id="bounded"),
+        param(
+            lambda t: t.id.collect(where=t.id > 0)[:2],
+            "groupArrayIf(2)",
+            id="filtered",
+        ),
+        param(
+            lambda t: t.id.collect(distinct=True)[:2],
+            "groupUniqArray(2)",
+            id="distinct",
+        ),
+    ],
+)
+def test_collect_slice_pushdown(builder, expected):
+    """Push a leading collection slice into groupArray's size parameter."""
+    t = ibis.table({"id": "int64"}, name="t")
+
+    sql = ibis.clickhouse.compile(builder(t))
+
+    assert expected in sql
+
+
 @pytest.mark.parametrize("to_type", ["int8", "int16", "float32", "float", "!float64"])
 def test_cast_double_col(alltypes, to_type, assert_sql):
     expr = alltypes.double_col.cast(to_type)

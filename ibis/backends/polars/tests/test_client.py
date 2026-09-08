@@ -41,6 +41,39 @@ def test_array_flatten(con):
     tm.assert_frame_equal(result.to_pandas(), expected)
 
 
+def test_collect_slice_pushdown(con):
+    """Apply a leading slice before constructing the Polars list."""
+    t = ibis.memtable({"x": [None, 1]}, schema={"x": "int64"})
+    expr = t.x.collect(include_null=True)[:1]
+
+    result = con.execute(expr)
+    plan = con.compile(expr).explain(optimized=False)
+
+    assert len(result) == 1
+    assert pd.isna(result[0])
+    assert ".slice(offset=0, length=1).implode()" in plan
+
+
+def test_collect_slice_modifier_order(con):
+    """Apply a grouped prefix after filtering, ordering, and deduplication."""
+    t = ibis.memtable(
+        {
+            "g": ["a"] * 5 + ["b"] * 3,
+            "x": [4, 1, 4, 3, 2, 5, 2, 1],
+        }
+    )
+    expr = t.group_by("g").agg(
+        top=t.x.collect(where=t.x > 1, order_by=t.x.desc(), distinct=True)[:2]
+    )
+
+    result = con.execute(expr.order_by("g"))
+
+    assert result.to_dict(orient="list") == {
+        "g": ["a", "b"],
+        "top": [[4, 3], [5, 2]],
+    }
+
+
 def test_memtable_polars_types(con):
     # Check that we can create a memtable with some polars-specific types,
     # and that those columns then work in downstream operations
