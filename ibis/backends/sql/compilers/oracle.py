@@ -90,6 +90,7 @@ class OracleCompiler(SQLGlotCompiler):
         ops.BitwiseAnd: "bitand",
         ops.Hash: "ora_hash",
         ops.StringAscii: "ascii",
+        ops.StringByteLength: "lengthb",
         ops.Mode: "stats_mode",
     }
 
