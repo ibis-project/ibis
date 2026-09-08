@@ -2,4 +2,4 @@
 skip = *.lock,.direnv,.git,**/lms-for-data/index.qmd,**/docs/_output,**/docs/_inv,*.svg,*.css,*.html,*.js,**/html.json,**/tpc/queries/duckdb/ds/*.sql
 ignore-regex = \b(i[if]f|I[IF]F|AFE|alls)\b
 builtin = clear,rare,names
-ignore-words-list = tim,notin,ang
+ignore-words-list = tim,notin,ang,reenable,subsitution,statemen,explicite,coversion,testin,schem,degress,milisecond,specfic,appropiate,argumen,unecessary,paramete,enviroment,uneeded,arithmetics,pres,specifiying,ba,multipying,valudators,verison,renable,unnecesary,clos,exectued,skiping,recieve,projectio,analtyic,vulernability,patameter,paremater

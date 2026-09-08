@@ -33,6 +33,11 @@ BINARY_BACKEND_TYPES = {
     "Exasol does not have native support for a binary data type.",
     raises=NotImplementedError,
 )
+@pytest.mark.notimpl(
+    ["db2"],
+    "Unsupported type: Binary(nullable=True)",
+    raises=NotImplementedError,
+)
 def test_binary_literal(con, backend):
     expr = ibis.literal(b"A")
     result = con.execute(expr)

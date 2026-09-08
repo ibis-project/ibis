@@ -15,6 +15,7 @@ from ibis.backends.tests.errors import (
     DuckDBNotImplementedException,
     DuckDBParserException,
     ExaQueryError,
+    IbmDb2Error,
     MySQLOperationalError,
     OracleDatabaseError,
     Py4JJavaError,
@@ -314,6 +315,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
 )
 @pytest.mark.notimpl(["druid", "flink"], reason="No to_parquet support")
 @pytest.mark.notimpl(["exasol"], raises=TypeError)
+@pytest.mark.notimpl(["db2"], raises=TypeError, reason="partition_by not supported")
 def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     outparquet = tmp_path / "outhive.parquet"
     awards_players.to_parquet(outparquet, partition_by="yearID")
@@ -384,6 +386,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
         "clickhouse",
         "databricks",
         "datafusion",
+        "db2",
         "druid",
         "exasol",
         "flink",
@@ -436,13 +439,17 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             dt.Decimal(38, 9),
             pa.Decimal128Type,
             id="decimal128",
-            marks=[pytest.mark.notyet(["exasol"], raises=ExaQueryError)],
+            marks=[
+                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
+            ],
         ),
         param(
             dt.Decimal(76, 38),
             pa.Decimal256Type,
             id="decimal256",
             marks=[
+                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
                 pytest.mark.notyet(
@@ -724,6 +731,7 @@ mark_notyet_nulls = pytest.mark.notyet(
 @pytest.mark.notyet(["bigquery"], raises=UserWarning)
 @pytest.mark.notyet(["databricks"], raises=pa.ArrowNotImplementedError)
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_all_null_table(con):
     t = ibis.memtable({"a": [None]})
     result = con.to_pyarrow(t)
@@ -735,6 +743,7 @@ def test_all_null_table(con):
 @pytest.mark.notyet(["bigquery"], raises=UserWarning)
 @pytest.mark.notyet(["databricks"], raises=pa.ArrowNotImplementedError)
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_all_null_column(con):
     t = ibis.memtable({"a": [None]})
     result = con.to_pyarrow(t.a)
