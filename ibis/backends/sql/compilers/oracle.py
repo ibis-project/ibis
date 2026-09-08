@@ -234,6 +234,14 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_Cot(self, op, *, arg):
         return 1 / self.f.tan(arg)
 
+    # Oracle's TANH evaluates in the argument's numeric family: on a NUMBER the
+    # internal exponential overflows, a hard ORA-01426 for |x| > 282. BINARY_DOUBLE
+    # follows IEEE semantics instead, saturating to exactly +/-1.0 and propagating
+    # NULL. The cast must be TO_BINARY_DOUBLE: DOUBLE PRECISION and FLOAT are NUMBER
+    # subtypes in Oracle, so an ordinary float64 cast still raises ORA-01426.
+    def visit_Tanh(self, op, *, arg):
+        return self.f.tanh(self.f.to_binary_double(arg))
+
     def visit_Degrees(self, op, *, arg):
         return 180 * arg / self.visit_node(ops.Pi())
 
