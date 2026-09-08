@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from public import public
 
@@ -76,6 +76,107 @@ class ArrayValue(Value):
         └────────────────┘
         """
         return ops.ArrayLength(self).to_expr()
+
+    def concat_agg(
+        self,
+        *,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        include_null: bool = False,
+        distinct: bool = False,
+        limit: int | ir.IntegerValue | None = None,
+    ) -> ir.ArrayScalar:
+        """Aggregate arrays by concatenating their elements.
+
+        This operation is called `array_concat_agg` in some systems. Without
+        `limit`, it concatenates the same retained input elements as collecting
+        the arrays and flattening the result. Empty-input results can differ from
+        that composition on backends whose collection aggregate returns an empty
+        array. Modifier support varies by backend; unsupported combinations raise
+        `UnsupportedOperationError` during compilation. By default, no retained
+        non-null input arrays produce null; BigQuery represents null arrays as
+        empty arrays. Window-function support also varies by backend.
+
+        Parameters
+        ----------
+        where
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the input arrays before
+            concatenating them. The order of elements within each input array
+            is preserved. If not provided, the order of the input arrays is
+            undefined and backend-specific.
+        include_null
+            Whether to include null input arrays. By default, null input arrays
+            are ignored. A retained null array contributes no elements but makes
+            an all-null group return an empty array instead of null. Null elements
+            within non-null input arrays are preserved where the backend permits;
+            BigQuery cannot return a final array containing null elements. Backend
+            support for including null arrays and modifier combinations varies.
+        distinct
+            Whether to include only distinct input arrays. This does not remove
+            duplicate elements after concatenation.
+        limit
+            The maximum number of input arrays to concatenate after filtering,
+            ordering, and deduplication. If zero, return an empty array when at
+            least one input array remains after filtering. BigQuery requires a
+            deterministic, relation-independent constant integer expression,
+            and Polars requires a literal value; other backends may support
+            scalar expressions.
+
+        Returns
+        -------
+        ArrayScalar
+            The concatenated elements of the input arrays. Groups with no retained
+            input arrays return null unless supported `include_null=True` semantics
+            retain a null input array.
+
+        Raises
+        ------
+        ValidationError
+            If `limit` is a negative literal.
+        UnsupportedOperationError
+            If the backend does not support a requested modifier or combination.
+
+        See Also
+        --------
+        [`Value.collect`](./expression-generic.qmd#ibis.expr.types.generic.Value.collect)
+        [`ArrayValue.flatten`](#ibis.expr.types.arrays.ArrayValue.flatten)
+
+        Examples
+        --------
+        Concatenate arrays in a specified order:
+
+        >>> import ibis
+        >>> from ibis import _
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "key": ["a", "a", "b"],
+        ...         "order": [2, 1, 3],
+        ...         "values": [[2, 3], [1], [4, 5]],
+        ...     }
+        ... )
+        >>> grouped = t.group_by("key")
+        >>> result = grouped.agg(values=t.values.concat_agg(order_by=_.order))
+        >>> result.order_by("key").to_pandas()
+          key     values
+        0   a  [1, 2, 3]
+        1   b     [4, 5]
+
+        Limit the number of input arrays before concatenating:
+
+        >>> t.values.concat_agg(order_by=_.order, limit=2).to_pandas()
+        [1, 2, 3]
+        """
+        return ops.ArrayConcatAgg(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+            include_null=include_null,
+            distinct=distinct,
+            limit=limit,
+        ).to_expr()
 
     def __getitem__(self, index: int | ir.IntegerValue | slice) -> ir.Value:
         """Extract one or more elements of `self`.

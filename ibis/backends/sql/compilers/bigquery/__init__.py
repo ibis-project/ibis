@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import sqlglot as sg
 import sqlglot.expressions as sge
 from sqlglot.dialects import BigQuery
+from sqlglot.optimizer.simplify import simplify
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -28,7 +29,9 @@ from ibis.backends.sql.rewrites import (
     lower_sample,
     split_select_distinct_with_order_by,
 )
+from ibis.common.patterns import replace
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
+from ibis.expr.rewrites import p
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -36,6 +39,44 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
+
+
+@replace(p.ArrayFlatten)
+def _lower_array_collect_flatten(_, **kwargs):
+    """Use BigQuery's native concatenating aggregate for collected arrays."""
+    arg = _.arg
+    while isinstance(arg, ops.Alias):
+        # Value aliases are naming hints and cannot survive inside a
+        # projection or aggregate metric after this rewrite.
+        arg = arg.arg
+
+    if isinstance(arg, ops.WindowFunction):
+        raise com.UnsupportedOperationError(
+            "BigQuery does not support windowed array concatenation aggregates"
+        )
+
+    if not isinstance(collect := arg, ops.ArrayCollect):
+        return _
+
+    result = ops.ArrayConcatAgg(
+        collect.arg,
+        where=collect.where,
+        order_by=collect.order_by,
+        include_null=collect.include_null,
+        distinct=collect.distinct,
+        limit=None,
+    )
+    return result
+
+
+@replace(p.WindowFunction)
+def _reject_windowed_array_concat_agg(_, **kwargs):
+    """Reject ARRAY_CONCAT_AGG as an unsupported BigQuery window function."""
+    if isinstance(_.func, ops.ArrayConcatAgg):
+        raise com.UnsupportedOperationError(
+            "BigQuery does not support windowed array concatenation aggregates"
+        )
+    return _
 
 
 def _qualify_memtable(
@@ -112,6 +153,8 @@ class BigQueryCompiler(SQLGlotCompiler):
     agg = AggGen(supports_order_by=True)
 
     rewrites = (
+        _lower_array_collect_flatten,
+        _reject_windowed_array_concat_agg,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_rank,
@@ -502,6 +545,71 @@ class BigQueryCompiler(SQLGlotCompiler):
         if not include_null:
             arg = sge.IgnoreNulls(this=arg)
         return self.f.array_agg(arg)
+
+    def visit_ArrayConcatAgg(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        """Compile with BigQuery's native ARRAY_CONCAT_AGG."""
+        if distinct:
+            raise com.UnsupportedOperationError(
+                "`distinct=True` is not supported by the bigquery backend"
+            )
+        if isinstance(op.limit, ops.Literal) and op.limit.value is None:
+            raise com.UnsupportedOperationError(
+                "BigQuery requires `concat_agg` limit to be non-null"
+            )
+        if op.limit is not None and (
+            op.limit.relations or op.limit.find(ops.Impure, filter=ops.Value)
+        ):
+            # Aggregate-call LIMIT differs from a query LIMIT: BigQuery only
+            # accepts a deterministic integer constant independent of the input.
+            raise com.UnsupportedOperationError(
+                "BigQuery requires `concat_agg` limit to be a constant integer"
+            )
+
+        empty = self.cast(self.f.array(), op.dtype)
+        conditional_zero = zero_result = None
+        if limit is not None:
+            predicate = None if where is None else where.copy()
+            if not include_null:
+                not_null = arg.copy().is_(sg.not_(NULL, copy=False))
+                predicate = (
+                    not_null
+                    if predicate is None
+                    else sge.And(this=not_null, expression=predicate)
+                )
+            count = (
+                self.f.count(STAR) if predicate is None else self.f.countif(predicate)
+            )
+            zero_result = self.if_(count > 0, empty.copy(), NULL)
+
+            # Parameter substitution happens before this visitor. Strip integer
+            # casts for zero detection, then fold constant SQL arithmetic.
+            uncast = limit.transform(
+                lambda node: node.this if isinstance(node, sge.Cast) else node,
+                copy=True,
+            )
+            constant = simplify(uncast, dialect=self.dialect)
+            literal_number = isinstance(constant, sge.Literal) and constant.is_number
+            if literal_number and decimal.Decimal(constant.this) == 0:
+                return zero_result
+            conditional_zero = not literal_number
+
+        if include_null:
+            # BigQuery ignores null input arrays. Treat retained nulls as empty
+            # arrays so they still participate in ordering and input-array limits.
+            arg = self.f.coalesce(arg, empty)
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        if order_by:
+            arg = sge.Order(this=arg, expressions=order_by)
+        if limit is not None:
+            arg = sge.Limit(this=arg, expression=limit)
+        result = self.f.array_concat_agg(arg)
+        if conditional_zero:
+            is_zero = sge.EQ(this=limit.copy(), expression=sge.Literal.number(0))
+            return self.if_(is_zero, zero_result, result)
+        return result
 
     def _neg_idx_to_pos(self, arg, idx):
         return self.if_(idx < 0, self.f.array_length(arg) + idx, idx)
