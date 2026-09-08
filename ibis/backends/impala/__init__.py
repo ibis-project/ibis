@@ -229,11 +229,11 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
                 util.log(q)
                 cursor.execute_async(q)
 
-            cursor._wait_to_finish()
+            if self.options:
+                cursor._wait_to_finish()
 
             util.log(query)
             cursor.execute_async(query)
-
             cursor._wait_to_finish()
         except (Exception, KeyboardInterrupt):
             cursor.cancel_operation()
