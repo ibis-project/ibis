@@ -29,6 +29,7 @@ backend_categories = {
         "ClickHouse",
         "Databricks",
         "DataFusion",
+        "Db2",
         "Druid",
         "DuckDB",
         "Exasol",

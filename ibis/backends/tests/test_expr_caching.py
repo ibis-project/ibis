@@ -18,7 +18,7 @@ pytestmark = [
 ]
 
 
-@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid", "db2"])
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
@@ -36,7 +36,7 @@ def test_persist_expression(backend, alltypes):
     )
 
 
-@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid", "db2"])
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
@@ -55,7 +55,7 @@ def test_persist_expression_contextmanager(backend, con, alltypes):
     assert non_cached_table.op() not in con._cache_op_to_entry
 
 
-@mark.notimpl(["flink", "impala", "trino", "druid"])
+@mark.notimpl(["flink", "impala", "trino", "druid", "db2"])
 @pytest.mark.never(
     ["risingwave"],
     raises=com.UnsupportedOperationError,
@@ -95,7 +95,7 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
     assert name not in con.list_tables()
 
 
-@mark.notimpl(["flink", "impala", "trino", "druid"])
+@mark.notimpl(["flink", "impala", "trino", "druid", "db2"])
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],

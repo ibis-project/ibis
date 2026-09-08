@@ -19,6 +19,7 @@ from ibis.backends.tests.errors import (
     DuckDBParserException,
     ExaQueryError,
     GoogleBadRequest,
+    IbmDb2Error,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     OracleDatabaseError,
@@ -302,6 +303,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "flink": decimal.Decimal("1.1"),
                 "polars": decimal.Decimal("1.1"),
                 "databricks": decimal.Decimal("1.1"),
+                "db2": decimal.Decimal(1),
             },
             {
                 "bigquery": "NUMERIC",
@@ -368,7 +370,10 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "flink": "DECIMAL(38, 9) NOT NULL",
                 "databricks": "decimal(38,9)",
             },
-            marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)],
+            marks=[
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
+                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
+            ],
             id="decimal-small",
         ),
         param(
@@ -443,6 +448,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason="precision for type numeric must be between 1 and 39",
                     raises=PsycoPgInternalError,
                 ),
+                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
             id="decimal-big",
         ),
@@ -521,6 +527,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason='invalid input syntax for type numeric: "Infinity"',
                     raises=PsycoPgInternalError,
                 ),
+                pytest.mark.notimpl(["db2"], raises=SystemError),
             ],
             id="decimal-infinity+",
         ),
@@ -599,6 +606,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason='invalid input syntax for type numeric: "-Infinity"',
                     raises=PsycoPgInternalError,
                 ),
+                pytest.mark.notimpl(["db2"], raises=SystemError),
             ],
             id="decimal-infinity-",
         ),
@@ -675,6 +683,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
+                pytest.mark.notimpl(["db2"], raises=SystemError),
             ],
             id="decimal-NaN",
         ),
@@ -766,6 +775,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
 @pytest.mark.notimpl(
     ["singlestoredb"], raises=(SingleStoreDBOperationalError, NotImplementedError)
 )
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_isnan_isinf(
     backend,
     con,
@@ -818,6 +828,7 @@ def test_isnan_isinf(
                     raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
         ),
         param(
@@ -842,12 +853,14 @@ def test_isnan_isinf(
                     raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
         ),
         param(
             L(5.556).log10(),
             math.log10(5.556),
             id="log10",
+            marks=[pytest.mark.notimpl(["db2"], raises=AssertionError)],
         ),
         param(
             L(5.556).radians(),
@@ -864,7 +877,12 @@ def test_isnan_isinf(
             11 % 3,
             id="mod",
         ),
-        param(L(5.556).log10(), math.log10(5.556), id="log10"),
+        param(
+            L(5.556).log10(),
+            math.log10(5.556),
+            id="log10",
+            marks=[pytest.mark.notimpl(["db2"], raises=AssertionError, strict=False)],
+        ),
         param(
             L(5.556).radians(),
             math.radians(5.556),
@@ -876,7 +894,18 @@ def test_isnan_isinf(
             id="degrees",
         ),
         param(L(11) % 3, 11 % 3, id="mod"),
-        param(L(5.556).log10(), math.log10(5.556), id="log10"),
+        param(
+            L(5.556).log10(),
+            math.log10(5.556),
+            id="log10",
+            marks=[
+                pytest.mark.notimpl(
+                    ["db2"],
+                    raises=AssertionError,
+                    reason="DB2 LOG10 returns DECIMAL precision for decimal literal inputs",
+                )
+            ],
+        ),
         param(L(5.556).radians(), math.radians(5.556), id="radians"),
         param(L(5.556).degrees(), math.degrees(5.556), id="degrees"),
         param(L(11) % 3, 11 % 3, id="mod"),
@@ -908,7 +937,8 @@ def test_math_functions_literals(con, expr, expected):
                     ["materialize"],
                     raises=PsycoPgInternalError,
                     reason='function "atan2" does not exist',
-                )
+                ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
         ),
         param(L(0.0).cos(), math.cos(0.0), id="cos"),
@@ -942,6 +972,7 @@ def test_trig_functions_literals(con, expr, expected):
                     raises=PsycoPgInternalError,
                     reason='function "atan2" does not exist',
                 ),
+                pytest.mark.notimpl(["db2"], raises=SystemError),
             ],
         ),
         param(_.dc.cos(), np.cos, id="cos"),
@@ -1079,6 +1110,7 @@ def test_floor_divide_precedence(con):
                     raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
             id="log2-explicit",
         ),
@@ -1092,6 +1124,7 @@ def test_floor_divide_precedence(con):
                     raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
             id="log2",
         ),
@@ -1104,6 +1137,7 @@ def test_floor_divide_precedence(con):
             lambda t: t.double_col.add(1).log10(),
             lambda t: np.log10(t.double_col + 1),
             id="log10",
+            marks=[pytest.mark.notimpl(["db2"], raises=AssertionError)],
         ),
         param(
             lambda t: (t.double_col + 1).log(
@@ -1161,6 +1195,7 @@ def test_complex_math_functions_columns(
                     raises=AssertionError,
                     reason="rounding behavior is slightly different",
                 ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
         ),
         param(
@@ -1232,6 +1267,7 @@ def test_binary_arithmetic_operations(backend, alltypes, df, opname):
     backend.assert_series_equal(result, expected, check_exact=False)
 
 
+@pytest.mark.notimpl(["db2"], raises=AssertionError)
 def test_integer_truediv(con):
     expr = 1 / ibis.literal(2)
     result = con.execute(expr)
@@ -1397,6 +1433,7 @@ def test_floating_mod(backend, alltypes, df):
     reason="Evaluation error: division by zero",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
+@pytest.mark.notimpl(["db2"], raises=SystemError)
 @pytest.mark.xfail_version(duckdb=["duckdb<1.1"])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
@@ -1592,6 +1629,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 @pytest.mark.never(
     ["materialize"],
     raises=AssertionError,
@@ -1645,6 +1683,7 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     ("left", "right"),
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error, strict=False)
 @pytest.mark.never(
     ["materialize"],
     raises=AssertionError,
@@ -1735,6 +1774,7 @@ def test_scalar_round_is_integer(con):
 )
 @pytest.mark.notyet(["exasol"], raises=ExaQueryError)
 @pytest.mark.notimpl(["flink"], raises=NotImplementedError)
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_memtable_decimal(con, numbers):
     schema = ibis.schema(dict(numbers=dt.Decimal(38, 9)))
 

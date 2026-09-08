@@ -25,6 +25,11 @@ sg = pytest.importorskip("sqlglot")
                     raises=(exc.OperationNotDefinedError, exc.UnsupportedBackendType),
                     reason="arrays not supported in the backend",
                 ),
+                pytest.mark.notimpl(
+                    ["db2"],
+                    raises=exc.OperationNotDefinedError,
+                    reason="Db2 does not support ARRAY literals",
+                ),
             ],
             id="array_literal",
         ),
@@ -110,6 +115,11 @@ def test_isin_bug(con, snapshot):
     ["materialize"],
     raises=exc.OperationNotDefinedError,
     reason="first/last/arbitrary not supported",
+)
+@pytest.mark.notimpl(
+    ["db2"],
+    raises=exc.OperationNotDefinedError,
+    reason="Db2 does not support STRUCT constructor",
 )
 @pytest.mark.parametrize("backend_name", _get_backends_to_test())
 def test_union_aliasing(backend_name, snapshot):
@@ -210,6 +220,7 @@ def test_selects_with_impure_operations_not_merged(con, snapshot, value):
 
 
 @pytest.mark.never(["polars"], reason="not SQL", raises=NotImplementedError)
+@pytest.mark.notimpl(["db2"])
 def test_to_sql_default_backend(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
