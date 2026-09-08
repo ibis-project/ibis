@@ -379,6 +379,7 @@ class SQLGlotCompiler(abc.ABC):
         ops.StringToDate: "str_to_date",
         ops.StringToTimestamp: "str_to_time",
         ops.Tan: "tan",
+        ops.Tanh: "tanh",
         ops.Translate: "translate",
         ops.Unnest: "explode",
         ops.Uppercase: "upper",
@@ -613,12 +614,6 @@ class SQLGlotCompiler(abc.ABC):
             An ibis operation
         params
             A mapping of expressions to concrete values
-        compiler
-            An instance of SQLGlotCompiler
-        translate_rel
-            Relation node translator
-        translate_val
-            Value node translator
 
         Returns
         -------

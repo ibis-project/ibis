@@ -442,6 +442,42 @@ def test_insert_dict_variants(con):
     assert len(t.execute()) == 4
 
 
+@pytest.mark.parametrize(
+    "export",
+    [
+        param(lambda con, t: con.to_pyarrow(t).to_pandas(), id="to_pyarrow"),
+        param(
+            lambda con, t: con.to_pyarrow_batches(t).read_all().to_pandas(),
+            id="to_pyarrow_batches",
+        ),
+        param(lambda con, t: con.to_pandas(t), id="to_pandas"),
+        param(
+            lambda con, t: pd.concat(con.to_pandas_batches(t)), id="to_pandas_batches"
+        ),
+    ],
+)
+def test_non_uppercase_columns_ignore_case(export):
+    # with QUOTED_IDENTIFIERS_IGNORE_CASE set, snowflake returns all columns
+    # uppercased regardless of their original case, so check they're renamed
+    # back to match
+    con = ibis.connect(
+        _get_url(),
+        # a dedicated connection, because `_setup_session` mutates the session,
+        # and without this it would also replace the account-shared `ibis_udfs`
+        # functions with their arguments uppercased, failing only at call time
+        create_object_udfs=False,
+        session_parameters={"QUOTED_IDENTIFIERS_IGNORE_CASE": True},
+    )
+
+    expected = pd.DataFrame({"digits": [1, 2, 3], "nonDigits": list("abc")})
+    t = ibis.memtable(expected)
+
+    result = export(con, t)
+
+    assert list(result.columns) == list(expected.columns)
+    tm.assert_frame_equal(result.sort_values("digits", ignore_index=True), expected)
+
+
 @h.given(
     column_name=st.text(
         st.characters(

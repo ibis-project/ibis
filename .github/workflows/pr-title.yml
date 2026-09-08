@@ -21,7 +21,7 @@ jobs:
           node-version: 24
 
       - name: checkout code to pick up commitlint configuration
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # If the PR is from a fork, grab the commitlint configuration from
           # our main branch.  If the PR is from a local branch, grab the code
