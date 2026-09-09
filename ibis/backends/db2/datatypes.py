@@ -144,9 +144,9 @@ def ibis_type_to_db2_type(ibis_type: dt.DataType) -> str:
         scale = ibis_type.scale or 0
         return f"DECIMAL({precision}, {scale})"
     elif isinstance(ibis_type, dt.String):
-        return "VARCHAR(32672)"  # Max VARCHAR length in Db2
+        return "VARCHAR(255)"
     elif isinstance(ibis_type, dt.Binary):
-        return "VARBINARY(32672)"
+        return "VARBINARY(255)"
     elif isinstance(ibis_type, dt.Date):
         return "DATE"
     elif isinstance(ibis_type, dt.Time):
@@ -170,7 +170,7 @@ def ibis_type_to_db2_type(ibis_type: dt.DataType) -> str:
         return "CLOB"
     else:
         # Default to VARCHAR for unknown types
-        return "VARCHAR(32672)"
+        return "VARCHAR(255)"
 
 
 # Type code mappings for ibm_db_dbi

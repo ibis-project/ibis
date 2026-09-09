@@ -24,18 +24,13 @@ BINARY_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "impala", "druid", "oracle"],
+    ["clickhouse", "impala", "druid", "oracle", "db2"],
     "Unsupported type: Binary(nullable=True)",
     raises=NotImplementedError,
 )
 @pytest.mark.notimpl(
     ["exasol"],
     "Exasol does not have native support for a binary data type.",
-    raises=NotImplementedError,
-)
-@pytest.mark.notimpl(
-    ["db2"],
-    "Unsupported type: Binary(nullable=True)",
     raises=NotImplementedError,
 )
 def test_binary_literal(con, backend):
