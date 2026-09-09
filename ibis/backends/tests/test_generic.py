@@ -1854,6 +1854,8 @@ def test_hexdigest(backend, alltypes):
         param("float", "int", 0.0, 0, id="float_to_int"),
         param("string", "int", "0", 0, id="string_to_int"),
         param("string", "float", "0", 0.0, id="string_to_float"),
+        param("bool", "string", True, "true", id="bool_to_string"),
+        param("bool", "string", False, "false", id="bool_to_string_false"),
         param(
             "array<int>",
             "array<string>",
@@ -1905,6 +1907,15 @@ def test_cast(con, from_type, to_type, from_val, expected):
     expr = ibis.literal(from_val, type=from_type).cast(to_type)
     result = con.execute(expr)
     assert result == expected
+
+
+def test_cast_computed_bool_to_string(con) -> None:
+    # A computed boolean (rather than a plain column) must also cast to the
+    # 'true'/'false' rendering, including on T-SQL where a predicate cannot
+    # appear as a scalar expression.
+    t = ibis.memtable({"a": [-1.0, 1.0, None]})
+    expr = (t.a > 0).cast("string").name("s")
+    assert con.execute(expr).tolist() == ["false", "true", None]
 
 
 @pytest.mark.notimpl(["oracle", "sqlite"])

@@ -104,6 +104,19 @@ class SQLiteCompiler(SQLGlotCompiler):
         return func(base, arg)
 
     def visit_Cast(self, op, *, arg, to) -> sge.Cast:
+        if to.is_string() and op.arg.dtype.is_boolean():
+            # SQLite stores booleans as integers, so CAST(bool AS TEXT) renders
+            # '1'/'0' while other backends render 'true'/'false'. The simple
+            # CASE evaluates the operand exactly once (an impure operand such
+            # as random() > 0.5 must not be re-evaluated per branch) and NULL
+            # matches neither branch, so it stays NULL.
+            return sge.Case(
+                this=arg,
+                ifs=[
+                    sge.If(this=sge.convert(1), true=sge.Literal.string("true")),
+                    sge.If(this=sge.convert(0), true=sge.Literal.string("false")),
+                ],
+            )
         if to.is_timestamp():
             if to.timezone not in (None, "UTC"):
                 raise com.UnsupportedOperationError(
