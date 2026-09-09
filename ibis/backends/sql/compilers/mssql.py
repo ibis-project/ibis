@@ -61,6 +61,28 @@ def rewrite_rows_range_order_by_window(_, **kwargs):
     return _.copy(order_by=(_.func.arg,))
 
 
+def _boolean_to_string_case(arg: sge.Expression) -> sge.Case:
+    # A predicate cannot appear as a scalar CASE operand in T-SQL, so a
+    # predicate operand takes the searched form and a bit-valued operand the
+    # simple form (which evaluates it exactly once; an impure bit-valued
+    # operand must not be re-evaluated per branch). NULL matches neither
+    # branch of either form, so it stays NULL.
+    if isinstance(arg, (sge.Predicate, sge.Connector, sge.Not)):
+        return sge.Case(
+            ifs=[
+                sge.If(this=arg, true=sge.Literal.string("true")),
+                sge.If(this=sge.Not(this=arg), true=sge.Literal.string("false")),
+            ]
+        )
+    return sge.Case(
+        this=arg,
+        ifs=[
+            sge.If(this=sge.convert(1), true=sge.Literal.string("true")),
+            sge.If(this=sge.convert(0), true=sge.Literal.string("false")),
+        ],
+    )
+
+
 class MSSQLCompiler(SQLGlotCompiler):
     __slots__ = ()
 
@@ -423,22 +445,12 @@ class MSSQLCompiler(SQLGlotCompiler):
 
         if from_.is_boolean() and to.is_string():
             # MSSQL has no boolean type, so CAST(bool AS VARCHAR) renders
-            # '1'/'0' while other backends render 'true'/'false'. A bare BIT
-            # column is not a valid CASE condition in T-SQL, so compare
-            # against the underlying values instead. NULL matches neither
-            # branch and stays NULL.
-            return sge.Case(
-                ifs=[
-                    sge.If(
-                        this=sge.EQ(this=arg, expression=sge.convert(1)),
-                        true=sge.Literal.string("true"),
-                    ),
-                    sge.If(
-                        this=sge.EQ(this=arg, expression=sge.convert(0)),
-                        true=sge.Literal.string("false"),
-                    ),
-                ]
-            )
+            # '1'/'0' while other backends render 'true'/'false'. The simple
+            # CASE evaluates the operand exactly once (an impure operand must
+            # not be re-evaluated per branch) and compares against the
+            # underlying bit values; NULL matches neither branch, so it stays
+            # NULL.
+            return _boolean_to_string_case(arg)
         if to.is_boolean():
             # no such thing as a boolean in MSSQL
             return arg
