@@ -1909,6 +1909,15 @@ def test_cast(con, from_type, to_type, from_val, expected):
     assert result == expected
 
 
+def test_cast_computed_bool_to_string(con) -> None:
+    # A computed boolean (rather than a plain column) must also cast to the
+    # 'true'/'false' rendering, including on T-SQL where a predicate cannot
+    # appear as a scalar expression.
+    t = ibis.memtable({"a": [-1.0, 1.0, None]})
+    expr = (t.a > 0).cast("string").name("s")
+    assert con.execute(expr).tolist() == ["false", "true", None]
+
+
 @pytest.mark.notimpl(["oracle", "sqlite"])
 @pytest.mark.parametrize(
     ("from_val", "to_type", "expected"),
