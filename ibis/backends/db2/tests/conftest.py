@@ -55,10 +55,8 @@ class TestConf(ServiceBackendTest):
 
         Steps
         -----
-        0. Create tablespaces with required page sizes (4KB, 8KB, 16KB, 32KB)
-           and USER TEMPORARY tablespaces for GLOBAL TEMPORARY tables.
-           Raises a clear RuntimeError if creation fails for any reason other
-           than the tablespace already existing (SQL0601N / -601).
+        0. Create USER TEMPORARY tablespaces required for GLOBAL TEMPORARY
+           tables (create_table(temp=True) and .cache()).
         1. Execute every DDL statement from ``ci/schema/db2.sql`` one at a
            time, committing after each — ibm_db_dbi does not support
            multi-statement batches.
@@ -69,59 +67,43 @@ class TestConf(ServiceBackendTest):
         """
         import pandas as pd
 
-        # Step 0: Create tablespaces with different page sizes.
-        # DB2 requires tablespaces with specific page sizes for certain
-        # operations (e.g. tables with VARCHAR(32768) columns need 32K pages).
-        # USER TEMPORARY tablespaces are required for GLOBAL TEMPORARY tables.
+        # Step 0: USER TEMPORARY tablespaces for GLOBAL TEMPORARY tables.
         #
-        # We do NOT suppress all exceptions here — only SQL0601N (object
-        # already exists) is safe to ignore on re-runs. Any other error
-        # (permissions, storage, syntax) must surface immediately so CI does
-        # not silently proceed with missing tablespaces and produce 267+
-        # confusing SQL0286N failures deep inside the test run.
-        tablespace_stmts = [
-            # Bufferpools MUST come first — DB2's default bufferpool (IBMDEFAULTBP)
-            # only supports 4K pages. Without these, creating 8K/16K/32K tablespaces
-            # fails with SQL1582N.
-            "CREATE BUFFERPOOL IBIS_BP8K SIZE 250 PAGESIZE 8K",
-            "CREATE BUFFERPOOL IBIS_BP16K SIZE 250 PAGESIZE 16K",
+        # DB2 will not use a REGULAR tablespace for CREATE GLOBAL TEMPORARY
+        # TABLE — it requires a USER TEMPORARY tablespace (SQL0286N otherwise).
+        # The CI error asked for page size >= 32768, which means functional_alltypes
+        # (many wide VARCHAR columns) pushes the row width past 4K-page capacity,
+        # so we need a 32K user temporary tablespace backed by a matching bufferpool.
+        #
+        # Regular tablespaces (IBIS_4K / IBIS_32K) are NOT recreated here —
+        # VARCHAR(255) fits the default REGULAR tablespace without any extras.
+        #
+        # SQL0601N / -601 = object already exists → safe to ignore on re-runs.
+        _user_temp_stmts = [
             "CREATE BUFFERPOOL IBIS_BP32K SIZE 250 PAGESIZE 32K",
-            # Regular tablespaces
-            "CREATE TABLESPACE IBIS_4K PAGESIZE 4K MANAGED BY AUTOMATIC STORAGE",
-            "CREATE TABLESPACE IBIS_8K PAGESIZE 8K MANAGED BY AUTOMATIC STORAGE BUFFERPOOL IBIS_BP8K",
-            "CREATE TABLESPACE IBIS_16K PAGESIZE 16K MANAGED BY AUTOMATIC STORAGE BUFFERPOOL IBIS_BP16K",
-            "CREATE TABLESPACE IBIS_32K PAGESIZE 32K MANAGED BY AUTOMATIC STORAGE BUFFERPOOL IBIS_BP32K",
-            # USER TEMPORARY tablespaces for GLOBAL TEMPORARY tables
-            "CREATE USER TEMPORARY TABLESPACE IBIS_TEMP_4K PAGESIZE 4K MANAGED BY AUTOMATIC STORAGE",
-            "CREATE USER TEMPORARY TABLESPACE IBIS_TEMP_32K PAGESIZE 32K MANAGED BY AUTOMATIC STORAGE BUFFERPOOL IBIS_BP32K",
+            (
+                "CREATE USER TEMPORARY TABLESPACE IBIS_TEMP_4K"
+                " PAGESIZE 4K MANAGED BY AUTOMATIC STORAGE"
+            ),
+            (
+                "CREATE USER TEMPORARY TABLESPACE IBIS_TEMP_32K"
+                " PAGESIZE 32K MANAGED BY AUTOMATIC STORAGE"
+                " BUFFERPOOL IBIS_BP32K"
+            ),
         ]
-
-        for stmt in tablespace_stmts:
+        for stmt in _user_temp_stmts:
             try:
                 with self.connection._safe_raw_sql(stmt):
                     pass
                 self.connection._connection.commit()
             except Exception as e:  # noqa: PERF203
-                # SQL0601N / SQLCODE -601 = object already exists.
-                # ibm_db_dbi wraps errors as:
-                #   "ibm_db_dbi::ProgrammingError: Statement Execute Failed:
-                #    ... SQL0601N ..."
-                # so we check all three variants to be safe.
                 err_str = str(e)
-                already_exists = (
-                    "SQL0601N" in err_str
-                    or "-601" in err_str
-                    or "already exists" in err_str.lower()
-                )
-                if not already_exists:
-                    raise RuntimeError(
-                        f"Failed to create tablespace.\n"
-                        f"Statement : {stmt}\n"
-                        f"Error     : {e}\n\n"
-                        f"Check that the DB2inst1 user has SYSCTRL or SYSADM "
-                        f"authority and that automatic storage is configured "
-                        f"for the '{DB2_DATABASE}' database."
-                    ) from e
+                if (
+                    "SQL0601N" not in err_str
+                    and "-601" not in err_str
+                    and "already exists" not in err_str.lower()
+                ):
+                    raise
 
         # Step 1: DDL — uses self.ddl_script (BackendTest.ddl_script reads
         # ci/schema/db2.sql and splits on ";", same as every other backend).

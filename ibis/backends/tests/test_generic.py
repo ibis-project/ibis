@@ -1447,8 +1447,7 @@ def test_memtable_from_geopandas_dataframe(con, data_dir):
     con.to_pandas(t.limit(2).select("geometry"))
 
 
-@pytest.mark.notimpl(["oracle", "exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle", "exasol", "db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
     ["impala", "mssql", "mysql", "singlestoredb", "sqlite"],

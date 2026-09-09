@@ -104,11 +104,11 @@ class TestIbisTypeToDB2Type:
 
     def test_string_type(self):
         """Test conversion of string type."""
-        assert ibis_type_to_db2_type(dt.string) == "VARCHAR(32672)"
+        assert ibis_type_to_db2_type(dt.string) == "VARCHAR(255)"
 
     def test_binary_type(self):
         """Test conversion of binary type."""
-        assert ibis_type_to_db2_type(dt.binary) == "VARBINARY(32672)"
+        assert ibis_type_to_db2_type(dt.binary) == "VARBINARY(255)"
 
     def test_datetime_types(self):
         """Test conversion of date/time types."""
