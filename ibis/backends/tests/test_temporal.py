@@ -220,9 +220,8 @@ mark_notyet_risingwave_14670 = pytest.mark.notyet(
             id="millisecond",
             marks=[
                 pytest.mark.notimpl(
-                    ["druid", "oracle"], raises=com.OperationNotDefinedError
+                    ["druid", "oracle", "db2"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(

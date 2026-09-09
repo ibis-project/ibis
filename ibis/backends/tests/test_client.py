@@ -449,8 +449,7 @@ def test_nullable_input_output(con, temp_table):
     assert t.schema().types[2].nullable
 
 
-@mark.notimpl(["druid"])
-@pytest.mark.notimpl(["db2"])
+@mark.notimpl(["druid", "db2"])
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
@@ -1151,7 +1150,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "athena",
                         "singlestoredb",
                     ]
-                ),
+                )
             ],
             id="pyarrow_rbr",
         ),

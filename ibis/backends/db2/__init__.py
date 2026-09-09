@@ -522,14 +522,9 @@ class Backend(SQLBackend):
             col_defs.append(f"{quoted_col_name} {db2_type}{null_constraint}")
 
         columns_sql = ", ".join(col_defs)
-        # DB2 requires an explicit tablespace with sufficient page size.
-        # IBIS_32K (32KB pages) is pre-created in conftest._load_data and
-        # supports all column types including VARCHAR(32768) used by
-        # memtable/cache operations.
-        tablespace_clause = " IN IBIS_32K" if not temp else ""
-        create_sql = (
-            f"CREATE {temp_clause}TABLE {full_name} ({columns_sql}){tablespace_clause}"
-        )
+        # No explicit tablespace — VARCHAR(255) fits on the default 4K-page
+        # tablespace so no special setup is required on any DB2 instance.
+        create_sql = f"CREATE {temp_clause}TABLE {full_name} ({columns_sql})"
 
         with self._safe_raw_sql(create_sql):
             pass
@@ -614,6 +609,48 @@ class Backend(SQLBackend):
         with self._safe_raw_sql(drop_sql):
             pass
         # Commit the DROP TABLE statement
+        self._connection.commit()
+
+    def drop_view(
+        self,
+        name: str,
+        /,
+        *,
+        database: str | None = None,
+        force: bool = False,
+    ) -> None:
+        """Drop a view.
+
+        DB2 does not support ``DROP VIEW IF EXISTS``, so when *force* is True
+        we check SYSCAT.VIEWS first and skip the DROP if the view is absent.
+        """
+        name = name.upper()
+        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
+
+        if force:
+            cursor = self._connection.cursor()
+            try:
+                if database:
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM SYSCAT.VIEWS WHERE VIEWNAME = ? AND VIEWSCHEMA = ?",
+                        (name, database.upper()),
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM SYSCAT.VIEWS WHERE VIEWNAME = ? AND VIEWSCHEMA = CURRENT SCHEMA",
+                        (name,),
+                    )
+                exists = cursor.fetchone()[0] > 0
+            finally:
+                cursor.close()
+
+            if not exists:
+                return
+
+        with self._safe_raw_sql(f"DROP VIEW {full_name}"):
+            pass
         self._connection.commit()
 
     def insert(
