@@ -666,7 +666,10 @@ GO"""
         properties = []
 
         if temp:
-            properties.append(sge.TemporaryProperty())
+            # tsql spells temporary-ness with a `##` name prefix rather than a
+            # property; older sqlglot prepended the second `#` for a
+            # TemporaryProperty, newer sqlglot emits the name verbatim, so name
+            # the table explicitly and leave the property off
             catalog, db = None, None
 
         if obj is not None:
@@ -693,7 +696,7 @@ GO"""
         raw_table = sg.table(temp_name, catalog=catalog, db=db, quoted=False)
         target = sge.Schema(
             this=sg.table(
-                "#" * bool(temp) + temp_name, catalog=catalog, db=db, quoted=quoted
+                "##" * bool(temp) + temp_name, catalog=catalog, db=db, quoted=quoted
             ),
             expressions=schema.to_sqlglot_column_defs(self.dialect),
         )
