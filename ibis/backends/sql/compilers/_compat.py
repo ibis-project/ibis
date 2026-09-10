@@ -21,4 +21,3 @@ DROP_ARG = _get_arg_name(sge.Drop, "this", "tables")
 
 def Drop(*, this, **kwargs):
     return sge.Drop(**{DROP_ARG: [this] if DROP_ARG == "tables" else this}, **kwargs)
-

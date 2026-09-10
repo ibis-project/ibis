@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import pytest
 import sqlglot as sg
 
 import ibis
 from ibis import _
 from ibis.backends.sql.compilers._compat import Drop
 from ibis.backends.sql.dialects import Trino
+
+# these tests exercise SQL compilation only and need no backend
+pytestmark = pytest.mark.core
 
 
 def test_window_with_row_number_compiles():
@@ -15,7 +19,7 @@ def test_window_with_row_number_compiles():
     expr = (
         ibis.memtable({"a": range(30)})
         .mutate(id=ibis.row_number())
-        .sample(fraction=0.25, seed=0)
+        .sample(0.25, seed=0)
         .mutate(is_test=_.id.isin(_.id))
         .filter(~_.is_test)
     )

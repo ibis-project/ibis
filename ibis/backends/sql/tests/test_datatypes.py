@@ -16,6 +16,9 @@ from ibis.backends.sql.datatypes import (
     SqlglotType,
 )
 
+# these tests exercise SQL compilation only and need no backend
+pytestmark = pytest.mark.core
+
 
 def assert_dtype_roundtrip(ibis_type, sqlglot_expected=None):
     sqlglot_result = SqlglotType.from_ibis(ibis_type)
@@ -131,5 +134,10 @@ def test_unknown_repr():
         sge.DataType(this=sge.DataType.Type.USERDEFINED, kind='"MySchema"."MyEnum"')
     )
     result = str(dtype)
-    expected = 'unknown(DataType(this=Type.USERDEFINED, kind="MySchema"."MyEnum"))'
+    # sqlglot >= 30 renamed the `DataType.Type` enum to `DType`, and the enum's
+    # name leaks into the repr of the wrapped sqlglot expression
+    expected = (
+        f"unknown(DataType(this={sge.DataType.Type.USERDEFINED},"
+        ' kind="MySchema"."MyEnum"))'
+    )
     assert result == expected
