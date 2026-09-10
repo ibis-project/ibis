@@ -16,3 +16,14 @@ def _get_arg_name(expr_cls: type[sge.Expression], *args: str) -> str:
 # to keep the code backward compatible, we take the first valid arg name
 WITH_ARG = _get_arg_name(sge.Select, "with", "with_")
 EXCEPT_ARG = _get_arg_name(sge.Star, "except", "except_")
+DROP_ARG = _get_arg_name(sge.Drop, "this", "tables")
+
+
+def Drop(*, this, **kwargs):
+    return sge.Drop(**{DROP_ARG: [this] if DROP_ARG == "tables" else this}, **kwargs)
+
+
+# sqlglot >= 30 split postgres's `?` top-level-key-existence operator out of
+# `JSONBContains`, which now generates the `JSONB_CONTAINS` containment
+# function instead of the operator
+JSONBContainsTopKey = getattr(sge, "JSONBContainsTopKey", sge.JSONBContains)

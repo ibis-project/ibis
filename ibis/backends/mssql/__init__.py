@@ -30,6 +30,7 @@ from ibis.backends import (
     PyArrowExampleLoader,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers._compat import Drop
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
@@ -477,7 +478,7 @@ GO"""
 
     def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         with self._safe_ddl(
-            sge.Drop(
+            Drop(
                 kind="DATABASE",
                 this=sg.to_identifier(name, quoted=self.compiler.quoted),
                 exists=force,
@@ -546,7 +547,7 @@ GO"""
                 )
 
             cur.execute(
-                sge.Drop(
+                Drop(
                     kind="SCHEMA",
                     exists=force,
                     this=sg.to_identifier(name, quoted=quoted),
@@ -665,7 +666,10 @@ GO"""
         properties = []
 
         if temp:
-            properties.append(sge.TemporaryProperty())
+            # tsql spells temporary-ness with a `##` name prefix rather than a
+            # property; older sqlglot prepended the second `#` for a
+            # TemporaryProperty, newer sqlglot emits the name verbatim, so name
+            # the table explicitly and leave the property off
             catalog, db = None, None
 
         if obj is not None:
@@ -692,7 +696,7 @@ GO"""
         raw_table = sg.table(temp_name, catalog=catalog, db=db, quoted=False)
         target = sge.Schema(
             this=sg.table(
-                "#" * bool(temp) + temp_name, catalog=catalog, db=db, quoted=quoted
+                "##" * bool(temp) + temp_name, catalog=catalog, db=db, quoted=quoted
             ),
             expressions=schema.to_sqlglot_column_defs(self.dialect),
         )
@@ -723,7 +727,7 @@ GO"""
 
             if overwrite:
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
+                    Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
                 )
                 old = raw_table.sql(self.dialect)
                 new = raw_this.sql(self.dialect)
