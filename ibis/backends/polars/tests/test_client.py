@@ -87,6 +87,8 @@ def test_compile_with_memtable(con):
 
 def test_polars_object_dtype_memtable():
     con = ibis.polars.connect()
-    df = pl.DataFrame({"a": [object(), object()]})
+    df = pl.DataFrame({"a": [object(), object()]}, schema={"a": pl.Object})
     t = con.create_table("test_obj", df)
+
     assert t.schema()["a"] == dt.Unknown(nullable=True)
+    assert t.count().execute() == 2
