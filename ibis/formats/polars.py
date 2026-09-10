@@ -73,6 +73,8 @@ class PolarsType(TypeMapper):
                 [(field.name, cls.to_ibis(field.dtype)) for field in typ.fields],
                 nullable=nullable,
             )
+        elif base_type is pl.Object:
+            return dt.Unknown(nullable=nullable)
         else:
             return _from_polars_types[base_type](nullable=nullable)
 
