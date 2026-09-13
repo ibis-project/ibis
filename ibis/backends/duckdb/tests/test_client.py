@@ -518,3 +518,22 @@ def test_basic_enum_schema_inference(con, converter):
     t = con.table(name)
     assert t.e.type() == dt.string
     assert set(converter(t.e)) == {"a", "b"}
+
+
+def test_sql_recursive_cte():
+    # https://github.com/ibis-project/ibis/issues/11922
+    con = ibis.duckdb.connect()
+    expr = con.sql(
+        """
+        WITH RECURSIVE power(a, b, c) AS (
+            SELECT 2, 0, 1
+            UNION
+            SELECT a, b + 1, a * c
+            FROM power
+            WHERE a * c < 100
+        )
+        SELECT * FROM power
+        """
+    )
+    result = expr.execute()
+    assert result["c"].tolist() == [1, 2, 4, 8, 16, 32, 64]
