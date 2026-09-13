@@ -8,6 +8,7 @@ from public import public
 
 import ibis.expr.operations as ops
 from ibis import util
+from ibis.common.annotations import ValidationError
 from ibis.expr.types.generic import Column, Scalar, Value, _binop
 
 if TYPE_CHECKING:
@@ -1654,7 +1655,13 @@ class StringValue(Value):
         │ bcabca               │
         └──────────────────────┘
         """
-        return self.concat(other)
+        try:
+            return self.concat(other)
+        except ValidationError:
+            # Let Python dispatch to the reflected operator of `other`
+            # (e.g. `Deferred.__radd__`) for operands that cannot be
+            # coerced eagerly, like deferred values.
+            return NotImplemented
 
     def __radd__(self, other: str | StringValue | Deferred) -> StringValue:
         """Concatenate strings.
