@@ -543,6 +543,14 @@ def test_date_arithmetics():
         assert isinstance(expr.op(), ops.DateAdd)
 
 
+def test_date_add_with_deferred_interval():
+    t = ibis.table({"days": "int64"}, name="t")
+
+    expr = t.select(d=api.date(1970, 1, 1) + _.days.as_interval("D"))
+    sol = t.select(d=api.date(1970, 1, 1) + t.days.as_interval("D"))
+    assert expr.equals(sol)
+
+
 def test_time_arithmetics():
     t1 = api.time("18:00")
     t2 = api.time("19:12")
