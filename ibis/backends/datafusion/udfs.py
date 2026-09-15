@@ -11,15 +11,15 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 
 
-def _extract_epoch_seconds(array) -> dt.int32:
-    return pc.cast(pc.divide(pc.cast(array, pa.int64()), 1_000_000), pa.int32())
+def _extract_epoch_seconds(array) -> dt.int64:
+    return pc.divide(pc.cast(array, pa.int64()), 1_000_000)
 
 
-def extract_epoch_seconds_date(array: dt.date) -> dt.int32:
+def extract_epoch_seconds_date(array: dt.date) -> dt.int64:
     return _extract_epoch_seconds(array)
 
 
-def extract_epoch_seconds_timestamp(array: dt.Timestamp(scale=6)) -> dt.int32:
+def extract_epoch_seconds_timestamp(array: dt.Timestamp(scale=6)) -> dt.int64:
     return _extract_epoch_seconds(array)
 
 
