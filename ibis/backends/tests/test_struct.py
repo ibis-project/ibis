@@ -91,7 +91,7 @@ def test_null_literal(backend, con, field):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["postgres", "risingwave"])
+@pytest.mark.notimpl(["risingwave"])
 def test_struct_column(alltypes, df):
     t = alltypes
     expr = t.select(s=ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)))

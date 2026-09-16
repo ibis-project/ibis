@@ -452,6 +452,67 @@ def test_convert_dataframe_with_timezone():
     tm.assert_frame_equal(expected, result)
 
 
+def test_convert_array_of_int_with_numpy_nan_11860():
+    # some backends (e.g., pyspark over Spark Connect) return array elements
+    # as numpy float64s with NaN standing in for null, since numpy has no
+    # native way to represent a null integer.
+    data = {
+        "a": [
+            np.array([1.0, 3.0]),
+            np.array([float("nan"), 1.0, 3.0]),
+            np.array([42.0]),
+            np.array([]),
+            np.array([float("nan")]),
+            None,
+        ]
+    }
+    df = pd.DataFrame(data)
+    schema = sch.Schema({"a": dt.Array(dt.int64)})
+
+    result = PandasData.convert_table(df, schema)["a"].tolist()
+
+    assert result == [
+        [1, 3],
+        [None, 1, 3],
+        [42],
+        [],
+        [None],
+        None,
+    ]
+    for row in result:
+        if row is None:
+            continue
+        for value in row:
+            assert value is None or isinstance(value, int)
+
+
+def test_convert_array_of_int_with_pandas_na_element_11860():
+    # pandas nullable integer arrays yield `pd.NA` (not NaN) for missing
+    # elements when iterated; the converter must handle both.
+    data = {"a": [pd.array([1, pd.NA, 3], dtype="Int64")]}
+    df = pd.DataFrame(data)
+    schema = sch.Schema({"a": dt.Array(dt.int64)})
+
+    result = PandasData.convert_table(df, schema)["a"].tolist()
+
+    assert result == [[1, None, 3]]
+    assert all(v is None or isinstance(v, int) for v in result[0])
+
+
+def test_convert_array_of_int_with_jagged_element():
+    # some backends (e.g., postgres) can hand back a value whose runtime
+    # shape is deeper than the declared dtype (jagged/nested arrays); the
+    # integer element converter must not choke trying to treat it as a
+    # scalar.
+    data = {"a": [[[None, None, None], [1, 2]]]}
+    df = pd.DataFrame(data)
+    schema = sch.Schema({"a": dt.Array(dt.int64)})
+
+    result = PandasData.convert_table(df, schema)["a"].tolist()
+
+    assert result == [[[None, None, None], [1, 2]]]
+
+
 def test_schema_doesnt_match_input_columns():
     df = pd.DataFrame({"x": [1], "y": [2]})
     schema = sch.Schema({"a": "int64", "b": "int64"})
