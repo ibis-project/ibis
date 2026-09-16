@@ -308,8 +308,25 @@ class PandasData(DataMapper):
     @classmethod
     def get_element_converter(cls, dtype):
         name = f"convert_{type(dtype).__name__}_element"
-        funcgen = getattr(cls, name, lambda _: lambda x: x)
-        return funcgen(dtype)
+        if (funcgen := getattr(cls, name, None)) is not None:
+            return funcgen(dtype)
+        if dtype.is_integer():
+            return cls.convert_Integer_element(dtype)
+        return lambda x: x
+
+    @classmethod
+    def convert_Integer_element(cls, dtype):
+        def convert(value):
+            # some backends (e.g., pyspark over Spark Connect) return array
+            # elements as numpy float64s with NaN standing in for null,
+            # because numpy has no native way to represent a null integer;
+            # pandas nullable integer arrays instead yield `pd.NA`. Normalize
+            # any of these back to Python int/None to match `dtype`.
+            if pd.isna(value):
+                return None
+            return int(value)
+
+        return convert
 
     @classmethod
     def convert_Struct_element(cls, dtype):
