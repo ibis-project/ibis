@@ -914,11 +914,6 @@ def test_array_remove(con, input, expected):
             id="null",
             marks=[
                 pytest.mark.notyet(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="Null elements are transformed to NaN",
-                ),
-                pytest.mark.notyet(
                     ["pyspark"],
                     condition=IS_SPARK_REMOTE,
                     raises=AssertionError,
@@ -931,11 +926,6 @@ def test_array_remove(con, input, expected):
                     ["athena"],
                     raises=AssertionError,
                     reason="pyarrow doesn't return non-numpy objects for arrays",
-                ),
-                pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="arrays with NaN returns a different number of rows than expected",
                 ),
                 pytest.mark.notyet(
                     ["materialize"],
@@ -1014,11 +1004,6 @@ def test_array_sort(con, data):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="BigQuery doesn't support arrays with null elements",
-                ),
-                pytest.mark.notyet(
-                    ["datafusion", "polars"],
-                    raises=AssertionError,
-                    reason="Null elements are transformed to NaN",
                 ),
                 pytest.mark.notyet(
                     ["pyspark"],
