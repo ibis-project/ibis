@@ -499,6 +499,20 @@ def test_convert_array_of_int_with_pandas_na_element_11860():
     assert all(v is None or isinstance(v, int) for v in result[0])
 
 
+def test_convert_array_of_int_with_jagged_element():
+    # some backends (e.g., postgres) can hand back a value whose runtime
+    # shape is deeper than the declared dtype (jagged/nested arrays); the
+    # integer element converter must not choke trying to treat it as a
+    # scalar.
+    data = {"a": [[[None, None, None], [1, 2]]]}
+    df = pd.DataFrame(data)
+    schema = sch.Schema({"a": dt.Array(dt.int64)})
+
+    result = PandasData.convert_table(df, schema)["a"].tolist()
+
+    assert result == [[[None, None, None], [1, 2]]]
+
+
 def test_schema_doesnt_match_input_columns():
     df = pd.DataFrame({"x": [1], "y": [2]})
     schema = sch.Schema({"a": "int64", "b": "int64"})

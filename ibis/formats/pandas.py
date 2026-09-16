@@ -322,6 +322,13 @@ class PandasData(DataMapper):
             # because numpy has no native way to represent a null integer;
             # pandas nullable integer arrays instead yield `pd.NA`. Normalize
             # any of these back to Python int/None to match `dtype`.
+            #
+            # other backends (e.g., postgres) can hand back a value whose
+            # runtime shape is deeper than the declared dtype (jagged/nested
+            # arrays); leave those alone rather than treating a list/array as
+            # a single scalar.
+            if isinstance(value, (list, tuple, np.ndarray)):
+                return value
             if pd.isna(value):
                 return None
             return int(value)
