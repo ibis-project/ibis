@@ -550,7 +550,7 @@ class SQLBackend(BaseBackend):
         name: str,
         /,
         obj: ir.Table | IntoMemtable,
-        on: str,
+        on: str | Iterable[str],
         *,
         database: str | None = None,
     ) -> None:
@@ -574,7 +574,7 @@ class SQLBackend(BaseBackend):
         obj
             The source data or expression to upsert
         on
-            Column name to join on
+            Column name, or iterable of column names, to join on
         database
             Name of the attached database that the table is located in.
 
@@ -602,12 +602,16 @@ class SQLBackend(BaseBackend):
         *,
         target: str,
         source,
-        on: str,
+        on: str | Iterable[str],
         db: str | None = None,
         catalog: str | None = None,
     ):
         compiler = self.compiler
         quoted = compiler.quoted
+
+        on_columns = (on,) if isinstance(on, str) else tuple(on)
+        if not on_columns:
+            raise exc.IbisInputError("`on` must contain at least one column name")
 
         columns = self._get_columns_to_insert(
             target=target, source=source, db=db, catalog=catalog
@@ -624,7 +628,7 @@ class SQLBackend(BaseBackend):
                             sg.column(col, table=source_alias, quoted=quoted)
                         )
                         for col in columns
-                        if col != on
+                        if col not in on_columns
                     ]
                 ),
             ),
@@ -647,8 +651,13 @@ class SQLBackend(BaseBackend):
             ),
             using=f"({self.compile(source)}) AS {sg.to_identifier(source_alias, quoted=quoted)}",
             on=sge.Paren(
-                this=sg.column(on, table=target_alias, quoted=quoted).eq(
-                    sg.column(on, table=source_alias, quoted=quoted)
+                this=sg.and_(
+                    *(
+                        sg.column(col, table=target_alias, quoted=quoted).eq(
+                            sg.column(col, table=source_alias, quoted=quoted)
+                        )
+                        for col in on_columns
+                    )
                 )
             ),
             dialect=compiler.dialect,

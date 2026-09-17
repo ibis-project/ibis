@@ -699,6 +699,46 @@ def test_upsert_from_dataframe(
 
 
 @NO_MERGE_SUPPORT
+def test_upsert_from_dataframe_multiple_on_columns(
+    backend, con, employee_data_1_temp_table
+):
+    temporary = con.table(employee_data_1_temp_table)
+    df1 = temporary.execute()
+
+    # neither (first_name, last_name) pair below matches an existing row, so
+    # both should be inserted rather than merged into the existing "B" row,
+    # which shares a first_name with the first one but not a last_name
+    source = pd.DataFrame(
+        {
+            "first_name": ["B", "X"],
+            "last_name": ["Z", "Y"],
+            "department_name": ["NEW1", "NEW2"],
+            "salary": [999.0, 888.0],
+        }
+    )
+
+    con.upsert(employee_data_1_temp_table, obj=source, on=["first_name", "last_name"])
+    result = temporary.execute()
+
+    expected = pd.concat([df1, source], ignore_index=True)
+    assert len(result) == len(expected)
+    backend.assert_frame_equal(
+        result.sort_values(["first_name", "last_name"]).reset_index(drop=True),
+        expected.sort_values(["first_name", "last_name"]).reset_index(drop=True),
+    )
+
+
+@pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
+def test_upsert_empty_on_raises(con, employee_data_1_temp_table, test_employee_data_3):
+    # this validation happens before any backend-specific SQL is built or
+    # executed, so it should raise identically on every backend that
+    # implements `upsert` at all, regardless of that backend's actual MERGE
+    # support
+    with pytest.raises(com.IbisInputError):
+        con.upsert(employee_data_1_temp_table, obj=test_employee_data_3, on=[])
+
+
+@NO_MERGE_SUPPORT
 @pytest.mark.parametrize(
     "with_order_by",
     [
