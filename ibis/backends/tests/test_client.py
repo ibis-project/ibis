@@ -728,8 +728,12 @@ def test_upsert_from_dataframe_multiple_on_columns(
     )
 
 
-@NO_MERGE_SUPPORT
+@pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
 def test_upsert_empty_on_raises(con, employee_data_1_temp_table, test_employee_data_3):
+    # this validation happens before any backend-specific SQL is built or
+    # executed, so it should raise identically on every backend that
+    # implements `upsert` at all, regardless of that backend's actual MERGE
+    # support
     with pytest.raises(com.IbisInputError):
         con.upsert(employee_data_1_temp_table, obj=test_employee_data_3, on=[])
 
