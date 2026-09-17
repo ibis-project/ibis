@@ -902,7 +902,7 @@ class Backend(
         name: str,
         /,
         obj: ir.Table | IntoMemtable,
-        on: str,
+        on: str | Iterable[str],
         *,
         database: str | None = None,
     ) -> None:
@@ -926,7 +926,7 @@ class Backend(
         obj
             The source data or expression to upsert
         on
-            Column name to join on
+            Column name, or iterable of column names, to join on
         database
             Name of the attached database that the table is located in.
 
