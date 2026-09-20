@@ -681,50 +681,51 @@ def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
 
 
 @NO_MERGE_SUPPORT
-def test_upsert_from_dataframe(
-    backend, con, employee_data_1_temp_table, test_employee_data_3
-):
+@pytest.mark.parametrize(
+    ("on", "source"),
+    [
+        param(
+            "first_name",
+            pd.DataFrame(
+                {
+                    "first_name": ["B", "Y", "Z"],
+                    "last_name": ["A", "B", "C"],
+                    "department_name": ["XX", "YY", "ZZ"],
+                    "salary": [400.0, 500.0, 600.0],
+                }
+            ),
+            id="single_column",
+        ),
+        param(
+            ["first_name", "last_name"],
+            pd.DataFrame(
+                {
+                    # ("B", "E") matches an existing row on both columns and
+                    # should be updated; ("X", "Y") matches nothing and
+                    # should be inserted
+                    "first_name": ["B", "X"],
+                    "last_name": ["E", "Y"],
+                    "department_name": ["ZZ1", "ZZ2"],
+                    "salary": [999.0, 888.0],
+                }
+            ),
+            id="multiple_columns",
+        ),
+    ],
+)
+def test_upsert_from_dataframe(backend, con, employee_data_1_temp_table, on, source):
     temporary = con.table(employee_data_1_temp_table)
-    df1 = temporary.execute().set_index("first_name")
+    on_cols = [on] if isinstance(on, str) else on
+    df1 = temporary.execute().set_index(on_cols)
 
-    con.upsert(employee_data_1_temp_table, obj=test_employee_data_3, on="first_name")
+    con.upsert(employee_data_1_temp_table, obj=source, on=on)
     result = temporary.execute()
-    df2 = test_employee_data_3.set_index("first_name")
+    df2 = source.set_index(on_cols)
     expected = pd.concat([df1[~df1.index.isin(df2.index)], df2]).reset_index()
     assert len(result) == len(expected)
     backend.assert_frame_equal(
-        result.sort_values("first_name").reset_index(drop=True),
-        expected.sort_values("first_name").reset_index(drop=True),
-    )
-
-
-@NO_MERGE_SUPPORT
-def test_upsert_from_dataframe_multiple_on_columns(
-    backend, con, employee_data_1_temp_table
-):
-    temporary = con.table(employee_data_1_temp_table)
-    df1 = temporary.execute()
-
-    # neither (first_name, last_name) pair below matches an existing row, so
-    # both should be inserted rather than merged into the existing "B" row,
-    # which shares a first_name with the first one but not a last_name
-    source = pd.DataFrame(
-        {
-            "first_name": ["B", "X"],
-            "last_name": ["Z", "Y"],
-            "department_name": ["NEW1", "NEW2"],
-            "salary": [999.0, 888.0],
-        }
-    )
-
-    con.upsert(employee_data_1_temp_table, obj=source, on=["first_name", "last_name"])
-    result = temporary.execute()
-
-    expected = pd.concat([df1, source], ignore_index=True)
-    assert len(result) == len(expected)
-    backend.assert_frame_equal(
-        result.sort_values(["first_name", "last_name"]).reset_index(drop=True),
-        expected.sort_values(["first_name", "last_name"]).reset_index(drop=True),
+        result.sort_values(on_cols).reset_index(drop=True),
+        expected.sort_values(on_cols).reset_index(drop=True),
     )
 
 
