@@ -737,7 +737,7 @@ def test_upsert_on_all_columns(con, temp_table):
     # `SET`, since some backends treat a bare `UPDATE` as "update every
     # column by position", silently corrupting the row if the source and
     # target column order differ
-    con.create_table(temp_table, obj=pd.DataFrame({"a": [1], "b": [10]}))
+    con.create_table(temp_table, obj=pd.DataFrame({"a": [1], "b": [10]}), temp=True)
 
     source = pd.DataFrame({"b": [10], "a": [1]})
     con.upsert(temp_table, obj=source, on=["a", "b"])
