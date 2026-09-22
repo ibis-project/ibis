@@ -700,13 +700,13 @@ def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
             ["first_name", "last_name"],
             pd.DataFrame(
                 {
-                    # ("B", "E") matches an existing row on both columns and
-                    # should be updated; ("X", "Y") matches nothing and
-                    # should be inserted
-                    "first_name": ["B", "X"],
-                    "last_name": ["E", "Y"],
-                    "department_name": ["ZZ1", "ZZ2"],
-                    "salary": [999.0, 888.0],
+                    # only ("B", "E") matches an existing row on both columns;
+                    # ("B", "Z") shares just `first_name` with that row and
+                    # ("X", "Y") shares nothing, so both must be inserted
+                    "first_name": ["B", "B", "X"],
+                    "last_name": ["E", "Z", "Y"],
+                    "department_name": ["ZZ1", "ZZ2", "ZZ3"],
+                    "salary": [999.0, 888.0, 777.0],
                 }
             ),
             id="multiple_columns",
@@ -729,12 +729,25 @@ def test_upsert_from_dataframe(backend, con, employee_data_1_temp_table, on, sou
     )
 
 
+@NO_MERGE_SUPPORT
+def test_upsert_on_all_columns(con, temp_table):
+    # when every column is part of `on`, there's nothing left to update; the
+    # `WHEN MATCHED` clause must be omitted rather than emitted with an empty
+    # `SET`, since some backends treat a bare `UPDATE` as "update every
+    # column by position", silently corrupting the row if the source and
+    # target column order differ
+    con.create_table(temp_table, schema=ibis.schema({"a": "int64", "b": "int64"}))
+    con.insert(temp_table, pd.DataFrame({"a": [1], "b": [10]}))
+
+    source = pd.DataFrame({"b": [10], "a": [1]})
+    con.upsert(temp_table, obj=source, on=["a", "b"])
+
+    result = con.table(temp_table).execute()
+    assert result.to_dict("records") == [{"a": 1, "b": 10}]
+
+
 @pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
 def test_upsert_empty_on_raises(con, employee_data_1_temp_table, test_employee_data_3):
-    # this validation happens before any backend-specific SQL is built or
-    # executed, so it should raise identically on every backend that
-    # implements `upsert` at all, regardless of that backend's actual MERGE
-    # support
     with pytest.raises(com.IbisInputError):
         con.upsert(employee_data_1_temp_table, obj=test_employee_data_3, on=[])
 
@@ -792,7 +805,10 @@ def test_upsert_from_expr(
     [
         ({"x": "int64", "y": "float64", "z": "string"}, contextlib.nullcontext()),
         ({"z": "!string", "y": "float32", "x": "int8"}, contextlib.nullcontext()),
-        ({"x": "int64"}, pytest.raises(Exception)),  # No cols to insert
+        (
+            {"x": "int64"},
+            contextlib.nullcontext(),
+        ),  # only the `on` column; no-op update
         ({"x": "int64", "z": "string"}, contextlib.nullcontext()),
         ({"z": "string"}, pytest.raises(Exception)),  # Missing `on` col
     ],

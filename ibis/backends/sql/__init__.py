@@ -582,6 +582,10 @@ class SQLBackend(BaseBackend):
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
         """
+        on_columns = util.promote_tuple(on)
+        if not on_columns:
+            raise exc.IbisInputError("`on` must contain at least one column name")
+
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
@@ -591,7 +595,7 @@ class SQLBackend(BaseBackend):
         self._run_pre_execute_hooks(obj)
 
         query = self._build_upsert_from_table(
-            target=name, source=obj, on=on, db=db, catalog=catalog
+            target=name, source=obj, on=on_columns, db=db, catalog=catalog
         )
 
         with self._safe_raw_sql(query):
@@ -602,36 +606,42 @@ class SQLBackend(BaseBackend):
         *,
         target: str,
         source,
-        on: str | Iterable[str],
+        on: tuple[str, ...],
         db: str | None = None,
         catalog: str | None = None,
     ):
         compiler = self.compiler
         quoted = compiler.quoted
 
-        on_columns = (on,) if isinstance(on, str) else tuple(on)
-        if not on_columns:
-            raise exc.IbisInputError("`on` must contain at least one column name")
-
         columns = self._get_columns_to_insert(
             target=target, source=source, db=db, catalog=catalog
         )
+        non_key_columns = [col for col in columns if col not in on]
 
         source_alias = util.gen_name("source")
         target_alias = util.gen_name("target")
-        query = sge.merge(
-            sge.When(
-                matched=True,
-                then=sge.Update(
-                    expressions=[
-                        sg.column(col, quoted=quoted).eq(
-                            sg.column(col, table=source_alias, quoted=quoted)
-                        )
-                        for col in columns
-                        if col not in on_columns
-                    ]
-                ),
-            ),
+
+        whens = []
+        if non_key_columns:
+            # a bare `WHEN MATCHED THEN UPDATE` with no non-key columns to
+            # set is dangerous: some backends (e.g., DuckDB) treat it as
+            # "update every column by position", which silently corrupts
+            # data whenever the source and target column orders differ.
+            # Omit the clause entirely when there's nothing to update.
+            whens.append(
+                sge.When(
+                    matched=True,
+                    then=sge.Update(
+                        expressions=[
+                            sg.column(col, quoted=quoted).eq(
+                                sg.column(col, table=source_alias, quoted=quoted)
+                            )
+                            for col in non_key_columns
+                        ]
+                    ),
+                )
+            )
+        whens.append(
             sge.When(
                 matched=False,
                 then=sge.Insert(
@@ -645,7 +655,11 @@ class SQLBackend(BaseBackend):
                         ]
                     ),
                 ),
-            ),
+            )
+        )
+
+        query = sge.merge(
+            *whens,
             into=sg.table(target, db=db, catalog=catalog, quoted=quoted).as_(
                 sg.to_identifier(target_alias, quoted=quoted), table=True
             ),
@@ -656,7 +670,7 @@ class SQLBackend(BaseBackend):
                         sg.column(col, table=target_alias, quoted=quoted).eq(
                             sg.column(col, table=source_alias, quoted=quoted)
                         )
-                        for col in on_columns
+                        for col in on
                     )
                 )
             ),
