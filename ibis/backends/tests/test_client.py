@@ -840,9 +840,13 @@ def test_upsert_from_memtable(backend, con, temp_table, sch, expectation):
             .reset_index()[list(t1.columns) + [c for c in t2.columns if c not in t1]]
         )
         assert len(result) == len(expected)
+        # normalize null representation before comparing: a partial-column
+        # upsert leaves the omitted columns unset for any newly-inserted
+        # row, and different backends surface that as either `None` or
+        # `NaN`, which pandas will soon treat as non-matching
         backend.assert_frame_equal(
-            result.sort_values("x").reset_index(drop=True),
-            expected.sort_values("x").reset_index(drop=True),
+            result.sort_values("x").reset_index(drop=True).fillna(float("nan")),
+            expected.sort_values("x").reset_index(drop=True).fillna(float("nan")),
         )
 
 
