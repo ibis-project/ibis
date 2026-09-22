@@ -730,14 +730,14 @@ def test_upsert_from_dataframe(backend, con, employee_data_1_temp_table, on, sou
 
 
 @NO_MERGE_SUPPORT
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
 def test_upsert_on_all_columns(con, temp_table):
     # when every column is part of `on`, there's nothing left to update; the
     # `WHEN MATCHED` clause must be omitted rather than emitted with an empty
     # `SET`, since some backends treat a bare `UPDATE` as "update every
     # column by position", silently corrupting the row if the source and
     # target column order differ
-    con.create_table(temp_table, schema=ibis.schema({"a": "int64", "b": "int64"}))
-    con.insert(temp_table, pd.DataFrame({"a": [1], "b": [10]}))
+    con.create_table(temp_table, obj=pd.DataFrame({"a": [1], "b": [10]}))
 
     source = pd.DataFrame({"b": [10], "a": [1]})
     con.upsert(temp_table, obj=source, on=["a", "b"])
