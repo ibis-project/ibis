@@ -731,17 +731,17 @@ def test_upsert_from_dataframe(backend, con, employee_data_1_temp_table, on, sou
 
 @NO_MERGE_SUPPORT
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
-@pytest.mark.notimpl(
+@pytest.mark.notyet(
     ["flink"],
     raises=com.IbisError,
-    reason="`temp` cannot be False when `obj` is in-memory",
+    reason="can't create non-temporary tables from in-memory data",
+)
+@pytest.mark.notyet(
+    ["athena"],
+    raises=PyAthenaOperationalError,
+    reason="Modifying Hive table rows is only supported for transactional tables",
 )
 def test_upsert_on_all_columns(con, temp_table):
-    # when every column is part of `on`, there's nothing left to update; the
-    # `WHEN MATCHED` clause must be omitted rather than emitted with an empty
-    # `SET`, since some backends treat a bare `UPDATE` as "update every
-    # column by position", silently corrupting the row if the source and
-    # target column order differ
     con.create_table(temp_table, obj=pd.DataFrame({"a": [1], "b": [10]}))
 
     source = pd.DataFrame({"b": [10], "a": [1]})
@@ -810,10 +810,7 @@ def test_upsert_from_expr(
     [
         ({"x": "int64", "y": "float64", "z": "string"}, contextlib.nullcontext()),
         ({"z": "!string", "y": "float32", "x": "int8"}, contextlib.nullcontext()),
-        (
-            {"x": "int64"},
-            contextlib.nullcontext(),
-        ),  # only the `on` column; no-op update
+        ({"x": "int64"}, contextlib.nullcontext()),  # only the `on` column
         ({"x": "int64", "z": "string"}, contextlib.nullcontext()),
         ({"z": "string"}, pytest.raises(Exception)),  # Missing `on` col
     ],
@@ -845,10 +842,7 @@ def test_upsert_from_memtable(backend, con, temp_table, sch, expectation):
             .reset_index()[list(t1.columns) + [c for c in t2.columns if c not in t1]]
         )
         assert len(result) == len(expected)
-        # normalize null representation before comparing: a partial-column
-        # upsert leaves the omitted columns unset for any newly-inserted
-        # row, and different backends surface that as either `None` or
-        # `NaN`, which pandas will soon treat as non-matching
+        # backends disagree on `None` vs. `NaN` for columns missing from the source
         backend.assert_frame_equal(
             result.sort_values("x").reset_index(drop=True).fillna(float("nan")),
             expected.sort_values("x").reset_index(drop=True).fillna(float("nan")),

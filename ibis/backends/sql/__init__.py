@@ -623,11 +623,8 @@ class SQLBackend(BaseBackend):
 
         whens = []
         if non_key_columns:
-            # a bare `WHEN MATCHED THEN UPDATE` with no non-key columns to
-            # set is dangerous: some backends (e.g., DuckDB) treat it as
-            # "update every column by position", which silently corrupts
-            # data whenever the source and target column orders differ.
-            # Omit the clause entirely when there's nothing to update.
+            # a bare `UPDATE` means a positional `UPDATE SET *` on some
+            # backends (e.g., DuckDB), so skip the clause when there's nothing to set
             whens.append(
                 sge.When(
                     matched=True,
