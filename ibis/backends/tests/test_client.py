@@ -842,10 +842,9 @@ def test_upsert_from_memtable(backend, con, temp_table, sch, expectation):
             .reset_index()[list(t1.columns) + [c for c in t2.columns if c not in t1]]
         )
         assert len(result) == len(expected)
-        # backends disagree on `None` vs. `NaN` for columns missing from the source
         backend.assert_frame_equal(
-            result.sort_values("x").reset_index(drop=True).fillna(float("nan")),
-            expected.sort_values("x").reset_index(drop=True).fillna(float("nan")),
+            result.sort_values("x").reset_index(drop=True).fillna(pd.NA),
+            expected.sort_values("x").reset_index(drop=True).fillna(pd.NA),
         )
 
 
