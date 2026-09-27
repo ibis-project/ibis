@@ -752,9 +752,9 @@ def test_upsert_on_all_columns(con, temp_table):
 
 
 @pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
-def test_upsert_empty_on_raises(con, employee_data_1_temp_table, test_employee_data_3):
+def test_upsert_empty_on_raises(con):
     with pytest.raises(com.IbisInputError):
-        con.upsert(employee_data_1_temp_table, obj=test_employee_data_3, on=[])
+        con.upsert(gen_name("upsert_empty_on"), obj=pd.DataFrame({"a": [1]}), on=[])
 
 
 @NO_MERGE_SUPPORT
