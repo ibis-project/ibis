@@ -926,7 +926,10 @@ class Backend(
         obj
             The source data or expression to upsert
         on
-            Column name, or iterable of column names, to join on
+            Column name, or iterable of column names, to join on. These
+            columns are never updated, so if `obj` has no other columns,
+            matching rows are left unchanged. Rows with a `NULL` in any of
+            these columns never match, so they are always inserted.
         database
             Name of the attached database that the table is located in.
 
