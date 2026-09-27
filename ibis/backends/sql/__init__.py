@@ -582,8 +582,8 @@ class SQLBackend(BaseBackend):
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
         """
-        on_columns = util.promote_tuple(on)
-        if not on_columns:
+        on = util.promote_tuple(on)
+        if not on:
             raise exc.IbisInputError("`on` must contain at least one column name")
 
         table_loc = self._to_sqlglot_table(database)
@@ -595,7 +595,7 @@ class SQLBackend(BaseBackend):
         self._run_pre_execute_hooks(obj)
 
         query = self._build_upsert_from_table(
-            target=name, source=obj, on=on_columns, db=db, catalog=catalog
+            target=name, source=obj, on=on, db=db, catalog=catalog
         )
 
         with self._safe_raw_sql(query):
