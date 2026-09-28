@@ -663,13 +663,9 @@ GO"""
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        properties = []
-
         if temp:
-            # tsql spells temporary-ness with a `##` name prefix rather than a
-            # property; older sqlglot prepended the second `#` for a
-            # TemporaryProperty, newer sqlglot emits the name verbatim, so name
-            # the table explicitly and leave the property off
+            # temp tables are global temp tables in tempdb, so they can't be
+            # namespaced; the `##` prefix is added to the name below
             catalog, db = None, None
 
         if obj is not None:
@@ -701,19 +697,13 @@ GO"""
             expressions=schema.to_sqlglot_column_defs(self.dialect),
         )
 
-        create_stmt = sge.Create(
-            kind="TABLE",
-            this=target,
-            properties=sge.Properties(expressions=properties),
-        )
+        create_stmt = sge.Create(kind="TABLE", this=target)
 
         this = sg.table(name, catalog=catalog, db=db, quoted=quoted)
         raw_this = sg.table(name, catalog=catalog, db=db, quoted=False)
         with self._safe_ddl(create_stmt) as cur:
             if query is not None:
-                # You can specify that a table is temporary for the sqlglot `Create` but not
-                # for the subsequent `Insert`, so we need to shove a `#` in
-                # front of the table identifier.
+                # insert into the same `##`-prefixed name the table was created with
                 _table = sg.table(
                     "##" * bool(temp) + temp_name,
                     catalog=catalog,
