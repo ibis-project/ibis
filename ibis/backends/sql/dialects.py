@@ -9,6 +9,7 @@ import sqlglot.generator as sgn
 from sqlglot import transforms
 from sqlglot.dialects import (
     TSQL,
+    Athena,
     Databricks,
     Hive,
     MySQL,
@@ -520,6 +521,10 @@ Trino.Generator.TRANSFORMS |= {
     sge.FirstValue: rename_func("first_value"),
     sge.LastValue: rename_func("last_value"),
 }
+
+# Athena's CONCAT_WS skips NULL arguments like Trino's, but sqlglot's Athena
+# dialect doesn't say so, and generates a NULL-propagating CASE around it
+Athena.CONCAT_WS_COALESCE = True
 
 Databricks.Generator.TRANSFORMS |= {
     # required because of https://github.com/tobymao/sqlglot/pull/4142
