@@ -131,5 +131,5 @@ def test_unknown_repr():
         sge.DataType(this=sge.DataType.Type.USERDEFINED, kind='"MySchema"."MyEnum"')
     )
     result = str(dtype)
-    expected = 'unknown(DataType(this=Type.USERDEFINED, kind="MySchema"."MyEnum"))'
+    expected = 'unknown(DataType(this=DType.USERDEFINED, kind="MySchema"."MyEnum"))'
     assert result == expected

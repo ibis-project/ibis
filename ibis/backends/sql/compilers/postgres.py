@@ -15,6 +15,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
+from ibis.backends.sql.compilers._compat import JSONBContainsTopKey
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
@@ -119,7 +120,6 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.GeoWithin: "st_within",
         ops.GeoX: "st_x",
         ops.GeoY: "st_y",
-        ops.MapContains: "jsonb_contains",
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
         ops.RandomUUID: "gen_random_uuid",
@@ -480,7 +480,9 @@ $$""".format(
 
     def json_extract_path_text(self, op, arg, *rest):
         b = "b" * op.arg.dtype.binary
-        return self.f[f"json{b}_extract_path_text"](
+        # `anon` keeps sqlglot from rewriting this into the `->>` operator,
+        # which cannot express the variadic sentinel below
+        return self.f.anon[f"json{b}_extract_path_text"](
             arg,
             *rest,
             # this is apparently how you pass in no additional arguments to
@@ -560,13 +562,18 @@ $$""".format(
             .subquery()
         )
 
+    def visit_MapContains(self, op, *, arg, key):
+        # postgres spells "does this key exist" as the `?` operator; the
+        # jsonb_contains function tests containment of a whole jsonb value
+        return JSONBContainsTopKey(this=arg, expression=key)
+
     def visit_MapGet(self, op, *, arg, key, default):
         if op.dtype.is_null():
             return NULL
         else:
             return self.cast(
                 self.if_(
-                    self.f.jsonb_contains(arg, key),
+                    JSONBContainsTopKey(this=arg, expression=key),
                     self.f.jsonb_extract_path_text(arg, key),
                     default,
                 ),
