@@ -15,6 +15,7 @@ pytestmark = pytest.mark.notimpl(
         "clickhouse",
         "databricks",
         "datafusion",
+        "db2",
         "druid",
         "duckdb",
         "exasol",
