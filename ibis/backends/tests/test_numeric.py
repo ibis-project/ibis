@@ -1590,7 +1590,6 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
         param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
     ],
 )
-@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.never(
     ["materialize"],
@@ -1629,14 +1628,12 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
             lshift,
             marks=[
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
             ],
         ),
         param(
             rshift,
             marks=[
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
             ],
         ),
     ],
