@@ -1151,6 +1151,25 @@ def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.notimpl(["druid", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=AssertionError,
+    reason=(
+        "sqlglot's ClickHouse dialect has an empty TIME_MAPPING, so canonical "
+        "`%M` (minutes) passes through to `formatDateTime`, which reads it as "
+        "the full month name; ClickHouse spells minutes `%i`"
+    ),
+)
+def test_strftime_with_time(con):
+    # Regression test: a format with a time component exercises ``%M`` (minutes),
+    # which collides with the month-name token in MySQL/Trino-family format codes
+    # (minutes is ``%i``).  Previously MySQL/Trino/SingleStoreDB emitted the month
+    # name in the minutes position (e.g. "03:January:05").
+    expr = ibis.timestamp("2021-01-02 03:04:05").strftime("%Y-%m-%d %H:%M:%S")
+    assert con.execute(expr) == "2021-01-02 03:04:05"
+
+
 unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
 
 
@@ -1275,11 +1294,6 @@ def test_integer_to_timestamp(backend, con, unit):
                     ),
                     raises=SnowflakeProgrammingError,
                 ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=ValueError,
-                    reason="Datetime formatting style is not supported.",
-                ),
             ],
         ),
         param(
@@ -1331,10 +1345,9 @@ def test_integer_to_timestamp(backend, con, unit):
     reason="Materialize doesn't support to_timestamp(text, format) - backend limitation",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_string_as_timestamp(alltypes, fmt):
     table = alltypes
     result = table.mutate(date=table.date_string_col.as_timestamp(fmt)).execute()
@@ -1365,6 +1378,24 @@ def test_string_as_timestamp_with_time(con):
     assert result.replace(tzinfo=None) == datetime.datetime(2021, 1, 2, 3, 4, 5)
 
 
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have to_date() function",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
+)
+def test_string_as_date_with_format(con):
+    # Flink mangled the format and returned a wrong date for padded input.
+    expr = ibis.literal("2021-01-02").as_date("%Y-%m-%d")
+    result = con.execute(expr)
+    if isinstance(result, (pd.Timestamp, datetime.datetime)):
+        result = result.date()
+    assert result == datetime.date(2021, 1, 2)
+
+
 @pytest.mark.parametrize(
     "fmt",
     [
@@ -1372,11 +1403,6 @@ def test_string_as_timestamp_with_time(con):
         param(
             "%m/%d/%y",
             id="mysql_format",
-            marks=pytest.mark.never(
-                ["flink"],
-                raises=ValueError,
-                reason="Datetime formatting style is not supported.",
-            ),
         ),
         param(
             "MM/dd/yy",
@@ -1422,10 +1448,9 @@ def test_string_as_timestamp_with_time(con):
     reason="Materialize doesn't have to_date() function - backend limitation",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_string_as_date(alltypes, fmt):
     table = alltypes
     result = table.mutate(date=table.date_string_col.as_date(fmt)).execute()
@@ -1434,6 +1459,47 @@ def test_string_as_date(alltypes, fmt):
     # format string assumes that we are using pandas' strftime
     for i, val in enumerate(result["date"]):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
+
+
+# https://github.com/ibis-project/ibis/issues/12004
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have to_date() function - backend limitation",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
+)
+def test_string_as_date_single_digit_month_day(con):
+    expr = ibis.literal("1/2/2021").as_date("%m/%d/%Y")
+    result = con.execute(expr)
+    expected = datetime.date(2021, 1, 2)
+    if isinstance(result, (pd.Timestamp, datetime.datetime)):
+        result = result.date()
+    assert result == expected
+
+
+# https://github.com/ibis-project/ibis/issues/12004
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgInternalError,
+    reason="Materialize doesn't have to_date() function - backend limitation",
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
+)
+def test_string_as_date_single_digit_month_day_column(con):
+    # con.sql() creates a column (not a literal), then .as_date() is applied.
+    t0 = con.sql("SELECT '1/1/2026' AS raw_date")
+    # Use t0.columns[0] to handle backends that uppercase column names (e.g. Oracle)
+    t1 = t0.mutate(parsed_date=t0[t0.columns[0]].as_date("%m/%d/%Y"))
+    result = t1.execute().at[0, "parsed_date"]
+    expected = datetime.date(2026, 1, 1)
+    if isinstance(result, (pd.Timestamp, datetime.datetime)):
+        result = result.date()
+    assert result == expected
 
 
 @pytest.mark.notyet(
