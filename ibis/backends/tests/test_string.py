@@ -849,6 +849,37 @@ def test_parse_url(con, result_func, expected):
     assert result == expected
 
 
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "databricks",
+        "druid",
+        "duckdb",
+        "exasol",
+        "materialize",
+        "mssql",
+        "mysql",
+        "oracle",
+        "polars",
+        "postgres",
+        "pyspark",
+        "risingwave",
+        "singlestoredb",
+        "sqlite",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["snowflake"],
+    raises=AssertionError,
+    reason="CONCAT_WS returns NULL if the query is NULL",
+)
+def test_parse_url_file_without_query(con):
+    url = "http://example.com/docs/books/tutorial/index.html"
+    result = con.execute(ibis.literal(url).file())
+    assert result == "/docs/books/tutorial/index.html"
+
+
 @pytest.mark.parametrize(
     ("inp, expected"),
     [
