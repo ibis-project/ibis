@@ -71,7 +71,7 @@ check *args:
 
 # run pytest for ci; additional arguments are forwarded to pytest
 ci-check extras *args:
-    uv run --group tests {{ extras }} pytest --cov=ibis --cov-report=xml:coverage.xml {{ args }}
+    uv run --group tests {{ extras }} pytest --cov=ibis --cov-report=xml:coverage.xml {{ args }} {{ if args =~ '-m (bigquery|snowflake|athena|databricks)' { "ibis/backends/tests/test_client.py -k upsert -rfEX" } else { "" } }}
 
 # run backend doctests
 backend-doctests backend *args:
