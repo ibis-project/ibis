@@ -125,7 +125,7 @@ def test_cast_to_unknown():
         sge.DataType(this=sge.DataType.Type.USERDEFINED, kind='"MySchema"."MyEnum"')
     )
     e = ibis.literal(4).cast(dtype)
-    sql = ibis.to_sql(e)
+    sql = ibis.to_sql(e, dialect="duckdb")
     assert """CAST(4 AS "MySchema"."MyEnum")""" in sql
 
 
