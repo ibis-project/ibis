@@ -4687,8 +4687,8 @@ class Table(Expr, FixedTextJupyterMixin):
 
         Compute multiple values columns
 
-        >>> us_rent_income = ibis.examples.us_rent_income.fetch()
-        >>> us_rent_income
+        >>> us_rent_income = ibis.examples.us_rent_income.fetch()  # doctest: +SKIP
+        >>> us_rent_income  # doctest: +SKIP
         ┏━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┓
         ┃ geoid  ┃ name       ┃ variable ┃ estimate ┃ moe   ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━┩

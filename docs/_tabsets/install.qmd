@@ -26,6 +26,7 @@ backends = [
     {"name": "SingleStoreDB", "module": "singlestoredb"},
     {"name": "Snowflake", "module": "snowflake"},
     {"name": "SQLite", "module": "sqlite"},
+    {"name": "StarRocks", "module": "starrocks"},
     {"name": "Trino", "module": "trino"},
 ]
 
