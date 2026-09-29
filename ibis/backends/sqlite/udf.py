@@ -205,6 +205,11 @@ def tan(arg):
 
 
 @udf(skip_if_exists=True)
+def tanh(arg):
+    return math.tanh(arg)
+
+
+@udf(skip_if_exists=True)
 def asin(arg):
     return math.asin(arg)
 

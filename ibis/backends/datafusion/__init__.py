@@ -12,6 +12,7 @@ import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
+from packaging.version import parse as vparse
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -55,6 +56,20 @@ except ImportError:
 if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
+
+
+# datafusion 52.0.0 renamed the scalar UDF parameters `input_types` and
+# `return_type` to `input_fields` and `return_field`. Both spellings accept
+# pyarrow `DataType`s, so we only need to select the right keyword names.
+DATAFUSION_LT_52 = vparse(util.version("datafusion")) < vparse("52.0.0")
+
+
+def _scalar_udf(func, *, input_types, return_type, volatility, name):
+    if DATAFUSION_LT_52:
+        fields = {"input_types": input_types, "return_type": return_type}
+    else:
+        fields = {"input_fields": input_types, "return_field": return_type}
+    return df.udf(func, volatility=volatility, name=name, **fields)
 
 
 def as_nullable(dtype: dt.DataType) -> dt.DataType:
@@ -256,7 +271,7 @@ class Backend(
                 for arg_name in argnames
             ]
             return_type = PyArrowType.from_ibis(dt.dtype(annotations["return"]))
-            udf = df.udf(
+            udf = _scalar_udf(
                 func,
                 input_types=input_types,
                 return_type=return_type,
@@ -276,7 +291,7 @@ class Backend(
             self.con.register_udf(udf)
 
     def _compile_pyarrow_udf(self, udf_node):
-        return df.udf(
+        return _scalar_udf(
             udf_node.__func__,
             input_types=[PyArrowType.from_ibis(arg.dtype) for arg in udf_node.args],
             return_type=PyArrowType.from_ibis(udf_node.dtype),
@@ -287,7 +302,7 @@ class Backend(
         )
 
     def _compile_elementwise_udf(self, udf_node):
-        return df.udf(
+        return _scalar_udf(
             udf_node.func,
             input_types=list(map(PyArrowType.from_ibis, udf_node.input_type)),
             return_type=PyArrowType.from_ibis(udf_node.return_type),

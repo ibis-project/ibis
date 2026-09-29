@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from string import whitespace as WHITESPACE
+import string
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -19,6 +19,11 @@ from ibis.backends.sql.rewrites import (
     rewrite_empty_order_by_window,
     split_select_distinct_with_order_by,
 )
+
+# String escaping inside SQL string literals is dialect-sensitive; using
+# the `CHR()` function fixes issues with specific whitespace characters.
+VT = sge.Chr(expressions=[sge.Literal.number(ord("\v"))])
+FF = sge.Chr(expressions=[sge.Literal.number(ord("\f"))])
 
 
 class ImpalaCompiler(SQLGlotCompiler):
@@ -45,6 +50,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.ArgMin,
         ops.Covariance,
         ops.ExtractDayOfYear,
+        ops.Kurtosis,
         ops.Levenshtein,
         ops.Map,
         ops.Median,
@@ -59,7 +65,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.TimestampBucket,
         ops.TimestampDelta,
         ops.Unnest,
-        ops.Kurtosis,
     )
 
     SIMPLE_OPS = {
@@ -78,8 +83,8 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.ExtractEpochSeconds: "unix_timestamp",
         ops.Hash: "fnv_hash",
         ops.Ln: "ln",
-        ops.TypeOf: "typeof",
         ops.RegexReplace: "regexp_replace",
+        ops.TypeOf: "typeof",
     }
 
     @staticmethod
@@ -325,16 +330,17 @@ class ImpalaCompiler(SQLGlotCompiler):
         return self.f.datediff(left, right)
 
     def visit_LStrip(self, op, *, arg):
-        return self.f.anon.ltrim(arg, WHITESPACE)
+        return self.f.anon.ltrim(arg, self.f.concat(string.whitespace[:-2], VT, FF))
 
     def visit_RStrip(self, op, *, arg):
-        return self.f.anon.rtrim(arg, WHITESPACE)
+        return self.f.anon.rtrim(arg, self.f.concat(string.whitespace[:-2], VT, FF))
 
     def visit_Strip(self, op, *, arg):
         # Impala's `TRIM` doesn't allow specifying characters to trim off, unlike
         # Impala's `RTRIM` and `LTRIM` which accept a set of characters to
         # remove.
-        return self.f.anon.rtrim(self.f.anon.ltrim(arg, WHITESPACE), WHITESPACE)
+        whitespace = self.f.concat(string.whitespace[:-2], VT, FF)
+        return self.f.anon.rtrim(self.f.anon.ltrim(arg, whitespace), whitespace)
 
 
 compiler = ImpalaCompiler()

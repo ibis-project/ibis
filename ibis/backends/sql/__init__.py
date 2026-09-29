@@ -550,7 +550,7 @@ class SQLBackend(BaseBackend):
         name: str,
         /,
         obj: ir.Table | IntoMemtable,
-        on: str,
+        on: str | Iterable[str],
         *,
         database: str | None = None,
     ) -> None:
@@ -574,7 +574,10 @@ class SQLBackend(BaseBackend):
         obj
             The source data or expression to upsert
         on
-            Column name to join on
+            Column name, or iterable of column names, to join on. These
+            columns are never updated, so if `obj` has no other columns,
+            matching rows are left unchanged. Rows with a `NULL` in any of
+            these columns never match, so they are always inserted.
         database
             Name of the attached database that the table is located in.
 
@@ -582,6 +585,10 @@ class SQLBackend(BaseBackend):
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
         """
+        on = util.promote_tuple(on)
+        if not on:
+            raise exc.IbisInputError("`on` must contain at least one column name")
+
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
@@ -602,7 +609,7 @@ class SQLBackend(BaseBackend):
         *,
         target: str,
         source,
-        on: str,
+        on: tuple[str, ...],
         db: str | None = None,
         catalog: str | None = None,
     ):
@@ -612,22 +619,29 @@ class SQLBackend(BaseBackend):
         columns = self._get_columns_to_insert(
             target=target, source=source, db=db, catalog=catalog
         )
+        non_key_columns = [col for col in columns if col not in on]
 
         source_alias = util.gen_name("source")
         target_alias = util.gen_name("target")
-        query = sge.merge(
-            sge.When(
-                matched=True,
-                then=sge.Update(
-                    expressions=[
-                        sg.column(col, quoted=quoted).eq(
-                            sg.column(col, table=source_alias, quoted=quoted)
-                        )
-                        for col in columns
-                        if col != on
-                    ]
-                ),
-            ),
+
+        whens = []
+        if non_key_columns:
+            # a bare `UPDATE` means a positional `UPDATE SET *` on some
+            # backends (e.g., DuckDB), so skip the clause when there's nothing to set
+            whens.append(
+                sge.When(
+                    matched=True,
+                    then=sge.Update(
+                        expressions=[
+                            sg.column(col, quoted=quoted).eq(
+                                sg.column(col, table=source_alias, quoted=quoted)
+                            )
+                            for col in non_key_columns
+                        ]
+                    ),
+                )
+            )
+        whens.append(
             sge.When(
                 matched=False,
                 then=sge.Insert(
@@ -641,14 +655,23 @@ class SQLBackend(BaseBackend):
                         ]
                     ),
                 ),
-            ),
+            )
+        )
+
+        query = sge.merge(
+            *whens,
             into=sg.table(target, db=db, catalog=catalog, quoted=quoted).as_(
                 sg.to_identifier(target_alias, quoted=quoted), table=True
             ),
             using=f"({self.compile(source)}) AS {sg.to_identifier(source_alias, quoted=quoted)}",
             on=sge.Paren(
-                this=sg.column(on, table=target_alias, quoted=quoted).eq(
-                    sg.column(on, table=source_alias, quoted=quoted)
+                this=sg.and_(
+                    *(
+                        sg.column(col, table=target_alias, quoted=quoted).eq(
+                            sg.column(col, table=source_alias, quoted=quoted)
+                        )
+                        for col in on
+                    )
                 )
             ),
             dialect=compiler.dialect,

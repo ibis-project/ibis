@@ -4,6 +4,7 @@ import calendar
 import itertools
 import operator
 import re
+import string
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -26,6 +27,11 @@ from ibis.common.patterns import replace
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.util import gen_name
+
+# String escaping inside SQL string literals is dialect-sensitive; using
+# the `CHR()` function fixes issues with specific whitespace characters.
+VT = sge.Chr(expressions=[sge.Literal.number(ord("\v"))])
+FF = sge.Chr(expressions=[sge.Literal.number(ord("\f"))])
 
 
 @replace(p.Limit)
@@ -85,8 +91,6 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.EndsWith: "endswith",
         ops.Hash: "hash",
         ops.Log10: "log10",
-        ops.LStrip: "ltrim",
-        ops.RStrip: "rtrim",
         ops.MapLength: "size",
         ops.MapContains: "map_contains_key",
         ops.MapMerge: "map_concat",
@@ -439,6 +443,15 @@ class PySparkCompiler(SQLGlotCompiler):
         if distinct:
             arg = sge.Distinct(expressions=[arg])
         return self.agg.array_agg(arg, order_by=order_by)
+
+    def visit_Strip(self, op, *, arg):
+        return self.f.trim(arg, self.f.concat(string.whitespace[:-2], VT, FF))
+
+    def visit_RStrip(self, op, *, arg):
+        return self.f.rtrim(self.f.concat(string.whitespace[:-2], VT, FF), arg)
+
+    def visit_LStrip(self, op, *, arg):
+        return self.f.ltrim(self.f.concat(string.whitespace[:-2], VT, FF), arg)
 
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:

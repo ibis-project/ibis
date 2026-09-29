@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import functools
 import glob
 import itertools
 import json
@@ -465,9 +464,13 @@ $$ {defn["source"]} $$"""
         with self._safe_raw_sql(sql) as cur:
             res = cur.fetch_arrow_all()
 
-        target_schema = expr.as_table().schema().to_pyarrow()
+        ibis_schema = expr.as_table().schema()
         if res is None:
-            res = target_schema.empty_table()
+            res = ibis_schema.to_pyarrow().empty_table()
+        else:
+            # snowflake can rewrite the aliases we asked for, so align on
+            # position rather than on name
+            res = res.rename_columns(list(ibis_schema.names))
 
         return expr.__pyarrow_result__(res, data_mapper=SnowflakePyArrowData)
 
@@ -490,14 +493,17 @@ $$ {defn["source"]} $$"""
         self._run_pre_execute_hooks(expr)
         sql = self.compile(expr, limit=limit, params=params)
         target_schema = expr.as_table().schema()
-        converter = functools.partial(
-            SnowflakePandasData.convert_table, schema=target_schema
-        )
+
+        def format_result(df: pd.DataFrame) -> pd.DataFrame | pd.Series | Any:
+            # snowflake can rewrite the aliases we asked for, so align on
+            # position rather than on name
+            df.columns = list(target_schema.names)
+            return expr.__pandas_result__(
+                SnowflakePandasData.convert_table(df, target_schema)
+            )
 
         with self._safe_raw_sql(sql) as cur:
-            yield from map(
-                expr.__pandas_result__, map(converter, cur.fetch_pandas_batches())
-            )
+            yield from map(format_result, cur.fetch_pandas_batches())
 
     def to_pyarrow_batches(
         self,

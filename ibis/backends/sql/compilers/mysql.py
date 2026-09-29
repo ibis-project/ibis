@@ -98,7 +98,6 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.ExtractEpochSeconds: "unix_timestamp",
         ops.ExtractDayOfYear: "dayofyear",
         ops.Strftime: "date_format",
-        ops.StringToTimestamp: "str_to_date",
         ops.Log2: "log2",
     }
 
@@ -217,6 +216,14 @@ class MySQLCompiler(SQLGlotCompiler):
             ),
             "%Y%m%d",
         )
+
+    def visit_StringToTimestamp(self, op, *, arg, format_str):
+        # Build StrToTime directly so the (Python strftime) format is treated as
+        # canonical and translated to MySQL's native codes by the generator.
+        # Routing through ``self.f.str_to_date`` re-parses the format as if it
+        # were already MySQL-native, which corrupts tokens that collide with
+        # Python's (e.g. ``%M`` = minutes in Python but month-name in MySQL).
+        return sge.StrToTime(this=arg, format=format_str)
 
     def visit_FindInSet(self, op, *, needle, values):
         return self.f.find_in_set(needle, self.f.concat_ws(",", values))
@@ -360,6 +367,14 @@ class MySQLCompiler(SQLGlotCompiler):
             self.if_(arg.eq(sge.convert("true")), 1, 0),
             NULL,
         )
+
+    # MySQL has no TANH: use the exponential identity, naming `arg` and `e` once
+    # each so nested tanh stays linear in SQL text. Input clamped to +/-20 because
+    # EXP overflow is a hard out-of-range error and tanh is already exactly
+    # +/-1.0 there. No NULL guard needed: MySQL LEAST/GREATEST propagate NULL.
+    def visit_Tanh(self, op, *, arg):
+        e = self.f.exp(2.0 * self.f.least(self.f.greatest(arg, -20.0), 20.0))
+        return 1.0 - 2.0 / (e + 1.0)
 
 
 compiler = MySQLCompiler()

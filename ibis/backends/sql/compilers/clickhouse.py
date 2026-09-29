@@ -470,6 +470,14 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_Cot(self, op, *, arg):
         return 1.0 / self.f.tan(arg)
 
+    # ClickHouse's native TANH calls fastops in low-precision mode (`NFastOps::Tanh<>`,
+    # I_Exact=false): up to ~1.6e-5 relative error on [0.1, 1] and worse near zero,
+    # beyond what the cross-backend tests require, and it returns -1 for NaN. The
+    # exponential identity routes through EXP, which ClickHouse builds in exact mode,
+    # and needs no clamp because ClickHouse EXP saturates to +Inf instead of erroring.
+    def visit_Tanh(self, op, *, arg):
+        return 1.0 - 2.0 / (self.f.exp(2.0 * arg) + 1.0)
+
     def visit_StructColumn(self, op, *, values, **_):
         return self.f.tuple(*values)
 

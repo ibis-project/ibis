@@ -578,9 +578,6 @@ def test_insert_no_overwrite_from_dataframe(
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
 )
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
 @pytest.mark.notyet(
     ["athena"], raises=com.UnsupportedOperationError, reason="s3 location required"
@@ -629,9 +626,6 @@ def test_insert_no_overwrite_from_expr(
 
 @pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
 @pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
-@pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
@@ -658,9 +652,6 @@ def test_insert_overwrite_from_expr(
 
 
 @pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
-)
 @pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -690,21 +681,80 @@ def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
 
 
 @NO_MERGE_SUPPORT
-def test_upsert_from_dataframe(
-    backend, con, employee_data_1_temp_table, test_employee_data_3
-):
+@pytest.mark.parametrize(
+    ("on", "source"),
+    [
+        param(
+            "first_name",
+            pd.DataFrame(
+                {
+                    "first_name": ["B", "Y", "Z"],
+                    "last_name": ["A", "B", "C"],
+                    "department_name": ["XX", "YY", "ZZ"],
+                    "salary": [400.0, 500.0, 600.0],
+                }
+            ),
+            id="single_column",
+        ),
+        param(
+            ["first_name", "last_name"],
+            pd.DataFrame(
+                {
+                    # only ("B", "E") matches an existing row on both columns;
+                    # ("B", "Z") shares just `first_name` with that row and
+                    # ("X", "Y") shares nothing, so both must be inserted
+                    "first_name": ["B", "B", "X"],
+                    "last_name": ["E", "Z", "Y"],
+                    "department_name": ["ZZ1", "ZZ2", "ZZ3"],
+                    "salary": [999.0, 888.0, 777.0],
+                }
+            ),
+            id="multiple_columns",
+        ),
+    ],
+)
+def test_upsert_from_dataframe(backend, con, employee_data_1_temp_table, on, source):
     temporary = con.table(employee_data_1_temp_table)
-    df1 = temporary.execute().set_index("first_name")
+    on_cols = [on] if isinstance(on, str) else on
+    df1 = temporary.execute().set_index(on_cols)
 
-    con.upsert(employee_data_1_temp_table, obj=test_employee_data_3, on="first_name")
+    con.upsert(employee_data_1_temp_table, obj=source, on=on)
     result = temporary.execute()
-    df2 = test_employee_data_3.set_index("first_name")
+    df2 = source.set_index(on_cols)
     expected = pd.concat([df1[~df1.index.isin(df2.index)], df2]).reset_index()
     assert len(result) == len(expected)
     backend.assert_frame_equal(
-        result.sort_values("first_name").reset_index(drop=True),
-        expected.sort_values("first_name").reset_index(drop=True),
+        result.sort_values(on_cols).reset_index(drop=True),
+        expected.sort_values(on_cols).reset_index(drop=True),
     )
+
+
+@NO_MERGE_SUPPORT
+@pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=com.IbisError,
+    reason="can't create non-temporary tables from in-memory data",
+)
+@pytest.mark.notyet(
+    ["athena"],
+    raises=PyAthenaOperationalError,
+    reason="Modifying Hive table rows is only supported for transactional tables",
+)
+def test_upsert_on_all_columns(con, temp_table):
+    con.create_table(temp_table, obj=pd.DataFrame({"a": [1], "b": [10]}))
+
+    source = pd.DataFrame({"b": [10], "a": [1]})
+    con.upsert(temp_table, obj=source, on=["a", "b"])
+
+    result = con.table(temp_table).execute()
+    assert result.to_dict("records") == [{"a": 1, "b": 10}]
+
+
+@pytest.mark.notimpl(["polars"], reason="`upsert` method not implemented")
+def test_upsert_empty_on_raises(con):
+    with pytest.raises(com.IbisInputError):
+        con.upsert(gen_name("upsert_empty_on"), obj=pd.DataFrame({"a": [1]}), on=[])
 
 
 @NO_MERGE_SUPPORT
@@ -760,7 +810,7 @@ def test_upsert_from_expr(
     [
         ({"x": "int64", "y": "float64", "z": "string"}, contextlib.nullcontext()),
         ({"z": "!string", "y": "float32", "x": "int8"}, contextlib.nullcontext()),
-        ({"x": "int64"}, pytest.raises(Exception)),  # No cols to insert
+        ({"x": "int64"}, contextlib.nullcontext()),  # only the `on` column
         ({"x": "int64", "z": "string"}, contextlib.nullcontext()),
         ({"z": "string"}, pytest.raises(Exception)),  # Missing `on` col
     ],
@@ -793,8 +843,8 @@ def test_upsert_from_memtable(backend, con, temp_table, sch, expectation):
         )
         assert len(result) == len(expected)
         backend.assert_frame_equal(
-            result.sort_values("x").reset_index(drop=True),
-            expected.sort_values("x").reset_index(drop=True),
+            result.sort_values("x").reset_index(drop=True).fillna(pd.NA),
+            expected.sort_values("x").reset_index(drop=True).fillna(pd.NA),
         )
 
 
@@ -1591,6 +1641,21 @@ def create_and_destroy_db(con):
         con.drop_database(dbname)
 
 
+@contextlib.contextmanager
+def create_and_destroy_catalog_db(con):
+    catalog = gen_name("test_catalog")
+    con.create_catalog(catalog)
+    try:
+        database = gen_name("test_database")
+        con.create_database(database, catalog=catalog)
+        try:
+            yield catalog, database
+        finally:
+            con.drop_database(database, catalog=catalog)
+    finally:
+        con.drop_catalog(catalog)
+
+
 # TODO: move this to something like `test_ddl.py`
 @pytest.mark.notyet(
     ["flink"],
@@ -1620,6 +1685,26 @@ def test_insert_with_database_specified(con_create_database):
             assert con.table(table_name, database=dbname).count().to_pandas() == 6
         finally:
             con.drop_table(table_name, database=dbname)
+
+
+@pytest.mark.notyet(["datafusion"], reason="cannot list or drop catalogs")
+def test_create_table_with_database_tuple(con_create_catalog_database):
+    con = con_create_catalog_database
+    t = ibis.memtable({"a": [1, 2, 3]})
+
+    with create_and_destroy_catalog_db(con) as (catalog, database):
+        con.create_table(
+            table_name := gen_name("table"),
+            obj=t,
+            database=(catalog, database),
+        )
+        try:
+            assert (
+                con.table(table_name, database=(catalog, database)).count().execute()
+                == 3
+            )
+        finally:
+            con.drop_table(table_name, database=(catalog, database))
 
 
 @pytest.mark.notyet(["datafusion"], reason="cannot list or drop catalogs")
