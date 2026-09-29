@@ -434,9 +434,8 @@ def test_pyarrow_batches_chunk_size(con):  # 10443
     assert len(next(batches)) == 800
     assert len(next(batches)) == 800
 
-    batches = con.to_pyarrow_batches(t, chunk_size=-1)
     with pytest.raises(TypeError):
-        next(batches)
+        con.to_pyarrow_batches(t, chunk_size=-1)
 
 
 @pytest.mark.parametrize(
