@@ -41,6 +41,7 @@ from ibis.backends.bigquery.client import (
 )
 from ibis.backends.bigquery.datatypes import BigQuerySchema
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers._compat import Drop
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -696,7 +697,7 @@ class Backend(
         cascade: bool = False,
     ) -> None:
         """Drop a BigQuery dataset."""
-        stmt = sge.Drop(
+        stmt = Drop(
             kind="SCHEMA",
             this=sg.table(name, db=catalog),
             exists=force,
@@ -1292,7 +1293,7 @@ class Backend(
     ) -> None:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
-        stmt = sge.Drop(
+        stmt = Drop(
             kind="TABLE",
             this=sg.table(
                 name,
@@ -1335,7 +1336,7 @@ class Backend(
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        stmt = sge.Drop(
+        stmt = Drop(
             kind="VIEW",
             this=sg.table(
                 name,
