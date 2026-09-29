@@ -52,8 +52,6 @@ class RisingWaveCompiler(PostgresCompiler):
         ops.MapValues: "map_values",
     }
 
-    del SIMPLE_OPS[ops.MapContains]
-
     def to_sqlglot(
         self,
         expr: ir.Expr,
