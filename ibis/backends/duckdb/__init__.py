@@ -1358,16 +1358,18 @@ class Backend(
                     table_expr, limit=limit, params=params
                 ).subquery("t")
                 cols = [
-                    self.compiler.f.st_aswkb(
-                        sg.column(col, quoted=quoted)
-                    ).as_(col, quoted=quoted)
+                    self.compiler.f.st_aswkb(sg.column(col, quoted=quoted)).as_(
+                        col, quoted=quoted
+                    )
                     if col in geocols_set
                     else sg.column(col, quoted=quoted)
                     for col in table_expr.schema().keys()
                 ]
                 return self.con.sql(sg.select(*cols).from_(inner).sql("duckdb"))
 
-        return self.con.sql(self.compile(table_expr, limit=limit, params=params, **kwargs))
+        return self.con.sql(
+            self.compile(table_expr, limit=limit, params=params, **kwargs)
+        )
 
     def to_pyarrow_batches(
         self,

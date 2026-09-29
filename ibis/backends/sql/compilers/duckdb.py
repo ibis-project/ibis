@@ -246,9 +246,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.if_(any_arg_null, NULL, zipped_arrays)
 
     def visit_ArrayStringJoin(self, op, *, arg, sep):
-        return self.if_(
-            self.f.len(arg) > 0, self.f.array_to_string(arg, sep), NULL
-        )
+        return self.if_(self.f.len(arg) > 0, self.f.array_to_string(arg, sep), NULL)
 
     def visit_Array(self, op, *, exprs):
         return self.cast(self.f.array(*exprs), op.dtype)
