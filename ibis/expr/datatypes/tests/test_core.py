@@ -10,11 +10,17 @@ from typing import Annotated, NamedTuple, Optional, Union
 import pytest
 from pytest import param
 
+import ibis
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import ValidationError
 from ibis.common.patterns import As, Attrs, NoMatch, Pattern
 from ibis.common.temporal import TimestampUnit, TimeUnit
 from ibis.util import get_subclasses
+
+
+def test_highest_precedence_dtype():
+    assert ibis.highest_precedence_dtype([int, "int8"]) == dt.int64
+    assert ibis.highest_precedence_dtype([]) == dt.null
 
 
 def test_validate_type():
