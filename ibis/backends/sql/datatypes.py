@@ -749,6 +749,10 @@ class DuckDBType(SqlglotType):
         return dt.Timestamp(scale=9, nullable=nullable)
 
     @classmethod
+    def _from_sqlglot_TIME_NS(cls, nullable: bool | None = None) -> dt.Time:
+        return dt.Time(nullable=nullable)
+
+    @classmethod
     def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial):
         assert dtype.geotype == "geometry", (
             "DuckDB only supports geometry types; geography types are not supported"
