@@ -51,6 +51,7 @@ _from_sqlglot_types = {
     typecode.TEXT: dt.String,
     typecode.TIME: dt.Time,
     typecode.TIMETZ: dt.Time,
+    typecode.TIME_NS: dt.Time,
     typecode.TINYBLOB: dt.Binary,
     typecode.TINYINT: dt.Int8,
     typecode.TINYTEXT: dt.String,
@@ -747,10 +748,6 @@ class DuckDBType(SqlglotType):
     @classmethod
     def _from_sqlglot_TIMESTAMP_NS(cls, nullable: bool | None = None) -> dt.Timestamp:
         return dt.Timestamp(scale=9, nullable=nullable)
-
-    @classmethod
-    def _from_sqlglot_TIME_NS(cls, nullable: bool | None = None) -> dt.Time:
-        return dt.Time(nullable=nullable)
 
     @classmethod
     def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial):
