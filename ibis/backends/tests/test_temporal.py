@@ -1780,6 +1780,36 @@ def test_time_literal(con, backend):
         assert con.execute(expr.typeof()) == TIME_BACKEND_TYPES[backend_name]
 
 
+# Backends with a nanosecond-precision time type, and how to build an
+# expression returning 12:30:00.123456789 as column `t`
+@pytest.mark.parametrize(
+    ("name", "make_expr"),
+    [
+        param(
+            "duckdb",
+            lambda con: con.sql("SELECT '12:30:00.123456789'::TIME_NS AS t"),
+            id="duckdb",
+        ),
+    ],
+)
+def test_time_ns(con_no_data, name, make_expr):
+    if con_no_data.name != name:
+        pytest.skip(f"expression is specific to {name}")
+
+    expr = make_expr(con_no_data)
+    assert expr.schema() == ibis.schema({"t": dt.time})
+
+    pa = pytest.importorskip("pyarrow")
+    table = expr.to_pyarrow()
+    assert table.schema.field("t").type == pa.time64("ns")
+    assert table["t"][0].value == 45_000_123_456_789
+
+    pl = pytest.importorskip("polars")
+    df = expr.to_polars()
+    assert df.schema["t"] == pl.Time
+    assert df["t"].cast(pl.Int64)[0] == 45_000_123_456_789
+
+
 @pytest.mark.notyet(
     ["clickhouse", "impala"],
     raises=com.OperationNotDefinedError,

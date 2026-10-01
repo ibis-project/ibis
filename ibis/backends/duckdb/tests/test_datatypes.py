@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pyarrow as pa
 import pytest
 from pytest import param
 
@@ -130,18 +129,3 @@ def test_null_scalar(con, monkeypatch):
 │ NULL │
 └──────┘"""
     assert result == expected
-
-
-def test_time_ns():
-    con = ibis.duckdb.connect()
-    expr = con.sql("SELECT '12:30:00.123456789'::TIME_NS AS t")
-    assert expr.schema() == ibis.schema({"t": dt.time})
-
-    table = expr.to_pyarrow()
-    assert table.schema.field("t").type == pa.time64("ns")
-    assert table["t"][0].value == 45_000_123_456_789
-
-    pl = pytest.importorskip("polars")
-    df = expr.to_polars()
-    assert df.schema["t"] == pl.Time
-    assert df["t"].cast(pl.Int64)[0] == 45_000_123_456_789
