@@ -8,6 +8,7 @@ import ibis
 import ibis.common.exceptions as com
 from ibis import _
 from ibis.backends.tests.errors import Py4JJavaError, SingleStoreDBOperationalError
+from ibis.conftest import FLINK_WORKER_PYTHON_VERSION
 
 tm = pytest.importorskip("pandas.testing")
 
@@ -50,9 +51,9 @@ no_udfs = [
     ),
     pytest.mark.notyet(
         "flink",
-        condition=sys.version_info >= (3, 11),
+        condition=sys.version_info[:2] != FLINK_WORKER_PYTHON_VERSION,
         raises=Py4JJavaError,
-        reason="Docker image has Python 3.10, results in `cloudpickle` version mismatch",
+        reason="`cloudpickle` cannot unpickle a UDF pickled by a different python",
     ),
 ]
 
