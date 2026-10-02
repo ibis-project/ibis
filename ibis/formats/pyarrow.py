@@ -4,13 +4,18 @@ import contextlib
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
+from packaging.version import parse as vparse
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
 from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
 from ibis.util import V
+
+if vparse(pa.__version__) < vparse("14.0.1"):
+    # pyarrow_hotfix works around a pyarrow bug fixed in 14.0.1;
+    # it isn't needed (and might not be installed) on newer versions
+    import pyarrow_hotfix  # noqa: F401
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
