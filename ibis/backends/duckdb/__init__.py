@@ -1374,7 +1374,11 @@ class Backend(
             The number of rows to fetch per batch
         """
         import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
+
+        if vparse(pa.__version__) < vparse("14.0.1"):
+            # pyarrow_hotfix works around a pyarrow bug fixed in 14.0.1;
+            # it isn't needed (and might not be installed) on newer versions
+            import pyarrow_hotfix  # noqa: F401
 
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
