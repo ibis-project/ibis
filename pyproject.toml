@@ -270,6 +270,12 @@ geospatial = [
 ]
 
 [dependency-groups]
+pyarrow = [
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<4",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+]
 dev = [
   "ruff>=0.7.1",
   "codespell[hard-encoding-detection,toml]>=2.2.6,<3",
