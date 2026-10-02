@@ -111,6 +111,19 @@ class MySQLCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
+        if from_.is_boolean() and to.is_string():
+            # MySQL renders booleans as integers, so CAST(bool AS CHAR) renders
+            # '1'/'0' while other backends render 'true'/'false'. The simple
+            # CASE evaluates the operand exactly once (an impure operand such
+            # as rand() > 0.5 must not be re-evaluated per branch) and NULL
+            # matches neither branch, so it stays NULL.
+            return sge.Case(
+                this=arg,
+                ifs=[
+                    sge.If(this=sge.convert(1), true=sge.Literal.string("true")),
+                    sge.If(this=sge.convert(0), true=sge.Literal.string("false")),
+                ],
+            )
         if (from_.is_json() or from_.is_string()) and to.is_json():
             # MariaDB does not support casting to JSON because it's an alias
             # for TEXT (except when casting of course!)
