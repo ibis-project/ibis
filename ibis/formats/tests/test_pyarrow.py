@@ -197,6 +197,114 @@ def test_geo_gets_converted_to_geoarrow(ibis_type):
     )
 
 
+class UnknownExtensionType(pa.ExtensionType):
+    def __init__(self, storage_type):
+        super().__init__(storage_type, "test.unknown")
+
+    def __arrow_ext_serialize__(self):
+        return b""
+
+    @classmethod
+    def __arrow_ext_deserialize__(cls, storage_type, serialized):
+        return cls(storage_type)
+
+
+@pytest.mark.parametrize(
+    ("storage", "expected"),
+    [
+        (pa.int64(), dt.int64),
+        (pa.string(), dt.string),
+        (pa.list_(pa.int64()), dt.Array(dt.int64)),
+    ],
+    ids=["int64", "string", "list"],
+)
+def test_unknown_extension_type_falls_back_to_storage(storage, expected):
+    # every extension type `to_ibis` doesn't recognize used to reach the dict
+    # lookup at the end of the chain and raise `TypeError: unhashable type`,
+    # which broke `memtable` on any arrow input carrying one
+    typ = UnknownExtensionType(storage)
+
+    assert PyArrowType.to_ibis(typ) == expected
+
+    table = pa.table({"x": pa.ExtensionArray.from_storage(typ, pa.array([], storage))})
+    assert ibis.memtable(table).schema() == ibis.schema({"x": expected})
+
+
+@pytest.mark.parametrize(
+    ("factory", "expected"),
+    [
+        pytest.param(lambda: pa.json_(pa.string()), dt.json, id="json"),
+        pytest.param(pa.uuid, dt.uuid, id="uuid"),
+        pytest.param(pa.bool8, dt.int8, id="bool8"),
+    ],
+)
+def test_pyarrow_native_extension_types(factory, expected):
+    # the types pyarrow implements in c++ subclass `BaseExtensionType` but not
+    # `ExtensionType`, so a guard on the latter misses them entirely
+    typ = pytest.importorskip("pyarrow") and factory()
+    assert not isinstance(typ, pa.ExtensionType)
+    assert isinstance(typ, pa.BaseExtensionType)
+
+    assert PyArrowType.to_ibis(typ) == expected
+
+
+def test_parquet_json_logical_type_roundtrips_to_memtable(tmp_path):
+    # the most likely way a user meets an extension type they never created:
+    # parquet's JSON logical type reads back as `arrow.json`
+    pq = pytest.importorskip("pyarrow.parquet")
+
+    path = tmp_path / "json.parquet"
+    pq.write_table(
+        pa.table({"x": pa.array(['{"a": 1}'], pa.json_(pa.string()))}), path
+    )
+
+    table = pq.read_table(path)
+    assert table.schema.field("x").type.extension_name == "arrow.json"
+    assert ibis.memtable(table).schema() == ibis.schema({"x": "json"})
+
+
+class IbisJSONType(pa.ExtensionType):
+    """Stand-in for the type the snowflake backend wraps JSON columns in.
+
+    Defined here rather than imported so that these tests exercise the
+    contract core actually implements -- an extension named `ibis.json` maps
+    to `json` -- without importing a backend for its global registration side
+    effect. Left unregistered: registration only matters for deserializing
+    IPC and parquet, and registering a second `ibis.json` would collide with
+    the backend's if it were imported in the same session.
+    """
+
+    def __init__(self):
+        super().__init__(pa.string(), "ibis.json")
+
+    def __arrow_ext_serialize__(self):
+        return b""
+
+    @classmethod
+    def __arrow_ext_deserialize__(cls, storage_type, serialized):
+        return cls()
+
+
+def test_ibis_json_extension_gets_converted_to_json():
+    # without a case for it, feeding a wrapped column back to `memtable`
+    # raised `TypeError: unhashable type: 'JSONType'`
+    typ = IbisJSONType()
+
+    assert PyArrowType.to_ibis(typ) == dt.json
+    assert PyArrowType.to_ibis(typ, nullable=False) == dt.JSON(nullable=False)
+
+
+def test_ibis_json_extension_roundtrips_through_memtable():
+    typ = IbisJSONType()
+    table = pa.table(
+        {
+            "i": pa.array([1]),
+            "js": pa.ExtensionArray.from_storage(typ, pa.array(['{"a": 1}'])),
+        }
+    )
+    assert ibis.memtable(table).schema() == ibis.schema({"i": "int64", "js": "json"})
+
+
 def test_geoarrow_gets_converted_to_geo():
     gat = pytest.importorskip("geoarrow.types")
 
