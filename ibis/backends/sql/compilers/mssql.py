@@ -67,7 +67,9 @@ def _boolean_to_string_case(arg: sge.Expression) -> sge.Case:
     # simple form (which evaluates it exactly once; an impure bit-valued
     # operand must not be re-evaluated per branch). NULL matches neither
     # branch of either form, so it stays NULL.
-    if isinstance(arg, (sge.Predicate, sge.Connector, sge.Not)):
+    # T-SQL renders a boolean literal as the predicate (1 = 1), so it takes
+    # the searched form too.
+    if isinstance(arg.unnest(), (sge.Predicate, sge.Connector, sge.Not, sge.Boolean)):
         return sge.Case(
             ifs=[
                 sge.If(this=arg, true=sge.Literal.string("true")),

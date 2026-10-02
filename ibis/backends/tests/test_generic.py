@@ -1847,6 +1847,21 @@ def test_hexdigest(backend, alltypes):
     backend.assert_series_equal(h1, h2)
 
 
+# these backends still render a boolean cast to string as 1/0 or TRUE/FALSE
+BOOL_TO_STRING_NOTIMPL = [
+    pytest.mark.notimpl(
+        ["druid", "impala", "singlestoredb"],
+        raises=AssertionError,
+        reason="renders 1/0",
+    ),
+    pytest.mark.notimpl(
+        ["exasol", "flink", "oracle"],
+        raises=AssertionError,
+        reason="renders TRUE/FALSE",
+    ),
+]
+
+
 @pytest.mark.parametrize(
     ("from_type", "to_type", "from_val", "expected"),
     [
@@ -1854,8 +1869,22 @@ def test_hexdigest(backend, alltypes):
         param("float", "int", 0.0, 0, id="float_to_int"),
         param("string", "int", "0", 0, id="string_to_int"),
         param("string", "float", "0", 0.0, id="string_to_float"),
-        param("bool", "string", True, "true", id="bool_to_string"),
-        param("bool", "string", False, "false", id="bool_to_string_false"),
+        param(
+            "bool",
+            "string",
+            True,
+            "true",
+            marks=BOOL_TO_STRING_NOTIMPL,
+            id="bool_to_string",
+        ),
+        param(
+            "bool",
+            "string",
+            False,
+            "false",
+            marks=BOOL_TO_STRING_NOTIMPL,
+            id="bool_to_string_false",
+        ),
         param(
             "array<int>",
             "array<string>",
@@ -1909,13 +1938,34 @@ def test_cast(con, from_type, to_type, from_val, expected):
     assert result == expected
 
 
-def test_cast_computed_bool_to_string(con) -> None:
-    # A computed boolean (rather than a plain column) must also cast to the
+@pytest.mark.notimpl(
+    ["clickhouse", "druid", "impala", "singlestoredb"],
+    raises=AssertionError,
+    reason="renders 1/0",
+)
+@pytest.mark.notimpl(
+    ["exasol", "flink", "oracle"],
+    raises=AssertionError,
+    reason="renders TRUE/FALSE",
+)
+def test_cast_computed_bool_to_string(alltypes, df) -> None:
+    # A computed boolean (rather than a literal) must also cast to the
     # 'true'/'false' rendering, including on T-SQL where a predicate cannot
     # appear as a scalar expression.
-    t = ibis.memtable({"a": [-1.0, 1.0, None]})
-    expr = (t.a > 0).cast("string").name("s")
-    assert con.execute(expr).tolist() == ["false", "true", None]
+    expr = (
+        alltypes.select("id", s=(alltypes.int_col > 4).cast("string"))
+        .order_by("id")
+        .limit(10)
+    )
+    result = expr.execute()["s"].tolist()
+    expected = (
+        df.sort_values("id")
+        .head(10)["int_col"]
+        .gt(4)
+        .map({True: "true", False: "false"})
+        .tolist()
+    )
+    assert result == expected
 
 
 @pytest.mark.notimpl(["oracle", "sqlite"])
