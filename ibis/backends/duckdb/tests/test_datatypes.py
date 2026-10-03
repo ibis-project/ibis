@@ -55,6 +55,7 @@ from ibis.backends.sql.datatypes import DuckDBType
             ("TIMESTAMP_S", dt.Timestamp(scale=0)),
             ("TIMESTAMP_MS", dt.Timestamp(scale=3)),
             ("TIMESTAMP_NS", dt.Timestamp(scale=9)),
+            ("TIME_NS", dt.time),
         ]
     ],
 )

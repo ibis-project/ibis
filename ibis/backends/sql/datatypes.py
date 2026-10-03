@@ -51,6 +51,7 @@ _from_sqlglot_types = {
     typecode.TEXT: dt.String,
     typecode.TIME: dt.Time,
     typecode.TIMETZ: dt.Time,
+    typecode.TIME_NS: dt.Time,
     typecode.TINYBLOB: dt.Binary,
     typecode.TINYINT: dt.Int8,
     typecode.TINYTEXT: dt.String,
