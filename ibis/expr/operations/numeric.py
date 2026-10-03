@@ -159,9 +159,11 @@ class Round(Value):
 
         raw_digits = getattr(digits, "value", None)
 
-        # decimals with literal-typed digits return decimals
+        # decimals with literal-typed digits return decimals. Negative digits round
+        # to a power of ten, which is still an integral decimal, so the scale is
+        # clamped at zero rather than going negative.
         if arg_dtype.is_decimal() and raw_digits is not None:
-            return arg_dtype.copy(scale=raw_digits)
+            return arg_dtype.copy(scale=max(raw_digits, 0))
 
         nullable = arg_dtype.nullable
 
