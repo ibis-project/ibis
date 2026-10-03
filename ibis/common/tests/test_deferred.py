@@ -411,6 +411,17 @@ def test_deferred_method_with_kwargs(table):
     assert repr(expr) == "_.a.log(base=_.b)"
 
 
+def test_deferred_chained_method_calls():
+    t = ibis.table({"a": "int64", "b": "int64"}, name="t")
+
+    expr = _.mutate(c=_.a + _.b).mutate(d=_.c * 2)
+    res = expr.resolve(t)
+
+    t1 = t.mutate(c=t.a + t.b)
+    sol = t1.mutate(d=t1.c * 2)
+    assert res.equals(sol)
+
+
 def test_deferred_apply(table):
     expr = Deferred(Call(operator.add, _.a, 2))
     res = expr.resolve(table)
