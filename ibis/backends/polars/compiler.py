@@ -525,6 +525,14 @@ _string_unary = {
 
 @translate.register(ops.StringLength)
 def string_length(op, **kw):
+    """Count Unicode scalar values in a string."""
+    arg = translate(op.arg, **kw)
+    return arg.str.len_chars()
+
+
+@translate.register(ops.StringByteLength)
+def string_byte_length(op, **kw):
+    """Count UTF-8 bytes in a string."""
     arg = translate(op.arg, **kw)
     return arg.str.len_bytes()
 

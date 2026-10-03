@@ -84,6 +84,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.Hash: "fnv_hash",
         ops.Ln: "ln",
         ops.RegexReplace: "regexp_replace",
+        ops.StringByteLength: "bytes",
         ops.TypeOf: "typeof",
     }
 

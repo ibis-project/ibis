@@ -152,6 +152,7 @@ class BigQueryCompiler(SQLGlotCompiler):
     SIMPLE_OPS = {
         ops.Arbitrary: "any_value",
         ops.StringAscii: "ascii",
+        ops.StringByteLength: "byte_length",
         ops.BitAnd: "bit_and",
         ops.BitOr: "bit_or",
         ops.BitXor: "bit_xor",

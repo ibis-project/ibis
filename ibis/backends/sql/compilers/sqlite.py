@@ -163,6 +163,10 @@ class SQLiteCompiler(SQLGlotCompiler):
 
         return self.f.instr(arg, substr)
 
+    def visit_StringByteLength(self, op, *, arg):
+        """Count bytes by measuring the string's BLOB representation."""
+        return self.f.length(self.cast(arg, dt.binary))
+
     def visit_StringJoin(self, op, *, arg, sep):
         args = [arg[0]]
         for item in arg[1:]:

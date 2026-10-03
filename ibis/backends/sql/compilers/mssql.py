@@ -117,6 +117,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.RegexSearch,
         ops.RegexSplit,
         ops.RowID,
+        ops.StringByteLength,
         ops.StringSplit,
         ops.StringToDate,
         ops.StringToTimestamp,
