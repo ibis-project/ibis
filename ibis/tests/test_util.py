@@ -2,9 +2,21 @@
 
 from __future__ import annotations
 
-import pytest
+import re
 
-from ibis.util import PseudoHashable, flatten_iterable, import_object, is_iterable
+import pytest
+from pytest import param
+
+from ibis.util import (
+    PseudoHashable,
+    append_admonition,
+    backend_sensitive,
+    deprecated,
+    experimental,
+    flatten_iterable,
+    import_object,
+    is_iterable,
+)
 
 
 @pytest.mark.parametrize(
@@ -159,3 +171,64 @@ def test_is_iterable(x, expected):
     else:
         assert actual is True
         assert list(x) == list(expected)
+
+
+VALID_QUARTO_CALLOUTS = frozenset(("note", "tip", "warning", "caution", "important"))
+
+
+@pytest.mark.parametrize("kind", sorted(VALID_QUARTO_CALLOUTS))
+def test_append_admonition_body_is_inside_the_callout(kind):
+    def f():
+        """Do a thing.
+
+        Parameters
+        ----------
+        x
+            A parameter.
+        """
+
+    docstr = append_admonition(
+        f.__doc__, msg="A title.", body="Some detail.", kind=kind
+    )
+    admonition = docstr[
+        docstr.index(":::") : docstr.index(":::", docstr.index(":::") + 1)
+    ]
+
+    assert f"::: {{.callout-{kind}}}" in docstr
+    assert "## A title." in admonition
+    # a body placed after the fence, or indented, renders as a code block
+    assert "Some detail." in admonition
+    assert "\n    Some detail." not in docstr
+
+
+def test_append_admonition_without_a_docstring():
+    def f(): ...
+
+    docstr = append_admonition(f.__doc__, msg="A title.", kind="note")
+    assert docstr == "::: {.callout-note}\n## A title.\n:::"
+
+
+def test_append_admonition_keeps_the_summary_first():
+    def f():
+        """Do a thing.
+
+        More detail.
+        """
+
+    docstr = append_admonition(f.__doc__, msg="A title.", kind="note")
+    summary, admonition, *_ = docstr.split("\n\n")
+    assert summary == "Do a thing."
+    assert admonition.strip().startswith("::: {.callout-note}")
+
+
+@pytest.mark.parametrize(
+    "decorated",
+    [
+        param(experimental(lambda: None), id="experimental"),
+        param(backend_sensitive()(lambda: None), id="backend_sensitive"),
+        param(deprecated(instead="use g")(lambda: None), id="deprecated"),
+    ],
+)
+def test_decorators_emit_a_valid_quarto_callout(decorated):
+    (kind,) = re.findall(r"::: \{\.callout-([a-z]+)\}", decorated.__doc__)
+    assert kind in VALID_QUARTO_CALLOUTS
