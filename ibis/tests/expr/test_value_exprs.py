@@ -1491,6 +1491,18 @@ def test_deferred_r_ops(op_name, expected_left, expected_right):
     assert node.right.equals(expected_right(t).op())
 
 
+def test_deferred_binop_with_bound_left_operand():
+    t = ibis.table(dict(a="int64", b="int64"), name="t")
+
+    expr = t.select(c=t.a + _.b)
+    sol = t.select(c=t.a + t.b)
+    assert expr.equals(sol)
+
+    expr = t.select(c=_.a + t.b)
+    sol = t.select(c=t.a + t.b)
+    assert expr.equals(sol)
+
+
 @pytest.mark.parametrize(
     ("expr_fn", "expected_type"),
     [

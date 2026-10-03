@@ -3140,6 +3140,7 @@ def _is_null_literal(value: Any) -> bool:
     )
 
 
+@deferrable
 def _binop(op_class: type[ops.Value], left: Value | Any, right: Value | Any) -> Value:
     """Try to construct a binary operation between two Values.
 
