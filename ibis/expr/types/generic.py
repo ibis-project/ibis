@@ -3185,7 +3185,10 @@ def _binop(op_class: type[ops.Value], left: Value | Any, right: Value | Any) -> 
     assert issubclass(op_class, ops.Value)
     try:
         node = op_class(left, right)
-    except (ValidationError, NotImplementedError):
+    except (ValidationError, NotImplementedError, com.InputTypeError):
+        # Return NotImplemented so that Python dispatches to the reflected
+        # operator of `other` (e.g. `Deferred.__radd__`) instead of raising
+        # for operands that cannot be coerced eagerly, like deferred values.
         return NotImplemented
     else:
         return node.to_expr()
