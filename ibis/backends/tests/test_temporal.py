@@ -317,9 +317,27 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
         .dt.floor("s")
         .astype("int64")
         .floordiv(1_000_000_000)
-        .astype("int32")
     )
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(
+    ["bigquery"],
+    raises=GoogleBadRequest,
+    reason="UNIX_SECONDS does not support DATETIME arguments",
+)
+def test_timestamp_extract_epoch_seconds_subsecond(con):
+    # epoch_seconds is typed as an integer, so a timestamp with a sub-second
+    # component must not retain a fractional part in the result.
+    # https://github.com/ibis-project/ibis/issues/11928
+    expr = ibis.timestamp("2020-01-01 00:00:00.123456").epoch_seconds()
+    assert expr.type().is_int64()
+    # Cast to float so a retained fractional part would be visible. The
+    # sub-second value is below 0.5s, so the expected integer holds whether a
+    # backend truncates or rounds.
+    assert con.execute(expr.cast("float64")) == 1577836800.0
 
 
 @pytest.mark.never(
