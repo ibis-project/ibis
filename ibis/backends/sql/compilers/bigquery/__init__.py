@@ -28,7 +28,9 @@ from ibis.backends.sql.rewrites import (
     lower_sample,
     split_select_distinct_with_order_by,
 )
+from ibis.common.patterns import replace
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
+from ibis.expr.rewrites import p
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -104,6 +106,19 @@ def _force_quote_table(table: sge.Table) -> sge.Table:
     return table
 
 
+@replace(p.PivotLonger)
+def pivot_longer_to_unpivot(_, **kwargs):
+    """Use BigQuery's native `UNPIVOT` when there's a single `names_to` column.
+
+    Both forms of `UNPIVOT` only ever produce one name column, so a
+    `PivotLonger` with more than one (e.g. from a multi-group
+    `names_pattern`) falls back to the generic implementation.
+    """
+    if len(_.names_to) != 1:
+        return _.to_generic().op()
+    return _
+
+
 class BigQueryCompiler(SQLGlotCompiler):
     dialect = BigQuery
     type_mapper = BigQueryType
@@ -122,6 +137,7 @@ class BigQueryCompiler(SQLGlotCompiler):
     supports_qualify = True
 
     LOWERED_OPS = {
+        ops.PivotLonger: pivot_longer_to_unpivot,
         ops.Sample: lower_sample(
             supported_methods=("block",),
             supports_seed=False,
@@ -1077,6 +1093,60 @@ class BigQueryCompiler(SQLGlotCompiler):
             .from_(parent)
             .join(unnest, join_type="CROSS" if not keep_empty else "LEFT")
         )
+
+    def visit_PivotLonger(
+        self,
+        op,
+        *,
+        parent,
+        pivot_columns,
+        names_to,
+        values_to,
+        names,
+        pivot_values,
+        values_drop_na,
+    ):
+        quoted = self.quoted
+        (name_column,) = names_to
+
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+        excludes = [sg.column(c, quoted=quoted) for c in pivot_columns]
+        star = sge.Column(this=sge.Star(**{EXCEPT_ARG: excludes}), table=table)
+
+        # UNPIVOT's IN-list requires every column to share the exact same
+        # type, so cast each pivoted column to the value column's type first
+        value_type = self.type_mapper.from_ibis(op.schema[values_to])
+        renamed = [
+            sge.Cast(this=pivot_values[c], to=value_type).as_(c, quoted=quoted)
+            for c in pivot_columns
+        ]
+        inner = sg.select(star, *renamed).from_(parent).subquery()
+
+        in_exprs = [
+            sge.PivotAlias(
+                this=sg.column(c, quoted=quoted), alias=sge.convert(names[c][0])
+            )
+            for c in pivot_columns
+        ]
+        pivot = sge.Pivot(
+            expressions=[sg.column(values_to, quoted=quoted)],
+            fields=[
+                sge.In(this=sg.column(name_column, quoted=quoted), expressions=in_exprs)
+            ],
+            unpivot=True,
+            # ibis defaults to keeping NULLs, opposite of UNPIVOT's own default
+            include_nulls=not values_drop_na,
+        )
+        inner.set("pivots", [pivot])
+
+        # UNPIVOT's output order is [value_col, name_col], but the schema
+        # expects [name_col, value_col]; select explicitly to avoid a
+        # positional mismatch from `SELECT *`.
+        keep = [c for c in op.schema.names if c not in (name_column, values_to)]
+        cols = [sg.column(c, quoted=quoted) for c in keep]
+        cols.append(sg.column(name_column, quoted=quoted))
+        cols.append(sg.column(values_to, quoted=quoted))
+        return sg.select(*cols).from_(inner)
 
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
         arg_dtype = op.arg.dtype
