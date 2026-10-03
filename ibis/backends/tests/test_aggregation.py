@@ -1848,3 +1848,11 @@ def test_empty_sum(con):
 
     result = con.to_pyarrow(t.x.sum(where=t.x > 1)).as_py()
     assert result is None
+
+
+def test_nunique_ignores_nulls(con):
+    t = ibis.memtable({"x": ["a", "b", "a", None]}, schema={"x": "string"})
+    assert con.execute(t.x.nunique()) == 2
+
+    t = ibis.memtable({"x": [None, None]}, schema={"x": "string"})
+    assert con.execute(t.x.nunique()) == 0
