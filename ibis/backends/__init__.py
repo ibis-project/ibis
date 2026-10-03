@@ -19,6 +19,7 @@ import ibis
 import ibis.common.exceptions as exc
 import ibis.config
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
     import pyarrow as pa
     import sqlglot as sg
     import torch
+
+    import ibis.expr.datatypes as dt
 
 
 __all__ = ("BaseBackend", "connect")
@@ -899,6 +902,41 @@ class CacheEntry(NamedTuple):
     finalizer: weakref.finalize
 
 
+def _is_more_specific(want: dt.DataType, got: dt.DataType) -> bool:
+    """Return whether `want` is a strictly more specific version of `got`.
+
+    A backend can only report the types it is able to store, which is sometimes
+    coarser than the type Ibis inferred for an expression. DuckDB, for example,
+    has a single `GEOMETRY` type, so a `point:geometry` column comes back as
+    `geospatial:geometry`. `want` is considered more specific when it is a
+    subclass instance of `got` agreeing with it on every parameter `got`
+    carries.
+    """
+    return (
+        type(want) is not type(got)
+        and isinstance(want, type(got))
+        and all(
+            getattr(want, name, None) == getattr(got, name) for name in got.__argnames__
+        )
+    )
+
+
+def _preserve_expr_schema(want: sch.Schema, got: sch.Schema) -> sch.Schema:
+    """Restore type detail that a round trip through the backend erased.
+
+    Columns whose reported type genuinely differs from the expression's type are
+    left alone: only Ibis-level refinements of the same type are restored.
+    """
+    if want == got or tuple(want.names) != tuple(got.names):
+        return got
+    return sch.Schema(
+        {
+            name: want[name] if _is_more_specific(want[name], got_type) else got_type
+            for name, got_type in got.items()
+        }
+    )
+
+
 class CacheHandler:
     """A mixin for handling `.cache()`/`CachedTable` operations."""
 
@@ -922,6 +960,13 @@ class CacheHandler:
         entry = self._cache_op_to_entry.get(table.op())
         if entry is None or (cached_op := entry.cached_op_ref()) is None:
             cached_op = self._create_cached_table(util.gen_name("cached"), table).op()
+            # `.cache()` must not alter the schema of the expression: the round
+            # trip through the backend's storage can lose type detail that the
+            # backend has no way to express (a `point:geometry` column, say,
+            # comes back from DuckDB as a bare `geospatial:geometry`)
+            schema = _preserve_expr_schema(table.schema(), cached_op.schema)
+            if schema != cached_op.schema:
+                cached_op = cached_op.copy(schema=schema)
             entry = CacheEntry(
                 table.op(),
                 weakref.ref(cached_op),
