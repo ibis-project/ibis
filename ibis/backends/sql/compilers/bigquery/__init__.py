@@ -29,6 +29,7 @@ from ibis.backends.sql.rewrites import (
     split_select_distinct_with_order_by,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
+from ibis.expr.rewrites import lower_array_collect_slice
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -112,6 +113,7 @@ class BigQueryCompiler(SQLGlotCompiler):
     agg = AggGen(supports_order_by=True)
 
     rewrites = (
+        lower_array_collect_slice,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_rank,
@@ -484,7 +486,10 @@ class BigQueryCompiler(SQLGlotCompiler):
             return self.f.parse_timestamp(format_str, arg, timezone)
         return self.f.parse_datetime(format_str, arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
+    def visit_ArrayCollect(
+        self, op, *, arg, where, order_by, include_null, distinct, limit=None
+    ):
+        """Compile regular and internally bounded collection aggregates."""
         if where is not None:
             if include_null:
                 raise com.UnsupportedOperationError(
@@ -499,9 +504,19 @@ class BigQueryCompiler(SQLGlotCompiler):
             arg = sge.Distinct(expressions=[arg])
         if order_by:
             arg = sge.Order(this=arg, expressions=order_by)
+        if limit is not None:
+            arg = sge.Limit(this=arg, expression=limit)
         if not include_null:
             arg = sge.IgnoreNulls(this=arg)
-        return self.f.array_agg(arg)
+        result = self.f.array_agg(arg)
+        if limit is not None:
+            # Array slicing returns an empty array when the aggregate is null,
+            # including for empty inputs and groups filtered down to no values.
+            empty = self.cast(sge.Array(expressions=[]), op.dtype)
+            result = self.f.coalesce(result, empty)
+        return result
+
+    visit_LimitedArrayCollect = visit_ArrayCollect
 
     def _neg_idx_to_pos(self, arg, idx):
         return self.if_(idx < 0, self.f.array_length(arg) + idx, idx)

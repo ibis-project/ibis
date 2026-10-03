@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis
 import ibis.expr.operations as ops
-from ibis.expr.rewrites import simplify
+from ibis.expr.operations.reductions import LimitedArrayCollect
+from ibis.expr.rewrites import lower_array_collect_slice, simplify
 
 t = ibis.table(
     name="t",
@@ -13,6 +16,43 @@ t = ibis.table(
         "string_col": "string",
     },
 )
+
+
+@pytest.mark.parametrize("stop", [0, 3])
+def test_lower_array_collect_prefix_slice(stop):
+    """Lower nonnegative literal prefix slices to bounded collection."""
+    result = t.int_col.collect()[:stop].op().replace(lower_array_collect_slice)
+
+    assert isinstance(result, LimitedArrayCollect)
+    assert result.limit.value == stop
+
+
+@pytest.mark.parametrize(
+    "expr",
+    [
+        pytest.param(t.int_col.collect()[1:3], id="offset"),
+        pytest.param(t.int_col.collect()[:-1], id="negative"),
+        pytest.param(t.int_col.collect()[:], id="open"),
+        pytest.param(t.int_col.collect()[: ibis.null().cast("int64")], id="null"),
+        pytest.param(t.int_col.collect()[: t.int_col.max()], id="dynamic"),
+        pytest.param(t.int_col.collect().over()[:3], id="windowed-collect"),
+    ],
+)
+def test_preserve_collect_slice(expr):
+    """Preserve collection slices that native aggregate bounds cannot express."""
+    op = expr.op()
+
+    assert op.replace(lower_array_collect_slice) == op
+
+
+def test_preserve_slice_around_limited_collect():
+    """Do not widen an inner collection bound with an outer slice."""
+    op = t.int_col.collect()[:2][:10].op()
+    result = op.replace(lower_array_collect_slice)
+
+    assert isinstance(result, ops.ArraySlice)
+    assert isinstance(result.arg, LimitedArrayCollect)
+    assert result.arg.limit.value == 2
 
 
 def test_simplify_full_reprojection():
