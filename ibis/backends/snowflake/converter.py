@@ -110,6 +110,16 @@ else:
 
         @classmethod
         def convert_column(cls, column: pa.Array, dtype: dt.DataType) -> pa.Array:
+            # Fixed-length numeric arrays (e.g. Snowflake VECTOR(FLOAT, N))
+            # deserialize natively to pyarrow ``fixed_size_list<element>[N]``
+            # via the Snowflake Python connector. They are not JSON-encoded
+            # and so should bypass the JSON-extension wrapping below; without
+            # this guard, the JSON-extension path tries to cast the
+            # ``fixed_size_list`` column to ``utf8`` and raises
+            # ``ArrowNotImplementedError: Unsupported cast from
+            # fixed_size_list<...> to utf8``.
+            if dtype.is_array() and dtype.length is not None:
+                return column
             if (
                 dtype.is_json()
                 or dtype.is_array()
@@ -124,6 +134,11 @@ else:
 
         @classmethod
         def convert_scalar(cls, scalar: pa.Scalar, dtype: dt.DataType) -> pa.Scalar:
+            # Same fixed-size-list pass-through as ``convert_column``: VECTOR
+            # scalars are already native fixed-length pyarrow lists and
+            # don't need the JSON-string extension wrap.
+            if dtype.is_array() and dtype.length is not None:
+                return scalar
             if (
                 dtype.is_json()
                 or dtype.is_array()
