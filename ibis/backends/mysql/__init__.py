@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow as pa
+    from typing_extensions import Self
 
 
 class Backend(
@@ -50,6 +51,8 @@ class Backend(
     name = "mysql"
     compiler = sc.mysql.compiler
     supports_create_or_replace = False
+
+    con: adbc_dbapi.Connection
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         kwargs = {}
@@ -82,7 +85,8 @@ class Backend(
         port: int = 3306,
         database: str | None = None,
         autocommit: Literal[True] = True,
-        **kwargs,
+        *,
+        db: str | None = None,
     ) -> None:
         """Create an Ibis client using the passed connection parameters.
 
@@ -101,8 +105,8 @@ class Backend(
         autocommit
             Whether to use autocommit mode. Only ``True`` is supported at this
             time due to a limitation of the ADBC MySQL driver.
-        kwargs
-            Additional keyword arguments
+        db
+            Deprecated alias for `database`.
 
         Examples
         --------
@@ -136,16 +140,18 @@ class Backend(
         host = "127.0.0.1" if host == "localhost" else host
         password = password or ""
 
-        # Also accept db from kwargs for backwards compat
-        if database is None:
-            db = kwargs.pop("db", None)
-            if db is not None:
-                warnings.warn(
-                    "Passing `db` is deprecated, use `database` instead.",
-                    DeprecationWarning,
-                    stacklevel=2,
+        if db is not None:
+            warnings.warn(
+                "Passing `db` is deprecated, use `database` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if database is not None and database != db:
+                raise ValueError(
+                    "Conflicting values passed for `database` and `db`; "
+                    "pass only `database`."
                 )
-                database = db
+            database = db
 
         autocommit = bool(autocommit)
         if not autocommit:
@@ -162,6 +168,12 @@ class Backend(
         self._post_connect()
 
     def _post_connect(self) -> None:
+        # return zero dates ('0000-00-00') as NULL instead of raising;
+        # older drivers don't know this option
+        with contextlib.suppress(adbc_dbapi.NotSupportedError):
+            self.con.adbc_connection.set_options(
+                **{"mysql.query.zero_datetime_behavior": "convert_to_null"}
+            )
         with self.con.cursor() as cur:
             try:
                 cur.execute("SET @@session.time_zone = 'UTC'")
@@ -169,7 +181,7 @@ class Backend(
                 warnings.warn(f"Unable to set session timezone to UTC: {e}")
 
     @classmethod
-    def from_connection(cls, con: adbc_dbapi.Connection, /, **kwargs) -> Backend:
+    def from_connection(cls, con: adbc_dbapi.Connection, /) -> Self:
         new_backend = cls()
         new_backend._can_reconnect = False
         new_backend.con = con
