@@ -9,7 +9,6 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
-from ibis.backends.tests.errors import ArrowInvalid
 
 np = pytest.importorskip("numpy")
 pa = pytest.importorskip("pyarrow")
@@ -295,13 +294,6 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
             lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
             [("x", "y")],
             id="left-xy",
-            marks=[
-                pytest.mark.notyet(
-                    ["mysql"],
-                    raises=ArrowInvalid,
-                    reason="ADBC MySQL driver returns opaque type for NULL",
-                ),
-            ],
         ),
         param(
             "left",
@@ -309,13 +301,6 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
             lambda left: left.filter(lambda t: t.x == 1),
             "x",
             id="left-x",
-            marks=[
-                pytest.mark.notyet(
-                    ["mysql"],
-                    raises=ArrowInvalid,
-                    reason="ADBC MySQL driver returns opaque type for NULL",
-                ),
-            ],
         ),
         param(
             "right",
@@ -323,14 +308,7 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
             lambda left: left.filter(lambda t: t.x == 1).select(y=lambda t: t.x),
             [("x", "y")],
             id="right-xy",
-            marks=[
-                sqlite_right_or_full_mark,
-                pytest.mark.notyet(
-                    ["mysql"],
-                    raises=ArrowInvalid,
-                    reason="ADBC MySQL driver returns opaque type for NULL",
-                ),
-            ],
+            marks=[sqlite_right_or_full_mark],
         ),
         param(
             "right",
@@ -338,14 +316,7 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
             lambda left: left.filter(lambda t: t.x == 1),
             "x",
             id="right-x",
-            marks=[
-                sqlite_right_or_full_mark,
-                pytest.mark.notyet(
-                    ["mysql"],
-                    raises=ArrowInvalid,
-                    reason="ADBC MySQL driver returns opaque type for NULL",
-                ),
-            ],
+            marks=[sqlite_right_or_full_mark],
         ),
         param(
             "outer",

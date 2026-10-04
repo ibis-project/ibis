@@ -13,7 +13,6 @@ import ibis.expr.datatypes as dt
 from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
-    ArrowInvalid,
     ClickHouseDatabaseError,
     DatabricksServerOperationError,
     ExaQueryError,
@@ -1842,11 +1841,6 @@ def test_group_by_scalar(alltypes, df, value):
     assert n == len(df)
 
 
-@pytest.mark.notyet(
-    ["mysql"],
-    raises=ArrowInvalid,
-    reason="ADBC MySQL driver returns opaque type for NULL",
-)
 def test_empty_sum(con):
     t = ibis.memtable({"x": [1]}, schema={"x": "int"})
     result = con.execute(t.count())
