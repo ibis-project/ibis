@@ -27,7 +27,6 @@ import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.conftest import NO_MERGE_SUPPORT
 from ibis.backends.tests.errors import (
-    ArrowInvalid,
     ArrowTypeError,
     DatabricksServerOperationError,
     ExaQueryError,
@@ -1368,11 +1367,6 @@ def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
 
 
 @pytest.mark.parametrize("is_jupyter", [True, False])
-@pytest.mark.notyet(
-    ["mysql"],
-    raises=ArrowInvalid,
-    reason="ADBC MySQL driver returns opaque type for NULL",
-)
 def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
     pytest.importorskip("rich")
 

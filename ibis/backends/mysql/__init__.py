@@ -478,7 +478,7 @@ class Backend(
         def batch_producer():
             try:
                 for batch in reader:
-                    yield batch.rename_columns(target_schema.names)
+                    yield batch.rename_columns(target_schema.names).cast(target_schema)
             finally:
                 cur.close()
 
