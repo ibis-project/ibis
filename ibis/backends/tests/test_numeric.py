@@ -919,6 +919,7 @@ def test_math_functions_literals(con, expr, expected):
         param(L(1.0).cot(), 1.0 / math.tan(1.0), id="cot"),
         param(L(0.0).sin(), math.sin(0.0), id="sin"),
         param(L(0.0).tan(), math.tan(0.0), id="tan"),
+        param(L(1.0).tanh(), math.tanh(1.0), id="tanh"),
     ],
 )
 def test_trig_functions_literals(con, expr, expected):
@@ -950,6 +951,7 @@ def test_trig_functions_literals(con, expr, expected):
         param(_.dc.cos(), np.cos, id="cos"),
         param(_.dc.sin(), np.sin, id="sin"),
         param(_.dc.tan(), np.tan, id="tan"),
+        param(_.dc.tanh(), np.tanh, id="tanh"),
     ],
 )
 def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
@@ -966,6 +968,20 @@ def test_cotangent(backend, alltypes, df):
     result = expr.tmp.to_pandas()
     expected = 1.0 / np.tan(0.5 + df.double_col / dc_max).rename("tmp")
     backend.assert_series_equal(result, expected)
+
+
+# The trig column test normalizes to [0, 1], so it never reaches the magnitude
+# where an emulated tanh would overflow exp(2x) without clamping its input.
+# Compared exactly because tanh(+/-400) is bit-exact +/-1.0 in float64, and a
+# tolerant check would accept 0.9999999999999999 -- the bug this test guards.
+def test_tanh_saturates(con):
+    assert con.execute(L(400.0).tanh().name("tmp")) == 1.0
+    assert con.execute(L(-400.0).tanh().name("tmp")) == -1.0
+
+
+# Backends that emulate tanh with an input clamp must not turn NULL into +/-1.0.
+def test_tanh_null(con):
+    assert pd.isna(con.execute(L(None, type="float64").tanh().name("tmp")))
 
 
 @pytest.mark.parametrize(
@@ -1578,7 +1594,6 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
         param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
     ],
 )
-@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.never(
     ["materialize"],
@@ -1617,14 +1632,12 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
             lshift,
             marks=[
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
             ],
         ),
         param(
             rshift,
             marks=[
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
             ],
         ),
     ],

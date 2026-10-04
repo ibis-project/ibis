@@ -53,7 +53,7 @@ jobs:
           - false
     steps:
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: install python
         uses: actions/setup-python@v6
@@ -62,7 +62,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.3.0
+        uses: astral-sh/setup-uv@v7.6.0
 
       - name: install ${{ matrix.os }} system dependencies
         if: matrix.os != 'windows-latest'
@@ -76,21 +76,17 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: choco install graphviz
 
-      - name: install numpy/pandas/pyarrow
-        if: matrix.pyarrow
-        run: pip install numpy pandas pyarrow pyarrow-hotfix
-
       - uses: extractions/setup-just@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: run all core tests and run benchmarks once parallel
         if: matrix.os != 'windows-latest'
-        run: just ci-check "--extra visualization --extra decompiler" -m "'core or benchmark'" --numprocesses auto -rfEs
+        run: just ci-check "--extra visualization --extra decompiler ${{ matrix.pyarrow && '--group pyarrow' || '' }}" -m "'core or benchmark'" --numprocesses auto -rfEs
 
       - name: run all core tests and run benchmarks once serial
         if: matrix.os == 'windows-latest'
-        run: just ci-check "--extra visualization --extra decompiler" -m "'core or benchmark'" -rfEs
+        run: just ci-check "--extra visualization --extra decompiler ${{ matrix.pyarrow && '--group pyarrow' || '' }}" -m "'core or benchmark'" -rfEs
 
       - name: upload code coverage
         if: success()
@@ -112,7 +108,7 @@ jobs:
           sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev unixodbc-dev
 
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: install python
         uses: actions/setup-python@v6
@@ -123,7 +119,7 @@ jobs:
           python-version: "3.13"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.3.0
+        uses: astral-sh/setup-uv@v7.6.0
 
       - uses: extractions/setup-just@v3
         env:

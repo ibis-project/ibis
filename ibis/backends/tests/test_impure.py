@@ -85,15 +85,27 @@ def my_random(x: float) -> float:  # noqa: ARG001
     return random.random()  # noqa: S311
 
 
+# https://github.com/apache/datafusion/issues/23220
+datafusion_inlines_volatile = pytest.mark.notyet(
+    ["datafusion"],
+    raises=AssertionError,
+    reason="datafusion >= 52 duplicates volatile exprs via projection pushdown into the file scan",
+)
+
 mark_impures = pytest.mark.parametrize(
     "impure",
     [
-        pytest.param(lambda _: ibis.random(), marks=no_randoms, id="random"),
+        pytest.param(
+            lambda _: ibis.random(),
+            marks=[*no_randoms, datafusion_inlines_volatile],
+            id="random",
+        ),
         pytest.param(
             lambda _: ibis.uuid().cast(str).contains("a").ifelse(1, 0),
             marks=[
                 *no_uuids,
                 pytest.mark.notyet("impala", reason="instances are uncorrelated"),
+                datafusion_inlines_volatile,
             ],
             id="uuid",
         ),

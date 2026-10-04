@@ -31,7 +31,7 @@ services:
         - CMD
         - mariadb-admin
         - ping
-    image: mariadb:12.1.2
+    image: mariadb:12.3.2
     ports:
       - 3306:3306
     networks:
@@ -54,7 +54,7 @@ services:
       test:
         - CMD-SHELL
         - sdb-admin query --host 127.0.0.1 --user root --password ibis_testing --port 3306 --sql 'select 1'
-    image: ghcr.io/singlestore-labs/singlestoredb-dev:0.2.74
+    image: ghcr.io/singlestore-labs/singlestoredb-dev:0.2.82
     ports:
       - 3307:3306 # Use 3307 to avoid conflict with MySQL
       - 9089:9000 # Data API (use 9089 to avoid conflicts)
@@ -109,7 +109,7 @@ services:
       - mssql
 
   hive-metastore-db:
-    image: postgres:18.1-alpine
+    image: postgres:18.4-alpine
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -199,7 +199,7 @@ services:
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
   druid-postgres:
-    image: postgres:18.1-alpine
+    image: postgres:18.4-alpine
     container_name: druid-postgres
     environment:
       POSTGRES_PASSWORD: FoolishPassword
@@ -394,7 +394,7 @@ services:
       - oracle:/opt/oracle/data
 
   exasol:
-    image: exasol/docker-db:2025.2.0
+    image: exasol/docker-db:2025.2.1
     privileged: true
     ports:
       - 8563:8563

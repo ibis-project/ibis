@@ -122,6 +122,14 @@ class DruidCompiler(SQLGlotCompiler):
     def visit_Sign(self, op, *, arg):
         return self.if_(arg.eq(0), 0, self.if_(arg > 0, 1, -1))
 
+    # Druid has no TANH: use the exponential identity, naming `arg` and `e` once
+    # each so nested tanh stays linear in SQL text. Input clamped to +/-20 because
+    # EXP overflow is a hard error ("unsupported value [Infinity]") and tanh is
+    # already exactly +/-1.0 there; NULL guarded because LEAST/GREATEST drop NULLs.
+    def visit_Tanh(self, op, *, arg):
+        e = self.f.exp(2.0 * self.f.least(self.f.greatest(arg, -20.0), 20.0))
+        return self.if_(arg.is_(NULL), NULL, 1.0 - 2.0 / (e + 1.0))
+
     def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
         return self.agg.string_agg(arg, sep, 1 << 20, where=where, order_by=order_by)
 
