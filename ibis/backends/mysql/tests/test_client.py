@@ -144,11 +144,6 @@ def test_get_schema_from_query_other_schema(con, tmp_t):
     assert t.schema() == ibis.schema({"x": dt.inet})
 
 
-@pytest.mark.notyet(
-    ["mysql"],
-    raises=Exception,
-    reason="ADBC MySQL driver cannot parse zero timestamps ('0000-00-00 00:00:00')",
-)
 def test_zero_timestamp_data(con):
     sql = """
     CREATE TEMPORARY TABLE ztmp_date_issue
