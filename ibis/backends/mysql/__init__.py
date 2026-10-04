@@ -484,14 +484,11 @@ class Backend(
         sql = self.compile(table_expr, limit=limit, params=params)
         target_schema = table_expr.schema().to_pyarrow()
 
-        cur = self.raw_sql(sql)
-        reader = cur.fetch_record_batch()
-
         def batch_producer():
-            try:
-                for batch in reader:
+            # open the cursor lazily so that a reader that is never consumed
+            # doesn't leak it
+            with self._safe_raw_sql(sql) as cur:
+                for batch in cur.fetch_record_batch():
                     yield batch.rename_columns(target_schema.names).cast(target_schema)
-            finally:
-                cur.close()
 
         return pa.ipc.RecordBatchReader.from_batches(target_schema, batch_producer())
