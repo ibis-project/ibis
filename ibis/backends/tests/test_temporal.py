@@ -1453,11 +1453,6 @@ def build_single_digit_date_col(con):
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notyet(
-    ["flink"],
-    raises=AssertionError,
-    reason="Flink misinterprets strftime-style format strings, producing a wrong date",
-)
 def test_string_as_date_single_digit_month_day(backend, con, expr_fn):
     expr = expr_fn(con).name("parsed_date").as_table()
     result = con.execute(expr)
