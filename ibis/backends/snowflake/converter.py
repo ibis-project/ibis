@@ -99,7 +99,7 @@ else:
         )
 
     def source_schema(schema: Schema) -> pa.Schema:
-        """Return the pyarrow schema snowflake sends for the JSON-encoded part of `schema`.
+        """Return the pyarrow schema snowflake sends for `schema`.
 
         Identical to `PyArrowSchema.from_ibis` except that JSON-encoded columns
         arrive as strings: snowflake has no typed wire format for VARIANT,
