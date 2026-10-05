@@ -1457,7 +1457,7 @@ def build_single_digit_date_col(con):
     reason="Materialize doesn't have to_date() function - backend limitation",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
+    ["clickhouse", "chdb", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 def test_string_as_date_single_digit_month_day(backend, con, expr_fn):
