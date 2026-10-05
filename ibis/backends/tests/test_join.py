@@ -378,6 +378,7 @@ def test_join_conflicting_columns(backend, con):
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "druid",
         "exasol",

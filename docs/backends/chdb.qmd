@@ -1,0 +1,82 @@
+---
+execute:
+  freeze: auto
+---
+# chDB
+
+[https://github.com/chdb-io/chdb](https://github.com/chdb-io/chdb)
+
+chDB is an embedded, in-process build of ClickHouse. This backend runs the
+ClickHouse engine inside your Python process—no server required—and reuses
+Ibis's ClickHouse SQL compiler and type system.
+
+![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-local files | pandas | PyArrow-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
+
+## Install
+
+Install Ibis and the chDB engine:
+
+```{.bash}
+pip install 'ibis-framework[chdb]' chdb
+```
+
+::: {.callout-note}
+Unlike other backends, the `chdb` package is not pulled in by the `chdb`
+extra, so install it separately as shown above. If it is missing, connecting
+raises an error pointing you at `pip install chdb`.
+:::
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.chdb.connect()  # <1>
+```
+
+1. Defaults to an in-memory database; pass a directory for a persistent one.
+
+## Connect
+
+### `ibis.chdb.connect`
+
+```python
+con = ibis.chdb.connect()  # in-memory
+con = ibis.chdb.connect("/path/to/db")  # persistent, on disk
+```
+
+::: {.callout-note}
+`ibis.chdb.connect` is a thin wrapper around [`ibis.backends.chdb.Backend.do_connect`](#ibis.backends.chdb.Backend.do_connect).
+:::
+
+::: {.callout-note}
+chDB runs one engine per process: the first connection fixes the on-disk path,
+and connecting to a different path raises until the open connections are closed.
+:::
+
+### Connection Parameters
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("chdb")
+```
+
+### `ibis.connect` URL format
+
+In addition to `ibis.chdb.connect`, you can connect by passing a path-based URL
+to `ibis.connect`:
+
+```python
+con = ibis.connect("chdb:///path/to/db")  # persistent
+con = ibis.connect("chdb://")  # in-memory
+```
+
+```{python}
+#| echo: false
+BACKEND = "chDB"
+```
+
+{{< include ./_templates/api.qmd >}}

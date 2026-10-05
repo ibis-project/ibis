@@ -20,6 +20,7 @@ import ibis.expr.datatypes as dt
 from ibis.backends import _get_backend_names
 from ibis.backends.tests.errors import (
     ArrowInvalid,
+    ArrowNotImplementedError,
     DuckDBInvalidInputException,
     ExaQueryError,
     GoogleBadRequest,
@@ -577,7 +578,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             pd.Timedelta,
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse"], raises=com.UnsupportedOperationError
+                    ["clickhouse", "chdb"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notimpl(
                     ["flink"],
@@ -597,7 +598,8 @@ def test_date_truncate(backend, alltypes, df, unit):
             pd.Timedelta,
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "sqlite"], raises=com.UnsupportedOperationError
+                    ["clickhouse", "chdb", "sqlite"],
+                    raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notimpl(
                     ["trino", "athena"],
@@ -892,6 +894,11 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=Exception,
                     reason="pyarrow.lib.ArrowNotImplementedError: Unsupported cast",
                 ),
+                pytest.mark.notyet(
+                    ["chdb"],
+                    raises=ArrowNotImplementedError,
+                    reason="unsupported cast from int64 to interval",
+                ),
                 pytest.mark.notimpl(
                     ["oracle"],
                     raises=com.OperationNotDefinedError,
@@ -937,7 +944,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             id="large-days-plus",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=AssertionError,
                     reason="DateTime column overflows, should use DateTime64",
                 ),
@@ -962,7 +969,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             id="large-days-minus",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=AssertionError,
                     reason="DateTime column overflows, should use DateTime64",
                 ),
@@ -1167,7 +1174,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     reason="PySpark backend does not support timestamp from unix time with unit ms. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=com.UnsupportedOperationError,
                     reason="`ms` unit is not supported!",
                 ),
@@ -1188,7 +1195,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                 ),
                 pytest.mark.notimpl(["druid"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notimpl(
-                    ["duckdb", "mssql", "clickhouse"],
+                    ["duckdb", "mssql", "clickhouse", "chdb"],
                     raises=com.UnsupportedOperationError,
                     reason="`us` unit is not supported!",
                 ),
@@ -1214,7 +1221,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                 ),
                 pytest.mark.notimpl(["druid"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notimpl(
-                    ["duckdb", "mssql", "clickhouse"],
+                    ["duckdb", "mssql", "clickhouse", "chdb"],
                     raises=com.UnsupportedOperationError,
                     reason="`ns` unit is not supported!",
                 ),
@@ -1331,7 +1338,7 @@ def test_integer_to_timestamp(backend, con, unit):
     reason="Materialize doesn't support to_timestamp(text, format) - backend limitation",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
+    ["clickhouse", "chdb", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 def test_string_as_timestamp(alltypes, fmt):
@@ -1350,7 +1357,7 @@ def test_string_as_timestamp(alltypes, fmt):
     reason="Materialize doesn't support to_timestamp(text, format) - backend limitation",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    ["clickhouse", "chdb", "sqlite", "datafusion", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
@@ -1421,7 +1428,7 @@ def test_string_as_timestamp_with_time(con):
     reason="Materialize doesn't have to_date() function - backend limitation",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
+    ["clickhouse", "chdb", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 def test_string_as_date(alltypes, fmt):
@@ -1455,7 +1462,7 @@ def build_single_digit_date_col(con):
     reason="Materialize doesn't have to_date() function - backend limitation",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
+    ["clickhouse", "chdb", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1478,6 +1485,7 @@ def test_string_as_date_single_digit_month_day(backend, con, expr_fn):
         "pyspark",
         "exasol",
         "clickhouse",
+        "chdb",
         "impala",
         "mssql",
         "oracle",
@@ -1632,6 +1640,7 @@ def test_today_from_projection(alltypes):
 DATE_BACKEND_TYPES = {
     "bigquery": "DATE",
     "clickhouse": "Date",
+    "chdb": "Date",
     "duckdb": "DATE",
     "flink": "DATE NOT NULL",
     "impala": "DATE",
@@ -1660,6 +1669,7 @@ def test_date_literal(con, backend):
 TIMESTAMP_BACKEND_TYPES = {
     "bigquery": "DATETIME",
     "clickhouse": "DateTime",
+    "chdb": "DateTime",
     "impala": "TIMESTAMP",
     "snowflake": "TIMESTAMP_NTZ",
     "sqlite": "text",
@@ -1764,7 +1774,7 @@ TIME_BACKEND_TYPES = {
     reason="Materialize doesn't have make_time() function - backend limitation",
 )
 @pytest.mark.notyet(
-    ["clickhouse", "impala", "exasol"], raises=com.OperationNotDefinedError
+    ["clickhouse", "chdb", "impala", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
@@ -1781,7 +1791,7 @@ def test_time_literal(con, backend):
 
 
 @pytest.mark.notyet(
-    ["clickhouse", "impala"],
+    ["clickhouse", "chdb", "impala"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't have a time datatype",
 )
@@ -1834,6 +1844,7 @@ def test_extract_time_from_timestamp(con, microsecond):
 INTERVAL_BACKEND_TYPES = {
     "bigquery": "INTERVAL",
     "clickhouse": "IntervalSecond",
+    "chdb": "IntervalSecond",
     "sqlite": "integer",
     "trino": "interval day to second",
     "athena": "interval day to second",
@@ -2000,7 +2011,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse"],
+    ["clickhouse", "chdb"],
     raises=com.UnsupportedOperationError,
     reason="Results in Timestamp('2023-11-04 14:47:18') (no subsecond) https://github.com/ClickHouse/ClickHouse/issues/29386",
 )
@@ -2042,7 +2053,7 @@ def test_subsecond_cast_to_timestamp(con, dtype):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "athena"],
+    ["clickhouse", "chdb", "athena"],
     raises=AssertionError,
     reason="clickhouse truncates the result",
 )
@@ -2124,7 +2135,9 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "athena"], reason="returns incorrect results", raises=AssertionError
+    ["clickhouse", "chdb", "athena"],
+    reason="returns incorrect results",
+    raises=AssertionError,
 )
 @pytest.mark.notyet(
     ["pyspark"],
@@ -2258,7 +2271,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
             id="time",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=com.OperationNotDefinedError,
                     reason="time types not yet implemented in ibis for the clickhouse backend",
                 ),
@@ -2332,7 +2345,7 @@ def test_delta(con, start, end, unit, expected):
             "50ms",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=com.UnsupportedOperationError,
                     reason="backend doesn't support sub-second interval precision",
                 ),
@@ -2445,7 +2458,7 @@ def test_timestamp_bucket(backend, kws, pd_freq):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "mssql", "snowflake"],
+    ["clickhouse", "chdb", "mssql", "snowflake"],
     reason="offset arg not supported",
     raises=com.UnsupportedOperationError,
 )
@@ -2537,7 +2550,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
             "9999-01-02",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=AssertionError,
                     reason="clickhouse doesn't support dates after 2149-06-06",
                 ),
@@ -2558,7 +2571,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
             id="small",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=AssertionError,
                     reason="clickhouse doesn't support dates before the UNIX epoch",
                 ),
@@ -2580,7 +2593,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
         ),
         param(
             "2150-01-01",
-            marks=pytest.mark.notyet(["clickhouse"], raises=AssertionError),
+            marks=pytest.mark.notyet(["clickhouse", "chdb"], raises=AssertionError),
             id="medium",
         ),
     ],
