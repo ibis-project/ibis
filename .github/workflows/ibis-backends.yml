@@ -148,6 +148,16 @@ jobs:
               - singlestoredb
             extras:
               - --extra singlestoredb
+          - name: starrocks
+            title: StarRocks
+            serial: true
+            services:
+              - starrocks
+            extras:
+              - --extra starrocks
+            sys-deps:
+              - default-libmysqlclient-dev
+              - mariadb-client
           - name: postgres
             title: PostgreSQL
             serial: true
@@ -332,6 +342,18 @@ jobs:
                 - --extra singlestoredb
               services:
                 - singlestoredb
+          - os: windows-latest
+            backend:
+              name: starrocks
+              title: StarRocks
+              serial: true
+              services:
+                - starrocks
+              extras:
+                - --extra starrocks
+              sys-deps:
+                - default-libmysqlclient-dev
+                - mariadb-client
           - os: windows-latest
             backend:
               name: clickhouse
