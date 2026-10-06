@@ -514,6 +514,15 @@ def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
     return result
 
 
+def _pivot_name_from_value(value: Any) -> str:
+    """Convert a value from `names_from` into part of a column name."""
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return str(value).lower()
+    return str(value)
+
+
 @public
 class Table(Expr, FixedTextJupyterMixin):
     """An immutable and lazy dataframe.
@@ -4545,7 +4554,7 @@ class Table(Expr, FixedTextJupyterMixin):
         names_prefix: str = "",
         names_sep: str = "_",
         names_sort: bool = False,
-        names: Iterable[str] | None = None,
+        names: Iterable[Any] | None = None,
         values_from: str | Iterable[str] | s.Selector = "value",
         values_fill: int | float | str | ir.Scalar | None = None,
         values_agg: str | Callable[[ir.Value], ir.Scalar] | Deferred = "arbitrary",
@@ -4558,7 +4567,8 @@ class Table(Expr, FixedTextJupyterMixin):
             A set of columns that uniquely identify each observation.
         names_from
             An argument describing which column or columns to use to get the
-            name of the output columns.
+            name of the output columns. Non-string values are converted to
+            strings, with booleans becoming `true`/`false` and NULLs `null`.
         names_prefix
             String added to the start of every column name.
         names_sep
@@ -4952,18 +4962,26 @@ class Table(Expr, FixedTextJupyterMixin):
 
         if names is None:
             # no names provided, compute them from the data
-            names = self.select(names_from).distinct().execute()
-            columns = names.columns.tolist()
-            names = list(names.itertuples(index=False))
+            names = self.select(names_from).distinct().to_pyarrow()
+            columns = names.column_names
+            names = list(zip(*(col.to_pylist() for col in names.columns)))
         else:
             if not (columns := [col.get_name() for col in names_from.expand(self)]):
                 raise com.IbisInputError(
                     f"No matching names columns in `names_from`: {orig_names_from}"
                 )
-            names = list(map(tuple, map(util.promote_list, names)))
+            names = [
+                (None,) if name is None else tuple(util.promote_list(name))
+                for name in names
+            ]
 
         if names_sort:
-            names.sort()
+            # sort NULLs and NaNs last, since neither can be compared with `<`
+            names.sort(
+                key=lambda key: tuple(
+                    (value is None, value != value, value) for value in key
+                )
+            )
 
         values_cols = values_from.expand(self)
         more_than_one_value = len(values_cols) > 1
@@ -4993,10 +5011,14 @@ class Table(Expr, FixedTextJupyterMixin):
                     # include the `values` column name if there's more than one
                     # `values` column
                     values_col.get_name() * more_than_one_value,
-                    # values computed from `names`/`names_from`
-                    *keys,
                 )
-                key = names_sep.join(filter(None, key_components))
+                key = names_sep.join(
+                    (*filter(None, key_components), *map(_pivot_name_from_value, keys))
+                )
+                if key in aggs:
+                    raise com.IbisInputError(
+                        f"Duplicate column name {key!r} in result set"
+                    )
                 aggs[key] = arg if values_fill is None else arg.coalesce(values_fill)
 
         grouping_keys = id_cols.expand(self)

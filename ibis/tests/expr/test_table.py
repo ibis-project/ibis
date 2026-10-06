@@ -2046,6 +2046,37 @@ def test_pivot_wider():
         fish.pivot_wider(names=["Release", "Lisbon"], values_from="seen")
 
 
+@pytest.mark.parametrize(
+    ("names_type", "names", "kwargs", "expected"),
+    [
+        pytest.param("int", [0, 3], {}, ("0", "3"), id="int"),
+        pytest.param("int", [0], {}, ("0",), id="zero"),
+        pytest.param("boolean", [False, True], {}, ("false", "true"), id="bool"),
+        pytest.param("int", [0, None], {}, ("0", "null"), id="null"),
+        pytest.param("int", [0], {"names_prefix": "n"}, ("n_0",), id="prefix"),
+        pytest.param(
+            "int",
+            [0],
+            {"values_from": ["a", "b"]},
+            ("a_0", "b_0"),
+            id="multiple_values",
+        ),
+    ],
+)
+def test_pivot_wider_non_string_names(names_type, names, kwargs, expected):
+    t = ibis.table({"id": "int", "n": names_type, "a": "int", "b": "int"}, name="t")
+    res = t.pivot_wider(
+        id_cols="id", names=names, names_from="n", **{"values_from": "a", **kwargs}
+    )
+    assert res.schema().names == ("id", *expected)
+
+
+def test_pivot_wider_duplicate_names():
+    t = ibis.table({"id": "int", "n": "string", "a": "int"}, name="t")
+    with pytest.raises(com.IbisInputError, match="Duplicate column name 'null'"):
+        t.pivot_wider(names=["null", None], names_from="n", values_from="a")
+
+
 def test_invalid_deferred():
     t = ibis.table(dict(value="int", lagged_value="int"), name="t")
 
