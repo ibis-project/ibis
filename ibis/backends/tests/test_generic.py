@@ -1939,14 +1939,24 @@ def test_cast(con, from_type, to_type, from_val, expected):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "druid", "impala", "singlestoredb"],
+    ["clickhouse", "impala", "singlestoredb"],
     raises=AssertionError,
     reason="renders 1/0",
 )
 @pytest.mark.notimpl(
-    ["exasol", "flink", "oracle"],
+    ["exasol", "flink"],
     raises=AssertionError,
     reason="renders TRUE/FALSE",
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="cannot cast a computed boolean to string",
+)
+@pytest.mark.notimpl(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="ORA-02000 on a computed boolean cast to string",
 )
 def test_cast_computed_bool_to_string(alltypes, df) -> None:
     # A computed boolean (rather than a literal) must also cast to the
