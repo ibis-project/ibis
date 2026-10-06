@@ -2749,14 +2749,12 @@ def test_simple_pivot_wider(con, backend, monkeypatch):
     ("names", "expected"),
     [
         pytest.param([0, 3], {"0": [3], "3": [4]}, id="int"),
-        pytest.param([0, None], {"0": [3], "null": [4]}, id="null"),
+        pytest.param(["a", None], {"a": [3], "null": [4]}, id="null"),
     ],
 )
 def test_pivot_wider_non_string_names_from(con, backend, monkeypatch, names, expected):
     monkeypatch.setattr(ibis.options, "default_backend", con)
-    t = ibis.memtable(
-        {"n": names, "counted": [3, 4]}, schema={"n": "int64", "counted": "int64"}
-    )
+    t = ibis.memtable({"n": names, "counted": [3, 4]})
     expr = t.pivot_wider(
         names_from="n", values_from="counted", values_agg="sum", names_sort=True
     )
