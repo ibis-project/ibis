@@ -55,6 +55,12 @@ from ibis.backends.sql.datatypes import DuckDBType
             ("TIMESTAMP_S", dt.Timestamp(scale=0)),
             ("TIMESTAMP_MS", dt.Timestamp(scale=3)),
             ("TIMESTAMP_NS", dt.Timestamp(scale=9)),
+            ("GEOMETRY", dt.GeoSpatial(geotype="geometry")),
+            ("GEOMETRY(POINT)", dt.Point(geotype="geometry")),
+            ("GEOMETRY(POINT, 4326)", dt.Point(geotype="geometry", srid=4326)),
+            # duckdb spatial >= 1.5 reports the CRS instead of a subtype
+            ("GEOMETRY('EPSG:4326')", dt.GeoSpatial(geotype="geometry", srid=4326)),
+            ("GEOMETRY('OGC:CRS84')", dt.GeoSpatial(geotype="geometry")),
         ]
     ],
 )
