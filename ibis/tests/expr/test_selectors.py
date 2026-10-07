@@ -565,3 +565,11 @@ def test_invalid_composition():
 
     with pytest.raises(exc.IbisInputError, match="Cannot compose"):
         s.across(left, _ + 1)
+
+
+def test_table_selector_annotations():
+    from ibis.expr.types.relations import Table
+
+    for method in (Table.select, Table.mutate, Table.group_by):
+        annotations = method.__annotations__
+        assert any("Selector" in str(ann) for ann in annotations.values())

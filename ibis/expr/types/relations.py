@@ -1281,11 +1281,14 @@ class Table(Expr, FixedTextJupyterMixin):
         self,
         *by: str
         | ir.Value
+        | s.Selector
         | Deferred
-        | Iterable[str]
-        | Iterable[ir.Value]
-        | Iterable[Deferred],
-        **key_exprs: str | ir.Value | Iterable[str] | Iterable[ir.Value],
+        | Iterable[str | ir.Value | s.Selector | Deferred],
+        **key_exprs: str
+        | ir.Value
+        | s.Selector
+        | Deferred
+        | Iterable[str | ir.Value | s.Selector | Deferred],
     ) -> GroupedTable:
         """Create a grouped table expression.
 
@@ -2338,7 +2341,13 @@ class Table(Expr, FixedTextJupyterMixin):
         return self.as_scalar()
 
     def mutate(
-        self, *exprs: ir.Value | Deferred, **mutations: ir.Value | Deferred | str
+        self,
+        *exprs: str
+        | ir.Value
+        | s.Selector
+        | Deferred
+        | Iterable[str | ir.Value | s.Selector | Deferred],
+        **mutations: str | ir.Value | s.Selector | Deferred,
     ) -> Table:
         """Add columns to a table expression.
 
@@ -2448,8 +2457,12 @@ class Table(Expr, FixedTextJupyterMixin):
 
     def select(
         self,
-        *exprs: ir.Value | str | Iterable[ir.Value | str] | Deferred,
-        **named_exprs: ir.Value | str | Deferred,
+        *exprs: str
+        | ir.Value
+        | s.Selector
+        | Deferred
+        | Iterable[str | ir.Value | s.Selector | Deferred],
+        **named_exprs: str | ir.Value | s.Selector | Deferred,
     ) -> Table:
         """Compute a new table expression using `exprs` and `named_exprs`.
 
