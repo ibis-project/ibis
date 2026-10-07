@@ -679,3 +679,16 @@ def test_struct_field_simplified(snapshot, accessor):
     for _i in range(5):
         s = ibis.struct({"i": accessor(s, "i") + 1, "s": accessor(s, "s") + "bar"})
     snapshot.assert_match(ibis.to_sql(s.i, dialect="duckdb"), "out.sql")
+
+
+@pytest.mark.parametrize(
+    "dialect", ["athena", "trino", "postgres", "snowflake", "bigquery"]
+)
+def test_split_select_distinct_order_by_with_filter(dialect):
+    t = ibis.table({"id": "int64", "dt": "string"}, name="tbl")
+    expr = t.filter(t.dt == "2025-01-01").select("id").distinct().order_by("id")
+    sql = ibis.to_sql(expr, dialect=dialect)
+    distinct_cols = sql.split("SELECT DISTINCT")[1].split("FROM")[0]
+    assert "*" not in distinct_cols
+    assert "dt" not in distinct_cols
+    assert "id" in distinct_cols

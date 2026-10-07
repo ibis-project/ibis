@@ -450,22 +450,16 @@ def split_select_distinct_with_order_by(_):
     # local names, we always split SELECT DISTINCT from ORDER BY here. Otherwise we
     # could also avoid splitting if all sort keys appear in the select list.
     if _.distinct and _.sort_keys:
-        # select every visible field across all properties from the current
-        # query (e.g., include sort_keys and not just selections), in case the
-        # that query's selections don't include fields used in sort keys
-        #
-        # 1. start with all fields
+        # select any fields used in sort_keys that aren't already part of the selections,
+        # in case that query's selections don't include fields used in sort keys
         additional_fields = {
-            field.name: field for field in _.find_below(ops.Field, filter=ops.Value)
+            field.name: field
+            for sort_key in _.sort_keys
+            for field in sort_key.find(ops.Field, filter=ops.Value)
         }
-        # 2. then find any fields that are part of the current selection set,
-        # either as a more complex expression or as a simple field reference
-        # 3. remove the fields that are already present
-        # 4. what remains are the fields that must be added to the select set
-        # to be a valid query for any backend opting into this rewrite
         for selection in _.selections.values():
-            for field in selection.find_below(ops.Field, filter=ops.Value):
-                del additional_fields[field.name]
+            for field in selection.find(ops.Field, filter=ops.Value):
+                additional_fields.pop(field.name, None)
 
         inner = _.copy(selections=_.selections | additional_fields, sort_keys=())
         subs = {v: ops.Field(inner, k) for k, v in inner.values.items()}
