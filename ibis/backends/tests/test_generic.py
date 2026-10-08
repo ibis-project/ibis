@@ -1855,6 +1855,29 @@ def test_hexdigest(backend, alltypes):
         param("string", "int", "0", 0, id="string_to_int"),
         param("string", "float", "0", 0.0, id="string_to_float"),
         param(
+            "string",
+            "time",
+            "01:02:03",
+            datetime.time(1, 2, 3),
+            marks=[
+                pytest.mark.notimpl(
+                    ["sqlite"],
+                    raises=AssertionError,
+                    reason="SQLite returns Timedelta from execution",
+                ),
+                pytest.mark.notyet(
+                    ["clickhouse", "impala"],
+                    raises=AssertionError,
+                    reason="backend doesn't have a time datatype",
+                ),
+                pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError),
+                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notimpl(["pyspark"], raises=AttributeError),
+                pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
+            ],
+            id="string_to_time",
+        ),
+        param(
             "array<int>",
             "array<string>",
             [0, 1, 2],
@@ -1916,6 +1939,21 @@ def test_cast(con, from_type, to_type, from_val, expected):
         param("0", "int", 0),
         param("0.0", "float", 0.0),
         param(
+            "01:02:03",
+            "time",
+            datetime.time(1, 2, 3),
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse", "impala"],
+                    raises=AssertionError,
+                    reason="backend doesn't have a time datatype",
+                ),
+                pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError),
+                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notimpl(["pyspark"], raises=AttributeError),
+            ],
+        ),
+        param(
             datetime.datetime(2023, 1, 1),
             "int",
             1672531200,
@@ -1955,7 +1993,6 @@ def test_try_cast(con, from_val, to_type, expected):
         "datafusion",
         "druid",
         "exasol",
-        "mysql",
         "singlestoredb",
         "oracle",
         "postgres",
@@ -1971,11 +2008,13 @@ def test_try_cast(con, from_val, to_type, expected):
 @pytest.mark.parametrize(
     ("from_val", "to_type"),
     [
-        param("a", "int"),
+        param("a", "int", marks=pytest.mark.notimpl(["mysql"])),
+        param("a", "time"),
         param(
             datetime.datetime(2023, 1, 1),
             "int",
             marks=[
+                pytest.mark.notimpl(["mysql"]),
                 pytest.mark.never(
                     ["clickhouse", "pyspark", "flink", "databricks"],
                     reason="casts to 1672531200",
