@@ -1468,8 +1468,24 @@ def build_single_digit_date_col(con):
 @pytest.mark.parametrize(
     "expr_fn",
     [
-        param(lambda _: ibis.literal("1/2/2021").as_date("%m/%d/%Y"), id="literal"),
-        param(build_single_digit_date_col, id="column"),
+        param(
+            lambda _: ibis.literal("1/2/2021").as_date("%m/%d/%Y"),
+            id="literal",
+            marks=pytest.mark.notimpl(
+                ["db2"],
+                raises=IbmDb2Error,
+                reason="DB2 has no STR_TO_DATE function",
+            ),
+        ),
+        param(
+            build_single_digit_date_col,
+            id="column",
+            marks=pytest.mark.notimpl(
+                ["db2"],
+                raises=IbmDb2Error,
+                reason="DB2 requires FROM clause for scalar SELECT",
+            ),
+        ),
     ],
 )
 @pytest.mark.notyet(
