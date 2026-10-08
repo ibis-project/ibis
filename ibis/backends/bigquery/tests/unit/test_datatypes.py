@@ -90,3 +90,25 @@ def test_array_type():
 
     assert parsed_type.sql(dialect="bigquery") == expected
     assert BigQueryType.to_string(dtype) == expected
+
+
+def test_timestamp_datetime_scale():
+    import google.cloud.bigquery as bq
+    import polars as pl
+
+    from ibis.backends.bigquery.datatypes import BigQuerySchema
+    from ibis.formats.polars import PolarsSchema
+
+    assert BigQueryType.from_string("TIMESTAMP") == dt.Timestamp(
+        timezone="UTC", scale=6
+    )
+    assert BigQueryType.from_string("DATETIME") == dt.Timestamp(timezone=None, scale=6)
+
+    fields = [bq.SchemaField("ts", "TIMESTAMP"), bq.SchemaField("dt", "DATETIME")]
+    schema = BigQuerySchema.to_ibis(fields)
+    assert schema["ts"] == dt.Timestamp(timezone="UTC", scale=6)
+    assert schema["dt"] == dt.Timestamp(timezone=None, scale=6)
+
+    polars_schema = PolarsSchema.from_ibis(schema)
+    assert polars_schema["ts"] == pl.Datetime("us", "UTC")
+    assert polars_schema["dt"] == pl.Datetime("us", None)

@@ -1000,6 +1000,7 @@ class BigQueryType(SqlglotType):
 
     default_decimal_precision = 38
     default_decimal_scale = 9
+    default_temporal_scale = 6
 
     @classmethod
     def _from_sqlglot_NUMERIC(cls, nullable: bool | None = None) -> dt.Decimal:
@@ -1013,17 +1014,29 @@ class BigQueryType(SqlglotType):
 
     @classmethod
     def _from_sqlglot_DATETIME(cls, nullable: bool | None = None) -> dt.Timestamp:
-        return dt.Timestamp(timezone=None, nullable=nullable)
+        return dt.Timestamp(
+            timezone=None, scale=cls.default_temporal_scale, nullable=nullable
+        )
 
     @classmethod
     def _from_sqlglot_TIMESTAMP(
         cls, scale: int | None = None, nullable: bool | None = None
     ) -> dt.Timestamp:
-        return dt.Timestamp(timezone=None, nullable=nullable)
+        return dt.Timestamp(
+            timezone=None,
+            scale=cls.default_temporal_scale if scale is None else int(scale.this.this),
+            nullable=nullable,
+        )
 
     @classmethod
-    def _from_sqlglot_TIMESTAMPTZ(cls, nullable: bool | None = None) -> dt.Timestamp:
-        return dt.Timestamp(timezone="UTC", nullable=nullable)
+    def _from_sqlglot_TIMESTAMPTZ(
+        cls, scale: int | None = None, nullable: bool | None = None
+    ) -> dt.Timestamp:
+        return dt.Timestamp(
+            timezone="UTC",
+            scale=cls.default_temporal_scale if scale is None else int(scale.this.this),
+            nullable=nullable,
+        )
 
     @classmethod
     def _from_sqlglot_GEOGRAPHY(
