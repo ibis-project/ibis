@@ -457,3 +457,14 @@ def test_schema_doesnt_match_input_columns():
     schema = sch.Schema({"a": "int64", "b": "int64"})
     with pytest.raises(ValueError, match="schema names don't match"):
         PandasData.convert_table(df, schema)
+
+
+def test_convert_decimal_empty_strings():
+    s = pd.Series(["1.23", "", " ", None, "4.56"])
+    dtype = dt.Decimal(10, 2)
+    result = PandasData.convert_column(s, dtype)
+    assert result[0] == Decimal("1.23")
+    assert pd.isna(result[1])
+    assert pd.isna(result[2])
+    assert pd.isna(result[3])
+    assert result[4] == Decimal("4.56")

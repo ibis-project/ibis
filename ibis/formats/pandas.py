@@ -281,7 +281,13 @@ class PandasData(DataMapper):
             scale=dtype.scale,
             strict=False,
         )
-        return s.map(func, na_action="ignore")
+
+        def try_decimal(v):
+            if isinstance(v, str) and not v.strip():
+                return None
+            return func(v)
+
+        return s.map(try_decimal, na_action="ignore")
 
     @classmethod
     def convert_UUID(cls, s, dtype, pandas_type):
