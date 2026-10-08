@@ -167,6 +167,8 @@ def _cast(op, strict=True, **kw):
             if time_unit == "s":
                 return arg.dt.truncate("1s")
             return arg
+    elif to.is_time() and dtype.is_string():
+        return arg.str.strptime(pl.Time, "%H:%M:%S%.f", strict=strict)
 
     typ = PolarsType.from_ibis(to)
     return arg.cast(typ, strict=strict)
