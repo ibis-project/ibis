@@ -1259,11 +1259,6 @@ def flatten_data():
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 ),
-                pytest.mark.notyet(
-                    ["polars"],
-                    reason="flattened empty arrays incorrectly insert a null",
-                    raises=AssertionError,
-                ),
             ],
         ),
     ],
@@ -1349,10 +1344,10 @@ def test_range_start_stop_step_zero(con, start, stop):
     assert list(result) == []
 
 
-@pytest.mark.notimpl(
-    ["polars"],
+@pytest.mark.xfail_version(
+    polars=["polars<2"],
     raises=AssertionError,
-    reason="ibis hasn't implemented this behavior yet",
+    reason="explode turns empty lists into nulls",
 )
 @pytest.mark.notyet(
     ["flink"],
