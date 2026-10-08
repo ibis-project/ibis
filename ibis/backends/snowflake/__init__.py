@@ -173,6 +173,13 @@ class Backend(
     def __init__(self, *args, _from_snowpark: bool = False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._from_snowpark = _from_snowpark
+        self.force_microsecond_precision: bool | None = None
+
+    @property
+    def _fetch_arrow_kwargs(self) -> dict[str, Any]:
+        if self.force_microsecond_precision is not None:
+            return {"force_microsecond_precision": self.force_microsecond_precision}
+        return {}
 
     def _convert_kwargs(self, kwargs):
         with contextlib.suppress(KeyError):
@@ -226,7 +233,12 @@ IMMUTABLE
 AS
 $$ {defn["source"]} $$"""
 
-    def do_connect(self, create_object_udfs: bool = True, **kwargs: Any):
+    def do_connect(
+        self,
+        create_object_udfs: bool = True,
+        force_microsecond_precision: bool | None = None,
+        **kwargs: Any,
+    ):
         """Connect to Snowflake.
 
         Parameters
@@ -254,9 +266,14 @@ $$ {defn["source"]} $$"""
         create_object_udfs
             Enable object UDF extensions defined by Ibis on the first
             connection to the database.
+        force_microsecond_precision
+            Whether to force microsecond precision for timestamp columns when fetching
+            Arrow or pandas data from Snowflake. If None, the argument is not passed to
+            the Snowflake connector.
         kwargs
             Additional arguments passed to the DBAPI connection call.
         """
+        self.force_microsecond_precision = force_microsecond_precision
         import snowflake.connector as sc
 
         connect_args = kwargs.copy()
@@ -387,6 +404,7 @@ $$ {defn["source"]} $$"""
         /,
         *,
         create_object_udfs: bool = True,
+        force_microsecond_precision: bool | None = None,
     ) -> Backend:
         """Create an Ibis Snowflake backend from an existing connection.
 
@@ -398,6 +416,10 @@ $$ {defn["source"]} $$"""
         create_object_udfs
             Enable object UDF extensions defined by Ibis on the first
             connection to the database.
+        force_microsecond_precision
+            Whether to force microsecond precision for timestamp columns when fetching
+            Arrow or pandas data from Snowflake. If None, the argument is not passed to
+            the Snowflake connector.
 
         Returns
         -------
@@ -434,6 +456,7 @@ $$ {defn["source"]} $$"""
             if isinstance(con, snowflake.connector.SnowflakeConnection)
             else con._conn._conn
         )
+        new_backend.force_microsecond_precision = force_microsecond_precision
         with contextlib.suppress(snowflake.connector.errors.ProgrammingError):
             # stored procs on snowflake don't allow session mutation it seems
             new_backend._setup_session(
@@ -463,7 +486,7 @@ $$ {defn["source"]} $$"""
 
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         with self._safe_raw_sql(sql) as cur:
-            res = cur.fetch_arrow_all()
+            res = cur.fetch_arrow_all(**self._fetch_arrow_kwargs)
 
         ibis_schema = expr.as_table().schema()
         if res is None:
@@ -476,7 +499,7 @@ $$ {defn["source"]} $$"""
         return expr.__pyarrow_result__(res, data_mapper=SnowflakePyArrowData)
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
-        if (table := cursor.fetch_arrow_all()) is None:
+        if (table := cursor.fetch_arrow_all(**self._fetch_arrow_kwargs)) is None:
             table = schema.to_pyarrow().empty_table()
         df = table.to_pandas(timestamp_as_object=True)
         df.columns = list(schema.names)
@@ -504,7 +527,9 @@ $$ {defn["source"]} $$"""
             )
 
         with self._safe_raw_sql(sql) as cur:
-            yield from map(format_result, cur.fetch_pandas_batches())
+            yield from map(
+                format_result, cur.fetch_pandas_batches(**self._fetch_arrow_kwargs)
+            )
 
     def to_pyarrow_batches(
         self,
@@ -535,7 +560,7 @@ $$ {defn["source"]} $$"""
                 t.rename_columns(target_schema.names)
                 .cast(target_schema)
                 .to_batches(max_chunksize=chunk_size)
-                for t in cur.fetch_arrow_batches()
+                for t in cur.fetch_arrow_batches(**self._fetch_arrow_kwargs)
             )
 
     def get_schema(

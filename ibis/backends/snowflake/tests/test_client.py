@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from collections import Counter
+from unittest import mock
 
 import hypothesis as h
 import hypothesis.strategies as st
@@ -10,12 +11,14 @@ import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
+import snowflake.connector
 import sqlglot as sg
 import sqlglot.expressions as sge
 from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+from ibis.backends.snowflake import Backend
 from ibis.backends.snowflake.tests.conftest import _get_url
 from ibis.util import gen_name
 
@@ -497,3 +500,82 @@ def test_fancy_column_names(con, column_name):
     t = con.sql(sql)
     assert t.columns == (column_name,)
     assert t[column_name].sum().execute() == value
+
+
+def test_force_microsecond_precision_default_and_setting():
+    con = Backend()
+    assert con.force_microsecond_precision is None
+    assert con._fetch_arrow_kwargs == {}
+
+    con.force_microsecond_precision = True
+    assert con._fetch_arrow_kwargs == {"force_microsecond_precision": True}
+
+    con.force_microsecond_precision = False
+    assert con._fetch_arrow_kwargs == {"force_microsecond_precision": False}
+
+
+def test_force_microsecond_precision_from_connection():
+    mock_conn = mock.MagicMock(spec=snowflake.connector.SnowflakeConnection)
+    con = Backend.from_connection(
+        mock_conn, force_microsecond_precision=True, create_object_udfs=False
+    )
+    assert con.force_microsecond_precision is True
+    assert con._fetch_arrow_kwargs == {"force_microsecond_precision": True}
+
+    con_default = Backend.from_connection(mock_conn, create_object_udfs=False)
+    assert con_default.force_microsecond_precision is None
+    assert con_default._fetch_arrow_kwargs == {}
+
+
+def test_force_microsecond_precision_passed_to_fetch(mocker):
+    con = Backend()
+    con.force_microsecond_precision = True
+    mock_cur = mock.MagicMock()
+    mock_cur.fetch_arrow_all.return_value = None
+    mock_cur.fetch_arrow_batches.return_value = []
+    mock_cur.fetch_pandas_batches.return_value = []
+
+    mock_context = mock.MagicMock()
+    mock_context.__enter__.return_value = mock_cur
+    mocker.patch.object(con, "_safe_raw_sql", return_value=mock_context)
+
+    schema = ibis.schema({"a": "int"})
+    # _fetch_from_cursor
+    con._fetch_from_cursor(mock_cur, schema)
+    mock_cur.fetch_arrow_all.assert_called_with(force_microsecond_precision=True)
+
+    # _make_batch_iter
+    list(con._make_batch_iter("SELECT 1", target_schema=schema, chunk_size=100))
+    mock_cur.fetch_arrow_batches.assert_called_with(force_microsecond_precision=True)
+
+    # to_pandas_batches
+    t = ibis.table({"a": "int"}, name="t")
+    list(con.to_pandas_batches(t))
+    mock_cur.fetch_pandas_batches.assert_called_with(force_microsecond_precision=True)
+
+
+def test_force_microsecond_precision_none_omits_kwarg(mocker):
+    con = Backend()
+    assert con.force_microsecond_precision is None
+    mock_cur = mock.MagicMock()
+    mock_cur.fetch_arrow_all.return_value = None
+    mock_cur.fetch_arrow_batches.return_value = []
+    mock_cur.fetch_pandas_batches.return_value = []
+
+    mock_context = mock.MagicMock()
+    mock_context.__enter__.return_value = mock_cur
+    mocker.patch.object(con, "_safe_raw_sql", return_value=mock_context)
+
+    schema = ibis.schema({"a": "int"})
+    # _fetch_from_cursor
+    con._fetch_from_cursor(mock_cur, schema)
+    mock_cur.fetch_arrow_all.assert_called_with()
+
+    # _make_batch_iter
+    list(con._make_batch_iter("SELECT 1", target_schema=schema, chunk_size=100))
+    mock_cur.fetch_arrow_batches.assert_called_with()
+
+    # to_pandas_batches
+    t = ibis.table({"a": "int"}, name="t")
+    list(con.to_pandas_batches(t))
+    mock_cur.fetch_pandas_batches.assert_called_with()
