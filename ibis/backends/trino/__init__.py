@@ -6,12 +6,12 @@ import contextlib
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import unquote_plus, urlparse
+from urllib.parse import unquote_plus
 
 import sqlglot as sg
 import sqlglot.expressions as sge
 import trino
-from trino.auth import BasicAuthentication
+from trino.auth import Authentication, BasicAuthentication
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -61,7 +61,10 @@ class Backend(
         if url.password:
             kwargs["auth"] = unquote_plus(url.password)
         if url.hostname:
-            kwargs["host"] = url.hostname
+            # Do NOT convert to url.hostname, the trino client expects an entire URL
+            # to do inference on http vs https, port, etc.
+            # https://github.com/trinodb/trino-python-client/blob/2108c38dea79518ffb74370177df2dc95f1e6d96/trino/dbapi.py#L169
+            kwargs["host"] = url
         if database:
             kwargs["database"] = database
         if url.port:
@@ -246,11 +249,12 @@ class Backend(
     def do_connect(
         self,
         user: str = "user",
-        auth: str | None = None,
+        auth: str | Authentication | None = None,
         host: str = "localhost",
         port: int = 8080,
         database: str | None = None,
         schema: str | None = None,
+        *,
         source: str | None = None,
         timezone: str = "UTC",
         **kwargs,
@@ -262,7 +266,7 @@ class Backend(
         user
             Username to connect with
         auth
-            Authentication method or password to use for the connection.
+            Password or authentication method to use for the connection.
         host
             Hostname of the Trino server
         port
@@ -297,11 +301,7 @@ class Backend(
         >>> con = ibis.trino.connect(database=catalog, schema=schema)
         >>> con = ibis.trino.connect(database=catalog, schema=schema, source="my-app")
         """
-        if (
-            isinstance(auth, str)
-            and (scheme := urlparse(host).scheme)
-            and scheme != "http"
-        ):
+        if isinstance(auth, str):
             auth = BasicAuthentication(user, auth)
 
         self.con = trino.dbapi.connect(
