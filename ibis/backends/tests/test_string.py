@@ -11,6 +11,7 @@ import ibis
 import ibis.common.exceptions as com
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    IbmDb2Error,
     MySQLOperationalError,
     OracleDatabaseError,
     PsycoPg2InternalError,
@@ -266,6 +267,7 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
@@ -309,6 +311,7 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
@@ -324,6 +327,7 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
@@ -339,6 +343,7 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
@@ -441,6 +446,7 @@ def uses_java_re(t):
                     raises=com.OperationNotDefinedError,
                     reason="doesn't support `TRANSLATE`",
                 ),
+                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
         ),
         param(
@@ -482,6 +488,7 @@ def uses_java_re(t):
                         "exasol",
                         "databricks",
                         "athena",
+                        "db2",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -511,6 +518,7 @@ def uses_java_re(t):
                         "exasol",
                         "databricks",
                         "athena",
+                        "db2",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -535,6 +543,7 @@ def uses_java_re(t):
             lambda t: t.string_col.reverse(),
             lambda t: t.string_col.str[::-1],
             id="reverse",
+            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
         ),
         param(
             lambda t: t.string_col.ascii_str(),
@@ -579,16 +588,19 @@ def uses_java_re(t):
             lambda t: t.string_col.strip(),
             lambda t: t.string_col.str.strip(),
             id="strip",
+            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
         ),
         param(
             lambda t: t.string_col.lstrip(),
             lambda t: t.string_col.str.lstrip(),
             id="lstrip",
+            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
         ),
         param(
             lambda t: t.string_col.rstrip(),
             lambda t: t.string_col.str.rstrip(),
             id="rstrip",
+            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
         ),
         param(
             lambda t: t.date_string_col.split("/"),
@@ -604,6 +616,7 @@ def uses_java_re(t):
                     "druid",
                     "oracle",
                     "exasol",
+                    "db2",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -612,10 +625,13 @@ def uses_java_re(t):
             lambda t: ibis.literal("-").join(["a", t.string_col, "c"]),
             lambda t: "a-" + t.string_col + "-c",
             id="join",
-            marks=pytest.mark.notimpl(
-                ["exasol"],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["exasol"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
+            ],
         ),
         param(
             lambda t: t.string_col + t.date_string_col,
@@ -736,6 +752,7 @@ def test_re_replace_global(con):
 
 
 @pytest.mark.notimpl(["druid"], raises=ValidationError)
+@pytest.mark.notimpl(["db2"], raises=AssertionError)
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
         substr_col_null=ibis.cases(
@@ -833,6 +850,7 @@ def test_substr_with_null_values(backend, alltypes, df):
         "druid",
         "oracle",
         "databricks",
+        "db2",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -858,6 +876,7 @@ def test_parse_url(con, result_func, expected):
             "",
             id="empty",
             marks=[
+                pytest.mark.notimpl(["db2"], raises=SystemError),
                 pytest.mark.notyet(
                     ["oracle"],
                     reason="https://github.com/oracle/python-oracledb/issues/298",
@@ -866,14 +885,54 @@ def test_parse_url(con, result_func, expected):
                 pytest.mark.notyet(["exasol"], raises=AssertionError),
             ],
         ),
-        param("Abc", "Abc", id="no_change"),
-        param("abc", "Abc", id="lower_to_upper"),
-        param("aBC", "Abc", id="mixed_to_upper"),
-        param(" abc", " abc", id="leading_space"),
-        param("9abc", "9abc", id="leading_digit"),
-        param("aBc dEf", "Abc def", id="mixed_with_space"),
-        param("aBc-dEf", "Abc-def", id="mixed_with_hyphen"),
-        param("aBc1dEf", "Abc1def", id="mixed_with_digit"),
+        param(
+            "Abc",
+            "Abc",
+            id="no_change",
+            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
+        ),
+        param(
+            "abc",
+            "Abc",
+            id="lower_to_upper",
+            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
+        ),
+        param(
+            "aBC",
+            "Abc",
+            id="mixed_to_upper",
+            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
+        ),
+        param(
+            " abc",
+            " abc",
+            id="leading_space",
+            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
+        ),
+        param(
+            "9abc",
+            "9abc",
+            id="leading_digit",
+            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
+        ),
+        param(
+            "aBc dEf",
+            "Abc def",
+            id="mixed_with_space",
+            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
+        ),
+        param(
+            "aBc-dEf",
+            "Abc-def",
+            id="mixed_with_hyphen",
+            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
+        ),
+        param(
+            "aBc1dEf",
+            "Abc1def",
+            id="mixed_with_digit",
+            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
+        ),
     ],
 )
 def test_capitalize(con, inp, expected):
@@ -900,6 +959,7 @@ def test_capitalize(con, inp, expected):
     reason="Backend doesn't support arrays",
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
 )
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 def test_array_string_join(con):
     s = ibis.array(["a", "b", "c"])
     expected = "a,b,c"
@@ -929,6 +989,7 @@ def test_array_string_join(con):
     raises=PyDruidProgrammingError,
     reason="druid doesn't support empty array construction",
 )
+@pytest.mark.notimpl(["db2"], raises=Exception, strict=False)
 def test_empty_array_string_join(con):
     t = ibis.memtable({"arr": [[], ["a", "b", "c"]]})
 
@@ -979,6 +1040,7 @@ def test_multiple_subs(con):
     raises=PsycoPg2InternalError,
     reason="Risingwave doesn't have levenshtein() function - backend limitation",
 )
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 @pytest.mark.parametrize(
     "right", ["sitting", ibis.literal("sitting")], ids=["python", "ibis"]
 )
@@ -1023,6 +1085,7 @@ def test_non_match_regex_search_is_false(con):
     ],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_re_split(con):
     lit = ibis.literal(",a,,,,c")
     expr = lit.re_split(",+")
@@ -1045,6 +1108,7 @@ def test_re_split(con):
     ],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 @pytest.mark.xfail_version(athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError)
 def test_re_split_column(alltypes):
     expr = alltypes.limit(5).string_col.re_split(r"\d+")
@@ -1067,6 +1131,7 @@ def test_re_split_column(alltypes):
     ],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,
@@ -1115,7 +1180,18 @@ def test_concat_with_null(con, fn):
         param((ibis.literal(None, str), None), id="null-null"),
         param((ibis.literal("abc"), None), id="abc-null"),
         param((ibis.literal("abc"), ibis.literal(None, str)), id="abc-typed-null"),
-        param((ibis.literal("abc"), "def", None), id="abc-def-null"),
+        param(
+            (ibis.literal("abc"), "def", None),
+            id="abc-def-null",
+            marks=[
+                pytest.mark.notimpl(
+                    ["db2"],
+                    raises=IbmDb2Error,
+                    reason="DB2 has no variadic CONCAT function; || operator propagates NULL so add method passes",
+                    strict=False,
+                )
+            ],
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -1301,6 +1377,7 @@ def string_temp_table(backend, con):
                         "trino",
                         "databricks",
                         "athena",
+                        "db2",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1339,6 +1416,7 @@ def string_temp_table(backend, con):
                         "trino",
                         "databricks",
                         "athena",
+                        "db2",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1398,6 +1476,10 @@ def string_temp_table(backend, con):
 def test_string_methods_accents_and_emoji(
     string_temp_table, backend, result_mut, expected_func
 ):
+    if backend.name() == "db2":
+        pytest.skip(
+            "ibm_db driver segfaults when fetching emoji and accented characters"
+        )
     """
     ┏━━━━━━━━━━━━┓
     ┃ string_col ┃

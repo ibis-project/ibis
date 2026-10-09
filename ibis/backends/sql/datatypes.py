@@ -1747,6 +1747,41 @@ class SingleStoreDBType(MySQLType):
         return super().from_string(type_string, nullable=nullable)
 
 
+class Db2Type(SqlglotType):
+    dialect = "db2"
+
+    default_decimal_precision = 9
+    default_decimal_scale = 0
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        return sge.DataType(
+            this=typecode.VARCHAR,
+            expressions=[sge.DataTypeParam(this=sge.convert(32672))],
+            is_nested=False,
+        )
+
+    @classmethod
+    def _from_ibis_Binary(cls, dtype: dt.Binary) -> sge.DataType:
+        return sge.DataType(
+            this=typecode.VARBINARY,
+            expressions=[sge.DataTypeParam(this=sge.convert(32672))],
+            is_nested=False,
+        )
+
+    @classmethod
+    def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
+        return sge.DataType(this=typecode.TEXT)
+
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
+        return sge.DataType(this=typecode.TEXT)
+
+    @classmethod
+    def _from_ibis_Struct(cls, dtype: dt.Struct) -> sge.DataType:
+        return sge.DataType(this=typecode.TEXT)
+
+
 # Import backend-specific type mappers before building _TYPE_MAPPERS
 
 _TYPE_MAPPERS: dict[str, type[SqlglotType]] = {

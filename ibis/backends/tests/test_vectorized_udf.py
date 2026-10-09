@@ -14,7 +14,7 @@ np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 
 pytestmark = [
-    pytest.mark.notimpl(["druid", "oracle", "risingwave", "materialize"]),
+    pytest.mark.notimpl(["druid", "oracle", "risingwave", "materialize", "db2"]),
     pytest.mark.notyet(
         ["pyspark"],
         condition=IS_SPARK_REMOTE,

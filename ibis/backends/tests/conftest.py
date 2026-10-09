@@ -8,6 +8,7 @@ from packaging.version import parse as vparse
 import ibis.common.exceptions as com
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    IbmDb2Error,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     MySQLProgrammingError,
@@ -32,7 +33,9 @@ def combine_marks(marks: list) -> callable:
 
 NO_ARRAY_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["sqlite", "mysql", "exasol"], reason="No array support", raises=Exception
+        ["sqlite", "mysql", "exasol", "db2"],
+        reason="No array support",
+        raises=Exception,
     ),
     pytest.mark.never(
         ["mssql"],
@@ -70,7 +73,7 @@ NO_ARRAY_SUPPORT = combine_marks(NO_ARRAY_SUPPORT_MARKS)
 
 NO_STRUCT_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["mysql", "singlestoredb", "sqlite", "mssql"], reason="No struct support"
+        ["mysql", "singlestoredb", "sqlite", "mssql", "db2"], reason="No struct support"
     ),
     pytest.mark.notyet(
         ["impala", "materialize"], reason="Backend doesn't yet support struct types"
@@ -81,7 +84,7 @@ NO_STRUCT_SUPPORT = combine_marks(NO_STRUCT_SUPPORT_MARKS)
 
 NO_MAP_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["sqlite", "mysql", "singlestoredb", "mssql"],
+        ["sqlite", "mysql", "singlestoredb", "mssql", "db2"],
         reason="Unlikely to ever add map support",
     ),
     pytest.mark.notyet(
@@ -101,7 +104,7 @@ NO_MAP_SUPPORT_MARKS = [
 NO_MAP_SUPPORT = combine_marks(NO_MAP_SUPPORT_MARKS)
 
 NO_JSON_SUPPORT_MARKS = [
-    pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
+    pytest.mark.never(["impala", "db2"], reason="doesn't support JSON and never will"),
     pytest.mark.notyet(["clickhouse"], reason="upstream is broken"),
     pytest.mark.notimpl(["datafusion", "exasol", "mssql", "druid", "oracle"]),
 ]
@@ -163,6 +166,11 @@ NO_MERGE_SUPPORT_MARKS = [
         ["trino"],
         raises=TrinoUserError,
         reason="connector does not support modifying table rows",
+    ),
+    pytest.mark.notyet(
+        ["db2"],
+        raises=IbmDb2Error,
+        reason="MERGE INTO is not supported",
     ),
 ]
 NO_MERGE_SUPPORT = combine_marks(NO_MERGE_SUPPORT_MARKS)

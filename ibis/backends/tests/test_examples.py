@@ -17,7 +17,7 @@ pytest.importorskip("pins")
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
 )
 @pytest.mark.notyet(
-    ["athena", "databricks", "druid", "exasol", "impala", "risingwave", "trino"]
+    ["athena", "databricks", "db2", "druid", "exasol", "impala", "risingwave", "trino"]
 )
 @pytest.mark.parametrize(
     ("example", "columns"),
