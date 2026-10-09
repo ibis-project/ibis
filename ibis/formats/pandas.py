@@ -308,11 +308,8 @@ class PandasData(DataMapper):
     @classmethod
     def get_element_converter(cls, dtype):
         name = f"convert_{type(dtype).__name__}_element"
-        if (funcgen := getattr(cls, name, None)) is not None:
-            return funcgen(dtype)
-        if dtype.is_integer():
-            return cls.convert_Integer_element(dtype)
-        return lambda x: x
+        funcgen = getattr(cls, name, lambda _: lambda x: x)
+        return funcgen(dtype)
 
     @classmethod
     def convert_Integer_element(cls, dtype):
@@ -334,6 +331,12 @@ class PandasData(DataMapper):
             return int(value)
 
         return convert
+
+    convert_Int8_element = convert_Int16_element = convert_Int32_element = (
+        convert_Int64_element
+    ) = convert_UInt8_element = convert_UInt16_element = convert_UInt32_element = (
+        convert_UInt64_element
+    ) = convert_Integer_element
 
     @classmethod
     def convert_Struct_element(cls, dtype):

@@ -504,11 +504,6 @@ def test_array_slice(backend, start, stop):
                     reason="BigQuery doesn't support arrays with null elements",
                 ),
                 pytest.mark.notyet(
-                    ["databricks"],
-                    raises=AssertionError,
-                    reason="nulls come back as NaN",
-                ),
-                pytest.mark.notyet(
                     ["materialize"],
                     raises=AssertionError,
                     reason="nulls in arrays not preserved correctly in array_map results",
@@ -560,11 +555,6 @@ def test_array_map(con, input, output, func):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="BigQuery doesn't support arrays with null elements",
-                ),
-                pytest.mark.notimpl(
-                    ["databricks"],
-                    raises=AssertionError,
-                    reason="nans instead of nulls",
                 ),
                 pytest.mark.notyet(
                     ["materialize"],
@@ -900,9 +890,6 @@ def test_array_remove(con, input, expected):
             [{3, 1}, {1, 3, None}, {42}, set(), {None}, None],
             id="null",
             marks=[
-                pytest.mark.notimpl(
-                    ["databricks"], raises=AssertionError, reason="nulls are nans"
-                ),
                 pytest.mark.notyet(
                     ["athena"],
                     raises=AssertionError,
@@ -985,11 +972,6 @@ def test_array_sort(con, data):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="BigQuery doesn't support arrays with null elements",
-                ),
-                pytest.mark.notimpl(
-                    ["databricks", "athena"],
-                    raises=AssertionError,
-                    reason="nulls are nans",
                 ),
             ],
         ),
