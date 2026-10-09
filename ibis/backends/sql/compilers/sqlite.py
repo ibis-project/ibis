@@ -120,7 +120,26 @@ class SQLiteCompiler(SQLGlotCompiler):
             return self.f.date(arg)
         elif to.is_time():
             return self.f.time(arg)
+        elif to.is_floating() and op.arg.dtype.is_string():
+            return self._cast_string_to_float(arg, to)
         return super().visit_Cast(op, arg=arg, to=to)
+
+    def _cast_string_to_float(self, arg, to):
+        # SQLite's CAST only parses a numeric prefix, so the spellings of
+        # infinity and NaN that other backends accept silently become 0.0.
+        # SQLite can't store NaN, so it is NULL, as for NaN literals.
+        text = self.f.lower(self.f.trim(arg))
+        return sge.Case(
+            ifs=[
+                sge.If(this=text.isin(*map(sge.convert, spellings)), true=value)
+                for spellings, value in (
+                    (("inf", "+inf", "infinity", "+infinity"), self.POS_INF),
+                    (("-inf", "-infinity"), self.NEG_INF),
+                    (("nan", "+nan", "-nan"), self.NAN),
+                )
+            ],
+            default=self.cast(arg, to),
+        )
 
     def visit_Limit(self, op, *, parent, n, offset):
         # SQLite doesn't support compiling an OFFSET without a LIMIT, but
