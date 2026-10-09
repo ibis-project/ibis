@@ -891,11 +891,6 @@ def test_array_remove(con, input, expected):
             id="null",
             marks=[
                 pytest.mark.notyet(
-                    ["athena"],
-                    raises=AssertionError,
-                    reason="pyarrow doesn't return non-numpy objects for arrays",
-                ),
-                pytest.mark.notyet(
                     ["materialize"],
                     raises=AssertionError,
                     reason="nulls in arrays not preserved correctly in array_unique results",
