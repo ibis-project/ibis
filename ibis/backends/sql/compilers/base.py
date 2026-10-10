@@ -682,6 +682,11 @@ class SQLGlotCompiler(abc.ABC):
                 alias=sg.to_identifier(aliases[cte], quoted=self.quoted), this=this
             )
             merged_ctes.append(modified_cte)
+
+        # Capture the recursive flag before the With node is discarded
+        with_node = out.args.get(WITH_ARG)
+        is_recursive = with_node is not None and bool(with_node.args.get("recursive"))
+
         merged_ctes.extend(out.ctes)
         out.args.pop(WITH_ARG, None)
 
@@ -695,6 +700,10 @@ class SQLGlotCompiler(abc.ABC):
             merged_ctes,
             out,
         )
+
+        # Restore the recursive flag on the rebuilt With node
+        if is_recursive and WITH_ARG in out.args:
+            out.args[WITH_ARG].set("recursive", True)
 
         return out
 
@@ -1617,6 +1626,10 @@ class SQLGlotCompiler(abc.ABC):
             ),
             *compiled_query.ctes,
         ]
+        # Capture the recursive flag before the With node is discarded
+        with_node = compiled_query.args.get(WITH_ARG)
+        is_recursive = with_node is not None and bool(with_node.args.get("recursive"))
+
         compiled_ibis_expr.args.pop(WITH_ARG, None)
         compiled_query.args.pop(WITH_ARG, None)
 
@@ -1627,6 +1640,10 @@ class SQLGlotCompiler(abc.ABC):
             ctes,
             compiled_query,
         )
+
+        # Restore the recursive flag on the rebuilt With node
+        if is_recursive and WITH_ARG in parsed.args:
+            parsed.args[WITH_ARG].set("recursive", True)
 
         # generate the SQL string
         return parsed.sql(dialect)
