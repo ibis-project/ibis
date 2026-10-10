@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 from packaging.version import parse as parse_version
 from pytest import param
@@ -221,6 +222,22 @@ def test_read_sqlite(con, tmp_path):
 
     ft = con.read_sqlite(path, table_name="t")
     assert ft.count().execute()
+
+
+def test_read_does_not_replace_existing_name(tmp_path):
+    con = ibis.duckdb.connect()
+    first = tmp_path / "first.parquet"
+    second = tmp_path / "second.parquet"
+    pq.write_table(pa.table({"a": [1, 2]}), first)
+    pq.write_table(pa.table({"b": ["x"]}), second)
+
+    t = con.read_parquet(first, table_name="t")
+
+    with pytest.raises(duckdb.CatalogException, match="already exists"):
+        con.read_parquet(second, table_name="t")
+
+    assert t.columns == ("a",)
+    assert t.count().execute() == 2
 
 
 def test_read_sqlite_no_table_name(con, tmp_path):

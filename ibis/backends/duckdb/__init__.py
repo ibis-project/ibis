@@ -1781,7 +1781,6 @@ class Backend(
             this=sg.to_identifier(name, quoted=self.compiler.quoted),
             kind="VIEW",
             expression=definition,
-            replace=True,
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         )
 
