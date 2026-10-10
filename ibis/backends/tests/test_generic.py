@@ -1406,7 +1406,7 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 
 
 @pytest.mark.notyet(
-    ["mssql", "mysql", "exasol", "impala"],
+    ["mssql", "exasol", "impala"],
     reason="various syntax errors reported",
 )
 @pytest.mark.notyet(

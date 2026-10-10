@@ -2105,6 +2105,7 @@ def test_memtable_registered_exactly_once(con, mocker):
     spy.assert_called_once_with(t.op())
 
 
+@pytest.mark.filterwarnings("ignore::ResourceWarning")
 def test_stateful_data_is_loaded_once(
     con, data_dir, tmp_path_factory, worker_id, mocker
 ):

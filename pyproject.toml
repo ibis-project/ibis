@@ -167,7 +167,7 @@ mssql = [
   "rich>=12.4.4",
 ]
 mysql = [
-  "mysqlclient>=2.2.4",
+  "adbc-driver-manager>=0.11.0",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
