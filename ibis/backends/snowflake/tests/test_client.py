@@ -497,3 +497,14 @@ def test_fancy_column_names(con, column_name):
     t = con.sql(sql)
     assert t.columns == (column_name,)
     assert t[column_name].sum().execute() == value
+
+
+def test_arrow_fetch_kwargs_forces_microseconds_when_supported():
+    from ibis.backends.snowflake import _arrow_fetch_kwargs
+
+    def new_connector(force_microsecond_precision: bool = False): ...
+
+    def old_connector(): ...
+
+    assert _arrow_fetch_kwargs(new_connector) == {"force_microsecond_precision": True}
+    assert _arrow_fetch_kwargs(old_connector) == {}

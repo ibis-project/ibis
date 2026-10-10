@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import glob
+import inspect
 import itertools
 import json
 import os
@@ -38,7 +39,7 @@ from ibis.backends.sql.compilers._compat import Drop
 from ibis.backends.sql.compilers.base import STAR
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator, Mapping
+    from collections.abc import Callable, Generator, Iterator, Mapping
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -152,6 +153,25 @@ for (val of array) {
 return count !== 0 ? true : null;""",
     },
 }
+
+
+def _arrow_fetch_kwargs(fetch: Callable[..., Any]) -> dict[str, bool]:
+    """Keyword arguments for a cursor's Arrow fetch method.
+
+    Snowflake picks the timestamp unit of each Arrow batch from the values in
+    it, so batches of one result can disagree (``timestamp[ns]`` in one,
+    ``timestamp[us]`` in another) and fail to combine.
+    ``force_microsecond_precision`` makes every batch use microseconds. It was
+    added in snowflake-connector-python 4.3.0, so pass it only when the
+    installed connector accepts it.
+    """
+    try:
+        params = inspect.signature(fetch).parameters
+    except (TypeError, ValueError):
+        return {}
+    if "force_microsecond_precision" in params:
+        return {"force_microsecond_precision": True}
+    return {}
 
 
 class Backend(
@@ -463,7 +483,7 @@ $$ {defn["source"]} $$"""
 
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         with self._safe_raw_sql(sql) as cur:
-            res = cur.fetch_arrow_all()
+            res = cur.fetch_arrow_all(**_arrow_fetch_kwargs(cur.fetch_arrow_all))
 
         ibis_schema = expr.as_table().schema()
         if res is None:
@@ -476,7 +496,8 @@ $$ {defn["source"]} $$"""
         return expr.__pyarrow_result__(res, data_mapper=SnowflakePyArrowData)
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
-        if (table := cursor.fetch_arrow_all()) is None:
+        fetch = cursor.fetch_arrow_all
+        if (table := fetch(**_arrow_fetch_kwargs(fetch))) is None:
             table = schema.to_pyarrow().empty_table()
         df = table.to_pandas(timestamp_as_object=True)
         df.columns = list(schema.names)
@@ -535,7 +556,9 @@ $$ {defn["source"]} $$"""
                 t.rename_columns(target_schema.names)
                 .cast(target_schema)
                 .to_batches(max_chunksize=chunk_size)
-                for t in cur.fetch_arrow_batches()
+                for t in cur.fetch_arrow_batches(
+                    **_arrow_fetch_kwargs(cur.fetch_arrow_batches)
+                )
             )
 
     def get_schema(
