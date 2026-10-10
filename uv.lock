@@ -2781,7 +2781,7 @@ requires-dist = [
     { name = "databricks-sql-connector", marker = "extra == 'databricks'", specifier = ">=4" },
     { name = "datafusion", marker = "extra == 'datafusion'", specifier = ">=0.6" },
     { name = "db-dtypes", marker = "extra == 'bigquery'", specifier = ">=0.3" },
-    { name = "db2-sqlglot-dialect", marker = "extra == 'db2'", specifier = ">=1.0.0" },
+    { name = "db2-sqlglot-dialect", marker = "extra == 'db2'", specifier = ">=1.1.0" },
     { name = "deltalake", marker = "extra == 'deltalake'", specifier = ">=0.9.0" },
     { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=0.10.3,!=1.3.0" },
     { name = "fsspec", extras = ["s3"], marker = "extra == 'athena'" },
