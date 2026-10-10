@@ -615,6 +615,16 @@ def lower_capitalize(_, **kwargs):
     return ops.StringConcat((first, rest))
 
 
+@replace(p.PivotLonger)
+def lower_pivot_longer(_, **kwargs):
+    """Rewrite `PivotLonger` in terms of struct-packing and unnesting.
+
+    This is the default lowering for backends without a native unpivot
+    construct.
+    """
+    return _.to_generic().op()
+
+
 def lower_sample(
     supported_methods=("row", "block"),
     supports_seed=True,

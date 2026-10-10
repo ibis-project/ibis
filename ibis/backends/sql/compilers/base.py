@@ -26,6 +26,7 @@ from ibis.backends.sql.rewrites import (
     empty_in_values_right_side,
     lower_bucket,
     lower_capitalize,
+    lower_pivot_longer,
     lower_sample,
     one_to_zero_index,
     sqlize,
@@ -306,6 +307,7 @@ class SQLGlotCompiler(abc.ABC):
     LOWERED_OPS: dict[type[ops.Node], pats.Replace | None] = {
         ops.Bucket: lower_bucket,
         ops.Capitalize: lower_capitalize,
+        ops.PivotLonger: lower_pivot_longer,
         ops.Sample: lower_sample(supported_methods=()),
         ops.StringSlice: lower_stringslice,
     }
