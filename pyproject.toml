@@ -383,6 +383,7 @@ xfail_strict = true
 addopts = [
   "--strict-markers",
   "--strict-config",
+  "-v",
   "--benchmark-disable",
   "--benchmark-group-by=name",
   "--benchmark-sort=name",

@@ -679,16 +679,21 @@ class SQLGlotCompiler(abc.ABC):
             if "alias" in this.args:
                 this = this.this
             modified_cte = sge.CTE(
-                alias=sg.to_identifier(aliases[cte], quoted=self.quoted), this=this
+                alias=sge.TableAlias(
+                    this=sg.to_identifier(aliases[cte], quoted=self.quoted)
+                ),
+                this=this,
             )
             merged_ctes.append(modified_cte)
         merged_ctes.extend(out.ctes)
-        out.args.pop(WITH_ARG, None)
+        with_ = out.args.pop(WITH_ARG, None)
+        recursive = with_ is not None and bool(with_.args.get("recursive"))
 
         out = reduce(
             lambda parsed, cte: parsed.with_(
                 cte.args["alias"],
                 as_=cte.args["this"],
+                recursive=recursive,
                 dialect=self.dialect,
                 copy=False,
             ),
@@ -1612,18 +1617,24 @@ class SQLGlotCompiler(abc.ABC):
         ctes = [
             *compiled_ibis_expr.ctes,
             sge.CTE(
-                alias=sg.to_identifier(name, quoted=self.quoted),
+                alias=sge.TableAlias(this=sg.to_identifier(name, quoted=self.quoted)),
                 this=compiled_ibis_expr,
             ),
             *compiled_query.ctes,
         ]
-        compiled_ibis_expr.args.pop(WITH_ARG, None)
-        compiled_query.args.pop(WITH_ARG, None)
+        # either side may contain a recursive CTE, and RECURSIVE applies to the
+        # whole WITH clause, so keep it if either one had it
+        recursive = False
+        for expr in (compiled_ibis_expr, compiled_query):
+            if (with_ := expr.args.pop(WITH_ARG, None)) is not None:
+                recursive |= bool(with_.args.get("recursive"))
 
         # pull existing CTEs from the compiled Ibis expression and combine them
         # with the new query
         parsed = reduce(
-            lambda parsed, cte: parsed.with_(cte.args["alias"], as_=cte.args["this"]),
+            lambda parsed, cte: parsed.with_(
+                cte.args["alias"], as_=cte.args["this"], recursive=recursive
+            ),
             ctes,
             compiled_query,
         )

@@ -711,3 +711,46 @@ def test_unreasonably_long_name():
         match="BigQuery does not allow column names longer than 300 characters",
     ):
         ibis.to_sql(expr, dialect="bigquery")
+
+
+RECURSIVE_COUNTER = """
+WITH RECURSIVE counter AS (
+  SELECT 1 AS n
+  UNION ALL
+  SELECT n + 1 AS n FROM counter WHERE n < 3
+)
+SELECT n FROM counter
+"""
+
+
+def test_recursive_cte_con_sql():
+    expr = ops.SQLQueryResult(
+        RECURSIVE_COUNTER, ibis.schema({"n": "int64"}), ibis.backends.bigquery.Backend()
+    ).to_expr()
+    assert "WITH RECURSIVE" in to_sql(expr)
+
+
+@pytest.mark.parametrize(
+    ("make_table", "query"),
+    [
+        param(
+            lambda: ibis.table({"x": "int64"}, name="src"),
+            RECURSIVE_COUNTER.replace("SELECT 1 AS n", "SELECT x AS n FROM t"),
+            id="recursive_query",
+        ),
+        param(
+            lambda: ops.SQLQueryResult(
+                RECURSIVE_COUNTER,
+                ibis.schema({"n": "int64"}),
+                ibis.backends.bigquery.Backend(),
+            ).to_expr(),
+            "SELECT n FROM t",
+            id="recursive_parent",
+        ),
+    ],
+)
+def test_recursive_cte_table_sql(make_table, query):
+    sql = BigQueryCompiler().add_query_to_expr(
+        name="t", table=make_table(), query=query
+    )
+    assert "WITH RECURSIVE" in sql
