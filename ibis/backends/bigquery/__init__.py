@@ -24,6 +24,7 @@ from pydata_google_auth import cache
 import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -165,6 +166,17 @@ def _postprocess_arrow(
     if "_TABLE_SUFFIX" in table_or_batch.column_names:
         table_or_batch = table_or_batch.drop_columns(["_TABLE_SUFFIX"])
     return table_or_batch.rename_columns(names)
+
+
+def _microsecond_timestamp(dtype: dt.DataType) -> dt.DataType:
+    """Give a timestamp without a scale BigQuery's microsecond precision.
+
+    BigQuery stores DATETIME and TIMESTAMP values in microseconds, but most
+    ibis timestamps carry no scale, and polars maps those to nanoseconds.
+    """
+    if dtype.is_timestamp() and dtype.scale is None:
+        return dtype.copy(scale=6)
+    return dtype
 
 
 class Backend(
@@ -994,6 +1006,34 @@ class Backend(
         )
         table = _postprocess_arrow(table, list(schema.names))
         return expr.__pyarrow_result__(table, schema=schema)
+
+    def to_polars(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pl.DataFrame:
+        import polars as pl
+
+        from ibis.formats.polars import PolarsData
+
+        table = self.to_pyarrow(expr.as_table(), params=params, limit=limit, **kwargs)
+        df = pl.from_arrow(table)
+        if isinstance(expr, ir.Table):
+            schema = expr.schema()
+            return PolarsData.convert_table(
+                df,
+                sch.Schema(
+                    {name: _microsecond_timestamp(t) for name, t in schema.items()}
+                ),
+            )
+        elif isinstance(expr, ir.Column):
+            return PolarsData.convert_column(df, _microsecond_timestamp(expr.type()))
+        else:
+            return PolarsData.convert_scalar(df, _microsecond_timestamp(expr.type()))
 
     def to_pyarrow_batches(
         self,

@@ -3,7 +3,8 @@ from __future__ import annotations
 import pytest
 import sqlglot as sg
 
-from ibis.backends.bigquery import _force_quote_table, client
+import ibis
+from ibis.backends.bigquery import Backend, _force_quote_table, client
 
 
 @pytest.mark.parametrize(
@@ -55,3 +56,37 @@ def test_force_quoting(bq_path_str, expected):
     table = _force_quote_table(table)
 
     assert table.sql("bigquery") == expected
+
+
+def test_to_polars_keeps_microsecond_timestamps(monkeypatch):
+    import datetime
+
+    pa = pytest.importorskip("pyarrow")
+    pl = pytest.importorskip("polars")
+
+    value = datetime.datetime(2025, 1, 1, 12, 34, 56, 123456)
+    arrow = pa.table(
+        {
+            "ts": pa.array(
+                [value.replace(tzinfo=datetime.UTC)], pa.timestamp("us", "UTC")
+            ),
+            "naive": pa.array([value], pa.timestamp("us")),
+        }
+    )
+    con = Backend()
+    monkeypatch.setattr(con, "to_pyarrow", lambda *_, **__: arrow)
+
+    t = ibis.table({"ts": "timestamp('UTC')", "naive": "timestamp"}, name="t")
+
+    df = con.to_polars(t)
+    assert df.schema == pl.Schema(
+        {"ts": pl.Datetime("us", "UTC"), "naive": pl.Datetime("us")}
+    )
+    assert df["naive"][0] == value
+
+    def one_column(expr, *_, **__):
+        return pa.table({expr.as_table().columns[0]: arrow["naive"]})
+
+    monkeypatch.setattr(con, "to_pyarrow", one_column)
+    assert con.to_polars(t.naive).dtype == pl.Datetime("us")
+    assert con.to_polars(t.naive.max()) == value
