@@ -112,6 +112,31 @@ _geotypes = {
 }
 
 
+def _parse_geo_param(
+    arg: sge.DataTypeParam | None, srid: sge.DataTypeParam | None
+) -> tuple[type[dt.GeoSpatial], int | None]:
+    """Resolve the type modifier and SRID of a GEOMETRY or GEOGRAPHY type.
+
+    The modifier is usually a geometry subtype such as ``POINT``. DuckDB's
+    spatial extension (1.5 and later) instead reports the coordinate
+    reference system as a string, for example ``GEOMETRY('EPSG:4326')``.
+    """
+    typeclass = dt.GeoSpatial
+    if arg is not None:
+        param = arg.this
+        if isinstance(param, sge.Literal) and param.is_string:
+            crs = param.this
+            if srid is None and crs.upper().startswith("EPSG:"):
+                code = crs[len("EPSG:") :]
+                if code.isdigit():
+                    return typeclass, int(code)
+        else:
+            typeclass = _geotypes[param.this]
+    if srid is not None:
+        return typeclass, int(srid.this.this)
+    return typeclass, None
+
+
 class SqlglotType(TypeMapper):
     dialect: str | None = None
     """The dialect this parser is for."""
@@ -356,12 +381,7 @@ class SqlglotType(TypeMapper):
         srid: sge.DataTypeParam | None = None,
         nullable: bool | None = None,
     ) -> sge.DataType:
-        if arg is not None:
-            typeclass = _geotypes[arg.this.this]
-        else:
-            typeclass = dt.GeoSpatial
-        if srid is not None:
-            srid = int(srid.this.this)
+        typeclass, srid = _parse_geo_param(arg, srid)
         return typeclass(geotype="geometry", nullable=nullable, srid=srid)
 
     @classmethod
@@ -371,12 +391,7 @@ class SqlglotType(TypeMapper):
         srid: sge.DataTypeParam | None = None,
         nullable: bool | None = None,
     ) -> sge.DataType:
-        if arg is not None:
-            typeclass = _geotypes[arg.this.this]
-        else:
-            typeclass = dt.GeoSpatial
-        if srid is not None:
-            srid = int(srid.this.this)
+        typeclass, srid = _parse_geo_param(arg, srid)
         return typeclass(geotype="geography", nullable=nullable, srid=srid)
 
     @classmethod
