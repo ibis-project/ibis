@@ -2745,6 +2745,23 @@ def test_simple_pivot_wider(con, backend, monkeypatch):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.parametrize(
+    ("names", "expected"),
+    [
+        pytest.param([0, 3], {"0": [3], "3": [4]}, id="int"),
+        pytest.param(["a", None], {"a": [3], "null": [4]}, id="null"),
+    ],
+)
+def test_pivot_wider_non_string_names_from(con, backend, monkeypatch, names, expected):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    t = ibis.memtable({"n": names, "counted": [3, 4]})
+    expr = t.pivot_wider(
+        names_from="n", values_from="counted", values_agg="sum", names_sort=True
+    )
+    result = expr.to_pandas()
+    backend.assert_frame_equal(result, pd.DataFrame(expected))
+
+
 def test_named_literal(con, backend):
     lit = ibis.literal(1, type="int64").name("one")
     expr = lit.as_table()
