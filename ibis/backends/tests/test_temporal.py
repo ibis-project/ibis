@@ -1364,7 +1364,17 @@ def test_string_as_timestamp(alltypes, fmt):
 @pytest.mark.parametrize(
     ("method", "value", "fmt"),
     [
-        param("as_date", "2021-01-02", "%Y-%m-%d", id="date"),
+        param(
+            "as_date",
+            "2021-01-02",
+            "%Y-%m-%d",
+            id="date",
+            marks=pytest.mark.notimpl(
+                ["db2"],
+                raises=IbmDb2Error,
+                reason="DB2 has no STR_TO_DATE function",
+            ),
+        ),
         param(
             "as_timestamp", "2021-01-02 03:04:05", "%Y-%m-%d %H:%M:%S", id="timestamp"
         ),
@@ -1378,9 +1388,6 @@ def test_string_as_timestamp(alltypes, fmt):
 @pytest.mark.notimpl(
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
-    ["db2"], raises=IbmDb2Error, reason="DB2 has no STR_TO_DATE function"
 )
 def test_string_as_temporal_with_format(con, method, value, fmt):
     # `%M` (minutes) reads as a month name in MySQL/Trino-family formats, where
