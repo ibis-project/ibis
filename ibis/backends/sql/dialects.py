@@ -143,6 +143,33 @@ def _interval_with_precision(self, e):
     return f"INTERVAL {formatted_arg} {unit}"
 
 
+def _map_constructor(self, e):
+    """Build a map with Flink's `MAP[k1, v1, ...]` value constructor.
+
+    Flink 2.x compiles `CAST(MAP_FROM_ARRAYS(...) AS MAP<...>)` into a cast
+    whose generated code assumes a `GenericMapData`, but the function hands it
+    the lazy `MapDataForMapFromArrays`, so the query dies at runtime with a
+    `ClassCastException`. The value constructor doesn't go through that path.
+    """
+    keys = e.args.get("keys")
+    values = e.args.get("values")
+
+    # entries aren't known statically, so fall back and hope for the best
+    if not isinstance(keys, sge.Array) or not isinstance(values, sge.Array):
+        return self.func("MAP_FROM_ARRAYS", keys, values)
+
+    # `MAP[]` doesn't parse, and an empty map is spelled with the function
+    if not keys.expressions:
+        return self.func("MAP_FROM_ARRAYS", keys, values)
+
+    entries = ", ".join(
+        self.sql(entry)
+        for key, value in zip(keys.expressions, values.expressions)
+        for entry in (key, value)
+    )
+    return f"MAP[{entries}]"
+
+
 def _explode_to_unnest():
     """Convert explode into unnest.
 
@@ -248,6 +275,8 @@ class Flink(Hive):
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.DayOfMonth: rename_func("dayofmonth"),
             sge.Interval: _interval_with_precision,
+            sge.Map: _map_constructor,
+            sge.VarMap: _map_constructor,
         }
 
         def columndef_sql(self, expression: sge.ColumnDef, sep: str = " ") -> str:
