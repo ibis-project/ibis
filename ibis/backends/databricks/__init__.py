@@ -7,6 +7,7 @@ import functools
 import getpass
 import json
 import os
+import re
 import sys
 import tempfile
 from typing import TYPE_CHECKING, Any
@@ -638,7 +639,10 @@ class MemtableManager:
     def _generate_volume_path(self) -> str:
         """Has runtime effects: prompts the user for a password, and fetches the current database and catalog from the backend."""
         short_version = "".join(map(str, sys.version_info[:3]))
-        volume_name = f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
+        # a volume name is a single identifier, so a `.` in the username would
+        # split it into another level of the catalog.schema.volume name
+        user = re.sub(r"[^\w-]", "_", getpass.getuser())
+        volume_name = f"{user}-py={short_version}-pid={os.getpid()}"
         return f"/Volumes/{self._backend.current_catalog}/{self._backend.current_database}/{volume_name}"
 
     def _create_volume(self, path: str) -> None:
