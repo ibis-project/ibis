@@ -386,3 +386,61 @@ def test_scalar_dot_sql(con):
     sql = sg.select(sge.convert(1).as_("a")).sql(con.dialect)
     expr = con.sql(sql).as_scalar()
     assert expr.type().is_numeric()
+
+
+RECURSIVE_COUNTER = """
+WITH RECURSIVE "counter" AS (
+  SELECT 1 AS "n"
+  UNION ALL
+  SELECT "n" + 1 AS "n" FROM "counter" WHERE "n" < 3
+)
+SELECT "n" FROM "counter"
+"""
+
+RECURSIVE_COUNTER_FROM_T = """
+WITH RECURSIVE "counter" AS (
+  SELECT "x" AS "n" FROM "t"
+  UNION ALL
+  SELECT "n" + 1 AS "n" FROM "counter" WHERE "n" < 3
+)
+SELECT "n" FROM "counter"
+"""
+
+
+@pytest.mark.parametrize(
+    ("make_expr", "expected"),
+    [
+        param(
+            lambda con: con.sql(RECURSIVE_COUNTER, dialect="duckdb"),
+            [1, 2, 3],
+            id="con_sql",
+        ),
+        param(
+            lambda con: con.sql(RECURSIVE_COUNTER, dialect="duckdb").filter(_.n > 1),
+            [2, 3],
+            id="con_sql_filtered",
+        ),
+        param(
+            lambda con: (
+                con.sql('SELECT 1 AS "x"', dialect="duckdb")
+                .alias("t")
+                .sql(RECURSIVE_COUNTER_FROM_T, dialect="duckdb")
+            ),
+            [1, 2, 3],
+            id="table_sql_recursive_query",
+        ),
+        param(
+            lambda con: (
+                con.sql(RECURSIVE_COUNTER, dialect="duckdb")
+                .alias("t")
+                .sql('SELECT "n" FROM "t"', dialect="duckdb")
+            ),
+            [1, 2, 3],
+            id="table_sql_recursive_parent",
+        ),
+    ],
+)
+def test_dot_sql_recursive_cte(con, make_expr, expected):
+    expr = make_expr(con)
+    result = expr.execute()
+    assert result["n"].astype("int64").sort_values().tolist() == expected
