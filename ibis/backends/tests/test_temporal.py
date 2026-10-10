@@ -1379,6 +1379,7 @@ def test_string_as_timestamp(alltypes, fmt):
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error, reason="DB2 has no STR_TO_DATE function")
 def test_string_as_temporal_with_format(con, method, value, fmt):
     # `%M` (minutes) reads as a month name in MySQL/Trino-family formats, where
     # it silently returned NULL; Flink needs a Java pattern, not a strftime one.
