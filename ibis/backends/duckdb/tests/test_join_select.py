@@ -18,7 +18,6 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as com
 
 pytest.importorskip("pyarrow")
 
@@ -61,10 +60,6 @@ def rows(expr):
             # the order is unspecified, but every row gets a distinct number
             [(2, 0), (3, 1)],
             id="row_number",
-            marks=pytest.mark.xfail(
-                raises=duckdb.CatalogException,
-                reason="analytic functions are not wrapped in a window",
-            ),
         ),
         param(
             lambda t1, t2, _: t1.join(t2, "x").select(
@@ -77,28 +72,16 @@ def rows(expr):
             lambda t1, t2, _: t1.join(t2, "x").select("x", total=t1.y.sum()),
             [(2, 50.0), (3, 50.0)],
             id="reduction_with_column",
-            marks=pytest.mark.xfail(
-                raises=duckdb.BinderException,
-                reason="reductions are not wrapped in a window",
-            ),
         ),
         param(
             lambda t1, t2, _: t1.join(t2, "x").select(total=t1.y.sum()),
             [(50.0,), (50.0,)],
             id="reduction_only",
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                reason="compiles to an aggregate returning a single row",
-            ),
         ),
         param(
             lambda t1, t2, _: t1.join(t2, "x").select("x", s=(t1.y * t2.w).sum()),
             [(2, 80.0), (3, 80.0)],
             id="reduction_over_both_sides",
-            marks=pytest.mark.xfail(
-                raises=duckdb.BinderException,
-                reason="reductions are not wrapped in a window",
-            ),
         ),
         param(
             lambda t1, t2, _: t1.join(t2, "x").select("x", s=t1.y.sum().over()),
@@ -109,10 +92,6 @@ def rows(expr):
             lambda t1, t2, t3: t1.join(t2, "x").select("x", s=t3.z.sum()),
             [(2, 300.0), (3, 300.0)],
             id="uncorrelated_subquery",
-            marks=pytest.mark.xfail(
-                raises=com.IntegrityError,
-                reason="reductions over other tables are rejected",
-            ),
         ),
         param(
             lambda t1, t2, t3: t1.join(t2, "x").select(
@@ -121,8 +100,8 @@ def rows(expr):
             [(2, 100.0), (3, 200.0)],
             id="correlated_subquery",
             marks=pytest.mark.xfail(
-                raises=com.IntegrityError,
-                reason="reductions over other tables are rejected",
+                raises=duckdb.BinderException,
+                reason="the subquery references a table missing from FROM",
             ),
         ),
         param(
@@ -131,10 +110,6 @@ def rows(expr):
             # over it is a scalar subquery over the whole table
             [(2, 6.0), (3, 6.0)],
             id="semi_join_reduction_over_right",
-            marks=pytest.mark.xfail(
-                raises=com.IntegrityError,
-                reason="reductions over other tables are rejected",
-            ),
         ),
     ],
 )
@@ -177,8 +152,8 @@ def test_join_mutate(t1, t2, t3, make_expr, expected):
             [(3, 50.0)],
             id="select_reduction",
             marks=pytest.mark.xfail(
-                raises=duckdb.BinderException,
-                reason="reductions are not wrapped in a window",
+                raises=AssertionError,
+                reason="the window is evaluated over the later join",
             ),
         ),
         param(
