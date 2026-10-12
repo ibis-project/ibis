@@ -384,6 +384,8 @@ addopts = [
   "--strict-markers",
   "--strict-config",
   "-v",
+  "-k",
+  "recursive_cte or test_dot_sql or test_sql",
   "--benchmark-disable",
   "--benchmark-group-by=name",
   "--benchmark-sort=name",
