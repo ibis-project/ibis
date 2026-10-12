@@ -16,9 +16,16 @@ from ibis.backends.tests.base import PYTHON_SHORT_VERSION
 from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
+    ImpalaHiveServer2Error,
     OracleDatabaseError,
+    PolarsSQLInterfaceError,
+    PsycoPg2InternalError,
+    PsycoPgSyntaxError,
+    Py4JJavaError,
     PyAthenaOperationalError,
+    PyDruidProgrammingError,
     PyODBCProgrammingError,
+    SingleStoreDBOperationalError,
 )
 
 pd = pytest.importorskip("pandas")
@@ -418,6 +425,11 @@ SELECT "n" FROM "counter"
         param(
             lambda con: con.sql(RECURSIVE_COUNTER, dialect="duckdb").filter(_.n > 1),
             [2, 3],
+            marks=pytest.mark.notyet(
+                ["bigquery"],
+                raises=GoogleBadRequest,
+                reason="BigQuery rejects WITH RECURSIVE nested in a subquery or CTE",
+            ),
             id="con_sql_filtered",
         ),
         param(
@@ -436,9 +448,61 @@ SELECT "n" FROM "counter"
                 .sql('SELECT "n" FROM "t"', dialect="duckdb")
             ),
             [1, 2, 3],
+            marks=pytest.mark.notyet(
+                ["bigquery"],
+                raises=GoogleBadRequest,
+                reason="BigQuery rejects WITH RECURSIVE nested in a subquery or CTE",
+            ),
             id="table_sql_recursive_parent",
         ),
     ],
+)
+@pytest.mark.notyet(
+    ["polars"],
+    raises=PolarsSQLInterfaceError,
+    reason="Polars SQL doesn't support recursive CTEs",
+)
+@pytest.mark.notyet(
+    ["exasol"], raises=ExaQueryError, reason="Exasol doesn't support WITH RECURSIVE"
+)
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="RisingWave doesn't support recursive CTEs in batch queries",
+)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="Druid doesn't support recursive CTEs",
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="Flink doesn't support recursive CTEs; sqlglot drops RECURSIVE",
+)
+@pytest.mark.notyet(
+    ["impala"],
+    raises=ImpalaHiveServer2Error,
+    reason="Impala doesn't support recursive CTEs; sqlglot drops RECURSIVE",
+)
+@pytest.mark.notyet(
+    ["materialize"],
+    raises=PsycoPgSyntaxError,
+    reason="Materialize only supports WITH MUTUALLY RECURSIVE",
+)
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="sqlglot emits WITH RECURSIVE, which Oracle doesn't accept",
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=SingleStoreDBOperationalError,
+    reason="unsupported recursive common table expression query shape",
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    reason="Spark < 4.1 doesn't support recursive CTEs (3.5 fails to parse, 4.0 to plan)",
 )
 def test_dot_sql_recursive_cte(con, make_expr, expected):
     expr = make_expr(con)
