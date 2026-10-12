@@ -2105,6 +2105,11 @@ def test_memtable_registered_exactly_once(con, mocker):
     spy.assert_called_once_with(t.op())
 
 
+# Each `load_data` call opens a connection that is never closed, and drivers
+# that warn about unclosed connections when they're garbage collected (e.g.
+# ADBC, used by mysql) can fail this test. We can't just close them here:
+# some backends (e.g. pyspark) share one session between all of these
+# instances and `con`, so closing one would break every later test.
 @pytest.mark.filterwarnings("ignore::ResourceWarning")
 def test_stateful_data_is_loaded_once(
     con, data_dir, tmp_path_factory, worker_id, mocker

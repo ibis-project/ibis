@@ -141,7 +141,7 @@ jobs:
             sys-deps:
               - libgeos-dev
             adbc-drivers:
-              - mysql
+              - mysql=0.7.0
           - name: singlestoredb
             title: SingleStoreDB
             serial: true
@@ -324,7 +324,7 @@ jobs:
               sys-deps:
                 - libgeos-dev
               adbc-drivers:
-                - mysql
+                - mysql=0.7.0
           - os: windows-latest
             backend:
               name: singlestoredb

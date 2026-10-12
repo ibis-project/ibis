@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -11,6 +11,9 @@ import ibis.expr.datatypes as dt
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
 from ibis.util import get_subclasses
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 typecode = sge.DataType.Type
 
@@ -713,6 +716,40 @@ class MySQLType(SqlglotType):
         cls, scale: int | None = None, nullable: bool | None = None
     ) -> dt.Timestamp:
         return dt.Timestamp(timezone="UTC", nullable=nullable)
+
+    @classmethod
+    def from_adbc_field(cls, field: pa.Field) -> dt.DataType:
+        """Convert an Arrow field returned by the ADBC MySQL driver to an ibis type.
+
+        The Arrow type alone loses information (signedness, decimal
+        precision/scale, fractional seconds, ...), so prefer the database type
+        the driver reports in the field metadata when there is one.
+        """
+        from ibis.formats.pyarrow import PyArrowType
+
+        meta = {k.decode(): v.decode() for k, v in (field.metadata or {}).items()}
+        db_type = meta.get("sql.database_type_name", "")
+        nullable = field.nullable
+
+        if db_type.startswith("UNSIGNED"):
+            base = db_type.removeprefix("UNSIGNED ").lower()
+            return cls.from_string(f"{base} unsigned", nullable=nullable)
+        elif db_type == "DECIMAL":
+            return dt.Decimal(
+                int(meta["sql.precision"]), int(meta["sql.scale"]), nullable=nullable
+            )
+        elif db_type in ("DATETIME", "TIMESTAMP"):
+            scale = int(meta.get("sql.fractional_seconds_precision", 0))
+            return dt.Timestamp(
+                timezone="UTC" if db_type == "TIMESTAMP" else None,
+                scale=scale or None,
+                nullable=nullable,
+            )
+        elif db_type == "YEAR":
+            return dt.UInt8(nullable=nullable)
+        elif db_type == "SET":
+            return dt.Array(dt.string, nullable=nullable)
+        return PyArrowType.to_ibis(field.type, nullable)
 
     @classmethod
     def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:

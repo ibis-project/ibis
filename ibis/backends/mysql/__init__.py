@@ -16,7 +16,6 @@ from adbc_driver_manager import dbapi as adbc_dbapi
 import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -205,43 +204,13 @@ class Backend(
         databases = result.column("catalog_name").to_pylist()
         return self._filter_with_like(databases, like)
 
-    @staticmethod
-    def _schema_from_adbc_execute_schema(pyarrow_schema) -> sch.Schema:
-        from ibis.formats.pyarrow import PyArrowType
-
-        fields = {}
-        for field in pyarrow_schema:
-            meta = {k.decode(): v.decode() for k, v in (field.metadata or {}).items()}
-            db_type = meta.get("sql.database_type_name", "")
-
-            if db_type.startswith("UNSIGNED"):
-                base = db_type.removeprefix("UNSIGNED ").lower()
-                fields[field.name] = sc.mysql.MySQLType.from_string(
-                    f"{base} unsigned", nullable=field.nullable
-                )
-            elif db_type == "DECIMAL":
-                p = int(meta["sql.precision"])
-                s = int(meta["sql.scale"])
-                fields[field.name] = dt.Decimal(p, s, nullable=field.nullable)
-            elif db_type in ("DATETIME", "TIMESTAMP"):
-                scale = int(meta.get("sql.fractional_seconds_precision", 0))
-                tz = "UTC" if db_type == "TIMESTAMP" else None
-                fields[field.name] = dt.Timestamp(
-                    timezone=tz, scale=scale or None, nullable=field.nullable
-                )
-            elif db_type == "YEAR":
-                fields[field.name] = dt.UInt8(nullable=field.nullable)
-            elif db_type == "SET":
-                fields[field.name] = dt.Array(dt.string, nullable=field.nullable)
-            else:
-                fields[field.name] = PyArrowType.to_ibis(field.type, field.nullable)
-
-        return sch.Schema(fields)
-
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         with self.con.cursor() as cur:
             pyarrow_schema = cur.adbc_execute_schema(str(query))
-        return self._schema_from_adbc_execute_schema(pyarrow_schema)
+        type_mapper = self.compiler.type_mapper
+        return sch.Schema(
+            {field.name: type_mapper.from_adbc_field(field) for field in pyarrow_schema}
+        )
 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
