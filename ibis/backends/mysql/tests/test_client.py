@@ -21,6 +21,21 @@ from ibis.backends.mysql.tests.conftest import (
 from ibis.backends.tests.errors import MySQLOperationalError, MySQLProgrammingError
 from ibis.util import gen_name
 
+# The ADBC driver's result set metadata can't tell these types apart from
+# their storage type, so they all regressed when switching from MySQLdb:
+#
+# - uuid and inet6 come back as CHAR, so they're now `string`
+# - bit(n) has no width, so it's now `binary` instead of a sized integer
+# - char(n) and varchar(n) have no length, so they're now a plain `string`
+#
+# Everything else in MYSQL_TYPES maps the same as before, and json, enum and
+# the text types no longer differ between `_get_schema_using_query` and
+# `con.table`.
+_adbc_metadata_xfail = pytest.mark.xfail(
+    raises=AssertionError,
+    reason="ADBC driver metadata is insufficient to infer this type",
+)
+
 MYSQL_TYPES = [
     param("tinyint", dt.int8, id="tinyint"),
     param("int1", dt.int8, id="int1"),
@@ -45,15 +60,17 @@ MYSQL_TYPES = [
     param("time", dt.time, id="time"),
     param("datetime", dt.timestamp, id="datetime"),
     param("year", dt.uint8, id="year"),
-    param("char(32)", dt.String(length=32), id="char"),
+    param("char(32)", dt.String(length=32), marks=_adbc_metadata_xfail, id="char"),
     param("char byte", dt.binary, id="char_byte"),
-    param("varchar(42)", dt.String(length=42), id="varchar"),
+    param(
+        "varchar(42)", dt.String(length=42), marks=_adbc_metadata_xfail, id="varchar"
+    ),
     param("binary(42)", dt.binary, id="binary"),
     param("varbinary(42)", dt.binary, id="varbinary"),
-    param("bit(1)", dt.int8, id="bit_1"),
-    param("bit(9)", dt.int16, id="bit_9"),
-    param("bit(17)", dt.int32, id="bit_17"),
-    param("bit(33)", dt.int64, id="bit_33"),
+    param("bit(1)", dt.int8, marks=_adbc_metadata_xfail, id="bit_1"),
+    param("bit(9)", dt.int16, marks=_adbc_metadata_xfail, id="bit_9"),
+    param("bit(17)", dt.int32, marks=_adbc_metadata_xfail, id="bit_17"),
+    param("bit(33)", dt.int64, marks=_adbc_metadata_xfail, id="bit_33"),
     # mariadb doesn't have a distinct json type
     param("set('a', 'b', 'c', 'd')", dt.Array(dt.string), id="set"),
     param("mediumblob", dt.binary, id="mediumblob"),
@@ -64,8 +81,8 @@ MYSQL_TYPES = [
     param("smallint unsigned", dt.uint16, id="smallint-unsigned"),
     param("tinyint unsigned", dt.uint8, id="tinyint-unsigned"),
     param("json", dt.string, id="json"),
-    param("inet6", dt.inet, id="inet"),
-    param("uuid", dt.uuid, id="uuid"),
+    param("inet6", dt.inet, marks=_adbc_metadata_xfail, id="inet"),
+    param("uuid", dt.uuid, marks=_adbc_metadata_xfail, id="uuid"),
     param("enum('small', 'medium', 'large')", dt.string, id="enum"),
     param("mediumtext", dt.string, id="mediumtext"),
     param("text", dt.string, id="text"),
@@ -79,23 +96,8 @@ MYSQL_TYPES = [
 ]
 
 
-_ADBC_EXECUTE_SCHEMA_XFAILS = {
-    # ADBC driver reports uuid/inet6 as CHAR, no way to distinguish
-    "uuid",
-    "inet",
-    # ADBC driver doesn't report bit width in metadata
-    "bit_1",
-    "bit_9",
-    "bit_17",
-    "bit_33",
-    # Arrow string type cannot represent length
-    "char",
-    "varchar",
-}
-
-
 @pytest.mark.parametrize(("mysql_type", "expected_type"), MYSQL_TYPES)
-def test_get_schema_from_query(con, mysql_type, expected_type, request):
+def test_get_schema_from_query(con, mysql_type, expected_type):
     raw_name = ibis.util.guid()
     name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
     expected_schema = ibis.schema(dict(x=expected_type))
@@ -106,12 +108,6 @@ def test_get_schema_from_query(con, mysql_type, expected_type, request):
         c.execute(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
 
     result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
-    param_id = request.node.callspec.id
-    if param_id in _ADBC_EXECUTE_SCHEMA_XFAILS:
-        if result_schema != expected_schema:
-            pytest.xfail(
-                reason=f"ADBC execute_schema metadata insufficient for {mysql_type}"
-            )
     assert result_schema == expected_schema
 
     t = con.table(raw_name)

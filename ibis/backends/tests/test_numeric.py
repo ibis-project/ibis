@@ -1668,11 +1668,6 @@ def test_bitwise_scalars(con, op, left, right):
     reason="Streaming database does not guarantee row order without ORDER BY",
     strict=False,
 )
-@pytest.mark.notyet(
-    ["mysql"],
-    raises=MySQLOperationalError,
-    reason="ADBC MySQL driver mis-parses BIGINT UNSIGNED values above 2**63 from the text protocol: it passes the raw []byte repr (e.g. '[49 56 ...]') into strconv.ParseUint instead of the decoded string",
-)
 @flink_no_bitwise
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
@@ -1688,11 +1683,6 @@ def test_bitwise_not_scalar(con):
     raises=AssertionError,
     reason="Streaming database does not guarantee row order without ORDER BY",
     strict=False,
-)
-@pytest.mark.notyet(
-    ["mysql"],
-    raises=MySQLOperationalError,
-    reason="ADBC MySQL driver mis-parses BIGINT UNSIGNED values above 2**63 from the text protocol: it passes the raw []byte repr (e.g. '[49 56 ...]') into strconv.ParseUint instead of the decoded string",
 )
 @flink_no_bitwise
 def test_bitwise_not_col(backend, alltypes, df):
