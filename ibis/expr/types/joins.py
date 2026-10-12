@@ -207,8 +207,14 @@ class Join(Table):
 
     def __init__(self, arg, collisions=(), equalities=()):
         assert isinstance(arg, ops.Node)
-        if not isinstance(arg, ops.JoinChain):
-            # coerce the input node to a join chain operation
+        if not isinstance(arg, ops.JoinChain) or any(
+            value.find(ops.WindowFunction, filter=ops.Value)
+            for value in arg.values.values()
+        ):
+            # coerce the input node to a join chain operation; a join chain
+            # with window functions is not extended, since joining more
+            # tables would change the rows the window functions are
+            # evaluated over
             arg = ops.JoinReference(arg, identifier=0)
             arg = ops.JoinChain(arg, rest=(), values=arg.fields)
         super().__init__(arg)

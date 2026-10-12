@@ -151,19 +151,11 @@ def test_join_mutate(t1, t2, t3, make_expr, expected):
             lambda t1, t2: t1.join(t2, "x").select("x", s=t1.y.sum()),
             [(3, 50.0)],
             id="select_reduction",
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                reason="the window is evaluated over the later join",
-            ),
         ),
         param(
             lambda t1, t2: t1.join(t2, "x").select("x", s=t1.y.sum().over()),
             [(3, 50.0)],
             id="select_reduction_explicit_over",
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                reason="the window is evaluated over the later join",
-            ),
         ),
         param(
             lambda t1, t2: t1.join(t2, "x").select(
@@ -171,10 +163,6 @@ def test_join_mutate(t1, t2, t3, make_expr, expected):
             ),
             [(3, 1)],
             id="select_row_number_explicit_over",
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                reason="the window is evaluated over the later join",
-            ),
         ),
         param(
             lambda t1, t2: t1.join(t2, "x").mutate(s=t1.y.sum()).select("x", "s"),
