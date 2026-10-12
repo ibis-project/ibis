@@ -13,7 +13,6 @@ more tables are joined afterwards.
 
 from __future__ import annotations
 
-import duckdb
 import pytest
 from pytest import param
 
@@ -99,10 +98,6 @@ def rows(expr):
             ),
             [(2, 100.0), (3, 200.0)],
             id="correlated_subquery",
-            marks=pytest.mark.xfail(
-                raises=duckdb.BinderException,
-                reason="the subquery references a table missing from FROM",
-            ),
         ),
         param(
             lambda t1, t2, _: t1.semi_join(t2, "x").select("x", s=t2.w.sum()),
@@ -132,10 +127,6 @@ def test_join_select(t1, t2, t3, make_expr, expected):
             ),
             [(2, 20.0, 1.0, 100.0), (3, 30.0, 2.0, 200.0)],
             id="correlated_subquery",
-            marks=pytest.mark.xfail(
-                raises=duckdb.BinderException,
-                reason="the subquery references a table missing from FROM",
-            ),
         ),
     ],
 )
@@ -176,10 +167,6 @@ def test_window_then_join(t1, t2, t4, make_expr, expected):
     assert rows(expr) == expected
 
 
-@pytest.mark.xfail(
-    raises=duckdb.BinderException,
-    reason="the subquery references a table missing from FROM",
-)
 def test_join_filter_correlated_subquery(t1, t2, t3):
     expr = t1.join(t2, "x").filter(t1.y < t3.filter(t3.x == t1.x).z.sum())
     assert rows(expr) == [(2, 20.0, 1.0), (3, 30.0, 2.0)]

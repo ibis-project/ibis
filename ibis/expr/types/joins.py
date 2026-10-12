@@ -395,7 +395,10 @@ class Join(Table):
         values = unwrap_aliases(values)
 
         links = [link.table for link in chain.rest if link.how not in ("semi", "anti")]
-        derefmap = DerefMap.from_targets([chain.first, *links])
+        # subqueries referencing fields of the join chain constructed so far
+        # must reference the fields of the join links instead
+        peeled = {ops.Field(chain, k): v for k, v in chain.values.items()}
+        derefmap = DerefMap.from_targets([chain.first, *links], extra=peeled)
 
         # if there are values referencing fields from the join chain constructed
         # so far, we need to replace them the fields from one of the join links
