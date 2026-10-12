@@ -508,3 +508,33 @@ def test_dot_sql_recursive_cte(con, make_expr, expected):
     expr = make_expr(con)
     result = expr.execute()
     assert result["n"].astype("int64").sort_values().tolist() == expected
+
+
+_REC = (
+    "WITH RECURSIVE c AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM c WHERE n < 3) "
+    "SELECT n FROM c"
+)
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        param(_REC, id="top_level"),
+        param(f"SELECT * FROM ({_REC}) AS t0 WHERE n > 1", id="nested_in_subquery"),
+        param(f"WITH t AS ({_REC}) SELECT n FROM t", id="nested_in_cte"),
+        param(
+            "WITH RECURSIVE c AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM c "
+            "WHERE n < 3), t AS (SELECT n FROM c) SELECT n FROM t",
+            id="hoisted",
+        ),
+        param(
+            "SELECT * FROM (WITH c AS (SELECT 1 AS n) SELECT n FROM c) AS t0",
+            id="control_nonrecursive_nested",
+        ),
+    ],
+)
+def test_recursive_cte_bigquery_probe(con, sql):
+    """Temporary diagnostic: which placements of WITH RECURSIVE BigQuery accepts."""
+    if con.name != "bigquery":
+        pytest.skip("BigQuery-only diagnostic")
+    assert len(list(con.raw_sql(sql))) > 0
