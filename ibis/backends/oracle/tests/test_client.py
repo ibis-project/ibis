@@ -87,3 +87,18 @@ def test_invalid_port():
         match="DPY-6005: cannot connect to database",
     ):
         ibis.connect(url)
+
+
+@pytest.mark.parametrize(
+    ("func", "how"),
+    [
+        pytest.param("STDDEV", "sample", id="stddev"),
+        pytest.param("STDDEV_POP", "pop", id="stddev_pop"),
+    ],
+)
+def test_dot_sql_stddev(con, func, how):
+    ft = con.tables.functional_alltypes
+    expr = ft.alias("ft").sql(f'SELECT {func}("double_col") AS "s" FROM "ft"')
+    result = expr.to_pandas().s.iat[0]
+    expected = ft.double_col.std(how=how).execute()
+    assert result == pytest.approx(expected)

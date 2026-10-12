@@ -378,3 +378,15 @@ def test_rank_no_window_frame(snapshot):
     sql = ibis.to_sql(expr, dialect="mssql")
 
     snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.parametrize(
+    ("func", "how"),
+    [param("STDEV", "sample", id="stdev"), param("STDEVP", "pop", id="stdevp")],
+)
+def test_dot_sql_stddev(con, func, how):
+    ft = con.tables.functional_alltypes
+    expr = ft.alias("ft").sql(f"SELECT {func}([double_col]) AS [s] FROM [ft]")
+    result = expr.to_pandas().s.iat[0]
+    expected = ft.double_col.std(how=how).execute()
+    assert result == pytest.approx(expected)

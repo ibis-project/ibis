@@ -360,7 +360,7 @@ class MSSQL(TSQL):
     class Generator(TSQL.Generator):
         TRANSFORMS = TSQL.Generator.TRANSFORMS.copy() | {
             sge.ApproxDistinct: rename_func("approx_count_distinct"),
-            sge.Stddev: rename_func("stdevp"),
+            sge.Stddev: rename_func("stdev"),
             sge.StddevPop: rename_func("stdevp"),
             sge.StddevSamp: rename_func("stdev"),
             sge.Variance: rename_func("var"),
@@ -416,7 +416,7 @@ Oracle.Generator.TRANSFORMS |= {
     sge.LogicalAnd: rename_func("min"),
     sge.VariancePop: rename_func("var_pop"),
     sge.Variance: rename_func("var_samp"),
-    sge.Stddev: rename_func("stddev_pop"),
+    sge.Stddev: rename_func("stddev"),
     sge.ApproxDistinct: rename_func("approx_count_distinct"),
     sge.Create: _create_sql,
     sge.Select: transforms.preprocess(
