@@ -76,6 +76,8 @@ row_number_frame_marks = [
     ),
 ]
 
+# customers 2 and 3 have orders, so joining customers and orders gives two rows:
+# (customer_id=2, balance=20, quantity=1) and (customer_id=3, balance=30, quantity=2)
 customers = ibis.memtable({"customer_id": [1, 2, 3], "balance": [10, 20, 30]})
 orders = ibis.memtable({"customer_id": [2, 3, 4], "quantity": [1, 2, 3]})
 refunds = ibis.memtable({"customer_id": [2, 3], "amount": [100, 200]})
@@ -116,6 +118,8 @@ def rows(con, expr):
     reason="ROW_NUMBER doesn't allow a frame clause",
 )
 def test_join_select_row_number(con):
+    # row_number() numbers the rows of the join, not the rows of `customers`,
+    # so the two joined rows get 0 and 1
     expr = customers.join(orders, "customer_id").select(
         "customer_id", rn=ibis.row_number()
     )
@@ -127,6 +131,8 @@ def test_join_select_row_number(con):
     ("make_expr", "expected"),
     [
         param(
+            # with an explicit window, the joined rows are numbered in
+            # customer_id order
             lambda: customers.join(orders, "customer_id").select(
                 "customer_id", rn=ibis.row_number().over(order_by=customers.customer_id)
             ),
@@ -135,6 +141,9 @@ def test_join_select_row_number(con):
             marks=row_number_frame_marks,
         ),
         param(
+            # the sum is a window over the join, so customer 1, who has no orders,
+            # is left out of the total (20 + 30), and every joined row keeps its
+            # own customer_id
             lambda: customers.join(orders, "customer_id").select(
                 "customer_id", total_balance=customers.balance.sum()
             ),
@@ -142,6 +151,8 @@ def test_join_select_row_number(con):
             id="reduction_with_column",
         ),
         param(
+            # a reduction alone is still a window over the join, so there is one
+            # row per joined row; use `.aggregate()` to get a single row
             lambda: customers.join(orders, "customer_id").select(
                 total_balance=customers.balance.sum()
             ),
@@ -149,6 +160,8 @@ def test_join_select_row_number(con):
             id="reduction_only",
         ),
         param(
+            # a reduction can combine columns of both joined tables:
+            # 20 * 1 + 30 * 2
             lambda: customers.join(orders, "customer_id").select(
                 "customer_id",
                 weighted_balance=(customers.balance * orders.quantity).sum(),
@@ -157,6 +170,7 @@ def test_join_select_row_number(con):
             id="reduction_over_both_sides",
         ),
         param(
+            # an explicit `.over()` gives the same result as the implicit window
             lambda: customers.join(orders, "customer_id").select(
                 "customer_id", total_balance=customers.balance.sum().over()
             ),
@@ -164,6 +178,8 @@ def test_join_select_row_number(con):
             id="reduction_explicit_over",
         ),
         param(
+            # `refunds` isn't part of the join, so its sum is a scalar subquery
+            # over all of `refunds` (100 + 200), repeated on every joined row
             lambda: customers.join(orders, "customer_id").select(
                 "customer_id", total_refunds=refunds.amount.sum()
             ),
@@ -171,6 +187,8 @@ def test_join_select_row_number(con):
             id="uncorrelated_subquery",
         ),
         param(
+            # the subquery references the joined `customers`, so it sums each
+            # joined customer's own refunds
             lambda: customers.join(orders, "customer_id").select(
                 "customer_id",
                 refunded=refunds.filter(
@@ -182,11 +200,11 @@ def test_join_select_row_number(con):
             marks=correlated_subquery_marks,
         ),
         param(
+            # `orders` only filters the rows and isn't part of the output, so its
+            # sum is a scalar subquery over all of `orders` (1 + 2 + 3)
             lambda: customers.semi_join(orders, "customer_id").select(
                 "customer_id", total_quantity=orders.quantity.sum()
             ),
-            # the semi-joined table is not part of the output, so a reduction
-            # over it is a scalar subquery over the whole table
             [(2, 6), (3, 6)],
             id="semi_join_reduction_over_right",
             marks=[
@@ -213,6 +231,7 @@ def test_join_select(con, make_expr, expected):
     ("make_expr", "expected"),
     [
         param(
+            # mutate keeps every joined column and adds the sum over the join
             lambda: customers.join(orders, "customer_id").mutate(
                 total_balance=customers.balance.sum()
             ),
@@ -220,6 +239,8 @@ def test_join_select(con, make_expr, expected):
             id="reduction",
         ),
         param(
+            # the subquery references the joined `customers`, so it sums each
+            # joined customer's own refunds
             lambda: customers.join(orders, "customer_id").mutate(
                 refunded=refunds.filter(
                     refunds.customer_id == customers.customer_id
@@ -247,6 +268,9 @@ impala_window_then_join = pytest.mark.notyet(
     ("make_expr", "expected"),
     [
         param(
+            # the sum is computed over customers joined with orders (20 + 30),
+            # then the result is joined with vips; joining vips first would
+            # give 30
             lambda: customers.join(orders, "customer_id").select(
                 "customer_id", total_balance=customers.balance.sum()
             ),
@@ -255,6 +279,7 @@ impala_window_then_join = pytest.mark.notyet(
             marks=impala_window_then_join,
         ),
         param(
+            # the same as above, with an explicit `.over()`
             lambda: customers.join(orders, "customer_id").select(
                 "customer_id", total_balance=customers.balance.sum().over()
             ),
@@ -263,6 +288,8 @@ impala_window_then_join = pytest.mark.notyet(
             marks=impala_window_then_join,
         ),
         param(
+            # the rows are numbered before joining vips, so customer 3 keeps
+            # number 1 instead of being renumbered to 0
             lambda: customers.join(orders, "customer_id").select(
                 "customer_id", rn=ibis.row_number().over(order_by=customers.customer_id)
             ),
@@ -271,6 +298,8 @@ impala_window_then_join = pytest.mark.notyet(
             marks=row_number_frame_marks,
         ),
         param(
+            # a window function added by mutate is also computed before joining
+            # vips
             lambda: (
                 customers.join(orders, "customer_id")
                 .mutate(total_balance=customers.balance.sum())
@@ -283,6 +312,8 @@ impala_window_then_join = pytest.mark.notyet(
     ],
 )
 def test_window_then_join(con, make_expr, expected):
+    # window functions are evaluated over the join they were selected from,
+    # and joining another table afterwards only filters the result
     expr = make_expr().join(vips, "customer_id")
     assert rows(con, expr) == expected
 
@@ -291,6 +322,8 @@ def test_window_then_join(con, make_expr, expected):
     ("make_expr", "expected"),
     [
         param(
+            # the subquery sums each joined customer's refunds, and only customers
+            # whose balance is below their refunds are kept (20 < 100, 30 < 200)
             lambda: customers.join(orders, "customer_id").filter(
                 customers.balance
                 < refunds.filter(
@@ -317,6 +350,9 @@ def test_window_then_join(con, make_expr, expected):
             ],
         ),
         param(
+            # the subquery references `customers`, the table under the filter,
+            # and is correlated with each filtered row; customer 1 has no
+            # refunds, so the sum is NULL
             lambda: customers.filter(customers.balance > 0).select(
                 "customer_id",
                 refunded=refunds.filter(
