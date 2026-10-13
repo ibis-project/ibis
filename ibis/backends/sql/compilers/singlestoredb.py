@@ -825,18 +825,24 @@ class SingleStoreDBCompiler(MySQLCompiler):
         ctes = [
             *compiled_ibis_expr.ctes,
             sge.CTE(
-                alias=sg.to_identifier(name, quoted=self.quoted),
+                alias=sge.TableAlias(this=sg.to_identifier(name, quoted=self.quoted)),
                 this=compiled_ibis_expr,
             ),
             *compiled_query.ctes,
         ]
-        compiled_ibis_expr.args.pop(WITH_ARG, None)
-        compiled_query.args.pop(WITH_ARG, None)
+        # either side may contain a recursive CTE, and RECURSIVE applies to the
+        # whole WITH clause, so keep it if either one had it
+        recursive = False
+        for expr in (compiled_ibis_expr, compiled_query):
+            if (with_ := expr.args.pop(WITH_ARG, None)) is not None:
+                recursive |= bool(with_.args.get("recursive"))
 
         # pull existing CTEs from the compiled Ibis expression and combine them
         # with the new query
         parsed = reduce(
-            lambda parsed, cte: parsed.with_(cte.args["alias"], as_=cte.args["this"]),
+            lambda parsed, cte: parsed.with_(
+                cte.args["alias"], as_=cte.args["this"], recursive=recursive
+            ),
             ctes,
             compiled_query,
         )
