@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import getpass
+import importlib
 
 import pytest
 import sqlglot as sg
@@ -10,8 +11,10 @@ from pytest import param
 import ibis
 import ibis.backends.sql.dialects  # to load dialects
 import ibis.common.exceptions as com
+import ibis.expr.operations as ops
 from ibis import _
 from ibis.backends import _get_backend_names
+from ibis.backends.conftest import _get_backends_to_test
 from ibis.backends.tests.base import PYTHON_SHORT_VERSION
 from ibis.backends.tests.errors import (
     ExaQueryError,
@@ -508,3 +511,59 @@ def test_dot_sql_recursive_cte(con, make_expr, expected):
     expr = make_expr(con)
     result = expr.execute()
     assert result["n"].astype("int64").sort_values().tolist() == expected
+
+
+def _sql_query_result(query, compiler):
+    """Build what `con.sql(query, dialect="duckdb")` builds, without a connection."""
+    query = sg.transpile(query, read="duckdb", write=compiler.dialect)[0]
+    return ops.SQLQueryResult(query, ibis.schema({"n": "int64"}), None).to_expr()
+
+
+@pytest.mark.never(
+    ["mssql"], raises=AssertionError, reason="T-SQL has no RECURSIVE keyword"
+)
+@pytest.mark.never(
+    ["flink", "impala"],
+    raises=AssertionError,
+    reason="recursive CTEs aren't supported, so sqlglot drops RECURSIVE",
+)
+@pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
+def test_recursive_cte_con_sql_compiles(backend_name):
+    compiler = importlib.import_module(
+        f"ibis.backends.sql.compilers.{backend_name}"
+    ).compiler
+    expr = _sql_query_result(RECURSIVE_COUNTER, compiler)
+    assert "WITH RECURSIVE" in compiler.to_sqlglot(expr).sql(compiler.dialect)
+
+
+@pytest.mark.never(
+    ["mssql"], raises=AssertionError, reason="T-SQL has no RECURSIVE keyword"
+)
+@pytest.mark.never(
+    ["flink", "impala"],
+    raises=AssertionError,
+    reason="recursive CTEs aren't supported, so sqlglot drops RECURSIVE",
+)
+@pytest.mark.parametrize(
+    ("make_table", "query"),
+    [
+        param(
+            lambda _compiler: ibis.table({"x": "int64"}, name="src"),
+            RECURSIVE_COUNTER_FROM_T,
+            id="recursive_query",
+        ),
+        param(
+            lambda compiler: _sql_query_result(RECURSIVE_COUNTER, compiler),
+            'SELECT "n" FROM "t"',
+            id="recursive_parent",
+        ),
+    ],
+)
+@pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
+def test_recursive_cte_table_sql_compiles(backend_name, make_table, query):
+    compiler = importlib.import_module(
+        f"ibis.backends.sql.compilers.{backend_name}"
+    ).compiler
+    query = sg.transpile(query, read="duckdb", write=compiler.dialect)[0]
+    sql = compiler.add_query_to_expr(name="t", table=make_table(compiler), query=query)
+    assert "WITH RECURSIVE" in sql
