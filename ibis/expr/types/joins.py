@@ -211,10 +211,16 @@ class Join(Table):
             value.find(ops.WindowFunction, filter=ops.Value)
             for value in arg.values.values()
         ):
-            # coerce the input node to a join chain operation; a join chain
-            # with window functions is not extended, since joining more
-            # tables would change the rows the window functions are
-            # evaluated over
+            # coerce the input node to a join chain operation:
+            # - a relation that isn't a join chain, like `customers` in
+            #   `customers.join(orders, "customer_id")`, becomes the first
+            #   table of a new join chain
+            # - a join chain with window functions, like
+            #   `customers.join(orders, "customer_id").select(rn=ibis.row_number())`
+            #   in `<that>.join(vips, "customer_id")`, becomes the first table
+            #   of a new join chain instead of being extended, since joining
+            #   `vips` would change the rows the window functions are
+            #   evaluated over
             arg = ops.JoinReference(arg, identifier=0)
             arg = ops.JoinChain(arg, rest=(), values=arg.fields)
         super().__init__(arg)
