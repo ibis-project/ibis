@@ -21,16 +21,14 @@ from ibis.backends.mysql.tests.conftest import (
 from ibis.backends.tests.errors import MySQLOperationalError, MySQLProgrammingError
 from ibis.util import gen_name
 
-# The ADBC driver's result set metadata can't tell these types apart from
-# their storage type, so they all regressed when switching from MySQLdb:
+# The ADBC driver's result set metadata doesn't carry enough detail to infer
+# the expected ibis type for these MySQL types:
 #
-# - uuid and inet6 come back as CHAR, so they're now `string`
-# - bit(n) has no width, so it's now `binary` instead of a sized integer
-# - char(n) and varchar(n) have no length, so they're now a plain `string`
-#
-# Everything else in MYSQL_TYPES maps the same as before, and json, enum and
-# the text types no longer differ between `_get_schema_using_query` and
-# `con.table`.
+# - uuid and inet6 are reported as CHAR, so they're inferred as `string`
+# - bit(n) is reported without its width, so it's inferred as `binary`
+#   rather than a sized integer
+# - char(n) and varchar(n) are reported without their length, so they're
+#   inferred as an unbounded `string`
 _adbc_metadata_xfail = pytest.mark.xfail(
     raises=AssertionError,
     reason="ADBC driver metadata is insufficient to infer this type",
