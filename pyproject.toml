@@ -458,6 +458,7 @@ filterwarnings = [
   "ignore:is_sparse is deprecated and will be removed in a future version:DeprecationWarning",
   # google-api-core
   "ignore:Please install grpcio-status to obtain helpful grpc error messages.",
+  "ignore:You are using a non-supported Python version:FutureWarning",
   # dateutil tz
   'ignore:datetime\.datetime\.utcfromtimestamp\(\) is deprecated and scheduled for removal:DeprecationWarning',
   # types using custom tp_new are deprecated in python 3.12
