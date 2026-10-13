@@ -76,10 +76,10 @@ row_number_frame_marks = [
     ),
 ]
 
-t1 = ibis.memtable({"x": [1, 2, 3], "y": [10, 20, 30]})
-t2 = ibis.memtable({"x": [2, 3, 4], "w": [1, 2, 3]})
-t3 = ibis.memtable({"x": [2, 3], "z": [100, 200]})
-t4 = ibis.memtable({"x": [3]})
+customers = ibis.memtable({"customer_id": [1, 2, 3], "balance": [10, 20, 30]})
+orders = ibis.memtable({"customer_id": [2, 3, 4], "quantity": [1, 2, 3]})
+refunds = ibis.memtable({"customer_id": [2, 3], "amount": [100, 200]})
+vips = ibis.memtable({"customer_id": [3]})
 
 
 def rows(con, expr):
@@ -116,7 +116,9 @@ def rows(con, expr):
     reason="ROW_NUMBER doesn't allow a frame clause",
 )
 def test_join_select_row_number(con):
-    expr = t1.join(t2, "x").select("x", rn=ibis.row_number())
+    expr = customers.join(orders, "customer_id").select(
+        "customer_id", rn=ibis.row_number()
+    )
     # the order is unspecified, so only the numbers are checked
     assert sorted(rn for _, rn in rows(con, expr)) == [0, 1]
 
@@ -125,46 +127,64 @@ def test_join_select_row_number(con):
     ("make_expr", "expected"),
     [
         param(
-            lambda: t1.join(t2, "x").select(
-                "x", rn=ibis.row_number().over(order_by=t1.x)
+            lambda: customers.join(orders, "customer_id").select(
+                "customer_id", rn=ibis.row_number().over(order_by=customers.customer_id)
             ),
             [(2, 0), (3, 1)],
             id="row_number_explicit_over",
             marks=row_number_frame_marks,
         ),
         param(
-            lambda: t1.join(t2, "x").select("x", total=t1.y.sum()),
+            lambda: customers.join(orders, "customer_id").select(
+                "customer_id", total_balance=customers.balance.sum()
+            ),
             [(2, 50), (3, 50)],
             id="reduction_with_column",
         ),
         param(
-            lambda: t1.join(t2, "x").select(total=t1.y.sum()),
+            lambda: customers.join(orders, "customer_id").select(
+                total_balance=customers.balance.sum()
+            ),
             [(50,), (50,)],
             id="reduction_only",
         ),
         param(
-            lambda: t1.join(t2, "x").select("x", s=(t1.y * t2.w).sum()),
+            lambda: customers.join(orders, "customer_id").select(
+                "customer_id",
+                weighted_balance=(customers.balance * orders.quantity).sum(),
+            ),
             [(2, 80), (3, 80)],
             id="reduction_over_both_sides",
         ),
         param(
-            lambda: t1.join(t2, "x").select("x", s=t1.y.sum().over()),
+            lambda: customers.join(orders, "customer_id").select(
+                "customer_id", total_balance=customers.balance.sum().over()
+            ),
             [(2, 50), (3, 50)],
             id="reduction_explicit_over",
         ),
         param(
-            lambda: t1.join(t2, "x").select("x", s=t3.z.sum()),
+            lambda: customers.join(orders, "customer_id").select(
+                "customer_id", total_refunds=refunds.amount.sum()
+            ),
             [(2, 300), (3, 300)],
             id="uncorrelated_subquery",
         ),
         param(
-            lambda: t1.join(t2, "x").select("x", s=t3.filter(t3.x == t1.x).z.sum()),
+            lambda: customers.join(orders, "customer_id").select(
+                "customer_id",
+                refunded=refunds.filter(
+                    refunds.customer_id == customers.customer_id
+                ).amount.sum(),
+            ),
             [(2, 100), (3, 200)],
             id="correlated_subquery",
             marks=correlated_subquery_marks,
         ),
         param(
-            lambda: t1.semi_join(t2, "x").select("x", s=t2.w.sum()),
+            lambda: customers.semi_join(orders, "customer_id").select(
+                "customer_id", total_quantity=orders.quantity.sum()
+            ),
             # the semi-joined table is not part of the output, so a reduction
             # over it is a scalar subquery over the whole table
             [(2, 6), (3, 6)],
@@ -193,12 +213,18 @@ def test_join_select(con, make_expr, expected):
     ("make_expr", "expected"),
     [
         param(
-            lambda: t1.join(t2, "x").mutate(total=t1.y.sum()),
+            lambda: customers.join(orders, "customer_id").mutate(
+                total_balance=customers.balance.sum()
+            ),
             [(2, 20, 1, 50), (3, 30, 2, 50)],
             id="reduction",
         ),
         param(
-            lambda: t1.join(t2, "x").mutate(s=t3.filter(t3.x == t1.x).z.sum()),
+            lambda: customers.join(orders, "customer_id").mutate(
+                refunded=refunds.filter(
+                    refunds.customer_id == customers.customer_id
+                ).amount.sum()
+            ),
             [(2, 20, 1, 100), (3, 30, 2, 200)],
             id="correlated_subquery",
             marks=correlated_subquery_marks,
@@ -221,27 +247,35 @@ impala_window_then_join = pytest.mark.notyet(
     ("make_expr", "expected"),
     [
         param(
-            lambda: t1.join(t2, "x").select("x", s=t1.y.sum()),
+            lambda: customers.join(orders, "customer_id").select(
+                "customer_id", total_balance=customers.balance.sum()
+            ),
             [(3, 50)],
             id="select_reduction",
             marks=impala_window_then_join,
         ),
         param(
-            lambda: t1.join(t2, "x").select("x", s=t1.y.sum().over()),
+            lambda: customers.join(orders, "customer_id").select(
+                "customer_id", total_balance=customers.balance.sum().over()
+            ),
             [(3, 50)],
             id="select_reduction_explicit_over",
             marks=impala_window_then_join,
         ),
         param(
-            lambda: t1.join(t2, "x").select(
-                "x", rn=ibis.row_number().over(order_by=t1.x)
+            lambda: customers.join(orders, "customer_id").select(
+                "customer_id", rn=ibis.row_number().over(order_by=customers.customer_id)
             ),
             [(3, 1)],
             id="select_row_number_explicit_over",
             marks=row_number_frame_marks,
         ),
         param(
-            lambda: t1.join(t2, "x").mutate(s=t1.y.sum()).select("x", "s"),
+            lambda: (
+                customers.join(orders, "customer_id")
+                .mutate(total_balance=customers.balance.sum())
+                .select("customer_id", "total_balance")
+            ),
             [(3, 50)],
             id="mutate_reduction",
             marks=impala_window_then_join,
@@ -249,7 +283,7 @@ impala_window_then_join = pytest.mark.notyet(
     ],
 )
 def test_window_then_join(con, make_expr, expected):
-    expr = make_expr().join(t4, "x")
+    expr = make_expr().join(vips, "customer_id")
     assert rows(con, expr) == expected
 
 
@@ -257,7 +291,12 @@ def test_window_then_join(con, make_expr, expected):
     ("make_expr", "expected"),
     [
         param(
-            lambda: t1.join(t2, "x").filter(t1.y < t3.filter(t3.x == t1.x).z.sum()),
+            lambda: customers.join(orders, "customer_id").filter(
+                customers.balance
+                < refunds.filter(
+                    refunds.customer_id == customers.customer_id
+                ).amount.sum()
+            ),
             [(2, 20, 1), (3, 30, 2)],
             id="join_filter",
             marks=[
@@ -278,7 +317,12 @@ def test_window_then_join(con, make_expr, expected):
             ],
         ),
         param(
-            lambda: t1.filter(t1.y > 0).select("x", s=t3.filter(t3.x == t1.x).z.sum()),
+            lambda: customers.filter(customers.balance > 0).select(
+                "customer_id",
+                refunded=refunds.filter(
+                    refunds.customer_id == customers.customer_id
+                ).amount.sum(),
+            ),
             [(1, None), (2, 100), (3, 200)],
             id="filter_select",
             marks=correlated_subquery_marks,
