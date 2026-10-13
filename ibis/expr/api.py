@@ -1495,7 +1495,7 @@ def ntile(buckets: int | ir.IntegerValue, /) -> ir.IntegerColumn:
 
 
 def row_number() -> ir.IntegerColumn:
-    """Return an analytic function expression for the current row number.
+    """Return a window function expression for the current row number.
 
     ::: {.callout-note}
     `row_number` is normalized across backends to start at 0
