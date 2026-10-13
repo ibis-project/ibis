@@ -4,7 +4,7 @@ import os
 import random
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 import duckdb
 import numpy as np
@@ -16,6 +16,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis import _
 from ibis.conftest import LINUX, SANDBOXED, not_windows
 from ibis.util import gen_name
 
@@ -199,6 +200,51 @@ def test_to_other_sql(con, snapshot):
 
     sql = ibis.to_sql(t, dialect="snowflake")
     snapshot.assert_match(sql, "out.sql")
+
+
+def test_timezone_cast_extracts_and_time_match_scalar():
+    con = ibis.duckdb.connect()
+    value = datetime(2023, 1, 2, 0, 0, tzinfo=timezone.utc)
+    t = ibis.memtable(
+        {"x": [value]},
+        schema=ibis.schema({"x": "timestamp('UTC')"}),
+    )
+    scalar = ibis.literal(value, type="timestamp('UTC')").cast(
+        "timestamp('Europe/Amsterdam')"
+    )
+    expr = t.select(
+        scalar_hour=scalar.hour(),
+        column_hour=t.x.cast("timestamp('Europe/Amsterdam')").hour(),
+        scalar_time=scalar.time(),
+        column_time=t.x.cast("timestamp('Europe/Amsterdam')").time(),
+        utc_hour=t.x.cast("timestamp('UTC')").hour(),
+        utc_time=t.x.cast("timestamp('UTC')").time(),
+    )
+
+    result = con.execute(expr).iloc[0]
+
+    assert result.scalar_hour == result.column_hour == 1
+    assert result.utc_hour == 0
+    assert str(result.scalar_time) == str(result.column_time) == "01:00:00"
+    assert str(result.utc_time) == "00:00:00"
+
+
+def test_timezone_cast_epoch_seconds_uses_timezone_instant():
+    con = ibis.duckdb.connect()
+    t = ibis.memtable({"a": [1]})
+    expr = t.select(var=ibis.literal("2023-01-02")).mutate(
+        es_ams=ibis.timestamp(_.var, timezone="Europe/Amsterdam").epoch_seconds(),
+        es_utc=ibis.timestamp(_.var, timezone="UTC").epoch_seconds(),
+        es_ams2=_.var.cast("timestamp('Europe/Amsterdam')").epoch_seconds(),
+        es_utc2=_.var.cast("timestamp('UTC')").epoch_seconds(),
+    )
+
+    result = con.execute(expr).iloc[0]
+
+    assert result.es_ams == 1672614000
+    assert result.es_utc == 1672617600
+    assert result.es_ams2 == 1672614000
+    assert result.es_utc2 == 1672617600
 
 
 def test_insert_preserves_column_case(con):

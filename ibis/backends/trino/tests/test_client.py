@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import math
 import string
+from datetime import datetime, timezone
 
 import pytest
 
 import ibis
 import ibis.common.exceptions as exc
-from ibis import udf, util
+from ibis import _, udf, util
 from ibis.backends.trino.tests.conftest import (
     TRINO_HOST,
     TRINO_PASS,
@@ -146,6 +147,43 @@ def test_create_table_timestamp():
     finally:
         con.drop_table(table)
         assert table not in con.list_tables()
+
+
+def test_timezone_cast_extracts_and_time():
+    con = ibis.trino.connect(database="memory", schema="default")
+    t = ibis.memtable(
+        {"x": [datetime(2023, 1, 2, 0, 0, tzinfo=timezone.utc)]},
+        schema=ibis.schema({"x": "timestamp('UTC')"}),
+    )
+    expr = t.select(
+        casted=t.x.cast("timestamp('Europe/Paris')"),
+        hour=t.x.cast("timestamp('Europe/Paris')").hour(),
+        time=t.x.cast("timestamp('Europe/Paris')").time(),
+    )
+
+    result = con.execute(expr).iloc[0]
+
+    assert str(result.casted) == "2023-01-02 01:00:00+01:00"
+    assert result.hour == 1
+    assert str(result.time) == "01:00:00"
+
+
+def test_timezone_cast_epoch_seconds_uses_timezone_instant():
+    con = ibis.trino.connect(database="memory", schema="default")
+    t = ibis.memtable({"a": [1]})
+    expr = t.select(var=ibis.literal("2023-01-02")).mutate(
+        es_ams=ibis.timestamp(_.var, timezone="Europe/Amsterdam").epoch_seconds(),
+        es_utc=ibis.timestamp(_.var, timezone="UTC").epoch_seconds(),
+        es_ams2=_.var.cast("timestamp('Europe/Amsterdam')").epoch_seconds(),
+        es_utc2=_.var.cast("timestamp('UTC')").epoch_seconds(),
+    )
+
+    result = con.execute(expr).iloc[0]
+
+    assert result.es_ams == 1672614000
+    assert result.es_utc == 1672617600
+    assert result.es_ams2 == 1672614000
+    assert result.es_utc2 == 1672617600
 
 
 def test_table_access_database_schema(con):
