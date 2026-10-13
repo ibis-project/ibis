@@ -1,4 +1,4 @@
-"""Operations for analytic window functions."""
+"""Operations for functions that are only valid over a window, like rank and lag."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from ibis.expr.operations.core import Column, Scalar, Value
 
 @public
 class Analytic(Value):
-    """Base class for analytic window function operations."""
+    """Base class for functions that are only valid over a window, like rank and lag."""
 
     shape = ds.columnar
 
