@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import getpass
-import importlib
 
 import pytest
 import sqlglot as sg
@@ -10,6 +9,7 @@ import toolz
 from pytest import param
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.backends.sql.dialects  # to load dialects
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
@@ -520,14 +520,6 @@ def _sql_query_result(query, compiler):
     return ops.SQLQueryResult(query, ibis.schema({"n": "int64"}), None).to_expr()
 
 
-def _compiler(backend_name):
-    # not `getattr(sc, backend_name)`: the compilers package doesn't export
-    # singlestoredb (see #12164)
-    return importlib.import_module(
-        f"ibis.backends.sql.compilers.{backend_name}"
-    ).compiler
-
-
 no_recursive_keyword = toolz.compose(
     pytest.mark.never(
         ["mssql"], raises=AssertionError, reason="T-SQL has no RECURSIVE keyword"
@@ -549,7 +541,7 @@ no_recursive_keyword = toolz.compose(
 @no_recursive_keyword
 @pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
 def test_recursive_cte_con_sql_compiles(backend_name):
-    compiler = _compiler(backend_name)
+    compiler = getattr(sc, backend_name).compiler
     expr = _sql_query_result(RECURSIVE_COUNTER, compiler)
     assert "WITH RECURSIVE" in compiler.to_sqlglot(expr).sql(compiler.dialect)
 
@@ -572,7 +564,7 @@ def test_recursive_cte_con_sql_compiles(backend_name):
 )
 @pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
 def test_recursive_cte_table_sql_compiles(backend_name, make_table, query):
-    compiler = _compiler(backend_name)
+    compiler = getattr(sc, backend_name).compiler
     query = sg.transpile(query, read="duckdb", write=compiler.dialect)[0]
     sql = compiler.add_query_to_expr(name="t", table=make_table(compiler), query=query)
     assert "WITH RECURSIVE" in sql
