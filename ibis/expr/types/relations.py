@@ -1394,7 +1394,7 @@ class Table(Expr, FixedTextJupyterMixin):
         having: Sequence[ir.BooleanValue] | None = (),
         **kwargs: ir.Value,
     ) -> Table:
-        """Aggregate a table with a given set of reductions grouping by `by`.
+        """Aggregate a table with a given set of aggregations grouping by `by`.
 
         Parameters
         ----------

@@ -255,7 +255,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         """Return whether at least one element is `True`.
 
         If the expression does not reference any foreign tables, the result
-        will be a scalar reduction, otherwise it will be a deferred expression
+        will be a scalar aggregation, otherwise it will be a deferred expression
         constructing an exists subquery when passed to a table method.
 
         Parameters
