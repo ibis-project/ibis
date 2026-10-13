@@ -359,6 +359,24 @@ bump-version:
     #!/usr/bin/env bash
     set -euo pipefail
     ibis_dev_version="$(just compute-version)"
-    python -c 'import re, sys; v=sys.argv[1]; [open(p,"w").write(t) for p,n in [("pyproject.toml","version"),("ibis/__init__.py","__version__")] for t,c in [re.subn(rf"(?m)^{n} = .+", f"{n} = \"{v}\"", open(p).read())] if c==1 or sys.exit(f"expected exactly 1 {n} assignment in {p}, found {c}")]' "$ibis_dev_version"
+    just set-version "$ibis_dev_version"
     just lock > /dev/null
     echo "$ibis_dev_version"
+
+# write a version number into pyproject.toml and ibis/__init__.py
+set-version version:
+    #!/usr/bin/env python3
+    import re
+    import sys
+
+    version = "{{ version }}"
+    targets = [("pyproject.toml", "version"), ("ibis/__init__.py", "__version__")]
+
+    for path, name in targets:
+        with open(path) as f:
+            text = f.read()
+        text, count = re.subn(rf"(?m)^{name} = .+", f'{name} = "{version}"', text)
+        if count != 1:
+            sys.exit(f"expected exactly 1 {name} assignment in {path}, found {count}")
+        with open(path, "w") as f:
+            f.write(text)
