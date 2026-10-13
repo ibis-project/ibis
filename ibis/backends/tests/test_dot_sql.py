@@ -6,6 +6,7 @@ import importlib
 import pytest
 import sqlglot as sg
 import sqlglot.expressions as sge
+import toolz
 from pytest import param
 
 import ibis
@@ -519,31 +520,41 @@ def _sql_query_result(query, compiler):
     return ops.SQLQueryResult(query, ibis.schema({"n": "int64"}), None).to_expr()
 
 
-@pytest.mark.never(
-    ["mssql"], raises=AssertionError, reason="T-SQL has no RECURSIVE keyword"
-)
-@pytest.mark.never(
-    ["flink", "impala"],
-    raises=AssertionError,
-    reason="recursive CTEs aren't supported, so sqlglot drops RECURSIVE",
-)
-@pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
-def test_recursive_cte_con_sql_compiles(backend_name):
-    compiler = importlib.import_module(
+def _compiler(backend_name):
+    # not `getattr(sc, backend_name)`: the compilers package doesn't export
+    # singlestoredb (see #12164)
+    return importlib.import_module(
         f"ibis.backends.sql.compilers.{backend_name}"
     ).compiler
+
+
+no_recursive_keyword = toolz.compose(
+    pytest.mark.never(
+        ["mssql"], raises=AssertionError, reason="T-SQL has no RECURSIVE keyword"
+    ),
+    pytest.mark.notyet(
+        ["flink", "impala"],
+        raises=AssertionError,
+        reason="recursive CTEs aren't supported, so sqlglot drops RECURSIVE",
+    ),
+    pytest.mark.xfail_version(
+        pyspark=["sqlglot<30"],
+        databricks=["sqlglot<30"],
+        raises=AssertionError,
+        reason="sqlglot drops RECURSIVE for Spark before 30.0",
+    ),
+)
+
+
+@no_recursive_keyword
+@pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
+def test_recursive_cte_con_sql_compiles(backend_name):
+    compiler = _compiler(backend_name)
     expr = _sql_query_result(RECURSIVE_COUNTER, compiler)
     assert "WITH RECURSIVE" in compiler.to_sqlglot(expr).sql(compiler.dialect)
 
 
-@pytest.mark.never(
-    ["mssql"], raises=AssertionError, reason="T-SQL has no RECURSIVE keyword"
-)
-@pytest.mark.never(
-    ["flink", "impala"],
-    raises=AssertionError,
-    reason="recursive CTEs aren't supported, so sqlglot drops RECURSIVE",
-)
+@no_recursive_keyword
 @pytest.mark.parametrize(
     ("make_table", "query"),
     [
@@ -561,9 +572,7 @@ def test_recursive_cte_con_sql_compiles(backend_name):
 )
 @pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
 def test_recursive_cte_table_sql_compiles(backend_name, make_table, query):
-    compiler = importlib.import_module(
-        f"ibis.backends.sql.compilers.{backend_name}"
-    ).compiler
+    compiler = _compiler(backend_name)
     query = sg.transpile(query, read="duckdb", write=compiler.dialect)[0]
     sql = compiler.add_query_to_expr(name="t", table=make_table(compiler), query=query)
     assert "WITH RECURSIVE" in sql
