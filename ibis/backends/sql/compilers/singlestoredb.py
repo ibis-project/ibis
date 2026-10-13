@@ -835,7 +835,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
         recursive = False
         for expr in (compiled_ibis_expr, compiled_query):
             if (with_ := expr.args.pop(WITH_ARG, None)) is not None:
-                recursive |= bool(with_.args.get("recursive"))
+                recursive |= with_.recursive
 
         # pull existing CTEs from the compiled Ibis expression and combine them
         # with the new query
