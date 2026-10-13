@@ -687,7 +687,7 @@ class SQLGlotCompiler(abc.ABC):
             merged_ctes.append(modified_cte)
         merged_ctes.extend(out.ctes)
         with_ = out.args.pop(WITH_ARG, None)
-        recursive = with_ is not None and bool(with_.args.get("recursive"))
+        recursive = with_ is not None and with_.recursive
 
         out = reduce(
             lambda parsed, cte: parsed.with_(
@@ -1627,7 +1627,7 @@ class SQLGlotCompiler(abc.ABC):
         recursive = False
         for expr in (compiled_ibis_expr, compiled_query):
             if (with_ := expr.args.pop(WITH_ARG, None)) is not None:
-                recursive |= bool(with_.args.get("recursive"))
+                recursive |= with_.recursive
 
         # pull existing CTEs from the compiled Ibis expression and combine them
         # with the new query
