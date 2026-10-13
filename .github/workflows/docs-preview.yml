@@ -18,7 +18,7 @@ jobs:
       cancel-in-progress: true
     if: github.event.label.name == 'docs-preview'
     steps:
-      - uses: actions/create-github-app-token@v2.2.1
+      - uses: actions/create-github-app-token@v3.2.0
         id: generate_token
         with:
           app-id: ${{ secrets.DOCS_BOT_APP_ID }}
@@ -44,7 +44,7 @@ jobs:
           extraPullNames: nix-community
 
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
@@ -73,7 +73,7 @@ jobs:
           } | tee /tmp/comment
 
       - name: restore cache of the previously rendered notebooks
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           key: docs-${{ github.event.pull_request.base.sha }}
           path: docs/**/.jupyter_cache

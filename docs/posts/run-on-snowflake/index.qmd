@@ -118,7 +118,7 @@ session.sproc.register(
 )
 ```
 
-::: {.callout-info}
+::: {.callout-note}
 ## More permanent solutions to packaging
 
 It's possible that a more permanent solution could be achieved with a `put` or

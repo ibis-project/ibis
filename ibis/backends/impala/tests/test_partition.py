@@ -162,6 +162,28 @@ def test_add_drop_partition_no_location(con, temp_table):
     assert len(con.list_partitions(temp_table)) == 1
 
 
+def test_alter_partition_location(con, temp_table):
+    schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
+    con.create_table(
+        temp_table,
+        schema=schema,
+        partition=["year", "month"],
+        tbl_properties={"transactional": "false"},
+    )
+
+    part = {"year": 2007, "month": 4}
+
+    con.add_partition(temp_table, part)
+
+    path = f"/tmp/{util.guid()}"
+
+    con.alter_partition(temp_table, part, location=path)
+
+    # only the first row is the partition; the second is the `Total` row
+    location = con.list_partitions(temp_table)["Location"].iloc[0]
+    assert location.endswith(path)
+
+
 def test_add_drop_partition_owned_by_impala(con, temp_table):
     schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
     con.create_table(

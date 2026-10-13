@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: install python
         uses: actions/setup-python@v6
@@ -33,7 +33,7 @@ jobs:
           python-version: "3.14"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.3.0
+        uses: astral-sh/setup-uv@v7.6.0
 
       - uses: extractions/setup-just@v3
         env:

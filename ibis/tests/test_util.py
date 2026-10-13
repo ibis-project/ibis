@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+import inspect
+
 import pytest
 
-from ibis.util import PseudoHashable, flatten_iterable, import_object, is_iterable
+from ibis.util import (
+    PseudoHashable,
+    backend_sensitive,
+    flatten_iterable,
+    import_object,
+    is_iterable,
+)
 
 
 @pytest.mark.parametrize(
@@ -159,3 +167,41 @@ def test_is_iterable(x, expected):
     else:
         assert actual is True
         assert list(x) == list(expected)
+
+
+def test_backend_sensitive():
+    @backend_sensitive(why="Some detail.")
+    def f():
+        """Do a thing.
+
+        More detail.
+        """
+
+    assert inspect.getdoc(f) == inspect.cleandoc(
+        """
+        Do a thing.
+
+        ::: {.callout-note}
+        ## This operation differs between backends.
+
+        Some detail.
+        :::
+
+        More detail.
+        """
+    )
+
+
+def test_backend_sensitive_without_docstring():
+    @backend_sensitive(why="Some detail.")
+    def f(): ...
+
+    assert inspect.getdoc(f) == inspect.cleandoc(
+        """
+        ::: {.callout-note}
+        ## This operation differs between backends.
+
+        Some detail.
+        :::
+        """
+    )

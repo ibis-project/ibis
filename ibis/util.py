@@ -327,6 +327,13 @@ def append_admonition(
     func: Callable, *, msg: str, body: str = "", kind: str = "warning"
 ) -> str:
     """Append a `kind` admonition with `msg` to `func`'s docstring."""
+    lines = [f"::: {{.callout-{kind}}}", f"## {msg}"]
+    if body:
+        # the body goes inside the fence; indented, it would be a code block
+        lines += ["", body]
+    lines.append(":::")
+    admonition_doc = "\n".join(lines)
+
     if docstr := func.__doc__:
         preamble, *rest = docstr.split("\n\n", maxsplit=1)
 
@@ -336,18 +343,9 @@ def append_admonition(
             1 for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
         )
 
-        lines = [f"::: {{.callout-{kind}}}", f"## {msg}", ":::"]
-        admonition_doc = textwrap.indent("\n".join(lines), leading_spaces)
-
-        if body:
-            rest = [indent(body, spaces=len(leading_spaces) + 4), *rest]
-
+        admonition_doc = textwrap.indent(admonition_doc, leading_spaces)
         docstr = "\n\n".join([preamble, admonition_doc, *rest])
     else:
-        lines = [f"::: {{.callout-{kind}}}", f"## {msg}", ":::"]
-        admonition_doc = "\n".join(lines)
-        if body:
-            admonition_doc += f"\n\n{indent(body, spaces=4)}"
         docstr = admonition_doc
     return docstr
 
@@ -386,7 +384,7 @@ def backend_sensitive(
     """Indicate that an API may be sensitive to a backend."""
 
     def wrapper(func):
-        func.__doc__ = append_admonition(func, msg=msg, body=why, kind="info")
+        func.__doc__ = append_admonition(func, msg=msg, body=why, kind="note")
         return func
 
     return wrapper

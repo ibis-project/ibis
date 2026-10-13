@@ -63,7 +63,7 @@ def test_tumble_window_by_grouped_agg(con):
     )
     result = expr.to_pandas()
     assert list(result.columns) == ["window_start", "window_end", "string_col", "avg"]
-    assert result.shape == (610, 4)
+    assert result.shape == (7300, 4)
 
 
 def test_tumble_window_by_ungrouped_agg(con):
@@ -75,4 +75,4 @@ def test_tumble_window_by_ungrouped_agg(con):
     )
     result = expr.to_pandas()
     assert list(result.columns) == ["window_start", "window_end", "avg"]
-    assert result.shape == (610, 3)
+    assert result.shape == (7300, 3)

@@ -11,5 +11,5 @@ nix develop '.#release' -c npx --yes \
   -p "@semantic-release/exec" \
   -p "@semantic-release/git" \
   -p "semantic-release-replace-plugin" \
-  -p "conventional-changelog-conventionalcommits" \
+  -p "conventional-changelog-conventionalcommits@9" \
   semantic-release --ci

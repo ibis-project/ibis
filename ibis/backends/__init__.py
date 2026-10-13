@@ -495,14 +495,12 @@ class _FileIOHandler:
         expr
             The ibis expression to execute and persist to parquet.
         path
-            The data source. A string or Path to the parquet file.
+            The data target. A string or Path where the Parquet file will be written.
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
-            Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
-
-        https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
-
+            Additional keyword arguments passed to
+            [`pyarrow.parquet.ParquetWriter`](https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html).
         """
         self._import_pyarrow()
         import pyarrow.parquet as pq
@@ -532,14 +530,12 @@ class _FileIOHandler:
         expr
             The ibis expression to execute and persist to parquet.
         directory
-            The data source. A string or Path to the directory where the parquet file will be written.
+            The data target. A string or Path to the directory where the Parquet files will be written.
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
-            Additional keyword arguments passed to pyarrow.dataset.write_dataset
-
-        https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html
-
+            Additional keyword arguments passed to
+            [`pyarrow.dataset.write_dataset`](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html).
         """
         self._import_pyarrow()
         import pyarrow.dataset as ds
@@ -570,13 +566,12 @@ class _FileIOHandler:
         expr
             The ibis expression to execute and persist to CSV.
         path
-            The data source. A string or Path to the CSV file.
+            The data target. A string or Path where the CSV file will be written.
         params
             Mapping of scalar parameter expressions to value.
         kwargs
-            Additional keyword arguments passed to pyarrow.csv.CSVWriter
-
-        https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
+            Additional keyword arguments passed to
+            [`pyarrow.csv.CSVWriter`](https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html).
         """
         self._import_pyarrow()
         import pyarrow.csv as pcsv
@@ -606,7 +601,7 @@ class _FileIOHandler:
         expr
             The ibis expression to execute and persist to Delta Lake table.
         path
-            The data source. A string or Path to the Delta Lake table.
+            The data target. A string or Path to the Delta Lake table directory.
         params
             Mapping of scalar parameter expressions to value.
         kwargs
@@ -641,11 +636,11 @@ class _FileIOHandler:
         Parameters
         ----------
         expr
-            The ibis expression to execute and persist to Delta Lake table.
+            The ibis expression to execute and persist to a JSON file.
         path
-            The data source. A string or Path to the Delta Lake table.
+            The data target. A string or Path where the JSON file will be written.
         kwargs
-            Additional, backend-specifc keyword arguments.
+            Additional, backend-specific keyword arguments.
         """
         backend = expr._find_backend(use_default=True)
         raise NotImplementedError(

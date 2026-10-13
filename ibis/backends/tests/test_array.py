@@ -37,7 +37,6 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
-from ibis.conftest import IS_SPARK_REMOTE
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -505,17 +504,6 @@ def test_array_slice(backend, start, stop):
                     reason="BigQuery doesn't support arrays with null elements",
                 ),
                 pytest.mark.notyet(
-                    ["pyspark"],
-                    condition=IS_SPARK_REMOTE,
-                    raises=AssertionError,
-                    reason="somehow, transformed results are different types",
-                ),
-                pytest.mark.notyet(
-                    ["databricks"],
-                    raises=AssertionError,
-                    reason="nulls come back as NaN",
-                ),
-                pytest.mark.notyet(
                     ["materialize"],
                     raises=AssertionError,
                     reason="nulls in arrays not preserved correctly in array_map results",
@@ -567,17 +555,6 @@ def test_array_map(con, input, output, func):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="BigQuery doesn't support arrays with null elements",
-                ),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    condition=IS_SPARK_REMOTE,
-                    raises=AssertionError,
-                    reason="somehow, transformed results are different types",
-                ),
-                pytest.mark.notimpl(
-                    ["databricks"],
-                    raises=AssertionError,
-                    reason="nans instead of nulls",
                 ),
                 pytest.mark.notyet(
                     ["materialize"],
@@ -914,30 +891,6 @@ def test_array_remove(con, input, expected):
             id="null",
             marks=[
                 pytest.mark.notyet(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="Null elements are transformed to NaN",
-                ),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    condition=IS_SPARK_REMOTE,
-                    raises=AssertionError,
-                    reason="somehow, transformed results are different types",
-                ),
-                pytest.mark.notimpl(
-                    ["databricks"], raises=AssertionError, reason="nulls are nans"
-                ),
-                pytest.mark.notyet(
-                    ["athena"],
-                    raises=AssertionError,
-                    reason="pyarrow doesn't return non-numpy objects for arrays",
-                ),
-                pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="arrays with NaN returns a different number of rows than expected",
-                ),
-                pytest.mark.notyet(
                     ["materialize"],
                     raises=AssertionError,
                     reason="nulls in arrays not preserved correctly in array_unique results",
@@ -1014,22 +967,6 @@ def test_array_sort(con, data):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="BigQuery doesn't support arrays with null elements",
-                ),
-                pytest.mark.notyet(
-                    ["datafusion", "polars"],
-                    raises=AssertionError,
-                    reason="Null elements are transformed to NaN",
-                ),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    condition=IS_SPARK_REMOTE,
-                    raises=AssertionError,
-                    reason="somehow, transformed results are different types",
-                ),
-                pytest.mark.notimpl(
-                    ["databricks", "athena"],
-                    raises=AssertionError,
-                    reason="nulls are nans",
                 ),
             ],
         ),
