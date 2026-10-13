@@ -318,10 +318,6 @@ jobs:
           - os: windows-latest
             python-version: "3.14"
             backend:
-              name: datafusion
-          - os: windows-latest
-            python-version: "3.14"
-            backend:
               name: duckdb
           - os: windows-latest
             backend:
