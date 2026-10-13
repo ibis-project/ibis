@@ -107,7 +107,7 @@ def partition_predicates(predicates):
     unqualified = []
 
     for predicate in predicates:
-        if predicate.find(ops.WindowFunction, filter=ops.Value):
+        if predicate.find(ops.WindowedFunction, filter=ops.Value):
             qualified.append(predicate)
         else:
             unqualified.append(predicate)
@@ -195,7 +195,7 @@ def drop_null_to_select(_, **kwargs):
     return Select(_.parent, selections=_.values, predicates=tuple(preds))
 
 
-@replace(p.WindowFunction(p.First | p.Last))
+@replace(p.WindowedFunction(p.First | p.Last))
 def first_to_firstvalue(_, **kwargs):
     """Convert a First or Last node to a FirstValue or LastValue node."""
     if _.func.where is not None:
@@ -250,7 +250,7 @@ def merge_select_select(_, **kwargs):
     """
     # don't merge if either the outer or the inner select has window functions
     blocking = (
-        ops.WindowFunction,
+        ops.WindowedFunction,
         ops.ExistsSubquery,
         ops.InSubquery,
         ops.Unnest,
@@ -477,7 +477,7 @@ def split_select_distinct_with_order_by(_):
     return _
 
 
-@replace(p.WindowFunction(func=p.NTile(y), order_by=()))
+@replace(p.WindowedFunction(func=p.NTile(y), order_by=()))
 def add_order_by_to_empty_ranking_window_functions(_, **kwargs):
     """Add an ORDER BY clause to rank window functions that don't have one."""
     return _.copy(order_by=(y,))
@@ -488,7 +488,7 @@ empty_in_values_right_side = p.InValues(options=()) >> d.Literal(False, dtype=dt
 
 
 @replace(
-    p.WindowFunction(p.RankBase | p.NTile)
+    p.WindowedFunction(p.RankBase | p.NTile)
     | p.StringFind
     | p.FindInSet
     | p.ArrayPosition
@@ -507,17 +507,17 @@ def add_one_to_nth_value_input(_, **kwargs):
     return _.copy(nth=nth)
 
 
-@replace(p.WindowFunction(order_by=()))
+@replace(p.WindowedFunction(order_by=()))
 def rewrite_empty_order_by_window(_, **kwargs):
     return _.copy(order_by=(ops.NULL,))
 
 
-@replace(p.WindowFunction(p.RowNumber | p.NTile))
+@replace(p.WindowedFunction(p.RowNumber | p.NTile))
 def exclude_unsupported_window_frame_from_row_number(_, **kwargs):
     return ops.Subtract(_.copy(start=None, end=0), 1)
 
 
-@replace(p.WindowFunction(p.MinRank | p.DenseRank, start=None))
+@replace(p.WindowedFunction(p.MinRank | p.DenseRank, start=None))
 def exclude_unsupported_window_frame_from_rank(_, **kwargs):
     return ops.Subtract(
         _.copy(start=None, end=0, order_by=_.order_by or (ops.NULL,)), 1
@@ -525,7 +525,7 @@ def exclude_unsupported_window_frame_from_rank(_, **kwargs):
 
 
 @replace(
-    p.WindowFunction(
+    p.WindowedFunction(
         p.Lag | p.Lead | p.PercentRank | p.CumeDist | p.Any | p.All, start=None
     )
 )

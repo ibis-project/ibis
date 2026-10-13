@@ -42,7 +42,7 @@ select x as u from t where x > 0
 In SQL, the _binder_ adds type information to the syntax tree produced by the _parser_. This order
 of operations differs from the way Ibis works; in Ibis, [`Node`](../../concepts/internals.qmd#the-ibis.expr.types.node-class)s—
 the core operations that can be applied to expressions, such as `ibis.expr.operations.Add` and
-`ibis.expr.operations.WindowFunction`—must be applied to [`Expr`](../../concepts/internals.qmd#the-expr-class)
+`ibis.expr.operations.WindowedFunction`—must be applied to [`Expr`](../../concepts/internals.qmd#the-expr-class)
 objects containing data type and shape information.
 
 The [`Table`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table) is one of the

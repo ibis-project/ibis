@@ -21,3 +21,12 @@ from ibis.expr.operations.temporal_windows import *  # noqa: F403
 from ibis.expr.operations.udf import *  # noqa: F403
 from ibis.expr.operations.vectorized import *  # noqa: F403
 from ibis.expr.operations.window import *  # noqa: F403
+
+
+def __getattr__(name: str):
+    from ibis.expr.operations.window import _deprecated_alias
+
+    try:
+        return _deprecated_alias(name)
+    except AttributeError:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None

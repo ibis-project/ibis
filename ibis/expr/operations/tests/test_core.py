@@ -223,6 +223,16 @@ def test_operation_class_aliases():
     assert ops.AnalyticOp is ops.Analytic
 
 
+def test_window_function_is_deprecated_alias_of_windowed_function():
+    with pytest.warns(FutureWarning, match="WindowedFunction"):
+        assert ops.WindowFunction is ops.WindowedFunction
+
+    with pytest.warns(FutureWarning, match="WindowedFunction"):
+        from ibis.expr.operations.window import WindowFunction
+
+    assert WindowFunction is ops.WindowedFunction
+
+
 def test_expression_class_aliases():
     assert ir.Table is ir.Table
     assert ir.ValueExpr is ir.Value

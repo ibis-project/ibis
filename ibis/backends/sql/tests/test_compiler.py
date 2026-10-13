@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 import sqlglot as sg
 
 import ibis
@@ -26,3 +27,18 @@ def test_transpile_join():
         "SELECT * FROM t1 JOIN t2 ON x = y", read="duckdb", write=Trino
     )
     assert "CROSS JOIN" not in result
+
+
+def test_visit_window_function_override_is_used_for_windowed_function():
+    from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
+
+    with pytest.warns(FutureWarning, match="visit_WindowedFunction"):
+
+        class MyCompiler(DuckDBCompiler):
+            def visit_WindowFunction(self, op, **kwargs):  # noqa: ARG002
+                return sg.exp.convert("my_window")
+
+    t = ibis.table({"a": "int64"}, name="t")
+    expr = t.select(s=t.a.sum().over())
+    sql = MyCompiler().to_sqlglot(expr).sql()
+    assert "my_window" in sql

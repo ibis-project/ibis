@@ -1612,7 +1612,7 @@ def test_select_distinct_filter_order_by_commute(backend, alltypes, df, ops):
 @pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,
-    reason="backend doesn't implement ops.WindowFunction",
+    reason="backend doesn't implement ops.WindowedFunction",
 )
 @pytest.mark.notimpl(
     ["flink"],
@@ -1675,7 +1675,7 @@ def test_distinct_on_keep(backend, on, keep):
 @pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,
-    reason="backend doesn't implement ops.WindowFunction",
+    reason="backend doesn't implement ops.WindowedFunction",
 )
 @pytest.mark.notimpl(
     ["flink"],

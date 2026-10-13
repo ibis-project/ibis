@@ -12,6 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
+from ibis import util
 from ibis.common.patterns import CoercionError
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.operations.analytic import Analytic  # noqa: TC001
@@ -64,8 +65,12 @@ class WindowBoundary(Value[T, S]):
 
 
 @public
-class WindowFunction(Value):
-    """Window function operation."""
+class WindowedFunction(Value):
+    """A function evaluated over a window.
+
+    Holds the function together with the window's frame bounds, grouping, and
+    ordering, so it corresponds to all of `func(...) OVER (...)` in SQL.
+    """
 
     func: Analytic | Reduction
     how: LiteralType["rows", "range"] = "rows"
@@ -110,4 +115,21 @@ class WindowFunction(Value):
         return self.func.name
 
 
-public(WindowOp=WindowFunction, Window=WindowFunction)
+public(WindowOp=WindowedFunction, Window=WindowedFunction)
+
+
+def _deprecated_alias(name: str):
+    """Resolve renamed attributes for a module-level `__getattr__`."""
+    if name == "WindowFunction":
+        util.warn_deprecated(
+            "ibis.expr.operations.WindowFunction",
+            as_of="12.1",
+            instead="use `ibis.expr.operations.WindowedFunction` instead",
+            stacklevel=3,
+        )
+        return WindowedFunction
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __getattr__(name: str):
+    return _deprecated_alias(name)

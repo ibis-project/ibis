@@ -221,7 +221,7 @@ def test_window_builder_between():
 def test_window_api_supports_value_expressions(t):
     w = ibis.window(between=(t.d, t.d + 1), group_by=t.b, order_by=t.c)
     func = t.a.sum().over(w).op()
-    expected = ops.WindowFunction(
+    expected = ops.WindowedFunction(
         func=t.a.sum(),
         how="rows",
         start=ops.WindowBoundary(t.d, preceding=False),
@@ -235,7 +235,7 @@ def test_window_api_supports_value_expressions(t):
 def test_window_api_supports_scalar_order_by(t):
     window = ibis.window(order_by=ibis.null())
     expr = t.a.sum().over(window).op()
-    expected = ops.WindowFunction(
+    expected = ops.WindowedFunction(
         t.a.sum(),
         how="rows",
         start=None,
@@ -248,7 +248,7 @@ def test_window_api_supports_scalar_order_by(t):
     rand = ibis.random()
     window = ibis.window(order_by=rand)
     expr = t.a.sum().over(window).op()
-    expected = ops.WindowFunction(
+    expected = ops.WindowedFunction(
         t.a.sum(),
         how="rows",
         start=None,
@@ -346,7 +346,7 @@ def test_window_api_trailing_range():
     window = ibis.trailing_range_window(start, order_by="col")
     expr = t.col.sum().over(window).op()
 
-    expected = ops.WindowFunction(
+    expected = ops.WindowedFunction(
         t.col.sum(),
         how="range",
         start=ops.WindowBoundary(start, preceding=True),
@@ -435,7 +435,7 @@ def test_window_bind_to_table(t):
     spec = ibis.window(group_by="g", order_by=ibis.desc("f"))
 
     window = t.a.sum().over(spec).op()
-    expected = ops.WindowFunction(
+    expected = ops.WindowedFunction(
         t.a.sum(),
         how="rows",
         start=None,
@@ -451,7 +451,7 @@ def test_window_bind_value_expression_using_over(t):
     w = ibis.window(group_by="g", order_by="f")
 
     window = t.f.lag().over(w).op()
-    expected = ops.WindowFunction(
+    expected = ops.WindowedFunction(
         t.f.lag(),
         how="rows",
         start=None,
@@ -536,7 +536,7 @@ def test_windowization_wraps_reduction_inside_a_nested_value_expression(t):
     )
     expr = (t.f == 0).notany().over(win)
     expected = ops.Not(
-        ops.WindowFunction(
+        ops.WindowedFunction(
             func=ops.Any(t.f == 0),
             how="rows",
             start=None,
@@ -559,7 +559,7 @@ def test_group_by_with_window_function_preserves_range():
             "one": t.one,
             "two": t.two,
             "three": t.three,
-            "four": ops.WindowFunction(
+            "four": ops.WindowedFunction(
                 func=ops.Sum(t.two),
                 how="rows",
                 start=None,

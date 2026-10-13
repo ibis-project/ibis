@@ -1332,7 +1332,7 @@ def test_duplicate_ordered_sum(con):
 
 
 def test_over_with_scalar_group_by(backend, alltypes):
-    """You can pass a scalar value to the group_by of a WindowFunction, and that works fine.
+    """You can pass a scalar value to the group_by of a WindowedFunction, and that works fine.
     All values have the same grouping key, so it is basically a noop, but it works.
     """
     with_over = alltypes.select(

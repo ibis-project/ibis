@@ -252,7 +252,7 @@ def lower_stringslice(_, **kwargs):
 @replace(p.Analytic)
 def wrap_analytic(_, **__):
     # Wrap analytic functions in a window function
-    return ops.WindowFunction(_)
+    return ops.WindowedFunction(_)
 
 
 @replace(p.Reduction)
@@ -261,7 +261,7 @@ def project_wrap_reduction(_, rel):
     if _.relations == {rel}:
         # The reduction is fully originating from the `rel`, so turn
         # it into a window function of `rel`
-        return ops.WindowFunction(_, order_by=getattr(_, "order_by", ()))
+        return ops.WindowedFunction(_, order_by=getattr(_, "order_by", ()))
     else:
         # 1. The reduction doesn't depend on any table, constructed from
         #    scalar values, so turn it into a scalar subquery.
@@ -278,7 +278,7 @@ def rewrite_project_input(value, relation):
     # relation
     return value.replace(
         wrap_analytic | project_wrap_reduction,
-        filter=p.Value & ~p.WindowFunction,
+        filter=p.Value & ~p.WindowedFunction,
         context={"rel": relation},
     )
 
@@ -300,7 +300,7 @@ def filter_wrap_reduction(_):
 
 def rewrite_filter_input(value):
     return value.replace(
-        wrap_analytic | filter_wrap_reduction, filter=p.Value & ~p.WindowFunction
+        wrap_analytic | filter_wrap_reduction, filter=p.Value & ~p.WindowedFunction
     )
 
 
@@ -308,7 +308,7 @@ def rewrite_filter_input(value):
 def window_wrap_reduction(_, window):
     # Wrap analytic and reduction functions in a window function. Used in the
     # value.over() API.
-    return ops.WindowFunction(
+    return ops.WindowedFunction(
         _,
         how=window.how,
         start=window.start,
@@ -318,7 +318,7 @@ def window_wrap_reduction(_, window):
     )
 
 
-@replace(p.WindowFunction)
+@replace(p.WindowedFunction)
 def window_merge_frames(_, window):
     # Merge window frames, used in the value.over() and groupby.select() APIs.
     if _.how != window.how:
@@ -352,7 +352,7 @@ def rewrite_window_input(value, window):
     # if self is a reduction or analytic function, wrap it in a window function
     node = value.replace(
         window_wrap_reduction,
-        filter=p.Value & ~p.WindowFunction,
+        filter=p.Value & ~p.WindowedFunction,
         context=context,
     )
     # if self is already a window function, merge the existing window frame

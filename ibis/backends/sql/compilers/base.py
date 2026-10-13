@@ -33,7 +33,7 @@ from ibis.backends.sql.rewrites import (
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
-from ibis.util import get_subclasses
+from ibis.util import get_subclasses, warn_deprecated
 
 try:
     from sqlglot.expressions import Alter
@@ -294,7 +294,7 @@ class SQLGlotCompiler(abc.ABC):
         ops.Project,
         ops.Filter,
         ops.Sort,
-        ops.WindowFunction,
+        ops.WindowedFunction,
     )
     """A tuple of ops classes that are supported, but don't have explicit
     `visit_*` methods (usually due to being handled by rewrite rules). Used by
@@ -504,6 +504,18 @@ class SQLGlotCompiler(abc.ABC):
             # change to visit_Unsupported in a follow up
             # TODO: handle geoespatial ops as a separate case?
             setattr(cls, methodname(op), cls.visit_Undefined)
+
+        # compilers outside of ibis may still name this method after the op's
+        # old name, `WindowFunction`
+        if (legacy := cls.__dict__.get("visit_WindowFunction")) is not None:
+            warn_deprecated(
+                f"{cls.__qualname__}.visit_WindowFunction",
+                as_of="12.1",
+                instead="rename it to `visit_WindowedFunction`",
+                stacklevel=3,
+            )
+            if "visit_WindowedFunction" not in cls.__dict__:
+                cls.visit_WindowedFunction = legacy
 
         # raise on any remaining unsupported operations
         for op in ALL_OPERATIONS:
@@ -1185,7 +1197,7 @@ class SQLGlotCompiler(abc.ABC):
         # that corresponds to _only_ this information
         return {"value": value, "side": "preceding" if preceding else "following"}
 
-    def visit_WindowFunction(self, op, *, how, func, start, end, group_by, order_by):
+    def visit_WindowedFunction(self, op, *, how, func, start, end, group_by, order_by):
         if start is None:
             start = {}
         if end is None:

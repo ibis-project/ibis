@@ -43,7 +43,7 @@ def test_mutate_with_analytic_functions(alltypes):
 
     values = list(proj.op().values.values())
     for field in values[len(t.schema()) :]:
-        assert isinstance(field, ops.WindowFunction)
+        assert isinstance(field, ops.WindowedFunction)
 
 
 def test_value_over_api(alltypes):

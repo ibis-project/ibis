@@ -279,7 +279,7 @@ class Filter(Simple):
         for pred in predicates:
             # bare reductions that are not window functions are not allowed
             if pred.find(ReductionLike, filter=Value) and not pred.find(
-                p.WindowFunction, filter=Value
+                p.WindowedFunction, filter=Value
             ):
                 raise IntegrityError(
                     f"Cannot add {pred!r} to filter, it is a reduction which "
