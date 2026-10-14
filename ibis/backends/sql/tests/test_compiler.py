@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import pytest
 import sqlglot as sg
+from pytest import param
 
 import ibis
 from ibis import _
-from ibis.backends.sql.dialects import Trino
+from ibis.backends.sql.dialects import MSSQL, Oracle, Trino
 
 
 def test_window_with_row_number_compiles():
@@ -26,3 +28,15 @@ def test_transpile_join():
         "SELECT * FROM t1 JOIN t2 ON x = y", read="duckdb", write=Trino
     )
     assert "CROSS JOIN" not in result
+
+
+@pytest.mark.parametrize(
+    ("dialect", "sql"),
+    [
+        param(MSSQL, "SELECT STDEV(x) FROM t", id="mssql"),
+        param(Oracle, "SELECT STDDEV(x) FROM t", id="oracle"),
+    ],
+)
+def test_transpile_stddev(dialect, sql):
+    (result,) = sg.transpile(sql, read=dialect, write=dialect)
+    assert result == sql

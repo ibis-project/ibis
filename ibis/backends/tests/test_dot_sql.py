@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import getpass
+import sqlite3
 
 import pytest
 import sqlglot as sg
@@ -17,7 +18,9 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     OracleDatabaseError,
+    PsycoPg2InternalError,
     PyAthenaOperationalError,
+    PyDruidProgrammingError,
     PyODBCProgrammingError,
 )
 
@@ -262,6 +265,37 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
     result = expr.execute()
     expected = df.bigint_col.add(1).rename("x")
     backend.assert_series_equal(result.x, expected)
+
+
+@pytest.mark.notyet(
+    ["mysql", "singlestoredb"],
+    raises=AssertionError,
+    reason="sqlglot generates exp.Stddev (sample) as MySQL's STDDEV, which is population",
+)
+@pytest.mark.notyet(
+    ["sqlite"], raises=sqlite3.OperationalError, reason="sqlite has no STDDEV function"
+)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="STDDEV requires the druid-stats extension",
+)
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="only stddev_samp and stddev_pop are supported",
+)
+@pytest.mark.notyet(
+    ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
+)
+def test_dot_sql_transpile_stddev(con, df):
+    expr = con.sql(
+        'SELECT STDDEV("double_col") AS "s" FROM "functional_alltypes" WHERE "id" < 5',
+        dialect="duckdb",
+    )
+    result = expr.execute().s.iat[0]
+    expected = df.loc[df.id < 5, "double_col"].std()
+    assert result == pytest.approx(expected)
 
 
 @pytest.mark.notimpl(["druid", "polars"])

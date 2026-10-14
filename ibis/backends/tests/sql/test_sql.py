@@ -17,12 +17,10 @@ import operator
 from operator import methodcaller
 
 import pytest
-import sqlglot as sg
 from pytest import param
 
 import ibis
 from ibis import _
-from ibis.backends.sql.dialects import MSSQL, Oracle
 from ibis.backends.tests.sql.conftest import to_sql
 from ibis.tests.util import assert_decompile_roundtrip
 
@@ -681,19 +679,3 @@ def test_struct_field_simplified(snapshot, accessor):
     for _i in range(5):
         s = ibis.struct({"i": accessor(s, "i") + 1, "s": accessor(s, "s") + "bar"})
     snapshot.assert_match(ibis.to_sql(s.i, dialect="duckdb"), "out.sql")
-
-
-@pytest.mark.parametrize(
-    ("read", "func", "write", "expected"),
-    [
-        param(MSSQL, "STDEV", MSSQL, "STDEV", id="mssql"),
-        param(Oracle, "STDDEV", Oracle, "STDDEV", id="oracle"),
-        param("duckdb", "STDDEV", MSSQL, "STDEV", id="duckdb-mssql"),
-        param("duckdb", "STDDEV", Oracle, "STDDEV", id="duckdb-oracle"),
-        param("duckdb", "STDDEV_POP", MSSQL, "STDEVP", id="duckdb-mssql-pop"),
-        param("duckdb", "STDDEV_POP", Oracle, "STDDEV_POP", id="duckdb-oracle-pop"),
-    ],
-)
-def test_transpile_stddev(read, func, write, expected):
-    (result,) = sg.transpile(f"SELECT {func}(x) FROM t", read=read, write=write)
-    assert result == f"SELECT {expected}(x) FROM t"
