@@ -6,6 +6,7 @@ from pytest import param
 
 import ibis
 from ibis import _
+from ibis.backends import _get_backend_names
 from ibis.backends.sql.dialects import MSSQL, Oracle, Trino
 
 
@@ -28,6 +29,14 @@ def test_transpile_join():
         "SELECT * FROM t1 JOIN t2 ON x = y", read="duckdb", write=Trino
     )
     assert "CROSS JOIN" not in result
+
+
+@pytest.mark.parametrize("dialect", sorted(_get_backend_names(exclude=("polars",))))
+def test_to_sql_knows_every_sql_backend(dialect):
+    # `ibis.to_sql` looks the dialect up on `ibis.backends.sql.compilers`, so
+    # every SQL backend's compiler module has to be imported there
+    expr = ibis.table({"a": "int64"}, name="t")
+    assert ibis.to_sql(expr, dialect=dialect)
 
 
 @pytest.mark.parametrize(
