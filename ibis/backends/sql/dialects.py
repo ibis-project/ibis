@@ -530,3 +530,25 @@ Databricks.Generator.TRANSFORMS |= {
         ]
     )
 }
+
+
+# Register a minimal Db2 dialect with SQLGlot so that
+# sqlglot.transpile(..., write="db2") works even when db2-sqlglot-dialect
+# is not installed (e.g. in the Nix test build without --extra db2).
+# The full-featured dialect is provided by db2-sqlglot-dialect when installed;
+# that package re-registers "db2" and takes precedence.
+try:
+    from sqlglot.dialects.dialect import Dialect as _SqlglotDialect
+    from sqlglot.dialects.dialect import _Dialect as _DialectMeta
+
+    if "db2" not in _DialectMeta._classes:
+        # The metaclass _Dialect.__new__ registers subclasses by lowercase
+        # class name, so naming the class "Db2" registers it as "db2".
+        class Db2(_SqlglotDialect):
+            """Minimal Db2 dialect stub for SQLGlot transpile compatibility."""
+
+        del Db2  # only the metaclass side-effect (registration) is needed
+
+    del _SqlglotDialect, _DialectMeta
+except Exception:  # noqa: BLE001, S110
+    pass

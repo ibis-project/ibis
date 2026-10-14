@@ -7,9 +7,10 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import _
-from ibis.backends.tests.errors import OracleDatabaseError
+from ibis.backends.tests.errors import IbmDb2Error, OracleDatabaseError
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -39,6 +40,7 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
 )
 @pytest.mark.notimpl(["trino", "druid", "athena"])
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 
@@ -61,6 +63,7 @@ def test_timestamp_accepts_date_literals(alltypes):
 
 
 @pytest.mark.notimpl(["impala", "druid", "oracle", "exasol"])
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 @pytest.mark.never(
     ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="backend will never implement array types",
@@ -73,6 +76,7 @@ def test_scalar_param_array(con):
 
 
 @pytest.mark.notimpl(["impala", "postgres", "risingwave", "druid", "oracle", "exasol"])
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 @pytest.mark.never(
     ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
@@ -90,6 +94,7 @@ def test_scalar_param_struct(con):
 
 
 @pytest.mark.notimpl(["datafusion", "impala", "polars", "druid", "oracle", "exasol"])
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(
     ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement map types",
@@ -154,6 +159,7 @@ def test_scalar_param(backend, alltypes, df, value, dtype, col):
     ids=["string", "date", "datetime"],
 )
 @pytest.mark.notimpl(["druid"])
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_scalar_param_date(backend, alltypes, value):
     param = ibis.param("date")
     ds_col = alltypes.date_string_col
@@ -197,6 +203,7 @@ def test_scalar_param_date(backend, alltypes, value):
         "mssql",
         "druid",
         "exasol",
+        "db2",
     ]
 )
 @pytest.mark.notimpl(
