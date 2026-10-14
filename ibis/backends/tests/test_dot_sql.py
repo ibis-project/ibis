@@ -477,7 +477,8 @@ nested_recursive_cte = pytest.mark.notyet(
 
 @no_recursive_cte
 def test_con_dot_sql_recursive_cte(backend, con):
-    result = con.sql(RECURSIVE_COUNTER, dialect="duckdb").execute()["n"]
+    expr = con.sql(RECURSIVE_COUNTER, dialect="duckdb")
+    result = expr.execute()["n"].sort_values().reset_index(drop=True)
     expected = pd.Series([1, 2, 3], name="n")
     backend.assert_series_equal(result.astype(expected.dtype), expected)
 
@@ -486,7 +487,7 @@ def test_con_dot_sql_recursive_cte(backend, con):
 @nested_recursive_cte
 def test_con_dot_sql_recursive_cte_filtered(backend, con):
     expr = con.sql(RECURSIVE_COUNTER, dialect="duckdb").filter(_.n > 1)
-    result = expr.execute()["n"]
+    result = expr.execute()["n"].sort_values().reset_index(drop=True)
     expected = pd.Series([2, 3], name="n")
     backend.assert_series_equal(result.astype(expected.dtype), expected)
 
@@ -494,7 +495,8 @@ def test_con_dot_sql_recursive_cte_filtered(backend, con):
 @no_recursive_cte
 def test_table_dot_sql_recursive_query(backend, con):
     t = con.sql('SELECT 1 AS "x"', dialect="duckdb").alias("t")
-    result = t.sql(RECURSIVE_COUNTER_FROM_T, dialect="duckdb").execute()["n"]
+    expr = t.sql(RECURSIVE_COUNTER_FROM_T, dialect="duckdb")
+    result = expr.execute()["n"].sort_values().reset_index(drop=True)
     expected = pd.Series([1, 2, 3], name="n")
     backend.assert_series_equal(result.astype(expected.dtype), expected)
 
@@ -503,7 +505,8 @@ def test_table_dot_sql_recursive_query(backend, con):
 @nested_recursive_cte
 def test_table_dot_sql_recursive_parent(backend, con):
     t = con.sql(RECURSIVE_COUNTER, dialect="duckdb").alias("t")
-    result = t.sql('SELECT "n" FROM "t"', dialect="duckdb").execute()["n"]
+    expr = t.sql('SELECT "n" FROM "t"', dialect="duckdb")
+    result = expr.execute()["n"].sort_values().reset_index(drop=True)
     expected = pd.Series([1, 2, 3], name="n")
     backend.assert_series_equal(result.astype(expected.dtype), expected)
 
