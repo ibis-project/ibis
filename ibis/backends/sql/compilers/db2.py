@@ -3,16 +3,9 @@
 from __future__ import annotations
 
 import sqlglot.expressions as sge
+from db2_sqlglot import Db2 as _Db2BaseDialect
 from sqlglot import exp
 from sqlglot.generator import Generator
-
-try:
-    from db2_sqlglot import Db2 as _Db2BaseDialect
-
-    _DB2_SQLGLOT_AVAILABLE = True
-except ImportError:
-    _Db2BaseDialect = None
-    _DB2_SQLGLOT_AVAILABLE = False
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
@@ -20,6 +13,8 @@ from ibis.backends.sql.compilers.base import SQLGlotCompiler
 from ibis.backends.sql.datatypes import Db2Type
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
+    lower_log2,
+    lower_log10,
     lower_sample,
     split_select_distinct_with_order_by,
 )
@@ -28,11 +23,11 @@ from ibis.backends.sql.rewrites import (
 class Db2Generator(Generator):
     """Custom SQL generator for Db2."""
 
+    # Only Ibis-specific keys — no base spread. The base Generator keys are
+    # inherited by Db2Dialect.Generator via the MRO and must not be spread here,
+    # because spreading **Generator.TRANSFORMS would overwrite the external
+    # dialect's specialised transforms for keys that appear in both dicts.
     TRANSFORMS = {
-        **Generator.TRANSFORMS,
-        exp.DateAdd: lambda self, e: self.func(
-            "DATE_ADD", e.this, self.sql(e, "expression"), self.sql(e, "unit")
-        ),
         exp.DateDiff: lambda self, e: self.func(
             "DAYS_BETWEEN", e.this, self.sql(e, "expression")
         ),
@@ -48,8 +43,8 @@ class Db2Generator(Generator):
         ),
     }
 
+    # Only Ibis-specific overrides — no **Generator.TYPE_MAPPING spread.
     TYPE_MAPPING = {
-        **Generator.TYPE_MAPPING,
         exp.DataType.Type.BOOLEAN: "BOOLEAN",
         exp.DataType.Type.TINYINT: "SMALLINT",
         exp.DataType.Type.SMALLINT: "SMALLINT",
@@ -69,10 +64,6 @@ class Db2Generator(Generator):
         exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
     }
 
-    def tablesample_sql(self, expression: exp.TableSample) -> str:
-        """Db2 doesn't support TABLESAMPLE, return empty string."""
-        return ""
-
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         """Generate CAST expression for Db2."""
         return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
@@ -88,9 +79,13 @@ class Db2Generator(Generator):
         return "TRUE" if expression.this else "FALSE"
 
     def concat_sql(self, expression: exp.Concat) -> str:
-        """Generate CONCAT expression for Db2."""
-        # Db2 uses || operator or CONCAT function
-        return self.func("CONCAT", *expression.expressions)
+        """Generate CONCAT expression for Db2.
+
+        Db2's CONCAT() takes exactly two arguments. Use || for arbitrary
+        numbers of operands, which is valid for any count. Parenthesise
+        to preserve precedence inside larger expressions.
+        """
+        return "(" + " || ".join(self.sql(e) for e in expression.expressions) + ")"
 
     def substring_sql(self, expression: exp.Substring) -> str:
         """Generate SUBSTRING expression for Db2."""
@@ -102,23 +97,6 @@ class Db2Generator(Generator):
             args.append(expression.args["length"])
         return self.func("SUBSTR", *args)
 
-    def dateadd_sql(self, expression: exp.DateAdd) -> str:
-        """Generate date addition for Db2."""
-        unit = self.sql(expression, "unit")
-        value = self.sql(expression, "expression")
-        date = self.sql(expression, "this")
-
-        # Db2 uses specific functions for date arithmetic
-        unit_map = {
-            "DAY": f"{date} + {value} DAYS",
-            "MONTH": f"{date} + {value} MONTHS",
-            "YEAR": f"{date} + {value} YEARS",
-            "HOUR": f"{date} + {value} HOURS",
-            "MINUTE": f"{date} + {value} MINUTES",
-            "SECOND": f"{date} + {value} SECONDS",
-        }
-        return unit_map.get(unit.upper(), f"{date} + {value} {unit}")
-
     def extract_sql(self, expression: exp.Extract) -> str:
         """Generate EXTRACT expression for Db2."""
         # Db2 supports EXTRACT function
@@ -128,24 +106,9 @@ class Db2Generator(Generator):
         """Generate REGEXP_LIKE for Db2."""
         return self.func("REGEXP_LIKE", expression.this, expression.expression)
 
-    def div_sql(self, expression: exp.Div) -> str:
-        """Generate division for Db2."""
-        # Db2 integer division needs special handling
-        return (
-            f"({self.sql(expression, 'this')} / {self.sql(expression, 'expression')})"
-        )
-
     def mod_sql(self, expression: exp.Mod) -> str:
         """Generate modulo for Db2."""
         return self.func("MOD", expression.this, expression.expression)
-
-    def log_sql(self, expression: exp.Log) -> str:
-        """Generate logarithm for Db2."""
-        if expression.args.get("base"):
-            # Db2 LOG function with base
-            return self.func("LOG", expression.args["base"], expression.this)
-        # Natural log
-        return self.func("LN", expression.this)
 
     def sqrt_sql(self, expression: exp.Sqrt) -> str:
         """Generate square root for Db2."""
@@ -156,45 +119,42 @@ class Db2Generator(Generator):
         return self.func("POWER", expression.this, expression.expression)
 
 
-if _DB2_SQLGLOT_AVAILABLE:
+class Db2Dialect(_Db2BaseDialect):
+    """Db2 SQL dialect for SQLGlot, extending the base dialect from db2_sqlglot."""
 
-    class Db2Dialect(_Db2BaseDialect):
-        """Db2 SQL dialect for SQLGlot, extending the base dialect from db2_sqlglot."""
+    class Generator(Db2Generator, _Db2BaseDialect.Generator):
+        """Extended Db2 generator with Ibis-specific customisations.
 
-        class Generator(_Db2BaseDialect.Generator, Db2Generator):
-            """Extended Db2 generator with Ibis-specific customisations.
+        Db2Generator comes first in the MRO so all Ibis-defined methods
+        (boolean_sql, cast_sql, trycast_sql, extract_sql, etc.) take
+        precedence over the external dialect's defaults.  The external
+        generator fills in anything not overridden here.
+        """
 
-            Inherits from both ``Db2BaseDialect.Generator`` (for dialect-level
-            flags such as ``LIMIT_FETCH`` and correct ``limit_sql`` /
-            ``offset_sql`` / ``fetch_sql``) and ``Db2Generator`` (for
-            Ibis-specific TRANSFORMS and TYPE_MAPPING overrides).
-            """
+        TYPE_MAPPING = {
+            **_Db2BaseDialect.Generator.TYPE_MAPPING,
+            **Db2Generator.TYPE_MAPPING,
+        }
 
-            TYPE_MAPPING = {
-                **_Db2BaseDialect.Generator.TYPE_MAPPING,
-                **Db2Generator.TYPE_MAPPING,
-            }
+        TRANSFORMS = {
+            # External dialect is the base; Db2Generator keys are the only
+            # overrides, so they win for every key they define.
+            **_Db2BaseDialect.Generator.TRANSFORMS,
+            **Db2Generator.TRANSFORMS,
+        }
 
-            TRANSFORMS = {
-                **_Db2BaseDialect.Generator.TRANSFORMS,
-                **Db2Generator.TRANSFORMS,
-            }
+    class Parser(_Db2BaseDialect.Parser):
+        """Extended Db2 parser with Ibis-specific customisations."""
 
-        class Parser(_Db2BaseDialect.Parser):
-            """Extended Db2 parser with Ibis-specific customisations."""
-
-            FUNCTIONS = {
-                **_Db2BaseDialect.Parser.FUNCTIONS,
-                "LOCATE": exp.StrPosition.from_arg_list,
-                "LISTAGG": exp.GroupConcat.from_arg_list,
-                "DAYS_BETWEEN": exp.DateDiff.from_arg_list,
-                "REGEXP_LIKE": lambda args: exp.RegexpLike(
-                    this=args[0], expression=args[1]
-                ),
-            }
-
-else:
-    from sqlglot.dialects.dialect import Dialect as Db2Dialect
+        FUNCTIONS = {
+            **_Db2BaseDialect.Parser.FUNCTIONS,
+            "LOCATE": exp.StrPosition.from_arg_list,
+            "LISTAGG": exp.GroupConcat.from_arg_list,
+            "DAYS_BETWEEN": exp.DateDiff.from_arg_list,
+            "REGEXP_LIKE": lambda args: exp.RegexpLike(
+                this=args[0], expression=args[1]
+            ),
+        }
 
 
 class Db2Compiler(SQLGlotCompiler):
@@ -204,6 +164,11 @@ class Db2Compiler(SQLGlotCompiler):
 
     dialect = Db2Dialect
     type_mapper = Db2Type
+
+    LOWERED_OPS = {
+        ops.Log2: lower_log2,
+        ops.Log10: lower_log10,
+    }
 
     rewrites = (
         exclude_unsupported_window_frame_from_ops | lower_sample(),
@@ -245,20 +210,27 @@ class Db2Compiler(SQLGlotCompiler):
 
     def visit_TryCast(self, op, *, arg, to, **kwargs):
         """Visit a TryCast operation."""
-        # Db2 doesn't have TRY_CAST, use CAST with error handling
+        # Db2 has no TRY_CAST; fall back to regular CAST.
         return self.cast(arg, to)
 
-    def visit_Sample(self, op, *, table, fraction, method, seed, **kwargs):
-        """Visit a Sample operation."""
-        # Db2 doesn't have native TABLESAMPLE, use WHERE RAND() < fraction
-        if method == "row":
-            # Use RAND() function for sampling
-            condition = sge.LT(
-                this=sge.Anonymous(this="RAND", expressions=[]),
-                expression=sge.convert(fraction),
-            )
-            return sge.Where(this=table, expression=condition)
-        return table
+    def visit_Log(self, op, *, arg, base):
+        """Logarithm for Db2.
+
+        Db2 has LN (natural log) and LOG10 (base 10), but no two-argument
+        LOG(base, x).  Arbitrary bases use LN(x) / LN(base).
+        Log2 and Log10 are lowered by LOWERED_OPS to ops.Log(arg, base=2/10)
+        before this method runs.
+        """
+        if base is None:
+            return self.f.ln(arg)
+        base_value = op.base.value if isinstance(op.base, ops.Literal) else None
+        if base_value == 10:
+            # self.f.log10 produces LOG(10, x) on some sqlglot versions;
+            # use Anonymous to guarantee LOG10(x).
+            return sge.Anonymous(this="LOG10", expressions=[arg])
+        if base_value == 2:
+            return self.f.ln(arg) / self.f.ln(sge.convert(2))
+        return self.f.ln(arg) / self.f.ln(base)
 
     def visit_StringContains(self, op, *, haystack, needle, **kwargs):
         """Visit a StringContains operation."""

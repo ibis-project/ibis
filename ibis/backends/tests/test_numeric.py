@@ -828,7 +828,6 @@ def test_isnan_isinf(
                     raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
         ),
         param(
@@ -853,15 +852,9 @@ def test_isnan_isinf(
                     raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
         ),
-        param(
-            L(5.556).log10(),
-            math.log10(5.556),
-            id="log10",
-            marks=[pytest.mark.notimpl(["db2"], raises=AssertionError)],
-        ),
+        param(L(5.556).log10(), math.log10(5.556), id="log10"),
         param(
             L(5.556).radians(),
             math.radians(5.556),
@@ -877,12 +870,7 @@ def test_isnan_isinf(
             11 % 3,
             id="mod",
         ),
-        param(
-            L(5.556).log10(),
-            math.log10(5.556),
-            id="log10",
-            marks=[pytest.mark.notimpl(["db2"], raises=AssertionError, strict=False)],
-        ),
+        param(L(5.556).log10(), math.log10(5.556), id="log10"),
         param(
             L(5.556).radians(),
             math.radians(5.556),
@@ -894,18 +882,7 @@ def test_isnan_isinf(
             id="degrees",
         ),
         param(L(11) % 3, 11 % 3, id="mod"),
-        param(
-            L(5.556).log10(),
-            math.log10(5.556),
-            id="log10",
-            marks=[
-                pytest.mark.notimpl(
-                    ["db2"],
-                    raises=AssertionError,
-                    reason="DB2 LOG10 returns DECIMAL precision for decimal literal inputs",
-                )
-            ],
-        ),
+        param(L(5.556).log10(), math.log10(5.556), id="log10"),
         param(L(5.556).radians(), math.radians(5.556), id="radians"),
         param(L(5.556).degrees(), math.degrees(5.556), id="degrees"),
         param(L(11) % 3, 11 % 3, id="mod"),
@@ -1110,7 +1087,6 @@ def test_floor_divide_precedence(con):
                     raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
             id="log2-explicit",
         ),
@@ -1124,7 +1100,6 @@ def test_floor_divide_precedence(con):
                     raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
             id="log2",
         ),
@@ -1137,7 +1112,6 @@ def test_floor_divide_precedence(con):
             lambda t: t.double_col.add(1).log10(),
             lambda t: np.log10(t.double_col + 1),
             id="log10",
-            marks=[pytest.mark.notimpl(["db2"], raises=AssertionError)],
         ),
         param(
             lambda t: (t.double_col + 1).log(
@@ -1267,7 +1241,6 @@ def test_binary_arithmetic_operations(backend, alltypes, df, opname):
     backend.assert_series_equal(result, expected, check_exact=False)
 
 
-@pytest.mark.notimpl(["db2"], raises=AssertionError)
 def test_integer_truediv(con):
     expr = 1 / ibis.literal(2)
     result = con.execute(expr)
