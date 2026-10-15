@@ -97,11 +97,6 @@ class Db2Generator(Generator):
             args.append(expression.args["length"])
         return self.func("SUBSTR", *args)
 
-    def extract_sql(self, expression: exp.Extract) -> str:
-        """Generate EXTRACT expression for Db2."""
-        # Db2 supports EXTRACT function
-        return f"EXTRACT({self.sql(expression, 'this')} FROM {self.sql(expression, 'expression')})"
-
     def regexp_like_sql(self, expression: exp.RegexpLike) -> str:
         """Generate REGEXP_LIKE for Db2."""
         return self.func("REGEXP_LIKE", expression.this, expression.expression)
