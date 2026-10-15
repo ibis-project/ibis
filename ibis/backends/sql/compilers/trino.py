@@ -584,8 +584,15 @@ class TrinoCompiler(SQLGlotCompiler):
 
     visit_IntegerRange = visit_TimestampRange = visit_Range
 
-    def visit_ArrayIndex(self, op, *, arg, index):
-        return self.f.element_at(arg, index + 1)
+    def visit_ArrayIndex(self, op: ops.ArrayIndex, *, arg, index):
+        if isinstance(op.index, ops.Literal) and op.index.value is not None:
+            i = op.index.value
+            i += i >= 0
+        elif isinstance(op.index, ops.Literal):
+            i = index
+        else:
+            i = index + self.cast(index >= 0, op.index.dtype)
+        return self.f.element_at(arg, i)
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype

@@ -16,7 +16,7 @@ def test_window_with_row_number_compiles():
     expr = (
         ibis.memtable({"a": range(30)})
         .mutate(id=ibis.row_number())
-        .sample(fraction=0.25, seed=0)
+        .sample(0.25, seed=0)
         .mutate(is_test=_.id.isin(_.id))
         .filter(~_.is_test)
     )
@@ -36,3 +36,29 @@ def test_to_sql_knows_every_sql_backend(dialect):
     # every SQL backend's compiler module has to be imported there
     expr = ibis.table({"a": "int64"}, name="t")
     assert ibis.to_sql(expr, dialect=dialect)
+
+
+@pytest.mark.parametrize(
+    ("index", "expected"),
+    [
+        (0, 'ELEMENT_AT(SPLIT("t0"."s", \':\'), 1)'),
+        (2, 'ELEMENT_AT(SPLIT("t0"."s", \':\'), 3)'),
+        (-1, 'ELEMENT_AT(SPLIT("t0"."s", \':\'), -1)'),
+        (-3, 'ELEMENT_AT(SPLIT("t0"."s", \':\'), -3)'),
+    ],
+)
+def test_trino_array_index_literal(index, expected):
+    t = ibis.table({"s": "string"}, name="t")
+    expr = t.select(res=t.s.split(":")[index])
+    sql = ibis.to_sql(expr, dialect="trino")
+    assert expected in sql
+
+
+def test_trino_array_index_dynamic():
+    t = ibis.table({"s": "string", "idx": "int64"}, name="t")
+    expr = t.select(res=t.s.split(":")[t.idx])
+    sql = ibis.to_sql(expr, dialect="trino")
+    assert (
+        'ELEMENT_AT(SPLIT("t0"."s", \':\'), "t0"."idx" + CAST("t0"."idx" >= 0 AS BIGINT))'
+        in sql
+    )
