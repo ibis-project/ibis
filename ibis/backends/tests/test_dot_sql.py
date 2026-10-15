@@ -5,20 +5,31 @@ import getpass
 import pytest
 import sqlglot as sg
 import sqlglot.expressions as sge
+import toolz
 from pytest import param
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.backends.sql.dialects  # to load dialects
 import ibis.common.exceptions as com
+import ibis.expr.operations as ops
 from ibis import _
 from ibis.backends import _get_backend_names
+from ibis.backends.conftest import _get_backends_to_test
 from ibis.backends.tests.base import PYTHON_SHORT_VERSION
 from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
+    ImpalaHiveServer2Error,
     OracleDatabaseError,
+    PolarsSQLInterfaceError,
+    PsycoPg2InternalError,
+    PsycoPgSyntaxError,
+    Py4JJavaError,
     PyAthenaOperationalError,
+    PyDruidProgrammingError,
     PyODBCProgrammingError,
+    SingleStoreDBOperationalError,
 )
 
 pd = pytest.importorskip("pandas")
@@ -386,3 +397,171 @@ def test_scalar_dot_sql(con):
     sql = sg.select(sge.convert(1).as_("a")).sql(con.dialect)
     expr = con.sql(sql).as_scalar()
     assert expr.type().is_numeric()
+
+
+RECURSIVE_COUNTER = """
+WITH RECURSIVE "counter" AS (
+  SELECT 1 AS "n"
+  UNION ALL
+  SELECT "n" + 1 FROM "counter" WHERE "n" < 3
+)
+SELECT "n" FROM "counter"
+"""
+
+# Same counter, but the anchor row comes from a table named "t", so it can be
+# passed to `Table.sql` on a table aliased as "t"
+RECURSIVE_COUNTER_FROM_T = """
+WITH RECURSIVE "counter" AS (
+  SELECT "x" AS "n" FROM "t"
+  UNION ALL
+  SELECT "n" + 1 FROM "counter" WHERE "n" < 3
+)
+SELECT "n" FROM "counter"
+"""
+
+no_recursive_cte = toolz.compose(
+    pytest.mark.notyet(
+        ["polars"],
+        raises=PolarsSQLInterfaceError,
+        reason="Polars SQL doesn't support recursive CTEs",
+    ),
+    pytest.mark.notyet(
+        ["exasol"], raises=ExaQueryError, reason="Exasol doesn't support WITH RECURSIVE"
+    ),
+    pytest.mark.notyet(
+        ["risingwave"],
+        raises=PsycoPg2InternalError,
+        reason="RisingWave doesn't support recursive CTEs in batch queries",
+    ),
+    pytest.mark.notyet(
+        ["druid"],
+        raises=PyDruidProgrammingError,
+        reason="Druid doesn't support recursive CTEs",
+    ),
+    pytest.mark.notyet(
+        ["flink"],
+        raises=Py4JJavaError,
+        reason="Flink doesn't support recursive CTEs; sqlglot drops RECURSIVE",
+    ),
+    pytest.mark.notyet(
+        ["impala"],
+        raises=ImpalaHiveServer2Error,
+        reason="Impala doesn't support recursive CTEs; sqlglot drops RECURSIVE",
+    ),
+    pytest.mark.notyet(
+        ["materialize"],
+        raises=PsycoPgSyntaxError,
+        reason="Materialize only supports WITH MUTUALLY RECURSIVE",
+    ),
+    pytest.mark.notyet(
+        ["oracle"],
+        raises=OracleDatabaseError,
+        reason="sqlglot emits WITH RECURSIVE, which Oracle doesn't accept",
+    ),
+    pytest.mark.notyet(
+        ["singlestoredb"],
+        raises=SingleStoreDBOperationalError,
+        reason="unsupported recursive common table expression query shape",
+    ),
+    pytest.mark.notyet(
+        ["pyspark"],
+        reason="Spark < 4.1 doesn't support recursive CTEs (3.5 fails to parse, 4.0 to plan)",
+    ),
+)
+nested_recursive_cte = pytest.mark.notyet(
+    ["bigquery"],
+    raises=GoogleBadRequest,
+    reason="BigQuery rejects WITH RECURSIVE nested in a subquery or CTE",
+)
+
+
+@no_recursive_cte
+def test_con_dot_sql_recursive_cte(backend, con):
+    expr = con.sql(RECURSIVE_COUNTER, dialect="duckdb")
+    result = expr.execute()["n"].sort_values().reset_index(drop=True)
+    expected = pd.Series([1, 2, 3], name="n")
+    backend.assert_series_equal(result.astype(expected.dtype), expected)
+
+
+@no_recursive_cte
+@nested_recursive_cte
+def test_con_dot_sql_recursive_cte_filtered(backend, con):
+    expr = con.sql(RECURSIVE_COUNTER, dialect="duckdb").filter(_.n > 1)
+    result = expr.execute()["n"].sort_values().reset_index(drop=True)
+    expected = pd.Series([2, 3], name="n")
+    backend.assert_series_equal(result.astype(expected.dtype), expected)
+
+
+@no_recursive_cte
+def test_table_dot_sql_recursive_query(backend, con):
+    t = con.sql('SELECT 1 AS "x"', dialect="duckdb").alias("t")
+    expr = t.sql(RECURSIVE_COUNTER_FROM_T, dialect="duckdb")
+    result = expr.execute()["n"].sort_values().reset_index(drop=True)
+    expected = pd.Series([1, 2, 3], name="n")
+    backend.assert_series_equal(result.astype(expected.dtype), expected)
+
+
+@no_recursive_cte
+@nested_recursive_cte
+def test_table_dot_sql_recursive_parent(backend, con):
+    t = con.sql(RECURSIVE_COUNTER, dialect="duckdb").alias("t")
+    expr = t.sql('SELECT "n" FROM "t"', dialect="duckdb")
+    result = expr.execute()["n"].sort_values().reset_index(drop=True)
+    expected = pd.Series([1, 2, 3], name="n")
+    backend.assert_series_equal(result.astype(expected.dtype), expected)
+
+
+def _sql_query_result(query, compiler):
+    """Build what `con.sql(query, dialect="duckdb")` builds, without a connection."""
+    query = sg.transpile(query, read="duckdb", write=compiler.dialect)[0]
+    return ops.SQLQueryResult(query, ibis.schema({"n": "int64"}), None).to_expr()
+
+
+no_recursive_keyword = toolz.compose(
+    pytest.mark.never(
+        ["mssql"], raises=AssertionError, reason="T-SQL has no RECURSIVE keyword"
+    ),
+    pytest.mark.notyet(
+        ["flink", "impala"],
+        raises=AssertionError,
+        reason="recursive CTEs aren't supported, so sqlglot drops RECURSIVE",
+    ),
+    pytest.mark.xfail_version(
+        pyspark=["sqlglot<30"],
+        databricks=["sqlglot<30"],
+        raises=AssertionError,
+        reason="sqlglot drops RECURSIVE for Spark before 30.0",
+    ),
+)
+
+
+@no_recursive_keyword
+@pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
+def test_recursive_cte_con_sql_compiles(backend_name):
+    compiler = getattr(sc, backend_name).compiler
+    expr = _sql_query_result(RECURSIVE_COUNTER, compiler)
+    assert "WITH RECURSIVE" in compiler.to_sqlglot(expr).sql(compiler.dialect)
+
+
+@no_recursive_keyword
+@pytest.mark.parametrize(
+    ("make_table", "query"),
+    [
+        param(
+            lambda _compiler: ibis.table({"x": "int64"}, name="src"),
+            RECURSIVE_COUNTER_FROM_T,
+            id="recursive_query",
+        ),
+        param(
+            lambda compiler: _sql_query_result(RECURSIVE_COUNTER, compiler),
+            'SELECT "n" FROM "t"',
+            id="recursive_parent",
+        ),
+    ],
+)
+@pytest.mark.parametrize("backend_name", _get_backends_to_test(discard=("polars",)))
+def test_recursive_cte_table_sql_compiles(backend_name, make_table, query):
+    compiler = getattr(sc, backend_name).compiler
+    query = sg.transpile(query, read="duckdb", write=compiler.dialect)[0]
+    sql = compiler.add_query_to_expr(name="t", table=make_table(compiler), query=query)
+    assert "WITH RECURSIVE" in sql
