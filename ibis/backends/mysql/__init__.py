@@ -7,7 +7,7 @@ import getpass
 import warnings
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
-from urllib.parse import unquote_plus
+from urllib.parse import quote, unquote_plus, urlunsplit
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -26,6 +26,7 @@ from ibis.backends import (
     PyArrowExampleLoader,
     SupportsTempTables,
 )
+from ibis.backends._adbc import detect_missing_adbc_driver
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers._compat import Drop
 from ibis.backends.sql.compilers.base import RenameTable
@@ -38,6 +39,19 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
     from typing_extensions import Self
+
+
+def _make_uri(host: str, port: int, database: str | None) -> str:
+    """Build a `mysql://` URI for the ADBC MySQL driver.
+
+    Pass the user and password as the separate ADBC `username` and `password`
+    options, not in this URI, so that they never need escaping.
+    """
+    # Bracket IPv6 literals so that their colons aren't read as the port separator.
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    path = "/" + quote(database or "", safe="")
+    return urlunsplit(("mysql", f"{host}:{port}", path, "", ""))
 
 
 class Backend(
@@ -159,10 +173,16 @@ class Backend(
                 "See https://github.com/ibis-project/ibis/pull/11958 for details."
             )
 
-        uri = f"{user}:{password}@tcp({host}:{port})/{database or ''}"
-        self.con = adbc_dbapi.connect(
-            driver="mysql", db_kwargs={"uri": uri}, autocommit=autocommit
-        )
+        with detect_missing_adbc_driver("mysql"):
+            self.con = adbc_dbapi.connect(
+                driver="mysql",
+                db_kwargs={
+                    "uri": _make_uri(host, port, database),
+                    "username": user,
+                    "password": password,
+                },
+                autocommit=autocommit,
+            )
 
         self._post_connect()
 

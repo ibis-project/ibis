@@ -7,11 +7,14 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlglot as sg
+from adbc_driver_manager import dbapi as adbc_dbapi
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
+from ibis.backends._adbc import detect_missing_adbc_driver
+from ibis.backends.mysql import _make_uri
 from ibis.backends.mysql.tests.conftest import (
     IBIS_TEST_MYSQL_DB,
     MYSQL_HOST,
@@ -265,3 +268,36 @@ def test_drop_database_exists(con):
         con.drop_database(dbname)
 
     con.drop_database(dbname, force=True)
+
+
+@pytest.mark.parametrize(
+    ("host", "database", "expected"),
+    [
+        param(
+            "127.0.0.1",
+            "ibis-testing",
+            "mysql://127.0.0.1:3306/ibis-testing",
+            id="plain",
+        ),
+        param("127.0.0.1", None, "mysql://127.0.0.1:3306/", id="no_database"),
+        param("::1", "db", "mysql://[::1]:3306/db", id="ipv6"),
+        param("[::1]", "db", "mysql://[::1]:3306/db", id="ipv6_bracketed"),
+        param(
+            "127.0.0.1", "a?b", "mysql://127.0.0.1:3306/a%3Fb", id="db_question_mark"
+        ),
+        param("127.0.0.1", "100%", "mysql://127.0.0.1:3306/100%25", id="db_percent"),
+        param("127.0.0.1", "a b", "mysql://127.0.0.1:3306/a%20b", id="db_space"),
+    ],
+)
+def test_make_uri(host, database, expected):
+    assert _make_uri(host, 3306, database) == expected
+
+
+def test_missing_driver_suggests_install():
+    with (
+        pytest.raises(ImportError, match="dbc install not_a_real_driver"),
+        detect_missing_adbc_driver("not_a_real_driver"),
+    ):
+        adbc_dbapi.connect(
+            driver="not_a_real_driver", db_kwargs={"uri": "mysql://127.0.0.1:1/"}
+        )
