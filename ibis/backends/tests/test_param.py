@@ -63,7 +63,7 @@ def test_timestamp_accepts_date_literals(alltypes):
 
 
 @pytest.mark.notimpl(["impala", "druid", "oracle", "exasol"])
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(
     ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="backend will never implement array types",
@@ -76,7 +76,7 @@ def test_scalar_param_array(con):
 
 
 @pytest.mark.notimpl(["impala", "postgres", "risingwave", "druid", "oracle", "exasol"])
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(
     ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",

@@ -1040,7 +1040,7 @@ def test_multiple_subs(con):
     raises=PsycoPg2InternalError,
     reason="Risingwave doesn't have levenshtein() function - backend limitation",
 )
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     "right", ["sitting", ibis.literal("sitting")], ids=["python", "ibis"]
 )
@@ -1085,7 +1085,7 @@ def test_non_match_regex_search_is_false(con):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 def test_re_split(con):
     lit = ibis.literal(",a,,,,c")
     expr = lit.re_split(",+")
@@ -1108,7 +1108,7 @@ def test_re_split(con):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.xfail_version(athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError)
 def test_re_split_column(alltypes):
     expr = alltypes.limit(5).string_col.re_split(r"\d+")
@@ -1131,7 +1131,7 @@ def test_re_split_column(alltypes):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,

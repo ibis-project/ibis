@@ -6,7 +6,7 @@ SELECT
 FROM (
   SELECT
     "t0"."x",
-    GENERATE_UNIQUE() AS "y",
-    GENERATE_UNIQUE() AS "z"
+    LOWER(GENERATE_UUID()) AS "y",
+    LOWER(GENERATE_UUID()) AS "z"
   FROM "t" AS "t0"
 ) AS "t1"

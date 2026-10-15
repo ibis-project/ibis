@@ -305,7 +305,7 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     strict=False,
 )
 @pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(
     ["bigquery"],
@@ -1163,7 +1163,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
     strict=False,
 )
 @pytest.mark.notimpl(["druid", "exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["db2"], raises=SystemError)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     expr = expr_fn(alltypes)
     expected = df.timestamp_col.dt.strftime(pandas_pattern).rename("formatted")
@@ -1350,7 +1350,7 @@ def test_integer_to_timestamp(backend, con, unit):
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["db2"], raises=SystemError)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 def test_string_as_timestamp(alltypes, fmt):
     table = alltypes
     result = table.mutate(date=table.date_string_col.as_timestamp(fmt)).execute()
@@ -1371,12 +1371,20 @@ def test_string_as_timestamp(alltypes, fmt):
             id="date",
             marks=pytest.mark.notimpl(
                 ["db2"],
-                raises=IbmDb2Error,
+                raises=com.OperationNotDefinedError,
                 reason="DB2 has no STR_TO_DATE function",
             ),
         ),
         param(
-            "as_timestamp", "2021-01-02 03:04:05", "%Y-%m-%d %H:%M:%S", id="timestamp"
+            "as_timestamp",
+            "2021-01-02 03:04:05",
+            "%Y-%m-%d %H:%M:%S",
+            id="timestamp",
+            marks=pytest.mark.notimpl(
+                ["db2"],
+                raises=com.OperationNotDefinedError,
+                reason="string-to-timestamp with a format is not implemented",
+            ),
         ),
     ],
 )
@@ -1451,7 +1459,7 @@ def test_string_as_temporal_with_format(con, method, value, fmt):
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 def test_string_as_date(alltypes, fmt):
     table = alltypes
     result = table.mutate(date=table.date_string_col.as_date(fmt)).execute()
@@ -1478,7 +1486,7 @@ def build_single_digit_date_col(con):
             id="literal",
             marks=pytest.mark.notimpl(
                 ["db2"],
-                raises=IbmDb2Error,
+                raises=com.OperationNotDefinedError,
                 reason="DB2 has no STR_TO_DATE function",
             ),
         ),
@@ -1687,7 +1695,7 @@ DATE_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 def test_date_literal(con, backend):
     expr = ibis.date(2022, 2, 4)
     result = con.execute(expr)
@@ -1951,7 +1959,7 @@ def test_interval_literal(con, backend):
     strict=False,
 )
 @pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 def test_date_column_from_ymd(backend, con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
@@ -2676,7 +2684,7 @@ def test_date_scalar(con, value, func):
 @pytest.mark.notyet(
     ["datafusion", "druid", "exasol"], raises=com.OperationNotDefinedError
 )
-@pytest.mark.notyet(["db2"], raises=IbmDb2Error)
+@pytest.mark.notyet(["db2"], raises=com.OperationNotDefinedError)
 def test_simple_unix_date_offset(con):
     s = "2023-04-07"
     d = ibis.date(s)

@@ -7,7 +7,6 @@ from db2_sqlglot import Db2 as _Db2BaseDialect
 from sqlglot import exp
 from sqlglot.generator import Generator
 
-import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import SQLGlotCompiler
 from ibis.backends.sql.datatypes import Db2Type
@@ -172,6 +171,61 @@ class Db2Compiler(SQLGlotCompiler):
 
     post_rewrites = (split_select_distinct_with_order_by,)
 
+    UNSUPPORTED_OPS = (
+        # aggregation
+        ops.ArgMin,
+        ops.ArgMax,
+        ops.Mode,
+        ops.First,
+        ops.Last,
+        ops.CountDistinctStar,
+        # string
+        ops.StringSplit,
+        ops.StringToDate,
+        ops.StringToTimestamp,
+        ops.Levenshtein,
+        ops.RegexSplit,
+        # date/time
+        ops.DateFromYMD,
+        ops.ExtractEpochSeconds,
+        ops.Strftime,
+        # numeric
+        ops.IsNan,
+        ops.IsInf,
+        # JSON
+        ops.JSONGetItem,
+        # logical
+        ops.Xor,
+        # array
+        ops.Array,
+        ops.ArrayCollect,
+        ops.ArrayConcat,
+        ops.ArrayContains,
+        ops.ArrayFilter,
+        ops.ArrayFlatten,
+        ops.ArrayIndex,
+        ops.ArrayLength,
+        ops.ArrayMap,
+        ops.ArrayRemove,
+        ops.ArrayRepeat,
+        ops.ArraySort,
+        ops.ArrayUnion,
+        ops.ArrayZip,
+        ops.Unnest,
+        # map
+        ops.Map,
+        ops.MapGet,
+        ops.MapKeys,
+        ops.MapMerge,
+        ops.MapValues,
+        # struct
+        ops.StructColumn,
+        ops.StructField,
+        # hash
+        ops.Hash,
+        ops.HashBytes,
+    )
+
     # Exclude operations from SIMPLE_OPS that need custom implementations
     SIMPLE_OPS = {
         k: v
@@ -180,16 +234,12 @@ class Db2Compiler(SQLGlotCompiler):
         not in (
             ops.StartsWith,  # → visit_StartsWith (LEFT + LENGTH)
             ops.StringContains,  # → visit_StringContains (LOCATE)
-            ops.RandomUUID,  # → visit_RandomUUID (GENERATE_UNIQUE)
-            ops.ArgMin,  # → visit_ArgMin (raise)
-            ops.ArgMax,  # → visit_ArgMax (raise)
             ops.ApproxCountDistinct,  # → visit_ApproxCountDistinct (COUNT DISTINCT)
-            ops.StringSplit,  # → visit_StringSplit (raise)
+            ops.RandomUUID,  # → visit_RandomUUID (GENERATE_UUID)
             ops.Median,  # → visit_Median (already implemented)
             ops.RegexSearch,  # → visit_RegexSearch (REGEXP_LIKE)
             ops.RegexExtract,  # → visit_RegexExtract (REGEXP_SUBSTR)
             ops.RandomScalar,  # → visit_RandomScalar (RAND())
-            ops.Xor,  # → visit_Xor (raise — DB2 has no XOR keyword)
         )
     }
 
@@ -277,26 +327,6 @@ class Db2Compiler(SQLGlotCompiler):
             this="REGEXP_REPLACE", expressions=[arg, pattern, replacement]
         )
 
-    def visit_StringSplit(self, op, *, arg, delimiter):
-        """Visit a StringSplit operation."""
-        raise com.OperationNotDefinedError("Db2 does not support string split")
-
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
-        """Visit an ArrayCollect operation."""
-        raise com.OperationNotDefinedError("Db2 does not support array collect")
-
-    def visit_Array(self, op, *, exprs):
-        """Visit an Array operation."""
-        raise com.OperationNotDefinedError("Db2 does not support ARRAY literals")
-
-    def visit_StructColumn(self, op, *, names, values):
-        """Visit a StructColumn operation."""
-        raise com.OperationNotDefinedError("Db2 does not support STRUCT constructor")
-
-    def visit_Unnest(self, op, *, values):
-        """Visit an Unnest operation."""
-        raise com.OperationNotDefinedError("Db2 does not support UNNEST")
-
     def visit_Arbitrary(self, op, *, arg, where):
         """Visit an Arbitrary operation using MIN (Db2 does not have ANY_VALUE)."""
         return self.agg.min(arg, where=where)
@@ -312,22 +342,6 @@ class Db2Compiler(SQLGlotCompiler):
         """Visit an ApproxMedian operation using MEDIAN (Db2 has no APPROX_QUANTILE)."""
         return self.visit_Median(op, arg=arg, where=where)
 
-    def visit_Mode(self, op, *, arg, where):
-        """Visit a Mode operation."""
-        raise com.OperationNotDefinedError("Db2 does not support mode aggregation")
-
-    def visit_ArgMin(self, op, *, arg, key, where):
-        """Visit an ArgMin operation."""
-        raise com.OperationNotDefinedError("Db2 does not support arg_min")
-
-    def visit_ArgMax(self, op, *, arg, key, where):
-        """Visit an ArgMax operation."""
-        raise com.OperationNotDefinedError("Db2 does not support arg_max")
-
-    def visit_CountDistinctStar(self, op, *, arg, where):
-        """Visit a CountDistinctStar operation."""
-        raise com.OperationNotDefinedError("Db2 does not support COUNT(DISTINCT *)")
-
     def visit_CountDistinct(self, op, *, arg, where):
         """Visit a CountDistinct operation."""
         if where is not None:
@@ -338,14 +352,6 @@ class Db2Compiler(SQLGlotCompiler):
         """Visit an ApproxCountDistinct operation."""
         # Db2 doesn't have APPROX_COUNT_DISTINCT, use COUNT(DISTINCT)
         return self.visit_CountDistinct(op, arg=arg, where=where)
-
-    def visit_First(self, op, *, arg, where, include_null, order_by):
-        """Visit a First operation."""
-        raise com.OperationNotDefinedError("Db2 does not support first aggregation")
-
-    def visit_Last(self, op, *, arg, where, include_null, order_by):
-        """Visit a Last operation."""
-        raise com.OperationNotDefinedError("Db2 does not support last aggregation")
 
     def visit_Lag(self, op, *, arg, offset, default):
         """Visit a Lag operation."""
@@ -433,22 +439,10 @@ class Db2Compiler(SQLGlotCompiler):
         return sge.Anonymous(this="RAND", expressions=[])
 
     def visit_RandomUUID(self, op):
-        """Visit a RandomUUID operation."""
-        # Db2 doesn't have native UUID generation
-        # Use combination of functions to generate UUID-like string
-        return sge.Anonymous(this="GENERATE_UNIQUE", expressions=[])
-
-    def visit_Xor(self, op, *, left, right):
-        """Visit a Xor operation."""
-        raise com.OperationNotDefinedError("Db2 does not support the XOR operator")
-
-    def visit_Hash(self, op, *, arg):
-        """Visit a Hash operation."""
-        raise com.OperationNotDefinedError("Db2 does not support hash")
-
-    def visit_HashBytes(self, op, *, arg, how):
-        """Visit a HashBytes operation."""
-        raise com.OperationNotDefinedError("Db2 does not support hash_bytes")
+        # Built-in since Db2 12.1: returns a version 4 UUID as CHAR(36), in
+        # uppercase; Ibis (like Python's uuid) uses lowercase.
+        # (GENERATE_UNIQUE() is not a UUID.)
+        return self.f.lower(sge.Anonymous(this="GENERATE_UUID", expressions=[]))
 
     def visit_InMemoryTable(self, op, *, name, schema, data):
         # DB2 stores all identifiers uppercase — memtable names must match
