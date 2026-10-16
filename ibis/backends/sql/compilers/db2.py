@@ -382,6 +382,9 @@ class Db2Compiler(SQLGlotCompiler):
 
     def visit_Arbitrary(self, op, *, arg, where):
         """Visit an Arbitrary operation using MIN (Db2 does not have ANY_VALUE)."""
+        # Arbitrary only promises *some* non-null value, so MIN is a valid
+        # choice: it ignores NULLs and is deterministic. `where` is folded
+        # into a CASE by `self.agg` because Db2 has no FILTER clause.
         return self.agg.min(arg, where=where)
 
     def visit_Median(self, op, *, arg, where):
