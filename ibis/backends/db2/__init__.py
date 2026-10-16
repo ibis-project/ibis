@@ -127,21 +127,17 @@ class Backend(SQLBackend):
 
         conn_str = ";".join(conn_str_parts)
 
-        try:
-            # Store connection string for later reconnects (e.g. after DDL)
-            self._conn_str = conn_str
-            # Connect using ibm_db
-            ibm_db_conn = ibm_db.connect(conn_str, "", "")
-            # Wrap with DBI-compliant interface
-            self._connection = ibm_db_dbi.Connection(ibm_db_conn)
-            self._cursor = self._connection.cursor()
+        # Store connection string for later reconnects (e.g. after DDL)
+        self._conn_str = conn_str
+        # Connect using ibm_db
+        ibm_db_conn = ibm_db.connect(conn_str, "", "")
+        # Wrap with DBI-compliant interface
+        self._connection = ibm_db_dbi.Connection(ibm_db_conn)
+        self._cursor = self._connection.cursor()
 
-            # Set schema if provided
-            if schema:
-                self._cursor.execute(f"SET SCHEMA {schema}")
-
-        except Exception as e:
-            raise exc.OperationNotDefinedError(f"Failed to connect to Db2: {e}") from e
+        # Set schema if provided
+        if schema:
+            self._cursor.execute(f"SET SCHEMA {schema}")
 
     @property
     def con(self):
