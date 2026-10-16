@@ -379,7 +379,7 @@ class Backend(SQLBackend):
             cursor.close()
 
         if not rows:
-            raise exc.IbisError(f"Table not found: {table_name}")
+            raise exc.TableNotFound(table_name)
 
         type_mapper = self.compiler.type_mapper
         fields = {}
