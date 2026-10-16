@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlglot.expressions as sge
 from db2_sqlglot import Db2 as _Db2BaseDialect
-from sqlglot import exp
+from sqlglot import exp, transforms
 from sqlglot.generator import Generator
 
 import ibis.common.exceptions as com
@@ -139,6 +139,11 @@ class Db2Dialect(_Db2BaseDialect):
             # overrides, so they win for every key they define.
             **_Db2BaseDialect.Generator.TRANSFORMS,
             **Db2Generator.TRANSFORMS,
+            # Db2 has no SEMI/ANTI JOIN syntax; rewrite them as [NOT] EXISTS
+            # before the external dialect's own Select transform runs.
+            exp.Select: lambda self, e: _Db2BaseDialect.Generator.TRANSFORMS[
+                exp.Select
+            ](self, transforms.eliminate_semi_and_anti_joins(e)),
         }
 
     class Parser(_Db2BaseDialect.Parser):

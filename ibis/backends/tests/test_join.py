@@ -107,7 +107,6 @@ def test_mutating_join(batting, awards_players, how):
 @pytest.mark.parametrize("how", ["semi", "anti"])
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notyet(["flink"], reason="Flink doesn't support semi joins or anti joins")
-@pytest.mark.notimpl(["db2"])
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting.filter(batting.yearID == 2015)
     right = awards_players.filter(awards_players.lgID == "NL").drop("yearID", "lgID")
