@@ -441,6 +441,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                         "druid",
                         "databricks",
                         "athena",
+                        "db2",
                     ],
                     raises=com.UnsupportedOperationError,
                 ),
@@ -459,7 +460,6 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
     reason="Streaming database does not guarantee row order without ORDER BY",
     strict=False,
 )
-@pytest.mark.notimpl(["db2"], raises=ValueError)
 def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
     expr = alltypes.timestamp_col.truncate(ibis_unit).name("tmp")
 
@@ -503,7 +503,6 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
     strict=False,
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["db2"], raises=ValueError)
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit).name("tmp")
 

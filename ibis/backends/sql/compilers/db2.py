@@ -7,6 +7,7 @@ from db2_sqlglot import Db2 as _Db2BaseDialect
 from sqlglot import exp
 from sqlglot.generator import Generator
 
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import Db2Type
@@ -412,16 +413,31 @@ class Db2Compiler(SQLGlotCompiler):
 
     def visit_DateTruncate(self, op, *, arg, unit):
         """Visit a DateTruncate operation."""
-        # Db2 uses TRUNC function for dates
-        unit_map = {
+        trunc_unit_mapping = {
             "Y": "YEAR",
-            "Q": "QUARTER",
-            "M": "MONTH",
-            "W": "WEEK",
-            "D": "DAY",
+            "Q": "Q",
+            "M": "MM",
+            "W": "IW",  # ISO week, starts on Monday ('W' and 'DAY' do not)
+            "D": "DD",  # 'DAY' and 'D' truncate to the start of the week
+            "h": "HH",
+            "m": "MI",
+            "s": "SS",
         }
-        mapped_unit = unit_map.get(unit, unit)
-        return sge.Anonymous(this="TRUNC", expressions=[arg, sge.convert(mapped_unit)])
+        subsecond_mapping = {"ms": "FF3", "us": "FF6"}
+
+        if (fmt := subsecond_mapping.get(unit.short)) is not None:
+            # TRUNC cannot truncate below a second; round-trip through a format.
+            pattern = sge.Literal.string(f"YYYY-MM-DD HH24:MI:SS.{fmt}")
+            varchar_format = sge.Anonymous(
+                this="VARCHAR_FORMAT", expressions=[arg, pattern]
+            )
+            return sge.Anonymous(
+                this="TIMESTAMP_FORMAT", expressions=[varchar_format, pattern]
+            )
+
+        if (mapped := trunc_unit_mapping.get(unit.short)) is None:
+            raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
+        return sge.Anonymous(this="TRUNC", expressions=[arg, sge.convert(mapped)])
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
         """Visit a TimestampTruncate operation."""
