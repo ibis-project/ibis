@@ -1847,8 +1847,7 @@ def test_hexdigest(backend, alltypes):
     backend.assert_series_equal(h1, h2)
 
 
-# these backends still render a boolean cast to string as 1/0 or TRUE/FALSE
-BOOL_TO_STRING_NOTIMPL = [
+bool_to_string_notimpl = [
     pytest.mark.notimpl(
         ["druid", "impala", "singlestoredb"],
         raises=AssertionError,
@@ -1874,7 +1873,7 @@ BOOL_TO_STRING_NOTIMPL = [
             "string",
             True,
             "true",
-            marks=BOOL_TO_STRING_NOTIMPL,
+            marks=bool_to_string_notimpl,
             id="bool_to_string",
         ),
         param(
@@ -1882,7 +1881,7 @@ BOOL_TO_STRING_NOTIMPL = [
             "string",
             False,
             "false",
-            marks=BOOL_TO_STRING_NOTIMPL,
+            marks=bool_to_string_notimpl,
             id="bool_to_string_false",
         ),
         param(
