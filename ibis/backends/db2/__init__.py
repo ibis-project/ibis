@@ -301,14 +301,11 @@ class Backend(SQLBackend):
             AND TYPE = 'T'
         """
 
-        if like:
-            query += f" AND UPPER(TABNAME) LIKE UPPER('{like}')"
-
-        query += " ORDER BY TABNAME"
-
         with self._safe_raw_sql(query) as cursor:
             # Db2 stores names in uppercase; return lowercase for ibis convention
-            return [row[0].lower() for row in cursor.fetchall()]
+            tables = [row[0].lower() for row in cursor.fetchall()]
+
+        return self._filter_with_like(tables, like)
 
     def list_databases(self, like: str | None = None) -> list[str]:
         """List schemas in the database.
@@ -324,18 +321,15 @@ class Backend(SQLBackend):
             List of schema names
         """
         query = """
-            SELECT SCHEMANAME
+            SELECT RTRIM(SCHEMANAME)
             FROM SYSCAT.SCHEMATA
             WHERE SCHEMANAME NOT LIKE 'SYS%'
         """
 
-        if like:
-            query += f" AND SCHEMANAME LIKE '{like}'"
-
-        query += " ORDER BY SCHEMANAME"
-
         with self._safe_raw_sql(query) as cursor:
-            return [row[0] for row in cursor.fetchall()]
+            databases = [row[0] for row in cursor.fetchall()]
+
+        return self._filter_with_like(databases, like)
 
     def get_schema(
         self,

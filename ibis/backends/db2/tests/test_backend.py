@@ -23,7 +23,7 @@ def test_list_databases(con):
 
 
 def test_list_tables_like(con):
-    tables = con.list_tables(like="functional%")
+    tables = con.list_tables(like="functional")
     assert "functional_alltypes" in tables
 
 
