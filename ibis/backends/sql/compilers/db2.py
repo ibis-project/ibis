@@ -8,10 +8,13 @@ from sqlglot import exp
 from sqlglot.generator import Generator
 
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import Db2Type
 from ibis.backends.sql.rewrites import (
+    FirstValue,
+    LastValue,
     exclude_unsupported_window_frame_from_ops,
     lower_log2,
     lower_log10,
@@ -250,6 +253,34 @@ class Db2Compiler(SQLGlotCompiler):
     def _generate_groups(groups):
         """Generate GROUP BY clause."""
         return groups
+
+    @staticmethod
+    def _minimize_spec(op, spec):
+        # Db2 accepts a window frame only on aggregates and on
+        # FIRST_VALUE/LAST_VALUE/NTH_VALUE; ranking and shift functions
+        # (ROW_NUMBER, RANK, NTILE, LAG, ...) raise a syntax error with one.
+        if isinstance(func := op.func, ops.Analytic) and not isinstance(
+            func, (ops.First, ops.Last, FirstValue, LastValue, ops.NthValue)
+        ):
+            return None
+        return spec
+
+    def visit_WindowFunction(self, op, *, how, func, start, end, group_by, order_by):
+        """Visit a WindowFunction operation."""
+        window = super().visit_WindowFunction(
+            op,
+            how=how,
+            func=func,
+            start=start,
+            end=end,
+            group_by=group_by,
+            order_by=order_by,
+        )
+        if isinstance(op.func, (ops.CumeDist, ops.PercentRank)):
+            # Db2 returns a type the ibm_db driver cannot fetch (SystemError);
+            # casting the whole windowed expression to DOUBLE makes it readable.
+            return self.cast(window, dt.float64)
+        return window
 
     def visit_Cast(self, op, *, arg, to, **kwargs):
         """Visit a Cast operation."""

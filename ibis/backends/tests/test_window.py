@@ -94,7 +94,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="lag",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -108,7 +107,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
                     raises=AssertionError,
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -117,7 +115,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="rank",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -126,7 +123,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="dense_rank",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -150,7 +146,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
                     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -168,7 +163,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
                     reason="Feature is not yet implemented: Unrecognized window function: cume_dist",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -195,7 +189,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
                     reason="Feature is not yet implemented: Unrecognized window function: ntile",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -235,7 +228,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="row_number",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -730,7 +722,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     reason="Materialize doesn't support ntile window function",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -826,7 +817,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -869,7 +859,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -1086,7 +1075,6 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expr = alltypes.mutate(val=lambda t: t.id.percent_rank())
 
@@ -1098,7 +1086,6 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     t = alltypes
     expr = (
@@ -1138,7 +1125,6 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_mutate_window_filter(backend, alltypes):
     t = alltypes
     win = ibis.window(order_by=[t.id])
@@ -1273,7 +1259,6 @@ def test_range_expression_bounds(backend):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     # GH #7631
     t = alltypes
@@ -1311,7 +1296,6 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     strict=False,
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_windowed_order_by_sequence_is_preserved(con):
     table = ibis.memtable({"bool_col": [True, False, False, None, True]})
     window = ibis.window(
