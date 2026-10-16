@@ -233,6 +233,8 @@ class Db2Compiler(SQLGlotCompiler):
         if k
         not in (
             ops.StartsWith,  # → visit_StartsWith (LEFT + LENGTH)
+            ops.Any,  # → visit_Any (MAX over CASE)
+            ops.All,  # → visit_All (MIN over CASE)
             ops.StringContains,  # → visit_StringContains (LOCATE)
             ops.ApproxCountDistinct,  # → visit_ApproxCountDistinct (COUNT DISTINCT)
             ops.RandomUUID,  # → visit_RandomUUID (GENERATE_UUID)
@@ -352,6 +354,20 @@ class Db2Compiler(SQLGlotCompiler):
         """Visit an ApproxCountDistinct operation."""
         # Db2 doesn't have APPROX_COUNT_DISTINCT, use COUNT(DISTINCT)
         return self.visit_CountDistinct(op, arg=arg, where=where)
+
+    def visit_Any(self, op, *, arg, where):
+        # Db2 has no boolean aggregates (BOOL_OR, or MAX over a boolean), so
+        # aggregate the argument as 1/0.
+        arg = self.if_(arg, 1, 0)
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return sge.Max(this=arg)
+
+    def visit_All(self, op, *, arg, where):
+        arg = self.if_(arg, 1, 0)
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return sge.Min(this=arg)
 
     def visit_CountStar(self, op, *, arg, where):
         # Db2 does not accept `*` inside a CASE expression, so count a

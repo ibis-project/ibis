@@ -237,7 +237,6 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'any'",
                 ),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -250,7 +249,6 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'notany'",
                 ),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -263,7 +261,6 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'any'",
                 ),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -276,7 +273,6 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'all'",
                 ),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -289,7 +285,6 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'notall'",
                 ),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -302,7 +297,6 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'all'",
                 ),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(

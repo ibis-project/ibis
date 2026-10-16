@@ -270,7 +270,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="cumany",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -284,7 +283,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="cumnotany",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -298,7 +296,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="cumall",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -312,7 +309,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
             id="cumnotall",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
