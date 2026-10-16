@@ -1978,7 +1978,6 @@ def test_from_connection(con, top_level):
     assert result == 1
 
 
-@pytest.mark.notimpl(["db2"])
 def test_table_not_found(con):
     with pytest.raises(com.TableNotFound):
         con.table(gen_name("table_not_found"))
