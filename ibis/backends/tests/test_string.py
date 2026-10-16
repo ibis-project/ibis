@@ -267,7 +267,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
@@ -311,7 +310,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
@@ -327,7 +325,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),
@@ -343,7 +340,6 @@ def uses_java_re(t):
                 pytest.mark.notimpl(
                     ["mssql", "exasol"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
                 pytest.mark.xfail_version(
                     athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError
                 ),

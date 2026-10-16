@@ -307,9 +307,13 @@ class Db2Compiler(SQLGlotCompiler):
 
     def visit_StringFind(self, op, *, arg, substr, start, end, **kwargs):
         """Visit a StringFind operation."""
-        # Db2 uses LOCATE function
+        # Db2 uses LOCATE function. LOCATE is 1-based, ibis `start` is 0-based;
+        # the 1->0 conversion of the result is done by the `one_to_zero_index`
+        # rewrite, so only `start` needs shifting here.
         if start is not None:
-            return sge.Anonymous(this="LOCATE", expressions=[substr, arg, start])
+            return sge.Anonymous(
+                this="LOCATE", expressions=[substr, arg, start + sge.convert(1)]
+            )
         return sge.Anonymous(this="LOCATE", expressions=[substr, arg])
 
     def visit_RegexSearch(self, op, *, arg, pattern, **kwargs):
@@ -319,8 +323,18 @@ class Db2Compiler(SQLGlotCompiler):
 
     def visit_RegexExtract(self, op, *, arg, pattern, index, **kwargs):
         """Visit a RegexExtract operation."""
-        # Db2 uses REGEXP_SUBSTR function
-        return sge.Anonymous(this="REGEXP_SUBSTR", expressions=[arg, pattern])
+        # Db2 uses REGEXP_SUBSTR(source, pattern, start, occurrence, flags, group)
+        return sge.Anonymous(
+            this="REGEXP_SUBSTR",
+            expressions=[
+                arg,
+                pattern,
+                sge.convert(1),
+                sge.convert(1),
+                sge.convert(""),
+                index,
+            ],
+        )
 
     def visit_RegexReplace(self, op, *, arg, pattern, replacement, **kwargs):
         """Visit a RegexReplace operation."""
