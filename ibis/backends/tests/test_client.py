@@ -943,7 +943,7 @@ def test_list_database_contents(con):
         "bigquery": {"ibis_gbq_testing"},
         "clickhouse": {"system", "default", "ibis_testing"},
         "datafusion": {"public"},
-        "db2": set(),
+        "db2": {"DB2INST1"},
         "duckdb": {"pg_catalog", "main", "information_schema"},
         "exasol": {"EXASOL"},
         "flink": {"default_database"},
