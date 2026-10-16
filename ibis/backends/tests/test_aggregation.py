@@ -540,14 +540,6 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
             lambda t, where: t.count(where=where),
             lambda t, where: len(t[where]),
             id="count_star",
-            marks=[
-                pytest.mark.notimpl(
-                    ["db2"],
-                    raises=IbmDb2Error,
-                    reason="DB2 does not support COUNT(*) inside CASE expressions; fails when a WHERE condition uses IN",
-                    strict=False,
-                )
-            ],
         ),
     ],
 )

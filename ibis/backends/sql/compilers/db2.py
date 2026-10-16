@@ -8,7 +8,7 @@ from sqlglot import exp
 from sqlglot.generator import Generator
 
 import ibis.expr.operations as ops
-from ibis.backends.sql.compilers.base import SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import Db2Type
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
@@ -352,6 +352,13 @@ class Db2Compiler(SQLGlotCompiler):
         """Visit an ApproxCountDistinct operation."""
         # Db2 doesn't have APPROX_COUNT_DISTINCT, use COUNT(DISTINCT)
         return self.visit_CountDistinct(op, arg=arg, where=where)
+
+    def visit_CountStar(self, op, *, arg, where):
+        # Db2 does not accept `*` inside a CASE expression, so count a
+        # constant for the rows that match `where` instead.
+        if where is not None:
+            return self.f.count(self.if_(where, 1, NULL))
+        return self.f.count(STAR)
 
     def visit_Lag(self, op, *, arg, offset, default):
         """Visit a Lag operation."""
