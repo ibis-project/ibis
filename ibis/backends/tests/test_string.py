@@ -1232,6 +1232,11 @@ def string_temp_table(backend, con):
         pytest.xfail("druid doesn't support create table")
     elif backend.name() == "athena":
         pytest.xfail("not yet supported")
+    elif backend.name() == "db2":
+        pytest.xfail(
+            "ibm_db segfaults when fetching emoji: "
+            "https://github.com/ibmdb/python-ibmdb/issues"
+        )
     else:
         yield con.create_table(
             temp_table_name, better_strings, temp=backend.name() == "flink" or None
@@ -1476,10 +1481,6 @@ def string_temp_table(backend, con):
 def test_string_methods_accents_and_emoji(
     string_temp_table, backend, result_mut, expected_func
 ):
-    if backend.name() == "db2":
-        pytest.skip(
-            "ibm_db driver segfaults when fetching emoji and accented characters"
-        )
     """
     ┏━━━━━━━━━━━━┓
     ┃ string_col ┃
