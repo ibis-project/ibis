@@ -1599,7 +1599,6 @@ def test_topk_op(alltypes, df):
 @pytest.mark.notyet(
     ["flink"], raises=Py4JError, reason="Flink doesn't support semi joins"
 )
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
