@@ -279,7 +279,7 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
 @pytest.mark.notyet(
     ["mysql", "singlestoredb"],
     raises=AssertionError,
-    reason="sqlglot generates exp.Stddev (sample) as MySQL's STDDEV, which is population",
+    reason="https://github.com/tobymao/sqlglot/issues/8626",
 )
 @pytest.mark.notyet(
     ["sqlite"], raises=sqlite3.OperationalError, reason="sqlite has no STDDEV function"

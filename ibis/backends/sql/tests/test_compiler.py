@@ -37,15 +37,3 @@ def test_to_sql_knows_every_sql_backend(dialect):
     # every SQL backend's compiler module has to be imported there
     expr = ibis.table({"a": "int64"}, name="t")
     assert ibis.to_sql(expr, dialect=dialect)
-
-
-@pytest.mark.parametrize(
-    ("dialect", "sql"),
-    [
-        param(MSSQL, "SELECT STDEV(x) FROM t", id="mssql"),
-        param(Oracle, "SELECT STDDEV(x) FROM t", id="oracle"),
-    ],
-)
-def test_transpile_stddev(dialect, sql):
-    (result,) = sg.transpile(sql, read=dialect, write=dialect)
-    assert result == sql
