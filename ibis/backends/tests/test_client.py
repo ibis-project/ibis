@@ -1891,7 +1891,6 @@ def test_json_to_pyarrow(con):
 @pytest.mark.notyet(
     ["flink"], raises=com.IbisError, reason="no persistent temp table support"
 )
-@pytest.mark.notimpl(["db2"])
 def test_schema_with_caching(alltypes):
     t1 = alltypes.limit(5).select("bigint_col", "string_col")
     t2 = alltypes.limit(5).select("string_col", "bigint_col")

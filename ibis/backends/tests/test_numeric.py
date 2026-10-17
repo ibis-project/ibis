@@ -303,7 +303,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "flink": decimal.Decimal("1.1"),
                 "polars": decimal.Decimal("1.1"),
                 "databricks": decimal.Decimal("1.1"),
-                "db2": decimal.Decimal(1),
+                "db2": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
