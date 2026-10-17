@@ -919,3 +919,12 @@ def test_join_with_conditional_aggregate(snapshot):
     stat = right.filter(right.by == left.by, right.on <= left.on)["on"].max()
     merged = left.join(right, left.by == right.by, how="left").filter(right.on == stat)
     snapshot.assert_match(to_sql(merged), "result.sql")
+
+
+def test_join_select_with_window_function(snapshot):
+    # GH #10261
+    t1 = ibis.table({"x": "int64", "y": "float64"}, name="t1")
+    t2 = ibis.table({"x": "int64"}, name="t2")
+    j = t1.join(t2, "x")
+    expr = j.select("x", rn=ibis.row_number(), total=t1.y.sum())
+    snapshot.assert_match(to_sql(expr), "result.sql")
