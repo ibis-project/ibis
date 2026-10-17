@@ -290,7 +290,7 @@ class Backend(SQLBackend):
             SELECT TABNAME
             FROM SYSCAT.TABLES
             WHERE TABSCHEMA = CURRENT SCHEMA
-            AND TYPE = 'T'
+            AND TYPE IN ('T', 'V', 'G')
         """
 
         with self._safe_raw_sql(query) as cursor:
