@@ -248,13 +248,10 @@ def test_geospatial_flip_coordinates(geotable):
 
 def test_create_table_geospatial_types(geotable, con):
     name = ibis.util.gen_name("geotable")
-
-    # con = ibis.get_backend(geotable)
-
     t = con.create_table(name, geotable, temp=True)
 
     assert t.op().name in con.list_tables()
-    assert any(map(methodcaller("is_geospatial"), t.schema().values()))
+    assert any(typ.is_geospatial() for typ in t.schema().values())
 
 
 # geo literals declaration

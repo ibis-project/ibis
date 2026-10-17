@@ -724,7 +724,8 @@ class DuckDBType(SqlglotType):
     default_decimal_scale = 3
     default_interval_precision = "us"
 
-    unknown_type_strings = FrozenDict({"wkb_blob": dt.binary})
+    # When reading geometry types from a postgres connection
+    unknown_type_strings = FrozenDict({"wkb_blob": dt.geometry})
 
     @classmethod
     def _from_sqlglot_TIMESTAMP(
