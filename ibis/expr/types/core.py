@@ -139,7 +139,17 @@ class Expr(Immutable, Coercible):
     __nonzero__ = __bool__
 
     def get_name(self):
-        """Return the name of this expression."""
+        """
+    Return the (possibly unqualified) name of the table.
+
+    Note:
+        In some backends like DuckDB, temporary views created using `read_parquet`
+        may reside in `temp.main`, and `get_name()` may return an unqualified name
+        like 'table_name', which can be ambiguous.
+
+        To get the fully qualified name, use:
+            con.table('table_name', database='temp.main').get_name()
+    """
         return self._arg.name
 
     def _repr_png_(self) -> bytes | None:
