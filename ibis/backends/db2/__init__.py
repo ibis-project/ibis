@@ -512,9 +512,12 @@ class Backend(SQLBackend):
             col_defs.append(f"{quoted_col_name} {db2_type}{null_constraint}")
 
         columns_sql = ", ".join(col_defs)
+        # Db2 deletes the rows of a GLOBAL TEMPORARY table at every commit by
+        # default, and this connection commits after each statement.
+        on_commit = " ON COMMIT PRESERVE ROWS" if temp else ""
         # No explicit tablespace — VARCHAR(255) fits on the default 4K-page
         # tablespace so no special setup is required on any DB2 instance.
-        create_sql = f"CREATE {temp_clause}TABLE {full_name} ({columns_sql})"
+        create_sql = f"CREATE {temp_clause}TABLE {full_name} ({columns_sql}){on_commit}"
 
         with self._safe_raw_sql(create_sql):
             pass

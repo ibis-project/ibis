@@ -144,11 +144,6 @@ def test_create_table(backend, con, temp_table, func, sch):
                     ["bigquery"],
                     reason="tables created with temp=True cause a 404 on retrieval",
                 ),
-                pytest.mark.notimpl(
-                    ["db2"],
-                    raises=AssertionError,
-                    reason="DB2 GLOBAL TEMPORARY tables are session-scoped and return empty on reconnect",
-                ),
             ],
         ),
         param(
@@ -185,11 +180,6 @@ def test_create_table(backend, con, temp_table, func, sch):
                 pytest.mark.notimpl(
                     ["bigquery"],
                     reason="tables created with temp=True cause a 404 on retrieval",
-                ),
-                pytest.mark.notimpl(
-                    ["db2"],
-                    raises=AssertionError,
-                    reason="DB2 GLOBAL TEMPORARY tables are session-scoped and return empty on reconnect",
                 ),
             ],
         ),
