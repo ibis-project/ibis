@@ -19,6 +19,23 @@ DB2_PORT = int(os.environ.get("IBIS_TEST_DB2_PORT", "50000"))
 DB2_DATABASE = os.environ.get("IBIS_TEST_DB2_DATABASE", "ibistest")
 
 
+def pytest_collection_modifyitems(items, config):  # noqa: ARG001
+    """Do not run shared tests that Db2 cannot complete in a reasonable time."""
+    for item in items:
+        if item.originalname == "test_table_info_large" and "[db2]" in item.name:
+            item.add_marker(
+                pytest.mark.xfail(
+                    run=False,
+                    reason=(
+                        "Db2 optimizer time grows roughly cubically with the "
+                        "width of the UNION ALL that `info()` builds; 129 "
+                        "columns does not plan within 15 minutes "
+                        "(64 columns already takes ~100s)"
+                    ),
+                )
+            )
+
+
 class TestConf(ServiceBackendTest):
     """Db2 backend test configuration.
 
