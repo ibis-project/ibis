@@ -10,6 +10,7 @@ from urllib.parse import unquote_plus
 import sqlglot as sg
 
 import ibis.common.exceptions as exc
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -355,7 +356,7 @@ class Backend(SQLBackend):
             Table schema
         """
         query = """
-            SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS
+            SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, CODEPAGE
             FROM SYSCAT.COLUMNS
             WHERE TABNAME = ?
             AND TABSCHEMA = COALESCE(?, CURRENT SCHEMA)
@@ -383,19 +384,23 @@ class Backend(SQLBackend):
 
         type_mapper = self.compiler.type_mapper
         fields = {}
-        for col_name, type_name, length, scale, nulls in rows:
+        for col_name, type_name, length, scale, nulls, codepage in rows:
             # Reconstruct the full type string so SQLGlot's Db2 dialect parser
             # can handle it — this delegates all type parsing to the same
             # type_mapper (Db2Type / SqlglotType.from_string) that the rest of
             # the compiler uses, rather than duplicating the mapping by hand.
             if type_name in ("DECIMAL", "NUMERIC"):
                 type_str = f"{type_name}({length},{scale})"
-            elif type_name in ("VARCHAR", "CHAR", "VARBINARY"):
+            elif type_name in ("VARCHAR", "CHARACTER", "VARBINARY"):
                 type_str = f"{type_name}({length})"
             else:
                 type_str = type_name
 
-            ibis_type = type_mapper.from_string(type_str, nullable=(nulls == "Y"))
+            if type_name in ("VARCHAR", "CHARACTER") and codepage == 0:
+                # FOR BIT DATA columns have codepage 0 and the driver returns bytes
+                ibis_type = dt.Binary(nullable=(nulls == "Y"))
+            else:
+                ibis_type = type_mapper.from_string(type_str, nullable=(nulls == "Y"))
             # Return column names verbatim — SYSCAT stores them in the case they
             # were defined with (uppercase for unquoted DDL, exact case for quoted).
             fields[col_name] = ibis_type
@@ -492,8 +497,6 @@ class Backend(SQLBackend):
         # Build column definitions — delegate type rendering to the compiler's
         # type_mapper (Db2Type) so that the same SQLGlot Db2 dialect that drives
         # SELECT generation also drives CREATE TABLE column types.
-        import ibis.expr.datatypes as dt
-
         col_defs = []
         type_mapper = self.compiler.type_mapper
         for col_name, col_type in schema.items():
