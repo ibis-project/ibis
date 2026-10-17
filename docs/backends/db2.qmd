@@ -175,10 +175,37 @@ The Db2 backend supports:
 - **Query execution**: Execute SQL queries and return results as pandas DataFrames or PyArrow tables
 - **Type mapping**: Automatic conversion between Ibis types and Db2 types
 
+## Temporary tables require a USER TEMPORARY tablespace
+
+`CREATE GLOBAL TEMPORARY TABLE` fails with `SQL0286N` unless the database has a
+USER TEMPORARY tablespace whose page size is large enough for the table's rows.
+A 32K page size is sufficient for the Ibis test suite. For example:
+
+```sql
+CREATE BUFFERPOOL IBIS_BP32K SIZE 250 PAGESIZE 32K;
+CREATE USER TEMPORARY TABLESPACE IBIS_TEMP_4K PAGESIZE 4K
+    MANAGED BY AUTOMATIC STORAGE;
+CREATE USER TEMPORARY TABLESPACE IBIS_TEMP_32K PAGESIZE 32K
+    MANAGED BY AUTOMATIC STORAGE BUFFERPOOL IBIS_BP32K;
+```
+
+Temporary tables are created with `ON COMMIT PRESERVE ROWS`, and the connection
+runs with autocommit enabled.
+
 ## Limitations
 
 - **Python UDFs**: Not currently supported
 - **Streaming**: Not supported
+- **Unsupported types**: Array, map, struct, JSON, null, and unsigned integer
+  types raise `UnsupportedBackendType`, because Db2 has no equivalent.
+  `XML` columns are reported with an `unknown` type.
+- **Decimal precision**: Db2 allows at most 31 digits, so `decimal(38, 9)`
+  isn't supported. The default `decimal` maps to `DECIMAL(31, 6)`.
+- **Unsupported operations**: Operations with no Db2 equivalent (for example
+  `ArgMin`, `ArgMax`, `Mode`, `First`, `Last`, `IsNan`, `Strftime`, and array
+  and map operations) raise `OperationNotDefinedError` when compiled.
+- **Emoji**: `ibm_db` can segfault when fetching emoji characters, so avoid
+  querying them with this backend.
 
 ## Example Usage
 
