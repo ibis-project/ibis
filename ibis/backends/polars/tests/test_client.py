@@ -6,6 +6,7 @@ import pytest
 
 import ibis
 from ibis.backends.tests.errors import PolarsSQLInterfaceError
+from ibis.formats.polars import PolarsType
 from ibis.util import gen_name
 
 pd = pytest.importorskip("pandas")
@@ -82,3 +83,29 @@ def test_compile_with_memtable(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
     result = con.compile(t)
     assert isinstance(result, pl.LazyFrame)
+
+
+@pytest.mark.parametrize(
+    ("dtype", "fn", "expected"),
+    [
+        (pl.Int8, lambda t: 100 * t.x, [2500, 3000, -1500]),
+        (pl.Int8, lambda t: t.x + 120, [145, 150, 105]),
+        (pl.Int8, lambda t: t.x - (-120), [145, 150, 105]),
+        (pl.Int8, lambda t: t.x * t.y, [2500, 3000, -1500]),
+        (pl.Int16, lambda t: t.x * 2000, [50_000, 60_000, -30_000]),
+        (pl.Int16, lambda t: t.x + 32_760, [32_785, 32_790, 32_745]),
+        (pl.Int16, lambda t: t.x - (-32_760), [32_785, 32_790, 32_745]),
+    ],
+)
+def test_narrow_integer_arithmetic_is_widened(con, dtype, fn, expected):
+    # https://github.com/ibis-project/ibis/issues/11749
+    df = pl.DataFrame(
+        {"x": [25, 30, -15], "y": [100, 100, 100]}, schema={"x": dtype, "y": dtype}
+    )
+    t = ibis.memtable(df)
+    expr = fn(t).name("r")
+
+    # check the polars expression itself, before ibis casts the result
+    lf = con.compile(expr)
+    assert lf.collect_schema()["r"] == PolarsType.from_ibis(expr.type())
+    assert lf.collect()["r"].to_list() == expected

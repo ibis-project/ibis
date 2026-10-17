@@ -16,6 +16,7 @@ from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
+    DuckDBOutOfRangeException,
     DuckDBParserException,
     ExaQueryError,
     GoogleBadRequest,
@@ -1246,6 +1247,37 @@ def test_mod(backend, alltypes, df):
 
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected, check_dtype=False)
+
+
+@pytest.mark.parametrize(
+    ("column", "op", "value"),
+    [
+        param("tinyint_col", operator.mul, 100, id="int8-mul"),
+        param("tinyint_col", operator.add, 120, id="int8-add"),
+        param("tinyint_col", operator.sub, -120, id="int8-sub"),
+        param("smallint_col", operator.mul, 10_000, id="int16-mul"),
+        param("smallint_col", operator.add, 32_760, id="int16-add"),
+        param("smallint_col", operator.sub, -32_760, id="int16-sub"),
+    ],
+)
+@pytest.mark.notyet(
+    ["duckdb"],
+    raises=DuckDBOutOfRangeException,
+    reason="duckdb computes in the column's type and raises on overflow",
+)
+def test_narrow_integer_literal_arithmetic_does_not_overflow(
+    backend, alltypes, df, column, op, value
+):
+    # https://github.com/ibis-project/ibis/issues/11749
+    expr = op(alltypes[column], value)
+    result = alltypes.select("id", tmp=expr).order_by("id").execute().tmp
+    expected = op(df.sort_values("id")[column].astype("int64"), value)
+
+    backend.assert_series_equal(
+        result.astype("int64"),
+        expected.rename("tmp").reset_index(drop=True),
+        check_dtype=False,
+    )
 
 
 @pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)

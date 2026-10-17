@@ -1269,6 +1269,39 @@ _binops = {
 }
 
 
+def _fits_in(arg, dtype):
+    bounds = dtype.bounds
+    if isinstance(arg, ops.Literal) and arg.value is not None:
+        return bounds.lower <= arg.value <= bounds.upper
+    return (
+        bounds.lower <= arg.dtype.bounds.lower <= arg.dtype.bounds.upper <= bounds.upper
+    )
+
+
+def _widen_integer_operand(arg, dtype, **kw):
+    # Polars computes integer arithmetic in the operands' supertype and wraps
+    # on overflow, so e.g. an int8 column times the int8 literal 100 silently
+    # gives the wrong answer. Cast operands up to the result type ibis inferred,
+    # unless that would lose values (e.g. uint64 into int64).
+    expr = translate(arg, **kw)
+    if arg.dtype.is_integer() and arg.dtype != dtype and _fits_in(arg, dtype):
+        expr = expr.cast(PolarsType.from_ibis(dtype))
+    return expr
+
+
+@translate.register(ops.Add)
+@translate.register(ops.Subtract)
+@translate.register(ops.Multiply)
+@translate.register(ops.Modulus)
+def integer_promoting_binop(op, **kw):
+    dtype = op.dtype
+    if not dtype.is_integer():
+        return binop(op, **kw)
+    left = _widen_integer_operand(op.left, dtype, **kw)
+    right = _widen_integer_operand(op.right, dtype, **kw)
+    return _binops[type(op)](left, right)
+
+
 @translate.register(ops.Binary)
 def binop(op, **kw):
     left = translate(op.left, **kw)
