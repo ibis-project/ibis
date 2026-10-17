@@ -17,6 +17,7 @@ from ibis.common.graph import traverse
 from ibis.common.grounds import Annotable
 from ibis.common.patterns import Check, pattern, replace
 from ibis.common.typing import VarTuple  # noqa: TC001
+from ibis.expr.operations.reductions import LimitedArrayCollect
 from ibis.util import Namespace, promote_list
 
 if TYPE_CHECKING:
@@ -31,6 +32,31 @@ d = Namespace(deferred, module=ops)
 x = var("x")
 y = var("y")
 name = var("name")
+
+
+@replace(p.ArraySlice)
+def lower_array_collect_slice(_, **kwargs):
+    """Push a nonnegative literal prefix slice into array collection."""
+    if not isinstance(collect := _.arg, ops.ArrayCollect) or isinstance(
+        collect, LimitedArrayCollect
+    ):
+        return _
+    if not (
+        isinstance(_.start, ops.Literal)
+        and _.start.value == 0
+        and isinstance(_.stop, ops.Literal)
+        and type(_.stop.value) is int
+        and 0 <= _.stop.value <= (1 << 63) - 1
+    ):
+        return _
+    return LimitedArrayCollect(
+        collect.arg,
+        where=collect.where,
+        order_by=collect.order_by,
+        include_null=collect.include_null,
+        distinct=collect.distinct,
+        limit=_.stop,
+    )
 
 
 class DerefMap(Annotable, Traversable):

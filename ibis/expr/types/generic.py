@@ -1146,6 +1146,19 @@ class Value(Expr):
         >>> t.value.collect(order_by=_.value.desc()).to_pandas()
         [5, 3, 2, 1, 1]
 
+        Collect the first three ordered elements. Backends may push this prefix
+        slice into the aggregate to avoid constructing the complete array:
+
+        >>> expr = t.value.collect(order_by=_.value.desc())[:3]
+        >>> print(ibis.bigquery.compile(expr))
+        SELECT
+          COALESCE(
+            ARRAY_AGG(`t0`.`value` IGNORE NULLS ORDER BY `t0`.`value` DESC
+            LIMIT 3),
+            ARRAY<INT64>[]
+          ) AS `ArraySlice_ArrayCollect_value__value_0_3`
+        FROM `ibis_pandas_memtable_...` AS `t0`
+
         Collect elements per group, filtering out values <= 1:
 
         >>> t.group_by("key").agg(v=t.value.collect(where=_.value > 1)).order_by("key")
