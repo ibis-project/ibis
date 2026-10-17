@@ -332,11 +332,6 @@ def test_dot_sql_limit(con):
     raises=KeyError,
     reason="upstream does not preserve column names in schema inference",
 )
-@pytest.mark.notimpl(
-    ["db2"],
-    raises=AssertionError,
-    reason="DB2 table names are uppercase; raw SQL uses lowercase",
-)
 def test_cte(alltypes, df):
     expr = alltypes.alias("ft").sql(
         'SELECT "string_col", CAST(COUNT(*) AS BIGINT) "n" FROM "ft" GROUP BY "string_col"',
@@ -419,7 +414,6 @@ def test_embedded_cte_with_alias_nested(con):
     ["oracle"], raises=OracleDatabaseError, reason="backend requires aliasing"
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
-@pytest.mark.notimpl(["db2"])
 def test_unnamed_columns(con):
     sql = "SELECT 'a', 1 AS \"col42\""
     sgexpr = sg.parse_one(sql, read="duckdb")
@@ -438,7 +432,6 @@ def test_unnamed_columns(con):
     assert types[1].is_integer()
 
 
-@pytest.mark.notimpl(["db2"])
 def test_scalar_dot_sql(con):
     sql = sg.select(sge.convert(1).as_("a")).sql(con.dialect)
     expr = con.sql(sql).as_scalar()
