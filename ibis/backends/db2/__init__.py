@@ -23,6 +23,17 @@ if TYPE_CHECKING:
 
     import pandas as pd
 
+# Result-set column kinds reported by ibm_db.field_type that map to a single
+# Ibis type, regardless of precision or scale.
+_SIMPLE_FIELD_TYPES = {
+    "bigint": dt.Int64,
+    "blob": dt.Binary,
+    "clob": dt.String,
+    "date": dt.Date,
+    "time": dt.Time,
+    "timestamp": dt.Timestamp,
+}
+
 
 class Backend(SQLBackend):
     """IBM Db2 backend for Ibis."""
@@ -737,19 +748,55 @@ class Backend(SQLBackend):
         sch.Schema
             Query result schema
         """
-        with self._safe_raw_sql(query) as cursor:
-            if not cursor.description:
-                return sch.Schema({})
+        import ibm_db
+        import ibm_db_dbi
 
+        # Preparing a statement returns its result-set metadata without running
+        # it. `conn_handler` is not part of the DB-API 2.0 interface: it is the
+        # native handle that ibm_db_dbi.Connection keeps, and the driver offers
+        # no other accessor. Verified against ibm_db / ibm_db_dbi 3.2.9.
+        try:
+            stmt = ibm_db.prepare(self._connection.conn_handler, query)
+            num_fields = ibm_db.num_fields(stmt)
+        except Exception as e:
+            # ibm_db raises a bare Exception; raise the DB-API error that
+            # cursor.execute() raises for the same bad query.
+            raise ibm_db_dbi.ProgrammingError(str(e)) from e
+        try:
             fields = {}
-            for col_desc in cursor.description:
-                col_name = col_desc[0].lower()
-                # Use a simple string type for now, can be enhanced later
-                from ibis.backends.db2.datatypes import parse_db2_type
+            for i in range(num_fields):
+                kind = ibm_db.field_type(stmt, i)
+                precision = ibm_db.field_precision(stmt, i)
+                scale = ibm_db.field_scale(stmt, i)
+                nullable = bool(ibm_db.field_nullable(stmt, i))
 
-                fields[col_name] = parse_db2_type("VARCHAR")
-
+                if kind in _SIMPLE_FIELD_TYPES:
+                    ibis_type = _SIMPLE_FIELD_TYPES[kind](nullable=nullable)
+                elif kind == "int":
+                    # The driver reports BOOLEAN as a 1-digit int; no other Db2
+                    # integer type has precision 1 (SMALLINT is 5, INTEGER is 10).
+                    if precision == 1:
+                        ibis_type = dt.Boolean(nullable=nullable)
+                    elif precision <= 5:
+                        ibis_type = dt.Int16(nullable=nullable)
+                    else:
+                        ibis_type = dt.Int32(nullable=nullable)
+                elif kind == "decimal":
+                    ibis_type = dt.Decimal(precision, scale, nullable=nullable)
+                elif kind == "real":
+                    # REAL has 7 digits of precision; DOUBLE and DECFLOAT have more
+                    float_type = dt.Float32 if precision <= 7 else dt.Float64
+                    ibis_type = float_type(nullable=nullable)
+                elif kind == "string":
+                    ibis_type = dt.String(length=precision, nullable=nullable)
+                else:
+                    raise exc.UnsupportedBackendType(
+                        f"Unsupported Db2 result column type: {kind!r}"
+                    )
+                fields[ibm_db.field_name(stmt, i).lower()] = ibis_type
             return sch.Schema(fields)
+        finally:
+            ibm_db.free_stmt(stmt)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         """Register an in-memory table.
