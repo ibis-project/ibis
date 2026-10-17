@@ -536,11 +536,5 @@ class Db2Compiler(SQLGlotCompiler):
         # (GENERATE_UNIQUE() is not a UUID.)
         return self.f.lower(sge.Anonymous(this="GENERATE_UUID", expressions=[]))
 
-    def visit_InMemoryTable(self, op, *, name, schema, data):
-        # DB2 stores all identifiers uppercase — memtable names must match
-        return super().visit_InMemoryTable(
-            op, name=name.upper(), schema=schema, data=data
-        )
-
 
 compiler = Db2Compiler()

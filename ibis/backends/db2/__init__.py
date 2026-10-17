@@ -207,10 +207,6 @@ class Backend(SQLBackend):
         kwargs.update(kwarg_overrides)
         return self.connect(**kwargs)
 
-    def table(self, name: str, /, *, database: tuple[str, str] | str | None = None):
-        """Return a table expression, normalising the name to uppercase for Db2."""
-        return super().table(name.upper(), database=database)
-
     def disconnect(self) -> None:
         """Disconnect from the database."""
         if self._cursor:
@@ -294,8 +290,7 @@ class Backend(SQLBackend):
         """
 
         with self._safe_raw_sql(query) as cursor:
-            # Db2 stores names in uppercase; return lowercase for ibis convention
-            tables = [row[0].lower() for row in cursor.fetchall()]
+            tables = [row[0] for row in cursor.fetchall()]
 
         return self._filter_with_like(tables, like)
 
@@ -358,15 +353,8 @@ class Backend(SQLBackend):
 
         cursor = self._connection.cursor()
         try:
-            # SYSCAT.COLUMNS stores unquoted names in UPPERCASE and quoted names
-            # verbatim.  Try the name as-given first (handles both quoted-lowercase
-            # tables created by create_table and any other exact-case names), then
-            # fall back to UPPERCASE (handles tables from unquoted DDL / data load).
             cursor.execute(query, (table_name, schema_name))
             rows = cursor.fetchall()
-            if not rows:
-                cursor.execute(query, (table_name.upper(), schema_name))
-                rows = cursor.fetchall()
         finally:
             cursor.close()
 
@@ -441,11 +429,6 @@ class Backend(SQLBackend):
 
         if obj is None and schema is None:
             raise exc.IbisError("Either obj or schema must be provided")
-
-        # Db2 stores unquoted identifiers in UPPERCASE in SYSCAT.  Normalise
-        # the name to uppercase now so the quoted DDL ("NAME") also stores an
-        # uppercase name and self.table() / get_schema() can always find it.
-        name = name.upper()
 
         # Normalise schema: accept dict.items() (tuples) and plain dicts in
         # addition to ibis.Schema objects.
@@ -554,7 +537,6 @@ class Backend(SQLBackend):
         force : bool, default False
             Suppress errors if table doesn't exist
         """
-        name = name.upper()
         full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
             self.dialect
         )
@@ -570,7 +552,7 @@ class Backend(SQLBackend):
                         WHERE TABNAME = ?
                         AND TABSCHEMA = ?
                     """
-                    cursor.execute(check_sql, (name, database.upper()))
+                    cursor.execute(check_sql, (name, database))
                 else:
                     check_sql = """
                         SELECT COUNT(*)
@@ -606,7 +588,6 @@ class Backend(SQLBackend):
         DB2 does not support ``DROP VIEW IF EXISTS``, so when *force* is True
         we check SYSCAT.VIEWS first and skip the DROP if the view is absent.
         """
-        name = name.upper()
         full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
             self.dialect
         )
@@ -617,7 +598,7 @@ class Backend(SQLBackend):
                 if database:
                     cursor.execute(
                         "SELECT COUNT(*) FROM SYSCAT.VIEWS WHERE VIEWNAME = ? AND VIEWSCHEMA = ?",
-                        (name, database.upper()),
+                        (name, database),
                     )
                 else:
                     cursor.execute(
@@ -659,7 +640,6 @@ class Backend(SQLBackend):
         """
         import pandas as pd
 
-        name = name.upper()
         full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
             self.dialect
         )

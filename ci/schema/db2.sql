@@ -1,10 +1,10 @@
 -- IBM Db2 schema for ibis test suite
 -- Executed statement-by-statement by conftest._load_data()
--- All column names are double-quoted to preserve exact case for inserts.
+-- All table and column names are double-quoted to preserve exact case.
 
-DROP TABLE IF EXISTS diamonds;
+DROP TABLE IF EXISTS "diamonds";
 
-CREATE TABLE diamonds (
+CREATE TABLE "diamonds" (
     "carat" DOUBLE,
     "cut" VARCHAR(255),
     "color" VARCHAR(255),
@@ -17,9 +17,9 @@ CREATE TABLE diamonds (
     "z" DOUBLE
 );
 
-DROP TABLE IF EXISTS astronauts;
+DROP TABLE IF EXISTS "astronauts";
 
-CREATE TABLE astronauts (
+CREATE TABLE "astronauts" (
     "id" BIGINT,
     "number" BIGINT,
     "nationwide_number" BIGINT,
@@ -46,9 +46,9 @@ CREATE TABLE astronauts (
     "total_eva_hrs" DOUBLE
 );
 
-DROP TABLE IF EXISTS batting;
+DROP TABLE IF EXISTS "batting";
 
-CREATE TABLE batting (
+CREATE TABLE "batting" (
     "playerID" VARCHAR(255),
     "yearID" BIGINT,
     "stint" BIGINT,
@@ -73,9 +73,9 @@ CREATE TABLE batting (
     "GIDP" BIGINT
 );
 
-DROP TABLE IF EXISTS awards_players;
+DROP TABLE IF EXISTS "awards_players";
 
-CREATE TABLE awards_players (
+CREATE TABLE "awards_players" (
     "playerID" VARCHAR(255),
     "awardID" VARCHAR(255),
     "yearID" BIGINT,
@@ -84,9 +84,9 @@ CREATE TABLE awards_players (
     "notes" VARCHAR(255)
 );
 
-DROP TABLE IF EXISTS functional_alltypes;
+DROP TABLE IF EXISTS "functional_alltypes";
 
-CREATE TABLE functional_alltypes (
+CREATE TABLE "functional_alltypes" (
     "id" INTEGER,
     "bool_col" SMALLINT,
     "tinyint_col" SMALLINT,
@@ -102,20 +102,20 @@ CREATE TABLE functional_alltypes (
     "month" INTEGER
 );
 
-DROP TABLE IF EXISTS win;
+DROP TABLE IF EXISTS "win";
 
-CREATE TABLE win ("g" VARCHAR(8), "x" BIGINT NOT NULL, "y" BIGINT);
+CREATE TABLE "win" ("g" VARCHAR(8), "x" BIGINT NOT NULL, "y" BIGINT);
 
-INSERT INTO win VALUES ('a', 0, 3);
-INSERT INTO win VALUES ('a', 1, 2);
-INSERT INTO win VALUES ('a', 2, 0);
-INSERT INTO win VALUES ('a', 3, 1);
-INSERT INTO win VALUES ('a', 4, 1);
+INSERT INTO "win" VALUES ('a', 0, 3);
+INSERT INTO "win" VALUES ('a', 1, 2);
+INSERT INTO "win" VALUES ('a', 2, 0);
+INSERT INTO "win" VALUES ('a', 3, 1);
+INSERT INTO "win" VALUES ('a', 4, 1);
 
-DROP TABLE IF EXISTS topk;
+DROP TABLE IF EXISTS "topk";
 
-CREATE TABLE topk ("x" BIGINT);
+CREATE TABLE "topk" ("x" BIGINT);
 
-INSERT INTO topk VALUES (1);
-INSERT INTO topk VALUES (1);
-INSERT INTO topk VALUES (NULL);
+INSERT INTO "topk" VALUES (1);
+INSERT INTO "topk" VALUES (1);
+INSERT INTO "topk" VALUES (NULL);

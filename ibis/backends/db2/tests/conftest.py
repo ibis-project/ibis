@@ -155,7 +155,7 @@ class TestConf(ServiceBackendTest):
             # verbatim.  Mirror that quoting in the INSERT statement.
             col_names = ", ".join(f'"{c}"' for c in df.columns)
             placeholders = ", ".join("?" for _ in df.columns)
-            insert_sql = f"INSERT INTO {table} ({col_names}) VALUES ({placeholders})"
+            insert_sql = f'INSERT INTO "{table}" ({col_names}) VALUES ({placeholders})'
 
             # ibm_db_dbi.executemany requires plain lists (not namedtuples).
             # Replace NaN/NaT/pd.NA → None so Db2 stores SQL NULL correctly.
