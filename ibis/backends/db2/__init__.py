@@ -37,7 +37,6 @@ class Backend(SQLBackend):
         super().__init__(*args, **kwargs)
         self._connection = None
         self._cursor = None
-        self._conn_str = None  # stored so _reconnect() can open a fresh connection
 
     @property
     def version(self) -> str:
@@ -88,7 +87,6 @@ class Backend(SQLBackend):
         **kwargs
             Additional IBM Db2 connection string key=value parameters.
         """
-        import ibm_db
         import ibm_db_dbi
 
         # Build connection string
@@ -126,19 +124,17 @@ class Backend(SQLBackend):
             if key.upper() not in _reserved:
                 conn_str_parts.append(f"{key.upper()}={value}")
 
-        conn_str = ";".join(conn_str_parts)
-
-        # Store connection string for later reconnects (e.g. after DDL)
-        self._conn_str = conn_str
-        # Connect using ibm_db
-        ibm_db_conn = ibm_db.connect(conn_str, "", "")
-        # Wrap with DBI-compliant interface
-        self._connection = ibm_db_dbi.Connection(ibm_db_conn)
-        self._cursor = self._connection.cursor()
-
-        # Set schema if provided
         if schema:
-            self._cursor.execute(f"SET SCHEMA {schema}")
+            conn_str_parts.append(f"CURRENTSCHEMA={schema}")
+
+        # ibm_db_dbi.connect() defaults to autocommit OFF, which makes every
+        # read hold locks until the next commit. Every statement here is
+        # expected to take effect immediately, so autocommit is set explicitly.
+        self._connection = ibm_db_dbi.connect(
+            ";".join(conn_str_parts),
+            conn_options={ibm_db_dbi.SQL_ATTR_AUTOCOMMIT: ibm_db_dbi.SQL_AUTOCOMMIT_ON},
+        )
+        self._cursor = self._connection.cursor()
 
     @property
     def con(self):
@@ -214,20 +210,15 @@ class Backend(SQLBackend):
             self._connection = None
 
     def _reconnect(self) -> None:
-        """Close and immediately reopen the connection using the stored DSN.
+        """Close the connection and reopen it with the original arguments.
 
         ibm_db_dbi's catalog views (e.g. SYSCAT.COLUMNS) are not always
         visible on the same connection directly after a DDL commit.  A fresh
         connection guarantees up-to-date catalog visibility and also clears
         any internal driver state left over from DDL execution.
         """
-        import ibm_db
-        import ibm_db_dbi
-
         self.disconnect()
-        ibm_db_conn = ibm_db.connect(self._conn_str, "", "")
-        self._connection = ibm_db_dbi.Connection(ibm_db_conn)
-        self._cursor = self._connection.cursor()
+        self.reconnect()
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str | sg.Expression, **kwargs: Any):
