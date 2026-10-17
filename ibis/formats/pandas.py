@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from pandas.api.extensions import ExtensionDtype
 
 _DEFAULT_DATETIME_RESOLUTION = "ns" if vparse(pd.__version__) < vparse("3") else "us"
+_DATETIME_UNITS = ("s", "ms", "us", "ns")
 
 geospatial_supported = _find_spec("geopandas") is not None
 
@@ -212,13 +213,32 @@ class PandasData(DataMapper):
             return s
 
     @classmethod
+    def _upcast_datetime_unit(cls, s, pandas_type):
+        # Backends return whatever unit their source used (pyarrow >= 13 keeps
+        # it), so a series can be coarser than the unit `from_ibis` declares.
+        # Upcast it, but never truncate a finer one, and leave values that
+        # only fit at their current unit as they are.
+        unit = np.datetime_data(s.dtype.base)[0]
+        target = np.datetime_data(pandas_type.base)[0]
+        if _DATETIME_UNITS.index(unit) >= _DATETIME_UNITS.index(target):
+            return s
+        try:
+            return s.astype(pandas_type)
+        except pd.errors.OutOfBoundsDatetime:
+            return s
+
+    @classmethod
     def convert_Timestamp(cls, s, dtype, pandas_type):
         if isinstance(pandas_type, pd.DatetimeTZDtype) and isinstance(
             s.dtype, pd.DatetimeTZDtype
         ):
-            return s if s.dtype == pandas_type else s.dt.tz_convert(dtype.timezone)
+            if s.dtype != pandas_type:
+                s = s.dt.tz_convert(dtype.timezone)
+            return cls._upcast_datetime_unit(s, pandas_type)
         elif pdt.is_datetime64_dtype(s.dtype):
-            return s.dt.tz_localize(dtype.timezone)
+            return cls._upcast_datetime_unit(
+                s.dt.tz_localize(dtype.timezone), pandas_type
+            )
         else:
             try:
                 return s.astype(pandas_type)
