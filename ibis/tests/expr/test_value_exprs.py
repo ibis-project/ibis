@@ -694,6 +694,39 @@ def test_chained_comparisons_not_allowed(table):
 
 
 @pytest.mark.parametrize(
+    "op",
+    [
+        operator.add,
+        operator.sub,
+        operator.mul,
+        operator.truediv,
+        operator.floordiv,
+        operator.mod,
+        operator.pow,
+    ],
+)
+def test_lhs_literal_arithmetic_with_deferred(table, op):
+    # https://github.com/ibis-project/ibis/issues/11742
+    expr = table.select(result=op(ibis.literal(5), _["d"]))
+    expected = table.select(result=op(ibis.literal(5), table.d))
+    assert_equal(expr, expected)
+
+
+def test_lhs_python_int_arithmetic_with_deferred(table):
+    # https://github.com/ibis-project/ibis/issues/11742
+    expr = table.select(result=1 + _["d"])
+    expected = table.select(result=1 + table.d)
+    assert_equal(expr, expected)
+
+
+def test_lhs_string_literal_concat_with_deferred(table):
+    # https://github.com/ibis-project/ibis/issues/11742
+    expr = table.select(result=ibis.literal("prefix-") + _["g"])
+    expected = table.select(result=ibis.literal("prefix-") + table.g)
+    assert_equal(expr, expected)
+
+
+@pytest.mark.parametrize(
     "operation",
     [operator.add, operator.sub, operator.truediv],
 )
