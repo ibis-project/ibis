@@ -1,0 +1,6 @@
+*.duckdb
+*.duckdb.wal
+*.json
+*.parquet
+*.csv
+*.sqlite
