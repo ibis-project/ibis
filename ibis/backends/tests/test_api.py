@@ -24,6 +24,7 @@ def test_version(backend):
     [
         "polars",
         "clickhouse",
+        "chdb",
         "sqlite",
         "exasol",
         "druid",
