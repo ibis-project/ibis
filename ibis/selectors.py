@@ -297,7 +297,7 @@ def contains(
     needles
         One or more strings to search for in column names
     how
-        A boolean reduction to allow the configuration of how `needles` are summarized.
+        A function like `any` or `all` that combines the per-needle matches into one boolean.
 
     Examples
     --------
