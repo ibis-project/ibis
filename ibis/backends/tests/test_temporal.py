@@ -2272,11 +2272,6 @@ def test_timestamp_between_string_bounds_seconds(con):
     raises=OracleDatabaseError,
     reason="ORA-01843: invalid month was specified",
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=ValueError,
-    reason="TIMESTAMP keeps nanoseconds, which psycopg2 can't fit in a datetime",
-)
 @pytest.mark.notyet(
     ["singlestoredb"],
     raises=SingleStoreDBOperationalError,

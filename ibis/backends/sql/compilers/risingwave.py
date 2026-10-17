@@ -89,10 +89,23 @@ class RisingWaveCompiler(PostgresCompiler):
         return super().visit_Log(op, arg=arg, base=base)
 
     def visit_Cast(self, op, *, arg, to):
+        from_ = op.arg.dtype
+
         if to.is_json():
             return self.f.to_jsonb(arg)
-        else:
-            return super().visit_Cast(op, arg=arg, to=to)
+
+        result = super().visit_Cast(op, arg=arg, to=to)
+
+        if to.is_timestamp() and (from_.is_string() or from_.is_timestamp()):
+            # RisingWave has no `TIMESTAMP(p)`, and its `TIMESTAMP` keeps
+            # nanoseconds, so truncate to the requested precision, defaulting to
+            # microseconds to match the unscaled `timestamp` type
+            scale = 6 if to.scale is None else to.scale
+            if scale <= 6:
+                unit = dt.Timestamp(scale=scale).unit
+                result = self.f.date_trunc(self._truncate_units[unit.short], result)
+
+        return result
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if not order_by:
@@ -134,21 +147,21 @@ class RisingWaveCompiler(PostgresCompiler):
 
     visit_ApproxQuantile = visit_Quantile
 
-    def visit_TimestampTruncate(self, op, *, arg, unit):
-        unit_mapping = {
-            "Y": "year",
-            "Q": "quarter",
-            "M": "month",
-            "W": "week",
-            "D": "day",
-            "h": "hour",
-            "m": "minute",
-            "s": "second",
-            "ms": "milliseconds",
-            "us": "microseconds",
-        }
+    _truncate_units = {
+        "Y": "year",
+        "Q": "quarter",
+        "M": "month",
+        "W": "week",
+        "D": "day",
+        "h": "hour",
+        "m": "minute",
+        "s": "second",
+        "ms": "milliseconds",
+        "us": "microseconds",
+    }
 
-        if (unit := unit_mapping.get(unit.short)) is None:
+    def visit_TimestampTruncate(self, op, *, arg, unit):
+        if (unit := self._truncate_units.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
         return self.f.date_trunc(unit, arg)
