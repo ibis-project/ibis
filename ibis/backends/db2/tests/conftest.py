@@ -54,11 +54,7 @@ class TestConf(ServiceBackendTest):
     Db2 has no ``BULK INSERT``/``COPY FROM`` equivalent that works from outside
     the container, so we use ``ibm_db_dbi.executemany`` in Python instead.
 
-    ibm_db_dbi has two driver-level constraints we work around:
-    1. ``executemany`` requires plain ``list`` rows, not namedtuples.
-    2. ``executemany`` can raise ``CLI0125E Function sequence error`` on the
-       same connection that ran DDL — we call ``self.connection._reconnect()``
-       between DDL and bulk inserts to get a clean driver state.
+    ``ibm_db_dbi.executemany`` requires plain ``list`` rows, not namedtuples.
     """
 
     check_dtype = False
@@ -87,9 +83,7 @@ class TestConf(ServiceBackendTest):
         1. Execute every DDL statement from ``ci/schema/db2.sql`` one at a
            time, committing after each — ibm_db_dbi does not support
            multi-statement batches.
-        2. Reconnect (clears driver state left over from DDL, avoiding the
-           ``CLI0125E Function sequence error`` on ``executemany``).
-        3. Bulk-insert the five CSV tables via ``executemany`` in batches of
+        2. Bulk-insert the five CSV tables via ``executemany`` in batches of
            5 000 rows, committing each batch.
         """
         import pandas as pd
@@ -139,10 +133,7 @@ class TestConf(ServiceBackendTest):
                 pass
             self.connection._connection.commit()
 
-        # Step 2: Reconnect to get a clean connection for bulk inserts.
-        self.connection._reconnect()
-
-        # Step 3: Bulk-insert CSV tables.
+        # Step 2: Bulk-insert CSV tables.
         csv_dir = self.data_dir / "csv"
         table_files = {
             "diamonds": "diamonds.csv",

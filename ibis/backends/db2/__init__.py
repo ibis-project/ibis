@@ -220,17 +220,6 @@ class Backend(SQLBackend):
             self._connection.close()
             self._connection = None
 
-    def _reconnect(self) -> None:
-        """Close the connection and reopen it with the original arguments.
-
-        ibm_db_dbi's catalog views (e.g. SYSCAT.COLUMNS) are not always
-        visible on the same connection directly after a DDL commit.  A fresh
-        connection guarantees up-to-date catalog visibility and also clears
-        any internal driver state left over from DDL execution.
-        """
-        self.disconnect()
-        self.reconnect()
-
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str | sg.Expression, **kwargs: Any):
         """Execute raw SQL safely with cursor management."""
@@ -528,11 +517,6 @@ class Backend(SQLBackend):
             pass
         # Commit the CREATE TABLE statement so it is visible to new connections.
         self._connection.commit()
-
-        # Only reconnect for permanent tables — GLOBAL TEMPORARY tables are
-        # session-scoped and get destroyed if the connection is recycled.
-        if not temp:
-            self._reconnect()
 
         # Insert data if provided
         if obj is not None:
