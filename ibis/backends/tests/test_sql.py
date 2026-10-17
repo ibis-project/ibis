@@ -220,7 +220,6 @@ def test_selects_with_impure_operations_not_merged(con, snapshot, value):
 
 
 @pytest.mark.never(["polars"], reason="not SQL", raises=NotImplementedError)
-@pytest.mark.notimpl(["db2"])
 def test_to_sql_default_backend(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 

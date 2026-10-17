@@ -439,7 +439,7 @@ def test_nullable_input_output(con, temp_table):
     assert t.schema().types[2].nullable
 
 
-@mark.notimpl(["druid", "db2"])
+@mark.notimpl(["druid"])
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"

@@ -8,7 +8,6 @@ from packaging.version import parse as vparse
 import ibis.common.exceptions as com
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
-    IbmDb2Error,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     MySQLProgrammingError,
@@ -166,11 +165,6 @@ NO_MERGE_SUPPORT_MARKS = [
         ["trino"],
         raises=TrinoUserError,
         reason="connector does not support modifying table rows",
-    ),
-    pytest.mark.notyet(
-        ["db2"],
-        raises=IbmDb2Error,
-        reason="MERGE INTO is not supported",
     ),
 ]
 NO_MERGE_SUPPORT = combine_marks(NO_MERGE_SUPPORT_MARKS)

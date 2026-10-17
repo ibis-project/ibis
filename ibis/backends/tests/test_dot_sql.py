@@ -16,7 +16,6 @@ from ibis.backends.tests.base import PYTHON_SHORT_VERSION
 from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
-    IbmDb2Error,
     OracleDatabaseError,
     PyAthenaOperationalError,
     PyODBCProgrammingError,
@@ -48,15 +47,11 @@ def ftname(con, ftname_raw):
         param(
             None,
             id="implicit_schema",
-            marks=[
-                pytest.mark.notimpl(["druid"]),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
-            ],
+            marks=[pytest.mark.notimpl(["druid"])],
         ),
         param(
             {"s": "string", "new_col": "double"},
             id="explicit_schema",
-            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
         ),
     ],
 )
@@ -100,11 +95,6 @@ def test_con_dot_sql(backend, con, schema, ftname):
 )
 @pytest.mark.notyet(
     ["druid"], raises=com.IbisTypeError, reason="druid does not preserve case"
-)
-@pytest.mark.notimpl(
-    ["db2"],
-    raises=IbmDb2Error,
-    reason="DB2 table names are uppercase; raw SQL uses lowercase",
 )
 def test_table_dot_sql(backend):
     alltypes = backend.functional_alltypes
@@ -150,11 +140,6 @@ def test_table_dot_sql(backend):
     ["oracle"],
     OracleDatabaseError,
     reason="oracle doesn't know which of the tables in the join to sort from",
-)
-@pytest.mark.notimpl(
-    ["db2"],
-    raises=IbmDb2Error,
-    reason="DB2 table names are uppercase; raw SQL uses lowercase",
 )
 def test_table_dot_sql_with_join(backend):
     alltypes = backend.functional_alltypes
@@ -204,11 +189,6 @@ def test_table_dot_sql_with_join(backend):
 @pytest.mark.notyet(["druid"], reason="druid doesn't respect column name case")
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
-)
-@pytest.mark.notimpl(
-    ["db2"],
-    raises=IbmDb2Error,
-    reason="DB2 table names are uppercase; raw SQL uses lowercase",
 )
 def test_table_dot_sql_repr(backend):
     alltypes = backend.functional_alltypes
@@ -284,11 +264,6 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
     ["druid"], raises=AttributeError, reason="druid doesn't respect column names"
 )
 @pytest.mark.notyet(["bigquery"])
-@pytest.mark.notimpl(
-    ["db2"],
-    raises=IbmDb2Error,
-    reason="DB2 table names are uppercase; raw SQL uses lowercase",
-)
 def test_con_dot_sql_transpile(backend, con, dialect, df):
     if dialect == "db2":
         pytest.importorskip("db2_sqlglot", reason=DB2_DIALECT_REASON)
@@ -350,11 +325,6 @@ def test_cte(alltypes, df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["db2"],
-    raises=IbmDb2Error,
-    reason="DB2 table names are uppercase; raw SQL uses lowercase",
-)
 def test_bare_minimum(alltypes, df, ftname_raw):
     """Test that a backend that supports dot sql can do the most basic thing."""
 
@@ -362,11 +332,6 @@ def test_bare_minimum(alltypes, df, ftname_raw):
     assert expr.to_pandas().iat[0, 0] == len(df)
 
 
-@pytest.mark.notimpl(
-    ["db2"],
-    raises=IbmDb2Error,
-    reason="DB2 table names are uppercase; raw SQL uses lowercase",
-)
 def test_embedded_cte(alltypes, ftname_raw):
     sql = f'WITH "x" AS (SELECT * FROM "{ftname_raw}") SELECT * FROM "x"'
     expr = alltypes.sql(sql, dialect="duckdb")
