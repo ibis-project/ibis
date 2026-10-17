@@ -25,7 +25,7 @@ interlinks:
     arrow:
       url: https://arrow.apache.org/docs/
     pandas:
-      url: http://pandas.pydata.org/pandas-docs/stable/
+      url: https://pandas.pydata.org/docs/
 
 website:
   title: "Ibis"
