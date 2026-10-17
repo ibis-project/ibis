@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
 import sqlglot as sg
+import sqlglot.expressions as sge
 
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
@@ -460,47 +461,31 @@ class Backend(SQLBackend):
                 obj = pd.DataFrame(obj)
                 schema = sch.infer(obj)
 
-        # Build CREATE TABLE statement
-        temp_clause = "GLOBAL TEMPORARY " if temp else ""
-        # sg.table(..., quoted=True) builds the table reference the same way
-        # Ibis/SQLGlot quotes it in SELECT, so CREATE stays consistent by
-        # construction rather than by hand-replicating the quoting rules.
-        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
-            self.dialect
-        )
+        table = sg.table(name, db=database, quoted=self.compiler.quoted)
+        full_name = table.sql(self.dialect)
 
         if overwrite:
             self.drop_table(name, database=database, force=True)
 
-        # Build column definitions — delegate type rendering to the compiler's
-        # type_mapper (Db2Type) so that the same SQLGlot Db2 dialect that drives
-        # SELECT generation also drives CREATE TABLE column types.
-        col_defs = []
-        type_mapper = self.compiler.type_mapper
-        for col_name, col_type in schema.items():
-            # Accept string type names (e.g. "int32") in addition to DataType objects
-            if isinstance(col_type, str):
-                col_type = dt.dtype(col_type)
-            db2_type = type_mapper.to_string(col_type)
-            # DB2 does not accept bare NULL as a column constraint — nullable is
-            # the default, so only emit NOT NULL for non-nullable columns.
-            null_constraint = "" if col_type.nullable else " NOT NULL"
-            # sg.to_identifier(..., quoted=True) is the same quoting primitive
-            # SQLGlot uses for column references, so column names always match
-            quoted_col_name = sg.to_identifier(
-                col_name, quoted=self.compiler.quoted
-            ).sql(self.dialect)
-            col_defs.append(f"{quoted_col_name} {db2_type}{null_constraint}")
+        properties = []
+        if temp:
+            # Db2 deletes the rows of a GLOBAL TEMPORARY table at every commit
+            # by default, and this connection commits after each statement.
+            properties = [
+                sge.GlobalProperty(),
+                sge.TemporaryProperty(),
+                sge.OnCommitProperty(delete=False),
+            ]
 
-        columns_sql = ", ".join(col_defs)
-        # Db2 deletes the rows of a GLOBAL TEMPORARY table at every commit by
-        # default, and this connection commits after each statement.
-        on_commit = " ON COMMIT PRESERVE ROWS" if temp else ""
-        # No explicit tablespace — VARCHAR(255) fits on the default 4K-page
-        # tablespace so no special setup is required on any DB2 instance.
-        create_sql = f"CREATE {temp_clause}TABLE {full_name} ({columns_sql}){on_commit}"
+        create_stmt = sge.Create(
+            kind="TABLE",
+            this=sge.Schema(
+                this=table, expressions=schema.to_sqlglot_column_defs(self.dialect)
+            ),
+            properties=sge.Properties(expressions=properties),
+        )
 
-        with self._safe_raw_sql(create_sql):
+        with self._safe_raw_sql(create_stmt):
             pass
         # Commit the CREATE TABLE statement so it is visible to new connections.
         self._connection.commit()
