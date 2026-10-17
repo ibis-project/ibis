@@ -378,6 +378,36 @@ def test_table_to_csv(tmp_path, backend, awards_players):
 
 
 @pytest.mark.notimpl(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="druid can only order by time columns",
+)
+@pytest.mark.parametrize("chunk_size", [1, 1000])
+def test_to_dicts(chunk_size, awards_players):
+    t = (
+        awards_players.select("playerID", "yearID")
+        .order_by("playerID", "yearID")
+        .limit(3)
+    )
+
+    result = list(t.to_dicts(chunk_size=chunk_size))
+    expected = [
+        {"playerID": "aaronha01", "yearID": 1956},
+        {"playerID": "aaronha01", "yearID": 1956},
+        {"playerID": "aaronha01", "yearID": 1957},
+    ]
+    assert result == expected
+
+    result = list(t.limit(0).to_dicts(chunk_size=chunk_size))
+    expected = []
+    assert result == expected
+
+    result = list(t.yearID.to_dicts(chunk_size=chunk_size))
+    expected = [{"yearID": 1956}, {"yearID": 1956}, {"yearID": 1957}]
+    assert result == expected
+
+
+@pytest.mark.notimpl(
     [
         "athena",
         "bigquery",
