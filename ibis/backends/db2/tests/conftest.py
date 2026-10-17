@@ -20,8 +20,18 @@ DB2_DATABASE = os.environ.get("IBIS_TEST_DB2_DATABASE", "ibistest")
 
 
 def pytest_collection_modifyitems(items, config):  # noqa: ARG001
-    """Do not run shared tests that Db2 cannot complete in a reasonable time."""
+    """Do not run shared tests that Db2 cannot complete or that crash the driver."""
     for item in items:
+        if (
+            item.originalname == "test_string_methods_accents_and_emoji"
+            and "[db2-" in item.name
+        ):
+            item.add_marker(
+                pytest.mark.xfail(
+                    run=False,
+                    reason="ibm_db segfaults when fetching emoji",
+                )
+            )
         if item.originalname == "test_table_info_large" and "[db2]" in item.name:
             item.add_marker(
                 pytest.mark.xfail(
