@@ -755,8 +755,17 @@ class Backend(SQLBackend):
         # it. `conn_handler` is not part of the DB-API 2.0 interface: it is the
         # native handle that ibm_db_dbi.Connection keeps, and the driver offers
         # no other accessor. Verified against ibm_db / ibm_db_dbi 3.2.9.
+        #
+        # By default the driver defers the prepare until the first execute, so
+        # a syntax error or an undefined name in a non-SELECT statement goes
+        # unnoticed and the result looks like an empty schema. Turning
+        # deferred prepare off makes the server validate the statement now.
         try:
-            stmt = ibm_db.prepare(self._connection.conn_handler, query)
+            stmt = ibm_db.prepare(
+                self._connection.conn_handler,
+                query,
+                {ibm_db.SQL_ATTR_DEFERRED_PREPARE: 0},
+            )
             num_fields = ibm_db.num_fields(stmt)
         except Exception as e:
             # ibm_db raises a bare Exception; raise the DB-API error that
