@@ -1183,6 +1183,7 @@ def test_corr_cov(
     )
 
 
+@pytest.mark.parametrize("filtered", [False, True])
 @pytest.mark.notimpl(
     ["mysql", "singlestoredb", "sqlite", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
@@ -1194,8 +1195,9 @@ def test_corr_cov(
     # Ref: https://materialize.com/docs/transform-data/patterns/percentiles/
     raises=com.OperationNotDefinedError,
 )
-def test_approx_median(alltypes):
-    expr = alltypes.double_col.approx_median()
+def test_approx_median(alltypes, filtered):
+    where = alltypes.int_col <= 100 if filtered else None
+    expr = alltypes.double_col.approx_median(where=where)
     result = expr.execute()
     assert isinstance(result, float)
 
