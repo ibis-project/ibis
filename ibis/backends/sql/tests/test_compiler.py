@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pytest
 import sqlglot as sg
-from pytest import param
 
 import ibis
 from ibis import _
