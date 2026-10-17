@@ -285,12 +285,16 @@ class Backend(SQLBackend):
         query = """
             SELECT TABNAME
             FROM SYSCAT.TABLES
-            WHERE TABSCHEMA = CURRENT SCHEMA
+            WHERE TABSCHEMA = COALESCE(?, CURRENT SCHEMA)
             AND TYPE IN ('T', 'V', 'G')
         """
 
-        with self._safe_raw_sql(query) as cursor:
+        cursor = self._connection.cursor()
+        try:
+            cursor.execute(query, (database,))
             tables = [row[0] for row in cursor.fetchall()]
+        finally:
+            cursor.close()
 
         return self._filter_with_like(tables, like)
 
