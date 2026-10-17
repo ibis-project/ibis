@@ -128,6 +128,97 @@ def test_dtype_from_nullable_list_type(value_nullable, list_nullable):
     assert restored_type.value_field.nullable is value_nullable
 
 
+@pytest.mark.parametrize("field_nullable", [True, False])
+@pytest.mark.parametrize("struct_nullable", [True, False])
+def test_dtype_from_nullable_struct_type(struct_nullable, field_nullable):
+    # the pyarrow type itself is preserved faithfully in both directions
+    ibis_type = dt.Struct(
+        {"a": dt.Int64(nullable=field_nullable)}, nullable=struct_nullable
+    )
+    restored_type = PyArrowType.from_ibis(ibis_type)
+
+    assert restored_type.field("a").type == pa.int64()
+    assert restored_type.field("a").nullable is field_nullable
+
+
+def test_to_pyarrow_nullable_struct_with_non_nullable_fields():
+    # a nullable struct column holding NULLs must be convertible even when its
+    # child fields are declared non-nullable: a NULL struct materializes its
+    # children as NULL, so the strict child type is uninhabitable
+    schema = ibis.schema(
+        {"id": "int64", "address": dt.Struct({"street": "!string", "number": "!int64"})}
+    )
+    t = ibis.memtable(
+        [
+            {"id": 1, "address": {"street": "Main St", "number": 10}},
+            {"id": 2, "address": None},
+        ],
+        schema=schema,
+    )
+
+    result = t.to_pyarrow()
+
+    assert result["address"].to_pylist() == [
+        {"street": "Main St", "number": 10},
+        None,
+    ]
+    address = result.schema.field("address")
+    assert address.nullable is True
+    assert [field.nullable for field in address.type] == [True, True]
+
+
+@pytest.mark.parametrize(
+    "arrow_type",
+    [
+        pytest.param(
+            pa.struct([pa.field("a", pa.int64(), nullable=False)]), id="struct"
+        ),
+        pytest.param(
+            pa.list_(pa.struct([pa.field("a", pa.int64(), nullable=False)])), id="list"
+        ),
+        pytest.param(
+            pa.list_(pa.struct([pa.field("a", pa.int64(), nullable=False)]), 2),
+            id="fixed_size_list",
+        ),
+        pytest.param(
+            pa.map_(
+                pa.string(), pa.struct([pa.field("a", pa.int64(), nullable=False)])
+            ),
+            id="map",
+        ),
+    ],
+)
+def test_castable_type_relaxes_nested_struct_fields(arrow_type):
+    relaxed = ipa._castable_type(arrow_type)
+
+    # every struct child, however deeply nested, is nullable ...
+    assert all(field.nullable for field in _iter_struct_fields(relaxed))
+    # ... and nothing else about the type changed
+    assert relaxed.id == arrow_type.id
+
+
+def _iter_struct_fields(typ):
+    if pa.types.is_struct(typ):
+        for field in typ:
+            yield field
+            yield from _iter_struct_fields(field.type)
+    elif pa.types.is_map(typ):
+        yield from _iter_struct_fields(typ.item_type)
+    elif pa.types.is_list(typ) or pa.types.is_fixed_size_list(typ):
+        yield from _iter_struct_fields(typ.value_type)
+
+
+def test_convert_scalar_nullable_struct_with_non_nullable_fields():
+    # same bug shape at the scalar call site
+    arrow_type = pa.struct(
+        [pa.field("street", pa.string()), pa.field("number", pa.int64())]
+    )
+    scalar = pa.scalar(None, type=arrow_type)
+    dtype = dt.Struct({"street": "!string", "number": "!int64"})
+
+    assert ipa.PyArrowData.convert_scalar(scalar, dtype).as_py() is None
+
+
 @pytest.mark.parametrize("value_type", [pa.string(), pa.date32()])
 def test_dtype_from_dictionary_type(value_type):
     dict_type = pa.dictionary(pa.int32(), value_type)
