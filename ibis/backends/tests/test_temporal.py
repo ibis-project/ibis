@@ -2137,6 +2137,19 @@ def test_large_timestamp(con):
 @pytest.mark.parametrize(
     ("ts", "scale", "unit"),
     [
+        param(
+            "2023-01-07 13:20:05",
+            0,
+            "s",
+            id="s",
+            marks=[
+                pytest.mark.notyet(
+                    ["athena"],
+                    reason="only supports millisecond precision",
+                    raises=PyAthenaOperationalError,
+                ),
+            ],
+        ),
         param("2023-01-07 13:20:05.561", 3, "ms", id="ms"),
         param(
             "2023-01-07 13:20:05.561021",
@@ -2234,6 +2247,44 @@ def test_timestamp_precision_output(con, ts, scale, unit):
     result = con.execute(expr)
     expected = pd.Timestamp(ts).floor(unit)
     assert result == expected
+
+
+@pytest.mark.notimpl(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="ORA-01843: invalid month was specified",
+)
+@pytest.mark.notyet(
+    ["athena", "trino"],
+    reason="can't compare a timestamp with a string",
+    raises=(PyAthenaOperationalError, TrinoUserError),
+)
+def test_timestamp_between_string_bounds_seconds(con):
+    t = ibis.memtable({"s": ["2023-01-07 13:20:05.123"]})
+    expr = t.s.cast(dt.Timestamp(scale=0)).between(
+        "2023-01-07 13:20:05", "2023-01-07 13:20:06"
+    )
+    assert con.execute(expr).tolist() == [True]
+
+
+@pytest.mark.notimpl(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="ORA-01843: invalid month was specified",
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=SingleStoreDBOperationalError,
+    reason="doesn't support nanoseconds",
+)
+def test_cast_string_to_timestamp_keeps_default_precision(con):
+    pa = pytest.importorskip("pyarrow")
+
+    # sub-microsecond input must not break exporting an unscaled timestamp,
+    # whose expected type is microsecond precision
+    t = ibis.memtable({"s": ["2023-01-07 13:20:05.561000231"]})
+    result = con.to_pyarrow(t.s.cast("timestamp"))
+    assert result.type == pa.timestamp("us")
 
 
 @pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)

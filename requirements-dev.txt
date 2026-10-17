@@ -178,8 +178,8 @@ plotly==6.5.2
 plotnine==0.15.3
 pluggy==1.6.0
 plum-dispatch==2.6.1
-polars==1.37.1
-polars-runtime-32==1.37.1
+polars==2.0.0
+polars-runtime-32==2.0.0
 pprintpp==0.4.0
 pre-commit==4.5.1
 prometheus-client==0.24.1
