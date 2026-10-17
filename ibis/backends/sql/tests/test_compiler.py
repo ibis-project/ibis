@@ -7,7 +7,7 @@ from pytest import param
 import ibis
 from ibis import _
 from ibis.backends import _get_backend_names
-from ibis.backends.sql.dialects import MSSQL, Oracle, Trino
+from ibis.backends.sql.dialects import Trino
 
 
 def test_window_with_row_number_compiles():
