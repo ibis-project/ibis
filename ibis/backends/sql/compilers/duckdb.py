@@ -174,6 +174,21 @@ class DuckDBCompiler(SQLGlotCompiler):
             arg = sge.Distinct(expressions=[arg])
         return self.agg.array_agg(arg, where=where, order_by=order_by)
 
+    def visit_ArrayConcatAgg(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        """Compile by collecting arrays and flattening the result."""
+        return self._array_concat_agg(
+            op=op,
+            arg=arg,
+            where=where,
+            order_by=order_by,
+            include_null=include_null,
+            distinct=distinct,
+            limit=limit,
+            array_slice=lambda arrays, n: self.f.list_slice(arrays, 1, n),
+        )
+
     def visit_ArrayIndex(self, op: ops.ArrayIndex, *, arg, index):
         if isinstance(op.index, ops.Literal):
             i = op.index.value

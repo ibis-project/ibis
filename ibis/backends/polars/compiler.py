@@ -1073,27 +1073,62 @@ def array_column(op, **kw):
     return pl.concat_list(cols)
 
 
-@translate.register(ops.ArrayCollect)
-def array_collect(op, in_group_by=False, **kw):
+def _prepare_array_aggregate(op, *, apply_modifiers=True, **kw):
+    """Return filtered inputs, their existence check, and applied modifiers."""
     arg = translate(op.arg, **kw)
-
     predicate = True if op.include_null else arg.is_not_null()
     if op.where is not None:
         predicate &= translate(op.where, **kw)
-
     arg = arg.filter(predicate)
+    has_inputs = arg.len() > 0
 
-    if op.order_by:
+    if apply_modifiers and op.order_by:
         keys = [translate(k.arg, **kw).filter(predicate) for k in op.order_by]
         descending = [k.descending for k in op.order_by]
         arg = arg.sort_by(keys, descending=descending, nulls_last=True)
 
-    if op.distinct:
+    if apply_modifiers and op.distinct:
         arg = arg.unique(maintain_order=op.order_by is not None)
+
+    return arg, has_inputs
+
+
+@translate.register(ops.ArrayCollect)
+def array_collect(op, in_group_by=False, **kw):
+    """Translate scalar collection into a Polars list aggregate."""
+    arg, _ = _prepare_array_aggregate(op, **kw)
 
     # Polars' behavior changes for `implode` within a `group_by` currently.
     # See https://github.com/pola-rs/polars/issues/16756
     return arg if in_group_by else arg.implode()
+
+
+@translate.register(ops.ArrayConcatAgg)
+def array_concat_agg(op, in_group_by=False, **kw):
+    """Translate an array concatenation aggregate."""
+    zero_limit = isinstance(op.limit, ops.Literal) and op.limit.value == 0
+    arg, has_inputs = _prepare_array_aggregate(op, apply_modifiers=not zero_limit, **kw)
+    dtype = PolarsType.from_ibis(op.dtype)
+    null = pl.lit(None, dtype=dtype)
+    if zero_limit:
+        return pl.when(has_inputs).then(pl.lit([], dtype=dtype)).otherwise(null)
+
+    if op.limit is not None:
+        try:
+            limit = op.limit.value
+        except AttributeError:
+            raise com.UnsupportedOperationError(
+                "dynamic `concat_agg` limits are not supported by polars"
+            ) from None
+        arg = arg.head(limit)
+
+    # Evaluate emptiness inside the aggregated list so the filtered, ordered,
+    # and deduplicated input expression is computed only once.
+    element = pl.element()
+    flattened = arg.implode().list.eval(
+        element.filter(element.list.len() > 0).flatten()
+    )
+    return pl.when(has_inputs).then(flattened).otherwise(null)
 
 
 @translate.register(ops.ArrayFlatten)
