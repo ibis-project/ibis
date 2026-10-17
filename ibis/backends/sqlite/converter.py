@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import pandas as pd
 from packaging.version import parse as vparse
 
 from ibis.formats.pandas import PandasData
-
-# The "mixed" format was added in pandas 2
-_DATETIME_FORMAT = "mixed" if vparse(pd.__version__) >= vparse("2.0.0") else None
 
 
 class SQLitePandasData(PandasData):
@@ -20,5 +16,8 @@ class SQLitePandasData(PandasData):
         try:
             return super().convert_Timestamp(s, dtype, pandas_type)
         except ValueError:
+            import pandas as pd
+
             # Parsing failed, try a more relaxed parser
-            return pd.to_datetime(s, format=_DATETIME_FORMAT, utc=True)
+            format = "mixed" if vparse(pd.__version__) >= vparse("2.0.0") else None
+            return pd.to_datetime(s, format=format, utc=True)
