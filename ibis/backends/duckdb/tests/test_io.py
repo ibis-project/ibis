@@ -417,6 +417,45 @@ def test_memtable_null_column_parquet_dtype_roundtrip(con, tmp_path):
     assert before.a.type() == after.a.type()
 
 
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+)
+def test_read_vortex(con, data_dir, tmp_path):
+    # convert the contents of a parquet file to vortex, then read it back
+    t = con.read_parquet(data_dir / "parquet" / "functional_alltypes.parquet")
+    path = tmp_path / "functional_alltypes.vortex"
+    con.to_vortex(t, path)
+    vt = con.read_vortex(path)
+    assert vt.count().execute() == t.count().execute()
+
+
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+)
+def test_roundtrip_vortex(con, tmp_path):
+    original = ibis.memtable({"x": [1, 2, 3], "y": ["a", "b", "c"]})
+    path = tmp_path / "test.vortex"
+    con.to_vortex(original, path)
+    result = con.read_vortex(path)
+    assert result.count().execute() == 3
+    assert result.columns == ("x", "y")
+
+
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+)
+def test_roundtrip_vortex_with_table_name(con, tmp_path):
+    original = ibis.memtable({"a": [10, 20, 30]})
+    path = tmp_path / "named.vortex"
+    con.to_vortex(original, path)
+    result = con.read_vortex(path, table_name="my_vortex_table")
+    assert result.count().execute() == 3
+    assert "my_vortex_table" in con.list_tables()
+
+
 def test_read_json_no_auto_detection(con, tmp_path):
     ndjson_data = """
     {"year": 2007}
