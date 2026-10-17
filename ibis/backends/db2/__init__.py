@@ -792,34 +792,24 @@ class Backend(SQLBackend):
             ibm_db.free_stmt(stmt)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        """Register an in-memory table.
+        """Register an in-memory table as a GLOBAL TEMPORARY table.
 
         Parameters
         ----------
         op : ops.InMemoryTable
             In-memory table operation
         """
-        import pandas as pd
+        schema = op.schema
+        if null_columns := schema.null_fields:
+            raise exc.IbisTypeError(
+                f"{self.name} cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
 
-        # Create a temporary table from the in-memory data
-        name = op.name
-        data = op.data.to_frame()
-
-        if isinstance(data, pd.DataFrame):
-            # Use op.schema (the declared schema) instead of inferring from the
-            # DataFrame.  For empty tables, pandas assigns object dtype to every
-            # column; sch.infer then maps that to dt.Null, which Db2Type renders
-            # as the SQL keyword NULL — producing invalid DDL like
-            # "CREATE TABLE t (x NULL NULL)" and SQL0204N "NULL" is an undefined
-            # name.  The declared schema always carries the correct column types.
-            schema = op.schema
-            # Use temp=False — DB2 GLOBAL TEMPORARY tables are session-scoped
-            # and get destroyed by _reconnect() called inside create_table.
-            # We use a permanent table instead and rely on the finalizer to drop it.
-            if name not in self.list_tables():
-                self.create_table(
-                    name, data, schema=schema, temp=False, overwrite=False
-                )
+        # Use op.schema (the declared schema) instead of inferring from the
+        # DataFrame.  For empty tables, pandas assigns object dtype to every
+        # column, which sch.infer maps to dt.Null.
+        self.create_table(op.name, op.data.to_frame(), schema=schema, temp=True)
 
 
 def connect(

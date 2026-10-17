@@ -186,14 +186,9 @@ def test_semi_join_topk(con, batting, awards_players, func):
     reason="postgres can't handle null types columns",
 )
 @pytest.mark.notimpl(
-    ["mssql", "singlestoredb"],
+    ["db2", "mssql", "singlestoredb"],
     raises=com.IbisTypeError,
     reason="postgres can't handle null types columns",
-)
-@pytest.mark.notimpl(
-    ["db2"],
-    raises=com.UnsupportedBackendType,
-    reason="Db2 can't create a column of null type",
 )
 def test_join_with_pandas(batting, awards_players):
     batting_filt = batting.filter(lambda t: t.yearID < 1900)

@@ -709,6 +709,7 @@ def test_scalar_to_memory(limit, awards_players, output_format, converter):
 mark_notyet_nulls = pytest.mark.notyet(
     [
         "clickhouse",
+        "db2",
         "exasol",
         "flink",
         "impala",
@@ -731,7 +732,6 @@ mark_notyet_nulls = pytest.mark.notyet(
 @pytest.mark.notyet(["bigquery"], raises=UserWarning)
 @pytest.mark.notyet(["databricks"], raises=pa.ArrowNotImplementedError)
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
-@pytest.mark.notimpl(["db2"], raises=com.UnsupportedBackendType)
 def test_all_null_table(con):
     t = ibis.memtable({"a": [None]})
     result = con.to_pyarrow(t)
@@ -743,7 +743,6 @@ def test_all_null_table(con):
 @pytest.mark.notyet(["bigquery"], raises=UserWarning)
 @pytest.mark.notyet(["databricks"], raises=pa.ArrowNotImplementedError)
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
-@pytest.mark.notimpl(["db2"], raises=com.UnsupportedBackendType)
 def test_all_null_column(con):
     t = ibis.memtable({"a": [None]})
     result = con.to_pyarrow(t.a)
