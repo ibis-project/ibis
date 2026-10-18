@@ -206,6 +206,9 @@ runs with autocommit enabled.
   and map operations) raise `OperationNotDefinedError` when compiled.
 - **Emoji**: `ibm_db` can segfault when fetching emoji characters, so avoid
   querying them with this backend.
+- **Python versions**: The `db2-sqlglot-dialect` package that the backend
+  depends on documents support for Python 3.10 to 3.12. The Db2 backend is
+  not tested on Python 3.13 or 3.14.
 
 ## Example Usage
 
