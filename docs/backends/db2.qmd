@@ -205,7 +205,18 @@ runs with autocommit enabled.
   `ArgMin`, `ArgMax`, `Mode`, `First`, `Last`, `IsNan`, `Strftime`, and array
   and map operations) raise `OperationNotDefinedError` when compiled.
 - **Emoji**: `ibm_db` can segfault when fetching emoji characters, so avoid
-  querying them with this backend.
+  querying them with this backend. Characters outside the Basic Multilingual
+  Plane (such as emoji) also corrupt the statement text when used in a SQL
+  literal.
+- **String length**: `string` columns map to `VARCHAR(32672)`, the longest
+  `VARCHAR` Db2 allows. Longer values fail with `SQL0302N`.
+- **NaN and infinity**: `DOUBLE` and `REAL` columns can't store `NaN` or
+  infinity, so inserting them fails with `SQL0302N`.
+- **Division by zero**: Dividing by zero raises `SQL0801N` instead of
+  returning `NULL` or infinity.
+- **Long literal aliases**: An unnamed string literal longer than about 120
+  characters fails with `SQL0107N`, because its text becomes the column name.
+  Give it a name with `.name(...)`.
 - **Python versions**: The `db2-sqlglot-dialect` package that the backend
   depends on documents support for Python 3.10 to 3.12. The Db2 backend is
   not tested on Python 3.13 or 3.14.

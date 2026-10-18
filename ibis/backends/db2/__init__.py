@@ -771,7 +771,7 @@ class Backend(SQLBackend):
                     raise exc.UnsupportedBackendType(
                         f"Unsupported Db2 result column type: {kind!r}"
                     )
-                fields[ibm_db.field_name(stmt, i).lower()] = ibis_type
+                fields[ibm_db.field_name(stmt, i)] = ibis_type
             return sch.Schema(fields)
         finally:
             ibm_db.free_stmt(stmt)
