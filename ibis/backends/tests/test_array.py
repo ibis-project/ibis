@@ -165,6 +165,11 @@ def test_array_concat_scalar(con, op):
     reason="doesn't support nullable arrays",
 )
 @pytest.mark.notyet(
+    ["chdb"],
+    raises=RuntimeError,
+    reason="doesn't support nullable arrays",
+)
+@pytest.mark.notyet(
     ["bigquery"],
     raises=(AssertionError, ValueError),
     reason=(
@@ -183,7 +188,7 @@ def test_array_concat_with_null(con, op):
 
 
 @pytest.mark.notyet(
-    ["clickhouse", "bigquery"],
+    ["clickhouse", "chdb", "bigquery"],
     raises=AssertionError,
     reason="doesn't support nullable arrays, so result is not null",
 )
@@ -247,7 +252,7 @@ builtin_array = toolz.compose(
 
 @builtin_array
 @pytest.mark.notyet(
-    ["clickhouse", "postgres"],
+    ["clickhouse", "chdb", "postgres"],
     reason="backend does not support nullable nested types",
     raises=AssertionError,
 )
@@ -831,7 +836,7 @@ def test_array_position(con, a, expected_array):
             id="non-nested-null",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     raises=AssertionError,
                     reason="clickhouse does not support nullable nested types",
                 ),
@@ -870,7 +875,7 @@ def test_array_remove(con, input, expected):
     reason="BigQuery doesn't support arrays with null elements",
 )
 @pytest.mark.notyet(
-    ["clickhouse"],
+    ["clickhouse", "chdb"],
     raises=(AssertionError, TypeError),
     reason="clickhouse doesn't support nullable array types",
 )
@@ -1128,6 +1133,11 @@ def test_zip(backend, nargs):
     raises=ClickHouseDatabaseError,
     reason="clickhouse nested types can't be null",
 )
+@pytest.mark.notyet(
+    "chdb",
+    raises=RuntimeError,
+    reason="clickhouse nested types can't be null",
+)
 @pytest.mark.never(
     "bigquery",
     raises=AssertionError,
@@ -1243,7 +1253,7 @@ def flatten_data():
             id="nulls_only",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 ),
@@ -1255,7 +1265,7 @@ def flatten_data():
             id="mixed_nulls",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["clickhouse", "chdb"],
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 ),
@@ -1334,6 +1344,7 @@ def test_range_start_stop_step(con, start, stop, step):
 @pytest.mark.notyet(
     ["clickhouse"], raises=ClickHouseDatabaseError, reason="not supported upstream"
 )
+@pytest.mark.notyet(["chdb"], raises=RuntimeError, reason="not supported upstream")
 @pytest.mark.notyet(
     ["datafusion"], raises=com.OperationNotDefinedError, reason="not supported upstream"
 )
@@ -1485,7 +1496,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
                 pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(
-                    ["clickhouse", "snowflake"],
+                    ["clickhouse", "chdb", "snowflake"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notimpl(
@@ -1550,7 +1561,7 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(
-                    ["clickhouse", "snowflake"],
+                    ["clickhouse", "chdb", "snowflake"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notyet(
@@ -1801,6 +1812,7 @@ def _agg_with_nulls(agg, x):
                     [
                         "athena",
                         "bigquery",
+                        "chdb",
                         "clickhouse",
                         "databricks",
                         "polars",
