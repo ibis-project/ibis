@@ -47,6 +47,10 @@ class Db2Generator(Generator):
         # Db2's STDDEV is the population standard deviation; STDDEV_SAMP is
         # the sample one that other engines mean by STDDEV.
         exp.Stddev: lambda self, e: self.func("STDDEV_SAMP", e.this),
+        # Likewise, Db2's VARIANCE is the population variance; VAR_SAMP and
+        # VAR_POP are the explicit sample and population forms.
+        exp.Variance: lambda self, e: self.func("VAR_SAMP", e.this),
+        exp.VariancePop: lambda self, e: self.func("VAR_POP", e.this),
     }
 
     # Db2 rejects the RECURSIVE keyword (SQL0104N) and requires explicit
@@ -277,7 +281,7 @@ class Db2Compiler(SQLGlotCompiler):
             ops.StringContains,  # → visit_StringContains (LOCATE)
             ops.ApproxCountDistinct,  # → visit_ApproxCountDistinct (COUNT DISTINCT)
             ops.RandomUUID,  # → visit_RandomUUID (GENERATE_UUID)
-            ops.Median,  # → visit_Median (already implemented)
+            ops.Median,  # → visit_Median (MEDIAN)
             ops.RegexSearch,  # → visit_RegexSearch (REGEXP_LIKE)
             ops.RegexExtract,  # → visit_RegexExtract (REGEXP_SUBSTR)
             ops.RandomScalar,  # → visit_RandomScalar (RAND())

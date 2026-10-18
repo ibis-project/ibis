@@ -450,7 +450,6 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
             id="var",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
         ),
         param(
@@ -465,7 +464,6 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
             id="var_pop",
             marks=[
                 pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
