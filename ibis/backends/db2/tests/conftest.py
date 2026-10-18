@@ -67,6 +67,10 @@ class TestConf(ServiceBackendTest):
     service_name = "db2"
     deps = ("ibm_db", "ibm_db_dbi")
 
+    @staticmethod
+    def format_table(name: str) -> str:
+        return f'"{name}"'
+
     @property
     def test_files(self) -> Iterable[Path]:
         # Db2 data loading is done entirely in Python (_load_data).
