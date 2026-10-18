@@ -44,7 +44,32 @@ class Db2Generator(Generator):
             if e.args.get("separator")
             else self.sql(exp.Literal.string(",")),
         ),
+        # Db2's STDDEV is the population standard deviation; STDDEV_SAMP is
+        # the sample one that other engines mean by STDDEV.
+        exp.Stddev: lambda self, e: self.func("STDDEV_SAMP", e.this),
     }
+
+    # Db2 rejects the RECURSIVE keyword (SQL0104N) and requires explicit
+    # column names on a recursive common table expression (SQL0343N).
+    CTE_RECURSIVE_KEYWORD_REQUIRED = False
+
+    def cte_sql(self, expression: exp.CTE) -> str:
+        alias = expression.args.get("alias")
+        with_ = expression.parent
+        if (
+            alias is not None
+            and not alias.args.get("columns")
+            and with_ is not None
+            and with_.args.get("recursive")
+        ):
+            alias.set(
+                "columns",
+                [
+                    exp.to_identifier(name, quoted=True)
+                    for name in expression.this.named_selects
+                ],
+            )
+        return super().cte_sql(expression)
 
     # Only Ibis-specific overrides — no **Generator.TYPE_MAPPING spread.
     TYPE_MAPPING = {
@@ -289,6 +314,16 @@ class Db2Compiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to, **kwargs):
         """Visit a Cast operation."""
+        if op.arg.dtype.is_boolean() and to.is_string():
+            # CAST(boolean AS VARCHAR) renders TRUE/FALSE; use the lowercase
+            # rendering that the other backends produce. NULL matches neither
+            # branch, so it stays NULL.
+            return sge.Case(
+                ifs=[
+                    sge.If(this=arg, true=sge.Literal.string("true")),
+                    sge.If(this=sge.Not(this=arg), true=sge.Literal.string("false")),
+                ]
+            )
         # Db2 uses CAST syntax
         return self.cast(arg, to)
 
