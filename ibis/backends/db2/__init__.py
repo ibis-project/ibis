@@ -605,6 +605,23 @@ class Backend(SQLBackend):
             pass
         self._connection.commit()
 
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
+        """Delete all rows from a table.
+
+        Parameters
+        ----------
+        name : str
+            Table name
+        database : str, optional
+            Schema name
+        """
+        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
+        # Db2 does not accept a bare TRUNCATE TABLE; IMMEDIATE is required.
+        with self._safe_raw_sql(f"TRUNCATE TABLE {full_name} IMMEDIATE"):
+            pass
+
     def insert(
         self,
         name: str,
@@ -637,8 +654,7 @@ class Backend(SQLBackend):
             # Commit any open transaction first to ensure TRUNCATE can be first statement
             self._connection.commit()
             # TRUNCATE TABLE ... IMMEDIATE must be first statement in transaction
-            with self._safe_raw_sql(f"TRUNCATE TABLE {full_name} IMMEDIATE"):
-                pass
+            self.truncate_table(name, database=database)
             # Commit the TRUNCATE to complete the transaction
             self._connection.commit()
 
