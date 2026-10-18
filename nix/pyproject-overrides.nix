@@ -133,15 +133,19 @@ in
     attrs:
     let
       pysparkVersion = lib.versions.majorMinor attrs.version;
-      icebergVersion = "1.10.1";
+      icebergVersion = "1.12.0";
       jarSpecs = {
+        "4.1" = {
+          scalaVersion = "2.13";
+          hash = "sha256-MSPDeYr2Qt1TcjCSNUjgE+9BzCi2Ym5SJYCM9WcKD4I=";
+        };
         "4.0" = {
           scalaVersion = "2.13";
-          hash = "sha256-IZKgiB7Q9Xc7WoOogg0rCyBpvuwgMChkOhwzhVEAfwk=";
+          hash = "sha256-P1DpPo7TIq4NoOOA8bbCcRZAQynGLlXwWGaXsbg3gwY=";
         };
         "3.5" = {
           scalaVersion = "2.12";
-          hash = "sha256-OeoJ5sA1UKMAudmrSYlJg20tQ05EHaTBKpQ6CG45aUA=";
+          hash = "sha256-jdjJDlTtGiDyRhMJ0EeiVe5WOC63wKRhYrJ6STb9htw=";
         };
       };
       jarInfo = jarSpecs."${pysparkVersion}";
