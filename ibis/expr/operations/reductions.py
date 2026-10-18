@@ -18,7 +18,36 @@ from ibis.expr.operations.sortkeys import SortKey  # noqa: TC001
 
 @public
 class Reduction(Value):
-    """Base class for reduction operations."""
+    """Base class for operations that combine many rows into one value.
+
+    SQL calls these aggregate functions. The result is always a scalar,
+    whatever the shape of the inputs.
+
+    Examples
+    --------
+    - `ops.Sum`, `ops.Mean`, `ops.Max`, and `ops.CountDistinct` reduce one
+      column to one value.
+    - `ops.Correlation` and `ops.Covariance` reduce two columns to one value.
+    - `ops.First`, `ops.Last`, and `ops.ArrayCollect` take an `order_by`, since
+      their result depends on the order of the rows.
+    - `ops.AggUDF` (from `@ibis.udf.agg`) and `ops.ReductionVectorizedUDF`
+      are user-defined reductions.
+
+    Inside `Table.aggregate`, a reduction produces one value per group. Used
+    in `.over(...)`, or in `Table.select` next to columns that are not
+    reductions (for example `t.x - t.x.mean()`), it gets wrapped in an
+    `ops.WindowFunction` and produces one value per row.
+
+    These are not reductions:
+
+    - `ops.Aggregate` is a relation: the whole `GROUP BY` query, not a
+      function within it.
+    - `ops.Analytic` subclasses like `ops.RowNumber` and `ops.Lag` produce
+      one value per row and are only valid over a window.
+    - `ops.ArrayMax` and `ops.ArraySum` combine the elements of one array
+      value, so they produce one value per row.
+    - Elementwise operations like `ops.Abs` produce one value per row.
+    """
 
     shape = ds.scalar
 
