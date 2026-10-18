@@ -58,6 +58,7 @@ class TestConf(ServiceBackendTest):
     """
 
     check_dtype = False
+    force_sort = True  # Db2 does not guarantee row order without ORDER BY
     returned_timestamp_unit = "s"
     supports_arrays = False
     supports_structs = False
