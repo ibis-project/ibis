@@ -452,6 +452,47 @@ def test_convert_dataframe_with_timezone():
     tm.assert_frame_equal(expected, result)
 
 
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        param(
+            [
+                np.array([1.0, 3.0]),
+                np.array([np.nan, 1.0, 3.0]),
+                np.array([42.0]),
+                np.array([]),
+                np.array([np.nan]),
+                None,
+            ],
+            [[1, 3], [None, 1, 3], [42], [], [None], None],
+            id="numpy_nan",
+        ),
+        param(
+            [pd.array([1, pd.NA, 3], dtype="Int64")],
+            [[1, None, 3]],
+            id="pandas_na",
+        ),
+        param(
+            [[[None, None, None], [1, 2]]],
+            [[[None, None, None], [1, 2]]],
+            id="jagged",
+        ),
+    ],
+)
+def test_convert_array_of_int(data, expected):
+    df = pd.DataFrame({"a": data})
+    schema = sch.Schema({"a": dt.Array(dt.int64)})
+
+    result = PandasData.convert_table(df, schema)["a"].tolist()
+
+    assert result == expected
+    for row in result:
+        if row is None:
+            continue
+        for value in row:
+            assert value is None or isinstance(value, (int, list))
+
+
 def test_schema_doesnt_match_input_columns():
     df = pd.DataFrame({"x": [1], "y": [2]})
     schema = sch.Schema({"a": "int64", "b": "int64"})

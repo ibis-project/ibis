@@ -1275,11 +1275,6 @@ def test_integer_to_timestamp(backend, con, unit):
                     ),
                     raises=SnowflakeProgrammingError,
                 ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=ValueError,
-                    reason="Datetime formatting style is not supported.",
-                ),
             ],
         ),
         param(
@@ -1344,24 +1339,29 @@ def test_string_as_timestamp(alltypes, fmt):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
+@pytest.mark.parametrize(
+    ("method", "value", "fmt"),
+    [
+        param("as_date", "2021-01-02", "%Y-%m-%d", id="date"),
+        param(
+            "as_timestamp", "2021-01-02 03:04:05", "%Y-%m-%d %H:%M:%S", id="timestamp"
+        ),
+    ],
+)
 @pytest.mark.notyet(
     ["materialize"],
     raises=PsycoPgInternalError,
-    reason="Materialize doesn't support to_timestamp(text, format) - backend limitation",
+    reason="Materialize doesn't support to_date/to_timestamp with a format",
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-def test_string_as_timestamp_with_time(con):
-    # Regression test: a format with a time component exercises ``%M`` (minutes),
-    # which collides with the month-name token in MySQL/Trino-family format codes
-    # (minutes is ``%i``).  Previously MySQL/Trino/SingleStoreDB read the minutes
-    # field as a month name and silently returned NULL (or errored on Trino).
-    expr = ibis.literal("2021-01-02 03:04:05").as_timestamp("%Y-%m-%d %H:%M:%S")
-    result = con.execute(expr)
-    assert result.replace(tzinfo=None) == datetime.datetime(2021, 1, 2, 3, 4, 5)
+def test_string_as_temporal_with_format(con, method, value, fmt):
+    # `%M` (minutes) reads as a month name in MySQL/Trino-family formats, where
+    # it silently returned NULL; Flink needs a Java pattern, not a strftime one.
+    expr = getattr(ibis.literal(value), method)(fmt)
+    assert con.execute(expr).strftime(fmt) == value
 
 
 @pytest.mark.parametrize(
@@ -1371,11 +1371,6 @@ def test_string_as_timestamp_with_time(con):
         param(
             "%m/%d/%y",
             id="mysql_format",
-            marks=pytest.mark.never(
-                ["flink"],
-                raises=ValueError,
-                reason="Datetime formatting style is not supported.",
-            ),
         ),
         param(
             "MM/dd/yy",
@@ -1457,11 +1452,6 @@ def build_single_digit_date_col(con):
 @pytest.mark.notimpl(
     ["clickhouse", "sqlite", "datafusion", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notyet(
-    ["flink"],
-    raises=AssertionError,
-    reason="Flink misinterprets strftime-style format strings, producing a wrong date",
 )
 def test_string_as_date_single_digit_month_day(backend, con, expr_fn):
     expr = expr_fn(con).name("parsed_date").as_table()
@@ -2147,6 +2137,19 @@ def test_large_timestamp(con):
 @pytest.mark.parametrize(
     ("ts", "scale", "unit"),
     [
+        param(
+            "2023-01-07 13:20:05",
+            0,
+            "s",
+            id="s",
+            marks=[
+                pytest.mark.notyet(
+                    ["athena"],
+                    reason="only supports millisecond precision",
+                    raises=PyAthenaOperationalError,
+                ),
+            ],
+        ),
         param("2023-01-07 13:20:05.561", 3, "ms", id="ms"),
         param(
             "2023-01-07 13:20:05.561021",
@@ -2244,6 +2247,49 @@ def test_timestamp_precision_output(con, ts, scale, unit):
     result = con.execute(expr)
     expected = pd.Timestamp(ts).floor(unit)
     assert result == expected
+
+
+@pytest.mark.notimpl(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="ORA-01843: invalid month was specified",
+)
+@pytest.mark.notyet(
+    ["athena", "trino"],
+    reason="can't compare a timestamp with a string",
+    raises=(PyAthenaOperationalError, TrinoUserError),
+)
+def test_timestamp_between_string_bounds_seconds(con):
+    t = ibis.memtable({"s": ["2023-01-07 13:20:05.123"]})
+    expr = t.s.cast(dt.Timestamp(scale=0)).between(
+        "2023-01-07 13:20:05", "2023-01-07 13:20:06"
+    )
+    assert con.execute(expr).tolist() == [True]
+
+
+@pytest.mark.notimpl(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="ORA-01843: invalid month was specified",
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=ValueError,
+    reason="TIMESTAMP keeps nanoseconds, which psycopg2 can't fit in a datetime",
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=SingleStoreDBOperationalError,
+    reason="doesn't support nanoseconds",
+)
+def test_cast_string_to_timestamp_keeps_default_precision(con):
+    pa = pytest.importorskip("pyarrow")
+
+    # sub-microsecond input must not break exporting an unscaled timestamp,
+    # whose expected type is microsecond precision
+    t = ibis.memtable({"s": ["2023-01-07 13:20:05.561000231"]})
+    result = con.to_pyarrow(t.s.cast("timestamp"))
+    assert result.type == pa.timestamp("us")
 
 
 @pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)

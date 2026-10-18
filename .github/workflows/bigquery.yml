@@ -69,7 +69,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: actions/create-github-app-token@v3.2.0
+      - uses: actions/create-github-app-token@v3.3.0
         id: generate_token
         with:
           app-id: ${{ secrets.DOCS_BOT_APP_ID }}
@@ -83,13 +83,13 @@ jobs:
           github_token: ${{ steps.generate_token.outputs.token }}
 
       - name: install python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v7.6.0
+        uses: astral-sh/setup-uv@v10.3.0
 
       - uses: extractions/setup-just@v3
         env:
