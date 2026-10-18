@@ -54,7 +54,7 @@ services:
       test:
         - CMD-SHELL
         - sdb-admin query --host 127.0.0.1 --user root --password ibis_testing --port 3306 --sql 'select 1'
-    image: ghcr.io/singlestore-labs/singlestoredb-dev:0.2.85
+    image: ghcr.io/singlestore-labs/singlestoredb-dev:0.2.86
     ports:
       - 3307:3306 # Use 3307 to avoid conflict with MySQL
       - 9089:9000 # Data API (use 9089 to avoid conflicts)
@@ -109,7 +109,7 @@ services:
       - mssql
 
   hive-metastore-db:
-    image: postgres:18.4-alpine
+    image: postgres:18.6-alpine
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -199,7 +199,7 @@ services:
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
   druid-postgres:
-    image: postgres:18.4-alpine
+    image: postgres:18.6-alpine
     container_name: druid-postgres
     environment:
       POSTGRES_PASSWORD: FoolishPassword
@@ -500,7 +500,7 @@ services:
         - kudu cluster ksck kudu:7051
 
   impala-hive-metastore:
-    image: apache/impala:4.5.0-impala_quickstart_hms
+    image: apache/impala:4.5.3-impala_quickstart_hms
     container_name: impala-hive-metastore
     command: hms
     volumes:
@@ -525,7 +525,7 @@ services:
           - impala-hive-metastore.impala
 
   statestored:
-    image: apache/impala:4.5.0-statestored
+    image: apache/impala:4.5.3-statestored
     ports:
       - 25010:25010 # Web debug UI
     command:
@@ -544,7 +544,7 @@ services:
       - impala
 
   catalogd:
-    image: apache/impala:4.5.0-catalogd
+    image: apache/impala:4.5.3-catalogd
     depends_on:
       impala-hive-metastore:
         condition: service_started
@@ -573,7 +573,7 @@ services:
       - impala
 
   impala:
-    image: apache/impala:4.5.0-impalad_coord_exec
+    image: apache/impala:4.5.3-impalad_coord_exec
     depends_on:
       statestored:
         condition: service_healthy
