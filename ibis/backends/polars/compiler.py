@@ -146,30 +146,40 @@ def _cast(op, strict=True, **kw):
     elif to.is_date():
         if not strict:
             raise NotImplementedError(f"Unsupported try_cast to type: {to!r}")
-        if dtype.is_string():
-            return arg.str.strptime(pl.Date, "%Y-%m-%d")
     elif to.is_timestamp():
         if not strict:
             raise NotImplementedError(f"Unsupported try_cast to type: {to!r}")
 
-        time_zone = to.timezone
-        time_unit = _TIMESTAMP_SCALE_TO_UNITS.get(to.scale, "us")
-
         if dtype.is_numeric():
-            typ = pl.Datetime(time_unit="us", time_zone=time_zone)
+            time_unit = _TIMESTAMP_SCALE_TO_UNITS.get(to.scale, "us")
+            typ = pl.Datetime(time_unit="us", time_zone=to.timezone)
             arg = (arg * 1_000_000).cast(typ)
             if time_unit != "us":
                 arg = arg.dt.truncate(f"1{time_unit}")
             return arg.alias(op.name)
-        elif dtype.is_string():
-            typ = pl.Datetime(time_unit=time_unit, time_zone=time_zone)
-            arg = arg.str.strptime(typ)
-            if time_unit == "s":
-                return arg.dt.truncate("1s")
-            return arg
+
+    if to.is_temporal() and dtype.is_string():
+        return _cast_string_to_temporal(arg, to, strict=strict)
 
     typ = PolarsType.from_ibis(to)
     return arg.cast(typ, strict=strict)
+
+
+def _cast_string_to_temporal(arg, to, strict=True):
+    # polars doesn't support casting strings to temporal types
+    if to.is_date():
+        return arg.str.strptime(pl.Date, "%Y-%m-%d", strict=strict)
+    elif to.is_timestamp():
+        time_unit = _TIMESTAMP_SCALE_TO_UNITS.get(to.scale, "us")
+        # polars has no second-precision datetime type
+        if time_unit == "s":
+            typ = pl.Datetime(time_unit="us", time_zone=to.timezone)
+            return arg.str.strptime(typ, strict=strict).dt.truncate("1s")
+        typ = pl.Datetime(time_unit=time_unit, time_zone=to.timezone)
+        return arg.str.strptime(typ, strict=strict)
+    elif to.is_time():
+        return arg.str.strptime(pl.Time, "%H:%M:%S%.f", strict=strict)
+    raise com.OperationNotDefinedError(f"Unsupported cast from string to {to!r}")
 
 
 @translate.register(ops.Field)
@@ -1099,17 +1109,15 @@ def array_collect(op, in_group_by=False, **kw):
 @translate.register(ops.ArrayFlatten)
 def array_flatten(op, **kw):
     result = translate(op.arg, **kw)
-    return (
-        pl.when(result.is_null())
-        .then(None)
-        .when(result.list.len() == 0)
-        .then([])
-        # polars doesn't have an efficient API (yet?) for removing one level of
-        # nesting from an array so we use elementwise evaluation
-        #
-        # https://github.com/ibis-project/ibis/issues/10135
-        .otherwise(result.list.eval(pl.element().flatten()))
-    )
+    # polars doesn't have an efficient API (yet?) for removing one level of
+    # nesting from an array so we use elementwise evaluation
+    #
+    # https://github.com/ibis-project/ibis/issues/10135
+    #
+    # Null and empty inner arrays are filtered out before exploding, because
+    # `explode`'s handling of them differs between polars versions
+    element = pl.element()
+    return result.list.eval(element.filter(element.list.len() > 0).explode())
 
 
 _date_methods = {
@@ -1173,10 +1181,9 @@ _unary = {
 @translate.register(ops.DayOfWeekName)
 def day_of_week_name(op, **kw):
     index = translate(op.arg, **kw).dt.weekday() - 1
-    arg = None
-    for i, name in enumerate(calendar.day_name):
-        arg = pl.when(index == i).then(pl.lit(name)).otherwise(arg)
-    return arg
+    return index.replace_strict(
+        dict(enumerate(calendar.day_name)), return_dtype=pl.String
+    )
 
 
 @translate.register(ops.Unary)
@@ -1217,18 +1224,16 @@ def between(op, **kw):
 
     dtype = PolarsType.from_ibis(arg_dtype)
 
-    lower_bound = op.lower_bound
-    lower = translate(lower_bound, **kw)
+    def cast_bound(bound):
+        value = translate(bound, **kw)
+        if bound.dtype == arg_dtype:
+            return value
+        if bound.dtype.is_string() and arg_dtype.is_temporal():
+            return _cast_string_to_temporal(value, arg_dtype)
+        return value.cast(dtype)
 
-    if lower_bound.dtype != arg_dtype:
-        lower = lower.cast(dtype)
-
-    upper_bound = op.upper_bound
-    upper = translate(upper_bound, **kw)
-
-    if upper_bound.dtype != arg_dtype:
-        upper = upper.cast(dtype)
-
+    lower = cast_bound(op.lower_bound)
+    upper = cast_bound(op.upper_bound)
     return arg.is_between(lower, upper, closed="both")
 
 

@@ -17,6 +17,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
+from ibis.backends.tests.conftest import NO_TIME_SUPPORT_MARKS
 from ibis.backends.tests.errors import (
     ArrowInvalid,
     ArrowTypeError,
@@ -1885,6 +1886,45 @@ bool_to_string_notimpl = [
             id="bool_to_string_false",
         ),
         param(
+            "string",
+            "time",
+            "01:02:03",
+            datetime.time(1, 2, 3),
+            marks=[
+                *NO_TIME_SUPPORT_MARKS,
+                pytest.mark.notimpl(
+                    ["sqlite"],
+                    raises=AssertionError,
+                    reason="SQLite returns Timedelta from execution",
+                ),
+                pytest.mark.notimpl(["pyspark"], raises=AttributeError),
+                pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
+            ],
+            id="string_to_time",
+        ),
+        param(
+            "string",
+            "time",
+            "01:02:03.5",
+            datetime.time(1, 2, 3, 500000),
+            marks=[
+                *NO_TIME_SUPPORT_MARKS,
+                pytest.mark.notimpl(
+                    ["mysql", "singlestoredb", "flink"],
+                    raises=AssertionError,
+                    reason="casts to TIME, which defaults to second precision",
+                ),
+                pytest.mark.notimpl(
+                    ["sqlite"],
+                    raises=AssertionError,
+                    reason="SQLite returns Timedelta from execution",
+                ),
+                pytest.mark.notimpl(["pyspark"], raises=AttributeError),
+                pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
+            ],
+            id="string_to_time_subsecond",
+        ),
+        param(
             "array<int>",
             "array<string>",
             [0, 1, 2],
@@ -1986,6 +2026,15 @@ def test_cast_computed_bool_to_string(alltypes, df) -> None:
         param("0", "int", 0),
         param("0.0", "float", 0.0),
         param(
+            "01:02:03",
+            "time",
+            datetime.time(1, 2, 3),
+            marks=[
+                *NO_TIME_SUPPORT_MARKS,
+                pytest.mark.notimpl(["pyspark"], raises=AttributeError),
+            ],
+        ),
+        param(
             datetime.datetime(2023, 1, 1),
             "int",
             1672531200,
@@ -2025,7 +2074,6 @@ def test_try_cast(con, from_val, to_type, expected):
         "datafusion",
         "druid",
         "exasol",
-        "mysql",
         "singlestoredb",
         "oracle",
         "postgres",
@@ -2041,11 +2089,19 @@ def test_try_cast(con, from_val, to_type, expected):
 @pytest.mark.parametrize(
     ("from_val", "to_type"),
     [
-        param("a", "int"),
+        param("a", "int", marks=pytest.mark.notimpl(["mysql"])),
+        param(
+            "a",
+            "time",
+            marks=pytest.mark.notyet(
+                ["athena"], raises=PyAthenaOperationalError, reason="no time type"
+            ),
+        ),
         param(
             datetime.datetime(2023, 1, 1),
             "int",
             marks=[
+                pytest.mark.notimpl(["mysql"]),
                 pytest.mark.never(
                     ["clickhouse", "pyspark", "flink", "databricks"],
                     reason="casts to 1672531200",
