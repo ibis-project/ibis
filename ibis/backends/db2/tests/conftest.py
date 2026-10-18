@@ -76,10 +76,11 @@ class TestConf(ServiceBackendTest):
     def _load_data(self, **_: Any) -> None:
         """Load the standard ibis test tables into Db2.
 
+        The USER TEMPORARY tablespaces needed for GLOBAL TEMPORARY tables are
+        created by ``docker/db2/tablespaces.sh`` when the container starts.
+
         Steps
         -----
-        0. Create USER TEMPORARY tablespaces required for GLOBAL TEMPORARY
-           tables (create_table(temp=True) and .cache()).
         1. Execute every DDL statement from ``ci/schema/db2.sql`` one at a
            time, committing after each — ibm_db_dbi does not support
            multi-statement batches.
@@ -87,44 +88,6 @@ class TestConf(ServiceBackendTest):
            5 000 rows, committing each batch.
         """
         import pandas as pd
-
-        # Step 0: USER TEMPORARY tablespaces for GLOBAL TEMPORARY tables.
-        #
-        # DB2 will not use a REGULAR tablespace for CREATE GLOBAL TEMPORARY
-        # TABLE — it requires a USER TEMPORARY tablespace (SQL0286N otherwise).
-        # The CI error asked for page size >= 32768, which means functional_alltypes
-        # (many wide VARCHAR columns) pushes the row width past 4K-page capacity,
-        # so we need a 32K user temporary tablespace backed by a matching bufferpool.
-        #
-        # Regular tablespaces (IBIS_4K / IBIS_32K) are NOT recreated here —
-        # VARCHAR(255) fits the default REGULAR tablespace without any extras.
-        #
-        # SQL0601N / -601 = object already exists → safe to ignore on re-runs.
-        _user_temp_stmts = [
-            "CREATE BUFFERPOOL IBIS_BP32K SIZE 250 PAGESIZE 32K",
-            (
-                "CREATE USER TEMPORARY TABLESPACE IBIS_TEMP_4K"
-                " PAGESIZE 4K MANAGED BY AUTOMATIC STORAGE"
-            ),
-            (
-                "CREATE USER TEMPORARY TABLESPACE IBIS_TEMP_32K"
-                " PAGESIZE 32K MANAGED BY AUTOMATIC STORAGE"
-                " BUFFERPOOL IBIS_BP32K"
-            ),
-        ]
-        for stmt in _user_temp_stmts:
-            try:
-                with self.connection._safe_raw_sql(stmt):
-                    pass
-                self.connection._connection.commit()
-            except Exception as e:  # noqa: PERF203
-                err_str = str(e)
-                if (
-                    "SQL0601N" not in err_str
-                    and "-601" not in err_str
-                    and "already exists" not in err_str.lower()
-                ):
-                    raise
 
         # Step 1: DDL — uses self.ddl_script (BackendTest.ddl_script reads
         # ci/schema/db2.sql and splits on ";", same as every other backend).

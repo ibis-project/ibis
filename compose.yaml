@@ -413,11 +413,12 @@ services:
       timeout: 30s
       test:
         - CMD-SHELL
-        - su - db2inst1 -c "db2 connect to ibistest user db2inst1 using ibistest && db2 'SELECT 1 FROM SYSIBM.SYSDUMMY1'"
+        - su - db2inst1 -c "db2 connect to ibistest user db2inst1 using ibistest && db2 -x \"SELECT COUNT(*) FROM SYSCAT.TABLESPACES WHERE TBSPACE IN ('IBIS_TEMP_4K','IBIS_TEMP_32K')\" | grep -q '^ *2 *$'"
     networks:
       - db2
     volumes:
       - db2:/database
+      - $PWD/docker/db2:/var/custom:ro
 
   exasol:
     image: exasol/docker-db:2025.2.1
