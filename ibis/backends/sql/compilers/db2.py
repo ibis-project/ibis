@@ -92,6 +92,10 @@ class Db2Generator(Generator):
         exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
     }
 
+    def interval_sql(self, expression: exp.Interval) -> str:
+        """Render a Db2 labeled duration: `(n) DAYS`, not `INTERVAL n DAY`."""
+        return f"({self.sql(expression, 'this')}) {self.sql(expression, 'unit')}"
+
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         """Generate CAST expression for Db2."""
         return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
@@ -221,6 +225,7 @@ class Db2Compiler(SQLGlotCompiler):
         ops.RegexSplit,
         # date/time
         ops.DateFromYMD,
+        ops.TimeDelta,
         ops.ExtractEpochSeconds,
         ops.Strftime,
         # numeric
@@ -484,6 +489,76 @@ class Db2Compiler(SQLGlotCompiler):
         if default is not None:
             expressions.append(default)
         return sge.Anonymous(this="LEAD", expressions=expressions)
+
+    def visit_NonNullLiteral(self, op, *, value, dtype):
+        if dtype.is_date():
+            return self.f.date(value.isoformat())
+        if dtype.is_interval():
+            return self._make_interval(sge.convert(value), dtype.unit)
+        return None  # fall back to the default literal handling
+
+    def _make_interval(self, arg, unit):
+        # Db2 labeled durations have no WEEK, QUARTER or MILLISECOND label.
+        factor, label = {
+            "year": (1, "YEAR"),
+            "quarter": (3, "MONTH"),
+            "month": (1, "MONTH"),
+            "week": (7, "DAY"),
+            "day": (1, "DAY"),
+            "hour": (1, "HOUR"),
+            "minute": (1, "MINUTE"),
+            "second": (1, "SECOND"),
+            "millisecond": (1000, "MICROSECOND"),
+            "microsecond": (1, "MICROSECOND"),
+        }.get(unit.singular, (None, None))
+        if label is None:
+            raise com.UnsupportedOperationError(
+                f"Db2 has no {unit.singular} labeled duration"
+            )
+        if factor != 1:
+            arg = arg * factor
+        return sge.Interval(this=arg, unit=self.v[label])
+
+    # `a - b` on Db2 dates, timestamps and times is a packed-decimal duration
+    # (YYYYMMDD...), not a count of days or seconds.
+    def visit_DateDiff(self, op, *, left, right):
+        return self.f.days_between(left, right)
+
+    def visit_TimestampDiff(self, op, *, left, right):
+        return self.f.seconds_between(left, right)
+
+    def visit_TimeDiff(self, op, *, left, right):
+        return self.f.midnight_seconds(left) - self.f.midnight_seconds(right)
+
+    def visit_TimestampDelta(self, op, *, part, left, right):
+        # Count the unit boundaries crossed: truncate both sides to the unit,
+        # then take the exact difference. `*_BETWEEN` alone would count whole
+        # elapsed units instead.
+        if not isinstance(part, sge.Literal):
+            raise com.UnsupportedOperationError(
+                "Only literal `part` values are supported for delta"
+            )
+        between, fmt = {
+            "year": ("YEARS_BETWEEN", "YEAR"),
+            "month": ("MONTHS_BETWEEN", "MM"),
+            "week": ("WEEKS_BETWEEN", "IW"),
+            "day": ("DAYS_BETWEEN", "DD"),
+            "hour": ("HOURS_BETWEEN", "HH"),
+            "minute": ("MINUTES_BETWEEN", "MI"),
+            "second": ("SECONDS_BETWEEN", "SS"),
+        }.get(part.this, (None, None))
+        if between is None or (
+            isinstance(op, ops.DateDelta) and fmt in ("HH", "MI", "SS")
+        ):
+            raise com.UnsupportedOperationError(
+                f"Unsupported delta part {part.this!r} for {op.left.dtype}"
+            )
+        return self.cast(
+            self.f[between](self.f.trunc(left, fmt), self.f.trunc(right, fmt)),
+            dt.int64,
+        )
+
+    visit_DateDelta = visit_TimestampDelta
 
     def visit_DateTruncate(self, op, *, arg, unit):
         """Visit a DateTruncate operation."""
