@@ -4965,6 +4965,7 @@ class Table(Expr, FixedTextJupyterMixin):
             names = self.select(names_from).distinct().to_pyarrow()
             columns = names.column_names
             names = list(zip(*(col.to_pylist() for col in names.columns)))
+            from_data = True
         else:
             if not (columns := [col.get_name() for col in names_from.expand(self)]):
                 raise com.IbisInputError(
@@ -4974,6 +4975,7 @@ class Table(Expr, FixedTextJupyterMixin):
                 (None,) if name is None else tuple(util.promote_list(name))
                 for name in names
             ]
+            from_data = False
 
         if names_sort:
             # sort NULLs and NaNs last, since neither can be compared with `<`
@@ -4990,7 +4992,14 @@ class Table(Expr, FixedTextJupyterMixin):
         names_cols_exprs = [self[col] for col in columns]
 
         for keys in names:
-            where = ibis.and_(*map(operator.eq, names_cols_exprs, keys))
+            # values computed from the data already have the column's type, so
+            # keep it on the literal (e.g., so decimals keep their scale)
+            where = ibis.and_(
+                *(
+                    col == (ibis.literal(key, type=col.type()) if from_data else key)
+                    for col, key in zip(names_cols_exprs, keys)
+                )
+            )
 
             for values_col in values_cols:
                 arg = values_agg(values_col)

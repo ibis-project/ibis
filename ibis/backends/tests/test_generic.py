@@ -4,6 +4,7 @@ import contextlib
 import datetime
 import decimal
 import sqlite3
+import sys
 from collections import Counter
 from itertools import permutations
 from operator import invert, methodcaller
@@ -2746,20 +2747,96 @@ def test_simple_pivot_wider(con, backend, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("names", "expected"),
+    ("names", "dtype", "expected"),
     [
-        pytest.param([0, 3], {"0": [3], "3": [4]}, id="int"),
-        pytest.param(["a", None], {"a": [3], "null": [4]}, id="null"),
+        param([0, 3], "int64", {"0": [3], "3": [4]}, id="int"),
+        param(["a", None], "string", {"a": [3], "null": [4]}, id="null"),
+        param([False, True], "boolean", {"false": [3], "true": [4]}, id="bool"),
+        param([0.5, 2.0], "float64", {"0.5": [3], "2.0": [4]}, id="float"),
+        param(
+            [decimal.Decimal("1.10"), decimal.Decimal("2.00")],
+            "decimal(5, 2)",
+            {"1.10": [3], "2.00": [4]},
+            id="decimal",
+            marks=[
+                pytest.mark.notyet(
+                    ["sqlite"],
+                    raises=(
+                        sqlite3.ProgrammingError,
+                        # Python 3.10 raises InterfaceError instead
+                        sqlite3.InterfaceError,
+                    ),
+                    reason="sqlite3 can't bind decimals",
+                ),
+                pytest.mark.notyet(
+                    ["exasol"],
+                    raises=TypeError,
+                    reason="pyexasol can't JSON-encode decimals when inserting rows",
+                ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=NotImplementedError,
+                    reason="decimal memtables aren't supported",
+                ),
+            ],
+        ),
+        param(
+            [datetime.date(2024, 1, 1), datetime.date(2024, 1, 2)],
+            "date",
+            {"2024-01-01": [3], "2024-01-02": [4]},
+            id="date",
+            marks=[
+                pytest.mark.notimpl(
+                    ["sqlite"],
+                    condition=sys.version_info >= (3, 12),
+                    raises=DeprecationWarning,
+                    reason="sqlite3's default date adapter is deprecated in Python 3.12",
+                ),
+                pytest.mark.notyet(
+                    ["exasol"],
+                    raises=TypeError,
+                    reason="pyexasol can't JSON-encode dates when inserting rows",
+                ),
+                pytest.mark.notimpl(
+                    ["druid"], reason="date literals compile to DATE_FROM_PARTS"
+                ),
+            ],
+        ),
+        param(
+            [datetime.datetime(2024, 1, 1, 3, 4), datetime.datetime(2024, 1, 2, 5, 6)],
+            "timestamp",
+            {"2024-01-01 03:04:00": [3], "2024-01-02 05:06:00": [4]},
+            id="timestamp",
+            marks=[
+                pytest.mark.notimpl(
+                    ["sqlite"],
+                    raises=AssertionError,
+                    reason="stored timestamps use a 'T' separator but literals use a space",
+                ),
+            ],
+        ),
     ],
 )
-def test_pivot_wider_non_string_names_from(con, backend, monkeypatch, names, expected):
+def test_pivot_wider_non_string_names_from(
+    con, backend, monkeypatch, names, dtype, expected
+):
     monkeypatch.setattr(ibis.options, "default_backend", con)
-    t = ibis.memtable({"n": names, "counted": [3, 4]})
+    t = ibis.memtable(
+        pa.table({"n": names, "counted": [3, 4]}),
+        schema={"n": dtype, "counted": "int64"},
+    )
     expr = t.pivot_wider(
         names_from="n", values_from="counted", values_agg="sum", names_sort=True
     )
     result = expr.to_pandas()
     backend.assert_frame_equal(result, pd.DataFrame(expected))
+
+
+def test_pivot_wider_null_string_collides_with_null(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    t = ibis.memtable({"n": ["apple", "null", None], "counted": [1, 2, 3]})
+    with pytest.raises(com.IbisInputError, match="Duplicate column name 'null'"):
+        t.pivot_wider(names_from="n", values_from="counted", values_agg="sum")
 
 
 def test_named_literal(con, backend):
