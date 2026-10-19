@@ -56,8 +56,15 @@ def ftname(con, ftname_raw):
 @pytest.mark.parametrize(
     "schema",
     [
-        param(None, id="implicit_schema", marks=[pytest.mark.notimpl(["druid"])]),
-        param({"s": "string", "new_col": "double"}, id="explicit_schema"),
+        param(
+            None,
+            id="implicit_schema",
+            marks=[pytest.mark.notimpl(["druid"])],
+        ),
+        param(
+            {"s": "string", "new_col": "double"},
+            id="explicit_schema",
+        ),
     ],
 )
 def test_con_dot_sql(backend, con, schema, ftname):
@@ -238,6 +245,10 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
 
 dialects = sorted(_get_backend_names())
 
+# The "db2" sqlglot dialect is only registered when the optional
+# `db2-sqlglot-dialect` package (the `db2` extra) is installed.
+DB2_DIALECT_REASON = "db2 sqlglot dialect requires the db2 extra (db2-sqlglot-dialect)"
+
 # Map backend names to SQLGlot dialect names when they differ
 BACKEND_TO_SQLGLOT_DIALECT = {
     "singlestoredb": "singlestore",
@@ -247,6 +258,8 @@ BACKEND_TO_SQLGLOT_DIALECT = {
 @pytest.mark.parametrize("dialect", dialects)
 @pytest.mark.notyet(["druid"], reason="druid doesn't respect column name case")
 def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
+    if dialect == "db2":
+        pytest.importorskip("db2_sqlglot", reason=DB2_DIALECT_REASON)
     sqlglot_dialect = BACKEND_TO_SQLGLOT_DIALECT.get(dialect, dialect)
     name = "foo2"
     foo = alltypes.select(x=_.bigint_col + 1).alias(name)
@@ -264,6 +277,8 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
 )
 @pytest.mark.notyet(["bigquery"])
 def test_con_dot_sql_transpile(backend, con, dialect, df):
+    if dialect == "db2":
+        pytest.importorskip("db2_sqlglot", reason=DB2_DIALECT_REASON)
     sqlglot_dialect = BACKEND_TO_SQLGLOT_DIALECT.get(dialect, dialect)
     t = sg.table("functional_alltypes", quoted=True)
     foo = sg.select(
@@ -551,7 +566,9 @@ def _sql_query_result(query, compiler):
 
 no_recursive_keyword = toolz.compose(
     pytest.mark.never(
-        ["mssql"], raises=AssertionError, reason="T-SQL has no RECURSIVE keyword"
+        ["mssql", "db2"],
+        raises=AssertionError,
+        reason="T-SQL and Db2 have no RECURSIVE keyword",
     ),
     pytest.mark.notyet(
         ["flink", "impala"],

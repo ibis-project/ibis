@@ -15,6 +15,7 @@ from ibis.backends.tests.errors import (
     DuckDBNotImplementedException,
     DuckDBParserException,
     ExaQueryError,
+    IbmDb2Error,
     MySQLOperationalError,
     OracleDatabaseError,
     Py4JJavaError,
@@ -314,6 +315,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
 )
 @pytest.mark.notimpl(["druid", "flink"], reason="No to_parquet support")
 @pytest.mark.notimpl(["exasol"], raises=TypeError)
+@pytest.mark.notimpl(["db2"], raises=TypeError, reason="partition_by not supported")
 def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     outparquet = tmp_path / "outhive.parquet"
     awards_players.to_parquet(outparquet, partition_by="yearID")
@@ -384,6 +386,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
         "clickhouse",
         "databricks",
         "datafusion",
+        "db2",
         "druid",
         "exasol",
         "flink",
@@ -436,13 +439,17 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             dt.Decimal(38, 9),
             pa.Decimal128Type,
             id="decimal128",
-            marks=[pytest.mark.notyet(["exasol"], raises=ExaQueryError)],
+            marks=[
+                pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
+            ],
         ),
         param(
             dt.Decimal(76, 38),
             pa.Decimal256Type,
             id="decimal256",
             marks=[
+                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
                 pytest.mark.notyet(
@@ -702,6 +709,7 @@ def test_scalar_to_memory(limit, awards_players, output_format, converter):
 mark_notyet_nulls = pytest.mark.notyet(
     [
         "clickhouse",
+        "db2",
         "exasol",
         "flink",
         "impala",

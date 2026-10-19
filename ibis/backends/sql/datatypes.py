@@ -1747,6 +1747,72 @@ class SingleStoreDBType(MySQLType):
         return super().from_string(type_string, nullable=nullable)
 
 
+class Db2Type(SqlglotType):
+    dialect = "db2dialect"
+
+    default_decimal_precision = 31
+    default_decimal_scale = 6
+
+    unknown_type_strings = FrozenDict(
+        {"decfloat": dt.float64, "graphic": dt.string, "vargraphic": dt.string}
+    )
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        expressions = [
+            sge.DataTypeParam(
+                this=sge.convert(dtype.length if dtype.length is not None else 32672)
+            )
+        ]
+        return sge.DataType(
+            this=typecode.VARCHAR, expressions=expressions, is_nested=False
+        )
+
+    @classmethod
+    def _from_ibis_Binary(cls, dtype: dt.Binary) -> sge.DataType:
+        return sge.DataType(
+            this=typecode.VARBINARY,
+            expressions=[sge.DataTypeParam(this=sge.convert(32672))],
+            is_nested=False,
+        )
+
+    @classmethod
+    def _from_ibis_Array(cls, dtype: dt.Array) -> NoReturn:
+        raise com.UnsupportedBackendType("Array types aren't supported in Db2")
+
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> NoReturn:
+        raise com.UnsupportedBackendType("Map types aren't supported in Db2")
+
+    @classmethod
+    def _from_ibis_Struct(cls, dtype: dt.Struct) -> NoReturn:
+        raise com.UnsupportedBackendType("Struct types aren't supported in Db2")
+
+    @classmethod
+    def _from_ibis_JSON(cls, dtype: dt.JSON) -> NoReturn:
+        raise com.UnsupportedBackendType("JSON types aren't supported in Db2")
+
+    @classmethod
+    def _from_ibis_Null(cls, dtype: dt.Null) -> NoReturn:
+        raise com.UnsupportedBackendType("Null types aren't supported in Db2")
+
+    @classmethod
+    def _from_ibis_UInt8(cls, dtype: dt.UInt8) -> NoReturn:
+        raise com.UnsupportedBackendType("Unsigned integers aren't supported in Db2")
+
+    @classmethod
+    def _from_ibis_UInt16(cls, dtype: dt.UInt16) -> NoReturn:
+        raise com.UnsupportedBackendType("Unsigned integers aren't supported in Db2")
+
+    @classmethod
+    def _from_ibis_UInt32(cls, dtype: dt.UInt32) -> NoReturn:
+        raise com.UnsupportedBackendType("Unsigned integers aren't supported in Db2")
+
+    @classmethod
+    def _from_ibis_UInt64(cls, dtype: dt.UInt64) -> NoReturn:
+        raise com.UnsupportedBackendType("Unsigned integers aren't supported in Db2")
+
+
 # Import backend-specific type mappers before building _TYPE_MAPPERS
 
 _TYPE_MAPPERS: dict[str, type[SqlglotType]] = {

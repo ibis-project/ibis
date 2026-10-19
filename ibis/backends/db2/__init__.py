@@ -1,0 +1,892 @@
+"""IBM Db2 backend for Ibis."""
+
+from __future__ import annotations
+
+import contextlib
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+from urllib.parse import unquote_plus
+
+import sqlglot as sg
+import sqlglot.expressions as sge
+
+import ibis.common.exceptions as exc
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
+from ibis.backends.db2.converter import Db2PandasData
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers.db2 import Db2Compiler
+
+if TYPE_CHECKING:
+    from urllib.parse import ParseResult
+
+    import pandas as pd
+
+# Result-set column kinds reported by ibm_db.field_type that map to a single
+# Ibis type, regardless of precision or scale.
+_SIMPLE_FIELD_TYPES = {
+    "bigint": dt.Int64,
+    "blob": dt.Binary,
+    "clob": dt.String,
+    "date": dt.Date,
+    "time": dt.Time,
+    "timestamp": dt.Timestamp,
+}
+
+
+class Backend(SQLBackend):
+    """IBM Db2 backend for Ibis."""
+
+    name = "db2"
+    compiler = Db2Compiler()
+    supports_temporary_tables = True
+    supports_python_udfs = False
+
+    def __init__(self, *args, **kwargs):
+        """Initialize Db2 backend."""
+        super().__init__(*args, **kwargs)
+        self._connection = None
+        self._cursor = None
+
+    @property
+    def version(self) -> str:
+        """Return the version of the Db2 server."""
+        with self._safe_raw_sql(
+            "SELECT SERVICE_LEVEL FROM SYSIBMADM.ENV_INST_INFO"
+        ) as cur:
+            result = cur.fetchone()
+            return result[0] if result else "unknown"
+
+    def do_connect(
+        self,
+        database: str,
+        hostname: str = "localhost",
+        port: int = 50000,
+        username: str | None = None,
+        password: str | None = None,
+        schema: str | None = None,
+        ssl: bool = False,
+        ssl_server_certificate: str | Path | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Connect to a Db2 database.
+
+        Parameters
+        ----------
+        database : str
+            Database name
+        hostname : str, default "localhost"
+            Hostname of Db2 server
+        port : int, default 50000
+            Port number
+        username : str, optional
+            Username for authentication
+        password : str, optional
+            Password for authentication
+        schema : str, optional
+            Default schema
+        ssl : bool, default False
+            Enable SSL/TLS encrypted connection. When ``True``, the connection
+            string includes ``SECURITY=SSL``.
+        ssl_server_certificate : str or Path, optional
+            Path to the server's SSL certificate (PEM or ARM format). Passed
+            as ``SSLServerCertificate=<path>`` in the connection string. If
+            ``ssl`` is ``True`` but this is ``None``, server certificate
+            validation is skipped (useful for self-signed certificates in dev
+            environments).
+        **kwargs
+            Additional IBM Db2 connection string key=value parameters.
+        """
+        import ibm_db_dbi
+
+        # Build connection string
+        conn_str_parts = [
+            f"DATABASE={database}",
+            f"HOSTNAME={hostname}",
+            f"PORT={port}",
+            "PROTOCOL=TCPIP",
+        ]
+
+        if username:
+            conn_str_parts.append(f"UID={username}")
+        if password:
+            conn_str_parts.append(f"PWD={password}")
+
+        # SSL parameters — ibm_db uses SECURITY=SSL in the connection string
+        if ssl:
+            conn_str_parts.append("SECURITY=SSL")
+            if ssl_server_certificate is not None:
+                conn_str_parts.append(
+                    f"SSLServerCertificate={Path(ssl_server_certificate)}"
+                )
+
+        # Add any additional connection parameters
+        _reserved = {
+            "DATABASE",
+            "HOSTNAME",
+            "PORT",
+            "UID",
+            "PWD",
+            "SECURITY",
+            "SSLSERVERCERTIFICATE",
+        }
+        for key, value in kwargs.items():
+            if key.upper() not in _reserved:
+                conn_str_parts.append(f"{key.upper()}={value}")
+
+        if schema:
+            conn_str_parts.append(f"CURRENTSCHEMA={schema}")
+
+        # ibm_db_dbi.connect() defaults to autocommit OFF, which makes every
+        # read hold locks until the next commit. Every statement here is
+        # expected to take effect immediately, so autocommit is set explicitly.
+        self._connection = ibm_db_dbi.connect(
+            ";".join(conn_str_parts),
+            conn_options={ibm_db_dbi.SQL_ATTR_AUTOCOMMIT: ibm_db_dbi.SQL_AUTOCOMMIT_ON},
+        )
+        self._cursor = self._connection.cursor()
+
+    @property
+    def con(self):
+        """Alias for _connection.
+
+        Required by base SQL backend's _make_memtable_finalizer which
+        references self.con.
+        """
+        return self._connection
+
+    def _from_url(self, url: ParseResult, **kwarg_overrides):
+        """Create a Db2 backend from a URL.
+
+        Parameters
+        ----------
+        url : ParseResult
+            Parsed URL object
+        **kwarg_overrides
+            Additional keyword arguments to override URL parameters
+
+        Returns
+        -------
+        Self
+            Connected Db2 backend instance
+
+        Notes
+        -----
+        SSL can be enabled via query parameters in the URL::
+
+            db2://user:pass@host:50001/SAMPLE?ssl=true
+            db2://user:pass@host:50001/SAMPLE?ssl=true&ssl_server_certificate=/path/to/cert.pem
+        """
+        kwargs = {}
+        database, *schema = url.path[1:].split("/", 1)
+        if url.username:
+            kwargs["username"] = url.username
+        if url.password:
+            kwargs["password"] = unquote_plus(url.password)
+        if url.hostname:
+            kwargs["hostname"] = url.hostname
+        if database:
+            kwargs["database"] = database
+        if url.port:
+            kwargs["port"] = url.port
+        if schema:
+            kwargs["schema"] = schema[0]
+
+        # Parse SSL-related query parameters from the URL
+        query_params = (
+            dict(pair.split("=", 1) for pair in url.query.split("&") if "=" in pair)
+            if url.query
+            else {}
+        )
+        if "ssl" in query_params:
+            kwargs["ssl"] = query_params["ssl"].lower() in ("1", "true", "yes")
+        if "ssl_server_certificate" in query_params:
+            kwargs["ssl_server_certificate"] = query_params["ssl_server_certificate"]
+
+        kwargs.update(kwarg_overrides)
+        return self.connect(**kwargs)
+
+    def disconnect(self) -> None:
+        """Disconnect from the database."""
+        if self._cursor:
+            self._cursor.close()
+            self._cursor = None
+        if self._connection:
+            self._connection.close()
+            self._connection = None
+
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, query: str | sg.Expression, **kwargs: Any):
+        """Execute raw SQL safely with cursor management."""
+        if isinstance(query, sg.exp.Expression):
+            query = query.sql(dialect=self.compiler.dialect)
+
+        cursor = self._connection.cursor()
+        try:
+            cursor.execute(query, **kwargs)
+            yield cursor
+        finally:
+            cursor.close()
+
+    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
+        """Execute a raw SQL query.
+
+        Parameters
+        ----------
+        query : str | sg.Expression
+            SQL query to execute
+        **kwargs
+            Additional parameters
+
+        Returns
+        -------
+        Any
+            Query results (cursor)
+        """
+        if isinstance(query, sg.exp.Expression):
+            query = query.sql(dialect=self.compiler.dialect)
+
+        # Don't use context manager as it closes the cursor
+        cursor = self._connection.cursor()
+        try:
+            cursor.execute(query, **kwargs)
+        except Exception:
+            cursor.close()
+            raise
+        else:
+            return cursor
+
+    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+        import pandas as pd
+
+        df = pd.DataFrame.from_records(
+            cursor.fetchall(), columns=schema.names, coerce_float=True
+        )
+        return Db2PandasData.convert_table(df, schema)
+
+    def list_tables(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        """List tables in the database.
+
+        Parameters
+        ----------
+        like : str, optional
+            Pattern to filter table names
+        database : str, optional
+            Database/schema name
+
+        Returns
+        -------
+        list[str]
+            List of table names
+        """
+        query = """
+            SELECT TABNAME
+            FROM SYSCAT.TABLES
+            WHERE TABSCHEMA = COALESCE(?, CURRENT SCHEMA)
+            AND TYPE IN ('T', 'V', 'G')
+        """
+
+        cursor = self._connection.cursor()
+        try:
+            cursor.execute(query, (database,))
+            tables = [row[0] for row in cursor.fetchall()]
+        finally:
+            cursor.close()
+
+        return self._filter_with_like(tables, like)
+
+    def list_databases(self, like: str | None = None) -> list[str]:
+        """List schemas in the database.
+
+        Parameters
+        ----------
+        like : str, optional
+            Pattern to filter schema names
+
+        Returns
+        -------
+        list[str]
+            List of schema names
+        """
+        query = """
+            SELECT RTRIM(SCHEMANAME)
+            FROM SYSCAT.SCHEMATA
+            WHERE SCHEMANAME NOT LIKE 'SYS%'
+        """
+
+        with self._safe_raw_sql(query) as cursor:
+            databases = [row[0] for row in cursor.fetchall()]
+
+        return self._filter_with_like(databases, like)
+
+    def get_schema(
+        self,
+        table_name: str,
+        *,
+        catalog: str | None = None,
+        database: str | None = None,
+    ) -> sch.Schema:
+        """Get the schema of a table.
+
+        Parameters
+        ----------
+        table_name : str
+            Name of the table
+        catalog : str, optional
+            Catalog name (unused in Db2)
+        database : str, optional
+            Schema name
+
+        Returns
+        -------
+        sch.Schema
+            Table schema
+        """
+        query = """
+            SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, CODEPAGE
+            FROM SYSCAT.COLUMNS
+            WHERE TABNAME = ?
+            AND TABSCHEMA = COALESCE(?, CURRENT SCHEMA)
+            ORDER BY COLNO
+        """
+
+        schema_name = database or self.current_database
+
+        cursor = self._connection.cursor()
+        try:
+            cursor.execute(query, (table_name, schema_name))
+            rows = cursor.fetchall()
+        finally:
+            cursor.close()
+
+        if not rows:
+            raise exc.TableNotFound(table_name)
+
+        type_mapper = self.compiler.type_mapper
+        fields = {}
+        for col_name, type_name, length, scale, nulls, codepage in rows:
+            # Reconstruct the full type string so SQLGlot's Db2 dialect parser
+            # can handle it — this delegates all type parsing to the same
+            # type_mapper (Db2Type / SqlglotType.from_string) that the rest of
+            # the compiler uses, rather than duplicating the mapping by hand.
+            if type_name in ("DECIMAL", "NUMERIC"):
+                type_str = f"{type_name}({length},{scale})"
+            elif type_name in ("VARCHAR", "CHARACTER", "VARBINARY"):
+                type_str = f"{type_name}({length})"
+            else:
+                type_str = type_name
+
+            if type_name in ("VARCHAR", "CHARACTER") and codepage == 0:
+                # FOR BIT DATA columns have codepage 0 and the driver returns bytes
+                ibis_type = dt.Binary(nullable=(nulls == "Y"))
+            else:
+                ibis_type = type_mapper.from_string(type_str, nullable=(nulls == "Y"))
+            # Return column names verbatim — SYSCAT stores them in the case they
+            # were defined with (uppercase for unquoted DDL, exact case for quoted).
+            fields[col_name] = ibis_type
+
+        return sch.Schema(fields)
+
+    @property
+    def current_database(self) -> str:
+        """Return the current schema."""
+        with self._safe_raw_sql("VALUES CURRENT SCHEMA") as cursor:
+            result = cursor.fetchone()
+            return result[0] if result else None
+
+    def create_table(
+        self,
+        name: str,
+        obj: ir.Table | pd.DataFrame | None = None,
+        *,
+        schema: sch.Schema | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        """Create a new table.
+
+        Parameters
+        ----------
+        name : str
+            Table name
+        obj : ir.Table | pd.DataFrame, optional
+            Data to insert
+        schema : sch.Schema, optional
+            Table schema
+        database : str, optional
+            Schema name
+        temp : bool, default False
+            Create temporary table
+        overwrite : bool, default False
+            Overwrite if exists
+
+        Returns
+        -------
+        ir.Table
+            Table expression
+        """
+        import pandas as pd
+
+        if obj is None and schema is None:
+            raise exc.IbisError("Either obj or schema must be provided")
+
+        # Normalise schema: accept dict.items() (tuples) and plain dicts in
+        # addition to ibis.Schema objects.
+        if schema is not None and not isinstance(schema, sch.Schema):
+            schema = sch.schema(schema)
+
+        # Normalise obj: convert pyarrow.Table to pandas DataFrame so the rest
+        # of the method can treat obj as either pd.DataFrame or ir.Table.
+        try:
+            import pyarrow as pa
+
+            if isinstance(obj, pa.RecordBatchReader):
+                obj = obj.read_all().to_pandas()
+            elif isinstance(obj, (pa.Table, pa.RecordBatch)):
+                obj = obj.to_pandas()
+        except ImportError:
+            pass
+
+        if schema is None:
+            if isinstance(obj, pd.DataFrame):
+                schema = sch.infer(obj)
+            elif isinstance(obj, ir.Table):
+                schema = obj.schema()
+            else:
+                obj = pd.DataFrame(obj)
+                schema = sch.infer(obj)
+
+        table = sg.table(name, db=database, quoted=self.compiler.quoted)
+        full_name = table.sql(self.dialect)
+
+        if overwrite:
+            self.drop_table(name, database=database, force=True)
+
+        properties = []
+        if temp:
+            # Db2 deletes the rows of a GLOBAL TEMPORARY table at every commit
+            # by default, and this connection commits after each statement.
+            properties = [
+                sge.GlobalProperty(),
+                sge.TemporaryProperty(),
+                sge.OnCommitProperty(delete=False),
+            ]
+
+        create_stmt = sge.Create(
+            kind="TABLE",
+            this=sge.Schema(
+                this=table, expressions=schema.to_sqlglot_column_defs(self.dialect)
+            ),
+            properties=sge.Properties(expressions=properties),
+        )
+
+        with self._safe_raw_sql(create_stmt):
+            pass
+        # Commit the CREATE TABLE statement so it is visible to new connections.
+        self._connection.commit()
+
+        # Insert data if provided
+        if obj is not None:
+            if isinstance(obj, pd.DataFrame):
+                self.insert(name, obj, database=database)
+            elif isinstance(obj, ir.Table):
+                # Ensure any in-memory tables referenced by obj (e.g. memtables)
+                # are registered in the database before the INSERT is executed.
+                self._register_in_memory_tables(obj)
+                insert_sql = f"INSERT INTO {full_name} {self.compile(obj)}"
+                with self._safe_raw_sql(insert_sql):
+                    pass
+            else:
+                # Fallback: list of dicts etc.
+                self.insert(name, pd.DataFrame(obj), database=database)
+
+        return self.table(name, database=database)
+
+    def drop_table(
+        self,
+        name: str,
+        /,
+        *,
+        database: str | None = None,
+        force: bool = False,
+    ) -> None:
+        """Drop a table.
+
+        Parameters
+        ----------
+        name : str
+            Table name
+        database : str, optional
+            Schema name
+        force : bool, default False
+            Suppress errors if table doesn't exist
+        """
+        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
+
+        if force:
+            # Check if table exists first using parameterized query
+            cursor = self._connection.cursor()
+            try:
+                if database:
+                    check_sql = """
+                        SELECT COUNT(*)
+                        FROM SYSCAT.TABLES
+                        WHERE TABNAME = ?
+                        AND TABSCHEMA = ?
+                    """
+                    cursor.execute(check_sql, (name, database))
+                else:
+                    check_sql = """
+                        SELECT COUNT(*)
+                        FROM SYSCAT.TABLES
+                        WHERE TABNAME = ?
+                        AND TABSCHEMA = CURRENT SCHEMA
+                    """
+                    cursor.execute(check_sql, (name,))
+
+                exists = cursor.fetchone()[0] > 0
+            finally:
+                cursor.close()
+
+            if not exists:
+                return
+
+        drop_sql = f"DROP TABLE {full_name}"
+        with self._safe_raw_sql(drop_sql):
+            pass
+        # Commit the DROP TABLE statement
+        self._connection.commit()
+
+    def drop_view(
+        self,
+        name: str,
+        /,
+        *,
+        database: str | None = None,
+        force: bool = False,
+    ) -> None:
+        """Drop a view.
+
+        DB2 does not support ``DROP VIEW IF EXISTS``, so when *force* is True
+        we check SYSCAT.VIEWS first and skip the DROP if the view is absent.
+        """
+        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
+
+        if force:
+            cursor = self._connection.cursor()
+            try:
+                if database:
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM SYSCAT.VIEWS WHERE VIEWNAME = ? AND VIEWSCHEMA = ?",
+                        (name, database),
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM SYSCAT.VIEWS WHERE VIEWNAME = ? AND VIEWSCHEMA = CURRENT SCHEMA",
+                        (name,),
+                    )
+                exists = cursor.fetchone()[0] > 0
+            finally:
+                cursor.close()
+
+            if not exists:
+                return
+
+        with self._safe_raw_sql(f"DROP VIEW {full_name}"):
+            pass
+        self._connection.commit()
+
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
+        """Delete all rows from a table.
+
+        Parameters
+        ----------
+        name : str
+            Table name
+        database : str, optional
+            Schema name
+        """
+        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
+        # Db2 does not accept a bare TRUNCATE TABLE; IMMEDIATE is required.
+        with self._safe_raw_sql(f"TRUNCATE TABLE {full_name} IMMEDIATE"):
+            pass
+
+    def insert(
+        self,
+        name: str,
+        /,
+        obj: pd.DataFrame | ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> None:
+        """Insert data into a table.
+
+        Parameters
+        ----------
+        name : str
+            Target table name
+        obj : pd.DataFrame | ir.Table
+            Data to insert
+        database : str, optional
+            Schema name
+        overwrite : bool, default False
+            Truncate table before insert
+        """
+        import pandas as pd
+
+        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
+            self.dialect
+        )
+
+        if overwrite:
+            # Commit any open transaction first to ensure TRUNCATE can be first statement
+            self._connection.commit()
+            # TRUNCATE TABLE ... IMMEDIATE must be first statement in transaction
+            self.truncate_table(name, database=database)
+            # Commit the TRUNCATE to complete the transaction
+            self._connection.commit()
+
+        if isinstance(obj, pd.DataFrame):
+            # Batch insert from DataFrame
+            if obj.empty:
+                return
+
+            # Same quoting primitive SQLGlot uses for column references
+            quoted_columns = [
+                sg.to_identifier(col, quoted=self.compiler.quoted).sql(self.dialect)
+                for col in obj.columns
+            ]
+            columns = ", ".join(quoted_columns)
+            placeholders = ", ".join(["?" for _ in obj.columns])
+            insert_sql = f"INSERT INTO {full_name} ({columns}) VALUES ({placeholders})"  # noqa: S608
+
+            cursor = self._connection.cursor()
+            try:
+                # Insert in batches
+                batch_size = 1000
+                for i in range(0, len(obj), batch_size):
+                    batch = obj.iloc[i : i + batch_size]
+                    # Convert NaN/NaT/pd.NA to None for Db2 compatibility
+                    rows = self._convert_dataframe_to_rows(batch)
+                    cursor.executemany(insert_sql, rows)
+                self._connection.commit()
+            finally:
+                cursor.close()
+        else:
+            # Insert from table expression — ensure any in-memory tables
+            # referenced (e.g. memtables) are registered first.
+            self._register_in_memory_tables(obj)
+            insert_sql = f"INSERT INTO {full_name} {self.compile(obj)}"
+            with self._safe_raw_sql(insert_sql):
+                pass
+
+    @staticmethod
+    def _convert_dataframe_to_rows(df: pd.DataFrame) -> list[tuple]:
+        """Convert DataFrame to list of tuples, replacing NaN/NaT/pd.NA with None.
+
+        This is necessary because Db2's ibm_db_dbi driver expects SQL NULL values
+        to be represented as Python None.
+        """
+        import pandas as pd
+
+        df = df.astype(object).where(pd.notnull(df), None)
+        return list(df.itertuples(index=False, name=None))
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        """Get schema from a SQL query.
+
+        Parameters
+        ----------
+        query : str
+            SQL query
+
+        Returns
+        -------
+        sch.Schema
+            Query result schema
+        """
+        import ibm_db
+        import ibm_db_dbi
+
+        # Preparing a statement returns its result-set metadata without running
+        # it. `conn_handler` is not part of the DB-API 2.0 interface: it is the
+        # native handle that ibm_db_dbi.Connection keeps, and the driver offers
+        # no other accessor. Verified against ibm_db / ibm_db_dbi 3.2.9.
+        #
+        # By default the driver defers the prepare until the first execute, so
+        # a syntax error or an undefined name in a non-SELECT statement goes
+        # unnoticed and the result looks like an empty schema. Turning
+        # deferred prepare off makes the server validate the statement now.
+        try:
+            stmt = ibm_db.prepare(
+                self._connection.conn_handler,
+                query,
+                {ibm_db.SQL_ATTR_DEFERRED_PREPARE: 0},
+            )
+            num_fields = ibm_db.num_fields(stmt)
+        except Exception as e:
+            # ibm_db raises a bare Exception; raise the DB-API error that
+            # cursor.execute() raises for the same bad query.
+            raise ibm_db_dbi.ProgrammingError(str(e)) from e
+        try:
+            fields = {}
+            for i in range(num_fields):
+                kind = ibm_db.field_type(stmt, i)
+                precision = ibm_db.field_precision(stmt, i)
+                scale = ibm_db.field_scale(stmt, i)
+                nullable = bool(ibm_db.field_nullable(stmt, i))
+
+                if kind in _SIMPLE_FIELD_TYPES:
+                    ibis_type = _SIMPLE_FIELD_TYPES[kind](nullable=nullable)
+                elif kind == "int":
+                    # The driver reports BOOLEAN as a 1-digit int; no other Db2
+                    # integer type has precision 1 (SMALLINT is 5, INTEGER is 10).
+                    if precision == 1:
+                        ibis_type = dt.Boolean(nullable=nullable)
+                    elif precision <= 5:
+                        ibis_type = dt.Int16(nullable=nullable)
+                    else:
+                        ibis_type = dt.Int32(nullable=nullable)
+                elif kind == "decimal":
+                    ibis_type = dt.Decimal(precision, scale, nullable=nullable)
+                elif kind == "real":
+                    # REAL has 7 digits of precision; DOUBLE and DECFLOAT have more
+                    float_type = dt.Float32 if precision <= 7 else dt.Float64
+                    ibis_type = float_type(nullable=nullable)
+                elif kind == "string":
+                    ibis_type = dt.String(length=precision, nullable=nullable)
+                else:
+                    raise exc.UnsupportedBackendType(
+                        f"Unsupported Db2 result column type: {kind!r}"
+                    )
+                fields[ibm_db.field_name(stmt, i)] = ibis_type
+            return sch.Schema(fields)
+        finally:
+            ibm_db.free_stmt(stmt)
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        """Register an in-memory table as a GLOBAL TEMPORARY table.
+
+        Parameters
+        ----------
+        op : ops.InMemoryTable
+            In-memory table operation
+        """
+        schema = op.schema
+        if null_columns := schema.null_fields:
+            raise exc.IbisTypeError(
+                f"{self.name} cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
+
+        # Use op.schema (the declared schema) instead of inferring from the
+        # DataFrame.  For empty tables, pandas assigns object dtype to every
+        # column, which sch.infer maps to dt.Null.
+        self.create_table(op.name, op.data.to_frame(), schema=schema, temp=True)
+
+
+def connect(
+    database: str,
+    hostname: str = "localhost",
+    port: int = 50000,
+    username: str | None = None,
+    password: str | None = None,
+    schema: str | None = None,
+    ssl: bool = False,
+    ssl_server_certificate: str | Path | None = None,
+    **kwargs,
+):
+    """Connect to a Db2 database.
+
+    Parameters
+    ----------
+    database : str
+        Database name to connect to
+    hostname : str, default "localhost"
+        Hostname of the Db2 server
+    port : int, default 50000
+        Port number of the Db2 server
+    username : str, optional
+        Username for authentication
+    password : str, optional
+        Password for authentication
+    schema : str, optional
+        Default schema to use
+    ssl : bool, default False
+        Enable SSL/TLS encrypted connection. When ``True``, ``SECURITY=SSL``
+        is added to the ibm_db connection string. The default Db2 SSL port
+        is 50001.
+    ssl_server_certificate : str or Path, optional
+        Path to the server's SSL certificate (PEM or ARM format). Maps to
+        ``SSLServerCertificate=<path>`` in the connection string. When
+        ``ssl=True`` and this is ``None``, server certificate validation is
+        skipped (useful for self-signed certificates in dev environments).
+    **kwargs
+        Additional IBM Db2 connection string key=value parameters.
+
+    Returns
+    -------
+    Backend
+        An Ibis Db2 backend instance
+
+    Examples
+    --------
+    >>> import ibis
+    >>> con = ibis.db2.connect(
+    ...     database="SAMPLE",
+    ...     hostname="localhost",
+    ...     port=50000,
+    ...     username="db2inst1",
+    ...     password="password",
+    ... )  # doctest: +SKIP
+    >>> con.list_tables()  # doctest: +SKIP
+    ['EMPLOYEE', 'DEPARTMENT', 'PROJECT']
+
+    Connect with SSL (no certificate validation):
+
+    >>> con = ibis.db2.connect(
+    ...     database="SAMPLE",
+    ...     hostname="localhost",
+    ...     port=50001,
+    ...     username="db2inst1",
+    ...     password="password",
+    ...     ssl=True,
+    ... )  # doctest: +SKIP
+
+    Connect with SSL and a server certificate:
+
+    >>> con = ibis.db2.connect(
+    ...     database="SAMPLE",
+    ...     hostname="db2-server.example.com",
+    ...     port=50001,
+    ...     username="db2inst1",
+    ...     password="password",
+    ...     ssl=True,
+    ...     ssl_server_certificate="/path/to/server.arm",
+    ... )  # doctest: +SKIP
+    """
+    backend = Backend()
+    backend.do_connect(
+        database=database,
+        hostname=hostname,
+        port=port,
+        username=username,
+        password=password,
+        schema=schema,
+        ssl=ssl,
+        ssl_server_certificate=ssl_server_certificate,
+        **kwargs,
+    )
+    return backend

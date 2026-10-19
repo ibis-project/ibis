@@ -53,6 +53,7 @@ databackend==0.0.3
 databricks-sql-connector==4.2.4
 datafusion==53.0.0
 db-dtypes==1.5.0
+db2-sqlglot-dialect==1.1.0
 debugpy==1.8.20
 decorator==5.2.1
 defusedxml==0.7.1
@@ -97,6 +98,7 @@ httpcore==1.0.9
 httpx==0.28.1
 humanize==4.15.0
 hypothesis==6.151.4
+ibm-db==3.2.9
 identify==2.6.16
 idna==3.11
 importlib-metadata==8.7.1
