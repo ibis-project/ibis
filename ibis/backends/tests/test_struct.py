@@ -134,11 +134,12 @@ def test_collect_into_struct(alltypes):
     reason="struct literals not implemented",
     raises=PsycoPg2InternalError,
 )
-@pytest.mark.notimpl(
+@pytest.mark.notyet(
     ["flink"],
     condition=IS_PYFLINK_1X,
     raises=Py4JJavaError,
-    reason="not implemented in ibis",
+    # UnsupportedOperationException: class org.apache.calcite.sql.SqlBasicCall: ROW(4)
+    reason="Flink 1.x's Calcite can't type a struct literal as a CASE operand",
 )
 def test_field_access_after_case(con):
     s = ibis.struct({"a": 3})
