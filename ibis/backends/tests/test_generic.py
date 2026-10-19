@@ -2878,7 +2878,19 @@ def test_simple_pivot_wider(con, backend, monkeypatch):
         param([0, 3], "int64", {"0": [3], "3": [4]}, id="int"),
         param(["a", None], "string", {"a": [3], "null": [4]}, id="null"),
         param([False, True], "boolean", {"false": [3], "true": [4]}, id="bool"),
-        param([0.5, 2.0], "float64", {"0.5": [3], "2.0": [4]}, id="float"),
+        param(
+            [0.5, 2.0],
+            "float64",
+            {"0.5": [3], "2.0": [4]},
+            id="float",
+            marks=[
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=ArrowInvalid,
+                    reason="oracle returns floats as Decimal, which to_pyarrow can't convert",
+                ),
+            ],
+        ),
         param(
             [decimal.Decimal("1.10"), decimal.Decimal("2.00")],
             "decimal(5, 2)",
