@@ -453,6 +453,10 @@ filterwarnings = [
   "ignore:invalid escape sequence:DeprecationWarning",
   # geopandas raises user warning on geometry column
   "ignore:Geometry is in a geographic CRS",
+  # `is_sparse` deprecation was addressed in pyarrow 13.0.0 (see https://github.com/apache/arrow/pull/35366),
+  # but flink 1.x requires apache-beam<2.49, which caps its pyarrow dependency (see https://github.com/apache/beam/blob/v2.48.0/sdks/python/setup.py#L144)
+  "ignore:is_sparse is deprecated and will be removed in a future version:FutureWarning",
+  "ignore:is_sparse is deprecated and will be removed in a future version:DeprecationWarning",
   # google-api-core
   "ignore:Please install grpcio-status to obtain helpful grpc error messages.",
   "ignore:You are using a non-supported Python version:FutureWarning",
@@ -463,6 +467,10 @@ filterwarnings = [
   # pandas 2.2 warnings
   'ignore:DataFrameGroupBy\.apply operated on the grouping columns\. This behavior is deprecated:DeprecationWarning',
   'ignore:Downcasting object dtype arrays on \.fillna, \.ffill, \.bfill is deprecated:FutureWarning',
+  # pandas 2.2 warnings coming directly from the way flink 1.x uses pandas
+  "ignore:Passing a BlockManager to DataFrame is deprecated:DeprecationWarning",
+  # flink 1.x is STILL using pkg_resources
+  "ignore:pkg_resources is deprecated as an API.:UserWarning",
   # pyflink's @Deprecated decorator warns when it is *applied*, so importing
   # any pyflink module warns for every deprecated API it defines
   'ignore:.+ has been deprecated since version \d+\.\d+\.\d+:DeprecationWarning',
@@ -485,6 +493,8 @@ filterwarnings = [
   "ignore:Unable to set session timezone to UTC:UserWarning",
   # BigQuery dropping support for 3.10 in Oct 2026
   "ignore:You are using a Python version .+ which Google will stop supporting.+:FutureWarning",
+  # flink 1.x deprecation warning
+  "ignore:.+setName.+:DeprecationWarning",
   # flink deprecation warning (can't use the specific type because it's a
   # dependency [pyparsing] that only shows up in flink)
   "ignore:.*deprecated - use.*:",

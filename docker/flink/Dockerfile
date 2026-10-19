@@ -2,7 +2,8 @@ ARG FLINK_VERSION=2.3.0
 FROM flink:${FLINK_VERSION}
 
 # install python3 and venv support; the base image is Ubuntu, whose system
-# python is marked externally managed (PEP 668), so PyFlink goes in a venv
+# python is marked externally managed (PEP 668) from 24.04 (Flink 2.x images)
+# on, so PyFlink goes in a venv
 USER root
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends python3 python3-venv && \
