@@ -143,6 +143,56 @@ def _interval_with_precision(self, e):
     return f"INTERVAL {formatted_arg} {unit}"
 
 
+def _is_struct(e: sge.Expression) -> bool:
+    return isinstance(e, sge.Struct) or (
+        isinstance(e, sge.Cast) and isinstance(e.this, sge.Struct)
+    )
+
+
+def _typed_struct(e: sge.Expression) -> sge.Struct:
+    """Turn `CAST(ROW(...) AS ROW<...>)` into `ROW(CAST(...), ...)`.
+
+    Inside the `MAP[...]` value constructor, a struct entry can't be a cast of
+    a bare ROW call: when the map is indexed, Flink 1.x's Calcite derives the
+    entry types eagerly, and CAST's operand check asks for the validated type
+    of the ROW before it has one, which dies with
+    `UnsupportedOperationException: class org.apache.calcite.sql.SqlBasicCall: ROW(1)`.
+    Typing the fields instead avoids that path, and the cast of the whole map
+    still names them.
+
+    A struct column arrives as `CAST(ROW(v, ...) AS ROW(name type, ...))`; a
+    struct literal as `ROW(v AS name, ...)`, whose field types `struct_sql`
+    infers from the values, so do the same here.
+    """
+    from sqlglot.optimizer.annotate_types import annotate_types
+
+    if isinstance(e, sge.Cast):
+        pairs = [
+            (value, column.args["kind"])
+            for value, column in zip(e.this.expressions, e.to.expressions, strict=True)
+        ]
+    else:
+        pairs = []
+        for field in annotate_types(e).expressions:
+            if isinstance(field, sge.PropertyEQ):
+                field = sge.alias_(field.expression, field.this)
+            pairs.append((field.this, field.type))
+
+    fields = []
+    for value, kind in pairs:
+        if _is_struct(value):
+            fields.append(_typed_struct(value))
+        elif isinstance(value, sge.Cast):
+            fields.append(value)
+        else:
+            fields.append(sge.Cast(this=value, to=kind))
+    return sge.Struct(expressions=fields)
+
+
+def _map_entry(e: sge.Expression) -> sge.Expression:
+    return _typed_struct(e) if _is_struct(e) else e
+
+
 def _map_constructor(self, e):
     """Build a map with Flink's `MAP[k1, v1, ...]` value constructor.
 
@@ -163,7 +213,7 @@ def _map_constructor(self, e):
         return self.func("MAP_FROM_ARRAYS", keys, values)
 
     entries = ", ".join(
-        self.sql(entry)
+        self.sql(_map_entry(entry))
         for key, value in zip(keys.expressions, values.expressions)
         for entry in (key, value)
     )
