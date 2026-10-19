@@ -42,6 +42,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
+from ibis.conftest import IS_PYFLINK_1X
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -555,6 +556,12 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="week not implemented",
                 ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    condition=IS_PYFLINK_1X,
+                    raises=Py4JJavaError,
+                    reason="ParseException: Encountered 'WEEK'. Was expecting one of: DAY, DAYS, HOUR",
+                ),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
@@ -681,6 +688,12 @@ def test_integer_to_interval_timestamp(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: week",
+                ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    condition=IS_PYFLINK_1X,
+                    raises=Py4JJavaError,
+                    reason="week is not a valid unit in Flink 1.x",
                 ),
                 sqlite_without_ymd_intervals,
             ],
@@ -2042,6 +2055,12 @@ def test_subsecond_cast_to_timestamp(con, dtype):
     reason="returns a value with a timezone, which the test doesn't expect",
     raises=AssertionError,
 )
+@pytest.mark.notimpl(
+    ["flink"],
+    condition=IS_PYFLINK_1X,
+    raises=ArrowInvalid,
+    reason="pyarrow<12 casts the result to nanoseconds, which overflow",
+)
 @pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
 def test_big_timestamp(con):
     # TODO: test with a timezone
@@ -2111,6 +2130,12 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     raises=(pd.errors.OutOfBoundsDatetime, ArrowInvalid),
 )
 @pytest.mark.notimpl(["polars"], raises=PolarsInvalidOperationError)
+@pytest.mark.notyet(
+    ["flink"],
+    condition=IS_PYFLINK_1X,
+    raises=ArrowInvalid,
+    reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",
+)
 def test_large_timestamp(con):
     huge_timestamp = datetime.datetime(year=4567, month=1, day=1)
     expr = ibis.timestamp("4567-01-01 00:00:00")
