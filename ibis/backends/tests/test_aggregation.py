@@ -17,7 +17,6 @@ from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
     ExaQueryError,
     GoogleBadRequest,
-    IbmDb2Error,
     ImpalaHiveServer2Error,
     MySQLNotSupportedError,
     OracleDatabaseError,
@@ -426,10 +425,10 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
                         "risingwave",
                         "sqlite",
                         "materialize",
+                        "db2",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
                 pytest.mark.notimpl(
                     ["snowflake"],
                     raises=AssertionError,
@@ -1404,13 +1403,11 @@ def test_date_quantile(alltypes):
             lambda t: t.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
             id="is_in",
-            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
         ),
         param(
             lambda t: t.string_col.notin(["1", "7"]),
             lambda t: ~t.string_col.isin(["1", "7"]),
             id="not_in",
-            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
         ),
     ],
 )

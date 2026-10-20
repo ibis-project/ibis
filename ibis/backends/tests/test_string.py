@@ -539,7 +539,7 @@ def uses_java_re(t):
             lambda t: t.string_col.reverse(),
             lambda t: t.string_col.str[::-1],
             id="reverse",
-            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
+            marks=[pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t: t.string_col.ascii_str(),
@@ -584,19 +584,16 @@ def uses_java_re(t):
             lambda t: t.string_col.strip(),
             lambda t: t.string_col.str.strip(),
             id="strip",
-            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
         ),
         param(
             lambda t: t.string_col.lstrip(),
             lambda t: t.string_col.str.lstrip(),
             id="lstrip",
-            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
         ),
         param(
             lambda t: t.string_col.rstrip(),
             lambda t: t.string_col.str.rstrip(),
             id="rstrip",
-            marks=[pytest.mark.notimpl(["db2"], raises=IbmDb2Error)],
         ),
         param(
             lambda t: t.date_string_col.split("/"),
@@ -626,7 +623,6 @@ def uses_java_re(t):
                     ["exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
