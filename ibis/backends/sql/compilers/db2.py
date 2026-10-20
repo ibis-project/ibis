@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import string
+
 import sqlglot.expressions as sge
 from db2_sqlglot import Db2 as _Db2BaseDialect
 from sqlglot import exp, transforms
@@ -217,11 +219,13 @@ class Db2Compiler(SQLGlotCompiler):
         # aggregation
         ops.ArgMin,
         ops.ArgMax,
+        ops.Kurtosis,
         ops.Mode,
         ops.First,
         ops.Last,
         ops.CountDistinctStar,
         # string
+        ops.Reverse,
         ops.StringSplit,
         ops.StringToDate,
         ops.StringToTimestamp,
@@ -285,6 +289,7 @@ class Db2Compiler(SQLGlotCompiler):
             ops.RegexSearch,  # → visit_RegexSearch (REGEXP_LIKE)
             ops.RegexExtract,  # → visit_RegexExtract (REGEXP_SUBSTR)
             ops.RandomScalar,  # → visit_RandomScalar (RAND())
+            ops.GroupConcat,  # → visit_GroupConcat (LISTAGG)
         )
     }
 
@@ -474,25 +479,40 @@ class Db2Compiler(SQLGlotCompiler):
             return self.f.count(self.if_(where, 1, NULL))
         return self.f.count(STAR)
 
-    def visit_Lag(self, op, *, arg, offset, default):
-        """Visit a Lag operation."""
-        # Db2 LAG function
-        expressions = [arg]
-        if offset is not None:
-            expressions.append(offset)
-        if default is not None:
-            expressions.append(default)
-        return sge.Anonymous(this="LAG", expressions=expressions)
+    def visit_GroupConcat(self, op, *, arg, where, sep, order_by):
+        if order_by:
+            # LISTAGG ... WITHIN GROUP rejects the NULLS FIRST/LAST that Ibis
+            # emits (SQL0109N); dropping it would change the null ordering.
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                f"not supported for the {self.dialect} backend"
+            )
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.listagg(arg, sep)
 
-    def visit_Lead(self, op, *, arg, offset, default):
-        """Visit a Lead operation."""
-        # Db2 LEAD function
-        expressions = [arg]
-        if offset is not None:
-            expressions.append(offset)
-        if default is not None:
-            expressions.append(default)
-        return sge.Anonymous(this="LEAD", expressions=expressions)
+    # Db2's TRIM removes a single character; LTRIM/RTRIM take a set. `f.anon`
+    # keeps sqlglot from parsing them into `exp.Trim` (rendered as TRIM).
+    def visit_Strip(self, op, *, arg):
+        return self.f.anon.rtrim(
+            self.f.anon.ltrim(arg, string.whitespace), string.whitespace
+        )
+
+    def visit_LStrip(self, op, *, arg):
+        return self.f.anon.ltrim(arg, string.whitespace)
+
+    def visit_RStrip(self, op, *, arg):
+        return self.f.anon.rtrim(arg, string.whitespace)
+
+    def visit_StringJoin(self, op, *, arg, sep):
+        # Db2 has no CONCAT_WS. `||` returns NULL if any operand is NULL, but
+        # CONCAT_WS skips NULL operands, so prefix every non-NULL operand with
+        # the separator and drop the leading one. All-NULL input gives '' and a
+        # NULL separator gives NULL, as with CONCAT_WS.
+        terms = [
+            self.if_(a.is_(NULL), sge.convert(""), self.f.concat(sep, a)) for a in arg
+        ]
+        return self.f.substr(self.f.concat(*terms), self.f.length(sep) + 1)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_date():
