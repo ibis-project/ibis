@@ -1951,6 +1951,11 @@ bool_to_string_notimpl = [
                 ),
                 pytest.mark.notimpl(["pyspark"], raises=AttributeError),
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
+                pytest.mark.notyet(
+                    ["db2"],
+                    raises=SystemError,
+                    reason="Db2 TIME has no fractional seconds",
+                ),
             ],
             id="string_to_time_subsecond",
         ),
