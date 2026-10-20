@@ -99,7 +99,7 @@ class TestConf(ServiceBackendTest):
         for stmt in self.ddl_script:
             with self.connection._safe_raw_sql(stmt):
                 pass
-            self.connection._connection.commit()
+            self.connection.con.commit()
 
         # Step 2: Bulk-insert CSV tables.
         csv_dir = self.data_dir / "csv"
@@ -110,7 +110,7 @@ class TestConf(ServiceBackendTest):
             "awards_players": "awards_players.csv",
             "functional_alltypes": "functional_alltypes.csv",
         }
-        raw = self.connection._connection
+        raw = self.connection.con
         for table, filename in table_files.items():
             csv_path = csv_dir / filename
             if not csv_path.exists():
@@ -141,9 +141,9 @@ class TestConf(ServiceBackendTest):
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):  # noqa: ARG004
         return ibis.db2.connect(
-            hostname=DB2_HOST,
+            host=DB2_HOST,
             database=DB2_DATABASE,
-            username=DB2_USER,
+            user=DB2_USER,
             password=DB2_PASS,
             port=DB2_PORT,
             **kw,

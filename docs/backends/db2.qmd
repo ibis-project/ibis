@@ -73,9 +73,9 @@ con = ibis.db2.connect()  # <1>
 ```python
 con = ibis.db2.connect(
     database="SAMPLE",
-    hostname="localhost",
+    host="localhost",
     port=50000,
-    username="db2inst1",
+    user="db2inst1",
     password="password",
     schema="MYSCHEMA",
 )
@@ -104,9 +104,9 @@ Set `ssl=False` (the default) for plain unencrypted connections.
 # Plain connection — ssl defaults to False
 con = ibis.db2.connect(
     database="SAMPLE",
-    hostname="db2-server.example.com",
+    host="db2-server.example.com",
     port=50000,
-    username="db2inst1",
+    user="db2inst1",
     password="password",
     ssl=False,
 )
@@ -114,9 +114,9 @@ con = ibis.db2.connect(
 # SSL — no certificate validation (useful for self-signed certs in dev)
 con = ibis.db2.connect(
     database="SAMPLE",
-    hostname="db2-server.example.com",
+    host="db2-server.example.com",
     port=50001,
-    username="db2inst1",
+    user="db2inst1",
     password="password",
     ssl=True,
 )
@@ -124,9 +124,9 @@ con = ibis.db2.connect(
 # SSL — with server certificate (recommended for production)
 con = ibis.db2.connect(
     database="SAMPLE",
-    hostname="db2-server.example.com",
+    host="db2-server.example.com",
     port=50001,
-    username="db2inst1",
+    user="db2inst1",
     password="password",
     ssl=True,
     ssl_server_certificate="/path/to/server.arm",
@@ -236,9 +236,9 @@ import ibis
 # Connect to Db2
 con = ibis.db2.connect(
     database="SAMPLE",
-    hostname="localhost",
+    host="localhost",
     port=50000,
-    username="db2inst1",
+    user="db2inst1",
     password="password"
 )
 

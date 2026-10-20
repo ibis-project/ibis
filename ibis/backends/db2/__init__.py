@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
@@ -15,6 +16,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends import CanListDatabase, HasCurrentDatabase, PyArrowExampleLoader
 from ibis.backends.db2.converter import Db2PandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.db2 import Db2Compiler
@@ -22,6 +24,7 @@ from ibis.backends.sql.compilers.db2 import Db2Compiler
 if TYPE_CHECKING:
     from urllib.parse import ParseResult
 
+    import ibm_db_dbi
     import pandas as pd
 
 # Result-set column kinds reported by ibm_db.field_type that map to a single
@@ -36,19 +39,13 @@ _SIMPLE_FIELD_TYPES = {
 }
 
 
-class Backend(SQLBackend):
+class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoader):
     """IBM Db2 backend for Ibis."""
 
     name = "db2"
     compiler = Db2Compiler()
     supports_temporary_tables = True
     supports_python_udfs = False
-
-    def __init__(self, *args, **kwargs):
-        """Initialize Db2 backend."""
-        super().__init__(*args, **kwargs)
-        self._connection = None
-        self._cursor = None
 
     @property
     def version(self) -> str:
@@ -61,10 +58,11 @@ class Backend(SQLBackend):
 
     def do_connect(
         self,
+        *,
         database: str,
-        hostname: str = "localhost",
+        host: str = "localhost",
         port: int = 50000,
-        username: str | None = None,
+        user: str | None = None,
         password: str | None = None,
         schema: str | None = None,
         ssl: bool = False,
@@ -77,11 +75,11 @@ class Backend(SQLBackend):
         ----------
         database : str
             Database name
-        hostname : str, default "localhost"
+        host : str, default "localhost"
             Hostname of Db2 server
         port : int, default 50000
             Port number
-        username : str, optional
+        user : str, optional
             Username for authentication
         password : str, optional
             Password for authentication
@@ -104,13 +102,13 @@ class Backend(SQLBackend):
         # Build connection string
         conn_str_parts = [
             f"DATABASE={database}",
-            f"HOSTNAME={hostname}",
+            f"HOSTNAME={host}",
             f"PORT={port}",
             "PROTOCOL=TCPIP",
         ]
 
-        if username:
-            conn_str_parts.append(f"UID={username}")
+        if user:
+            conn_str_parts.append(f"UID={user}")
         if password:
             conn_str_parts.append(f"PWD={password}")
 
@@ -142,20 +140,40 @@ class Backend(SQLBackend):
         # ibm_db_dbi.connect() defaults to autocommit OFF, which makes every
         # read hold locks until the next commit. Every statement here is
         # expected to take effect immediately, so autocommit is set explicitly.
-        self._connection = ibm_db_dbi.connect(
+        self.con = ibm_db_dbi.connect(
             ";".join(conn_str_parts),
             conn_options={ibm_db_dbi.SQL_ATTR_AUTOCOMMIT: ibm_db_dbi.SQL_AUTOCOMMIT_ON},
         )
-        self._cursor = self._connection.cursor()
 
-    @property
-    def con(self):
-        """Alias for _connection.
+    @classmethod
+    def from_connection(cls, con: ibm_db_dbi.Connection, /) -> Backend:
+        """Create an Ibis client from an existing connection to a Db2 database.
 
-        Required by base SQL backend's _make_memtable_finalizer which
-        references self.con.
+        Parameters
+        ----------
+        con
+            An existing `ibm_db_dbi` connection. The connection is used as
+            given: it is not modified. Ibis expects every statement to take
+            effect immediately, so turn autocommit on before passing it in
+            (`con.set_autocommit(True)`); otherwise a warning is issued.
         """
-        return self._connection
+        import ibm_db
+
+        if not ibm_db.autocommit(con.conn_handler):
+            warnings.warn(
+                "The Db2 connection has autocommit off. Ibis does not commit, so "
+                "changes made through this backend stay uncommitted and hold "
+                "locks until you call `con.commit()`.",
+                stacklevel=2,
+            )
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        return new_backend
+
+    def _convert_kwargs(self, kwargs):
+        with contextlib.suppress(KeyError):
+            kwargs["ssl"] = str(kwargs["ssl"]).lower() in ("1", "true", "yes")
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
         """Create a Db2 backend from a URL.
@@ -182,11 +200,11 @@ class Backend(SQLBackend):
         kwargs = {}
         database, *schema = url.path[1:].split("/", 1)
         if url.username:
-            kwargs["username"] = url.username
+            kwargs["user"] = url.username
         if url.password:
             kwargs["password"] = unquote_plus(url.password)
         if url.hostname:
-            kwargs["hostname"] = url.hostname
+            kwargs["host"] = url.hostname
         if database:
             kwargs["database"] = database
         if url.port:
@@ -194,28 +212,11 @@ class Backend(SQLBackend):
         if schema:
             kwargs["schema"] = schema[0]
 
-        # Parse SSL-related query parameters from the URL
-        query_params = (
-            dict(pair.split("=", 1) for pair in url.query.split("&") if "=" in pair)
-            if url.query
-            else {}
-        )
-        if "ssl" in query_params:
-            kwargs["ssl"] = query_params["ssl"].lower() in ("1", "true", "yes")
-        if "ssl_server_certificate" in query_params:
-            kwargs["ssl_server_certificate"] = query_params["ssl_server_certificate"]
-
+        # `ibis.connect` has already turned the URL query string into keyword
+        # arguments and passed them in `kwarg_overrides`.
         kwargs.update(kwarg_overrides)
+        self._convert_kwargs(kwargs)
         return self.connect(**kwargs)
-
-    def disconnect(self) -> None:
-        """Disconnect from the database."""
-        if self._cursor:
-            self._cursor.close()
-            self._cursor = None
-        if self._connection:
-            self._connection.close()
-            self._connection = None
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str | sg.Expression, **kwargs: Any):
@@ -223,7 +224,7 @@ class Backend(SQLBackend):
         if isinstance(query, sg.exp.Expression):
             query = query.sql(dialect=self.compiler.dialect)
 
-        cursor = self._connection.cursor()
+        cursor = self.con.cursor()
         try:
             cursor.execute(query, **kwargs)
             yield cursor
@@ -249,7 +250,7 @@ class Backend(SQLBackend):
             query = query.sql(dialect=self.compiler.dialect)
 
         # Don't use context manager as it closes the cursor
-        cursor = self._connection.cursor()
+        cursor = self.con.cursor()
         try:
             cursor.execute(query, **kwargs)
         except Exception:
@@ -290,7 +291,7 @@ class Backend(SQLBackend):
             AND TYPE IN ('T', 'V', 'G')
         """
 
-        cursor = self._connection.cursor()
+        cursor = self.con.cursor()
         try:
             cursor.execute(query, (database,))
             tables = [row[0] for row in cursor.fetchall()]
@@ -299,19 +300,26 @@ class Backend(SQLBackend):
 
         return self._filter_with_like(tables, like)
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_databases(
+        self, *, like: str | None = None, catalog: str | None = None
+    ) -> list[str]:
         """List schemas in the database.
 
         Parameters
         ----------
         like : str, optional
             Pattern to filter schema names
+        catalog : str, optional
+            Not supported: Db2 has no cross-catalog schema access.
 
         Returns
         -------
         list[str]
             List of schema names
         """
+        if catalog is not None:
+            raise exc.UnsupportedArgumentError("No cross-catalog schema access in Db2")
+
         query = """
             SELECT RTRIM(SCHEMANAME)
             FROM SYSCAT.SCHEMATA
@@ -356,7 +364,7 @@ class Backend(SQLBackend):
 
         schema_name = database or self.current_database
 
-        cursor = self._connection.cursor()
+        cursor = self.con.cursor()
         try:
             cursor.execute(query, (table_name, schema_name))
             rows = cursor.fetchall()
@@ -488,7 +496,7 @@ class Backend(SQLBackend):
         with self._safe_raw_sql(create_stmt):
             pass
         # Commit the CREATE TABLE statement so it is visible to new connections.
-        self._connection.commit()
+        self.con.commit()
 
         # Insert data if provided
         if obj is not None:
@@ -532,7 +540,7 @@ class Backend(SQLBackend):
 
         if force:
             # Check if table exists first using parameterized query
-            cursor = self._connection.cursor()
+            cursor = self.con.cursor()
             try:
                 if database:
                     check_sql = """
@@ -562,7 +570,7 @@ class Backend(SQLBackend):
         with self._safe_raw_sql(drop_sql):
             pass
         # Commit the DROP TABLE statement
-        self._connection.commit()
+        self.con.commit()
 
     def drop_view(
         self,
@@ -582,7 +590,7 @@ class Backend(SQLBackend):
         )
 
         if force:
-            cursor = self._connection.cursor()
+            cursor = self.con.cursor()
             try:
                 if database:
                     cursor.execute(
@@ -603,7 +611,7 @@ class Backend(SQLBackend):
 
         with self._safe_raw_sql(f"DROP VIEW {full_name}"):
             pass
-        self._connection.commit()
+        self.con.commit()
 
     def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         """Delete all rows from a table.
@@ -652,11 +660,11 @@ class Backend(SQLBackend):
 
         if overwrite:
             # Commit any open transaction first to ensure TRUNCATE can be first statement
-            self._connection.commit()
+            self.con.commit()
             # TRUNCATE TABLE ... IMMEDIATE must be first statement in transaction
             self.truncate_table(name, database=database)
             # Commit the TRUNCATE to complete the transaction
-            self._connection.commit()
+            self.con.commit()
 
         if isinstance(obj, pd.DataFrame):
             # Batch insert from DataFrame
@@ -672,7 +680,7 @@ class Backend(SQLBackend):
             placeholders = ", ".join(["?" for _ in obj.columns])
             insert_sql = f"INSERT INTO {full_name} ({columns}) VALUES ({placeholders})"  # noqa: S608
 
-            cursor = self._connection.cursor()
+            cursor = self.con.cursor()
             try:
                 # Insert in batches
                 batch_size = 1000
@@ -681,7 +689,7 @@ class Backend(SQLBackend):
                     # Convert NaN/NaT/pd.NA to None for Db2 compatibility
                     rows = self._convert_dataframe_to_rows(batch)
                     cursor.executemany(insert_sql, rows)
-                self._connection.commit()
+                self.con.commit()
             finally:
                 cursor.close()
         else:
@@ -731,7 +739,7 @@ class Backend(SQLBackend):
         # deferred prepare off makes the server validate the statement now.
         try:
             stmt = ibm_db.prepare(
-                self._connection.conn_handler,
+                self.con.conn_handler,
                 query,
                 {ibm_db.SQL_ATTR_DEFERRED_PREPARE: 0},
             )
@@ -795,98 +803,3 @@ class Backend(SQLBackend):
         # DataFrame.  For empty tables, pandas assigns object dtype to every
         # column, which sch.infer maps to dt.Null.
         self.create_table(op.name, op.data.to_frame(), schema=schema, temp=True)
-
-
-def connect(
-    database: str,
-    hostname: str = "localhost",
-    port: int = 50000,
-    username: str | None = None,
-    password: str | None = None,
-    schema: str | None = None,
-    ssl: bool = False,
-    ssl_server_certificate: str | Path | None = None,
-    **kwargs,
-):
-    """Connect to a Db2 database.
-
-    Parameters
-    ----------
-    database : str
-        Database name to connect to
-    hostname : str, default "localhost"
-        Hostname of the Db2 server
-    port : int, default 50000
-        Port number of the Db2 server
-    username : str, optional
-        Username for authentication
-    password : str, optional
-        Password for authentication
-    schema : str, optional
-        Default schema to use
-    ssl : bool, default False
-        Enable SSL/TLS encrypted connection. When ``True``, ``SECURITY=SSL``
-        is added to the ibm_db connection string. The default Db2 SSL port
-        is 50001.
-    ssl_server_certificate : str or Path, optional
-        Path to the server's SSL certificate (PEM or ARM format). Maps to
-        ``SSLServerCertificate=<path>`` in the connection string. When
-        ``ssl=True`` and this is ``None``, server certificate validation is
-        skipped (useful for self-signed certificates in dev environments).
-    **kwargs
-        Additional IBM Db2 connection string key=value parameters.
-
-    Returns
-    -------
-    Backend
-        An Ibis Db2 backend instance
-
-    Examples
-    --------
-    >>> import ibis
-    >>> con = ibis.db2.connect(
-    ...     database="SAMPLE",
-    ...     hostname="localhost",
-    ...     port=50000,
-    ...     username="db2inst1",
-    ...     password="password",
-    ... )  # doctest: +SKIP
-    >>> con.list_tables()  # doctest: +SKIP
-    ['EMPLOYEE', 'DEPARTMENT', 'PROJECT']
-
-    Connect with SSL (no certificate validation):
-
-    >>> con = ibis.db2.connect(
-    ...     database="SAMPLE",
-    ...     hostname="localhost",
-    ...     port=50001,
-    ...     username="db2inst1",
-    ...     password="password",
-    ...     ssl=True,
-    ... )  # doctest: +SKIP
-
-    Connect with SSL and a server certificate:
-
-    >>> con = ibis.db2.connect(
-    ...     database="SAMPLE",
-    ...     hostname="db2-server.example.com",
-    ...     port=50001,
-    ...     username="db2inst1",
-    ...     password="password",
-    ...     ssl=True,
-    ...     ssl_server_certificate="/path/to/server.arm",
-    ... )  # doctest: +SKIP
-    """
-    backend = Backend()
-    backend.do_connect(
-        database=database,
-        hostname=hostname,
-        port=port,
-        username=username,
-        password=password,
-        schema=schema,
-        ssl=ssl,
-        ssl_server_certificate=ssl_server_certificate,
-        **kwargs,
-    )
-    return backend

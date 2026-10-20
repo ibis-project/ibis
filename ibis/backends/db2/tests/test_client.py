@@ -65,7 +65,7 @@ def test_version(con):
 def test_get_schema_types(con, server_type, expected_type, temp_table):
     with con._safe_raw_sql(f'CREATE TABLE "{temp_table}" (x {server_type})'):
         pass
-    con._connection.commit()
+    con.con.commit()
 
     try:
         schema = con.get_schema(temp_table)
