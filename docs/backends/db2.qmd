@@ -202,8 +202,15 @@ runs with autocommit enabled.
 - **Decimal precision**: Db2 allows at most 31 digits, so `decimal(38, 9)`
   isn't supported. The default `decimal` maps to `DECIMAL(31, 6)`.
 - **Unsupported operations**: Operations with no Db2 equivalent (for example
-  `ArgMin`, `ArgMax`, `Mode`, `First`, `Last`, `IsNan`, `Strftime`, and array
-  and map operations) raise `OperationNotDefinedError` when compiled.
+  `ArgMin`, `ArgMax`, `Mode`, `First`, `Last`, `Kurtosis`, `Reverse`, `IsNan`,
+  `Strftime`, and array and map operations) raise `OperationNotDefinedError`
+  when compiled.
+- **Whitespace stripping**: `strip`, `lstrip` and `rstrip` remove ASCII
+  whitespace only. Unicode whitespace such as the non-breaking space is kept,
+  which differs from pandas.
+- **Ordered `group_concat`**: Passing `order_by` to `group_concat` raises
+  `UnsupportedOperationError`, because Db2 rejects the `NULLS FIRST/LAST` that
+  Ibis adds to the ordering.
 - **Emoji**: `ibm_db` can segfault when fetching emoji characters, so avoid
   querying them with this backend. Characters outside the Basic Multilingual
   Plane (such as emoji) also corrupt the statement text when used in a SQL
