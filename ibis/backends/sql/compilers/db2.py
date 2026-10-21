@@ -290,6 +290,7 @@ class Db2Compiler(SQLGlotCompiler):
             ops.RegexExtract,  # → visit_RegexExtract (REGEXP_SUBSTR)
             ops.RandomScalar,  # → visit_RandomScalar (RAND())
             ops.GroupConcat,  # → visit_GroupConcat (LISTAGG)
+            ops.Pi,  # → visit_Pi (ACOS(-1))
         )
     }
 
@@ -325,6 +326,10 @@ class Db2Compiler(SQLGlotCompiler):
             # casting the whole windowed expression to DOUBLE makes it readable.
             return self.cast(window, dt.float64)
         return window
+
+    def visit_Pi(self, op):
+        # Db2 11.5 has no PI(); ACOS(-1) works on 11.5 and 12.1.
+        return self.f.acos(-1)
 
     def visit_Cast(self, op, *, arg, to, **kwargs):
         """Visit a Cast operation."""
