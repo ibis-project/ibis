@@ -8,6 +8,7 @@ from ibis import _
 from ibis.expr.decompile import decompile
 
 t = ibis.table([("a", "int64"), ("b", "string")], name="t")
+u = ibis.table([("a", "int64"), ("c", "float64")], name="u")
 expr = t.a.sum()
 
 countries = ibis.table(
@@ -37,7 +38,51 @@ two = ibis.literal(2)
 three = one + two
 nine = three**2
 
-nine_ = (two + one) ** 2
+total = t.a.sum()
+roundtrip_cases = {
+    "logical_operators": t.filter(((t.a > 1) & ~(t.b == "x")) | (t.a < -t.a)),
+    "isin_values": t.filter(t.a.isin([1, 2])),
+    "typed_literal": t.select(ibis.literal(1, "int8").name("x")),
+    "typed_literal_operand": t.select(
+        (ibis.literal("0.2", "decimal(2, 1)") * t.a).name("x")
+    ),
+    "literal_only_operands": t.select(((ibis.literal(1) + 2) == 3).name("eq")),
+    "interval_literal": ibis.interval(1, "D"),
+    "exists": t.filter((u.a == t.a).any()),
+    "not_exists": t.filter(~((u.a == t.a) & (u.c > 1)).any()),
+    "exists_on_filtered": asian_countries.filter(
+        (u.a == asian_countries.population).any()
+    ),
+    "in_subquery": t.filter(t.a.isin(u.a)),
+    "aliased_unary": t.select(
+        (~(t.a > 1)).name("x"), (-t.a).name("neg"), t.a.negate().negate().name("k")
+    ),
+    "nullif": t.select(t.b.nullif("x").name("n")),
+    "as_interval": t.select(t.a.as_interval("D").name("i")),
+    "difference_all": t.select(t.a).difference(u.select(u.a), distinct=False),
+    "intersect_all": t.select(t.a).intersect(u.select(u.a), distinct=False),
+    "union_distinct": t.select(t.a).union(u.select(u.a), distinct=True),
+    "correlated_scalar_subquery": t.filter(
+        t.a > u.filter(u.a == t.a).aggregate(m=u.a.mean()).as_scalar()
+    ),
+    "table_as_scalar": t.filter(t.a > u.aggregate(m=u.a.max()).as_scalar()),
+    "window_range": t.select(
+        t.a.sum().over(group_by=t.b, order_by=t.a, range=(None, 0)).name("s")
+    ),
+    "window_rows": t.select(t.a.sum().over(order_by=t.a, rows=(-1, 0)).name("s")),
+    "window_rank": t.select(t.a.rank().name("r"), ibis.row_number().name("n")),
+    "window_ntile": t.select(ibis.ntile(2).over(order_by=t.a).name("n")),
+    "window_lag": t.select(t.a.lag(1, 0).over(order_by=t.a).name("p")),
+    "cross_join": t.cross_join(u),
+    "join_chain": t.join(u, t.a == u.a).select(t.b, u.c),
+    "reduction_where": t.aggregate(s=t.a.sum(where=t.b == "x")),
+    "reduction_how": t.aggregate(s=t.a.std(how="pop")),
+    "aggregate_by_only": t.aggregate(by=["a"]),
+    "shared_metric": t.aggregate([total.name("x"), total.name("y")]),
+    "dummy_table": ibis.literal(1).name("x").as_table(),
+    "coalesce": t.select(ibis.coalesce(t.b, "none").name("b")),
+    "truncate": ibis.timestamp("2024-01-01 00:00:00").truncate("M"),
+}
 
 
 def test_decompile_invalid_type():
@@ -53,8 +98,8 @@ def test_decompile_invalid_type():
         (overall_population_density, overall_population_density),
         (population_density_per_country, population_density_per_country),
         (eurasian_countries, eurasian_countries),
-        (three, 3),
-        (nine, nine_),
+        (three, three),
+        (nine, nine),
     ],
     ids=[
         "top_with_highest_population",
@@ -76,6 +121,37 @@ def test_basic(expr, expected):
         assert restored.equals(expected)
     else:
         assert restored == expected
+
+
+@pytest.mark.parametrize("expr", roundtrip_cases.values(), ids=roundtrip_cases)
+def test_roundtrip(expr):
+    rendered = decompile(expr)
+
+    locals_ = {}
+    exec(rendered, {}, locals_)  # noqa: S102
+    restored = locals_["result"]
+
+    assert restored.equals(expr)
+    # the generated code is a fixed point
+    assert decompile(restored) == rendered
+
+
+def test_roundtrip_self_join():
+    # a view gets a fresh identity each time, so compare the generated SQL
+    expr = t.join(t.view(), "a")
+    rendered = decompile(expr)
+
+    locals_ = {}
+    exec(rendered, {}, locals_)  # noqa: S102
+    restored = locals_["result"]
+
+    assert ibis.to_sql(restored) == ibis.to_sql(expr)
+
+
+def test_variable_names_avoid_keywords_and_builtins():
+    rendered = decompile(roundtrip_cases["shared_metric"])
+    assert "sum_ = t.a.sum()" in rendered
+    assert "\nsum = " not in rendered
 
 
 def test_view():
