@@ -2773,7 +2773,9 @@ class Table(Expr, FixedTextJupyterMixin):
             if old_name not in renamed:
                 renamed[old_name] = (new_name, self[old_name].op())
             else:
-                raise ValueError("duplicate new names passed for renaming {old_name!r}")
+                raise ValueError(
+                    f"duplicate new names passed for renaming {old_name!r}"
+                )
 
         if isinstance(method, str) and method in {"snake_case", "ALL_CAPS"}:
 
