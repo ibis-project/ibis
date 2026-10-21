@@ -266,6 +266,38 @@ class PyArrowSchema(SchemaMapper):
         return Schema.from_tuples(fields)
 
 
+def _castable_type(typ: pa.DataType) -> pa.DataType:
+    """Relax non-nullable struct children that no data can satisfy.
+
+    Arrow materializes the children of a NULL struct as NULL, so casting to a
+    struct type that declares a non-nullable child fails with `ArrowInvalid`
+    as soon as the struct itself holds a NULL.  Such a type is still legal in
+    Arrow, so `PyArrowType.from_ibis` keeps producing it faithfully; only data
+    being cast *into* it needs the child fields relaxed.
+
+    Nested types are rewritten so that structs buried inside lists and maps are
+    relaxed too.  A NULL list or map does not materialize its children, so
+    their own field nullability is left untouched.
+    """
+    if pa.types.is_struct(typ):
+        return pa.struct(
+            [
+                field.with_nullable(True).with_type(_castable_type(field.type))
+                for field in typ
+            ]
+        )
+    elif pa.types.is_fixed_size_list(typ):
+        value_field = typ.value_field.with_type(_castable_type(typ.value_type))
+        return pa.list_(value_field, typ.list_size)
+    elif pa.types.is_list(typ):
+        return pa.list_(typ.value_field.with_type(_castable_type(typ.value_type)))
+    elif pa.types.is_map(typ):
+        item_field = typ.item_field.with_type(_castable_type(typ.item_type))
+        return pa.map_(typ.key_field, item_field, keys_sorted=typ.keys_sorted)
+    else:
+        return typ
+
+
 class PyArrowData(DataMapper):
     @classmethod
     def infer_scalar(cls, scalar: Any) -> dt.DataType:
@@ -306,7 +338,7 @@ class PyArrowData(DataMapper):
 
     @classmethod
     def convert_scalar(cls, scalar: pa.Scalar, dtype: dt.DataType) -> pa.Scalar:
-        desired_type = PyArrowType.from_ibis(dtype)
+        desired_type = _castable_type(PyArrowType.from_ibis(dtype))
         scalar_type = scalar.type
         if scalar_type != desired_type:
             try:
@@ -320,7 +352,7 @@ class PyArrowData(DataMapper):
 
     @classmethod
     def convert_column(cls, column: pa.Array, dtype: dt.DataType) -> pa.Array:
-        desired_type = PyArrowType.from_ibis(dtype)
+        desired_type = _castable_type(PyArrowType.from_ibis(dtype))
         if column.type != desired_type:
             return column.cast(desired_type)
         else:
@@ -328,7 +360,12 @@ class PyArrowData(DataMapper):
 
     @classmethod
     def convert_table(cls, table: pa.Table, schema: Schema) -> pa.Table:
-        desired_schema = PyArrowSchema.from_ibis(schema)
+        desired_schema = pa.schema(
+            [
+                field.with_type(_castable_type(field.type))
+                for field in PyArrowSchema.from_ibis(schema)
+            ]
+        )
         if table.schema == desired_schema:
             return table
         arrays = [
