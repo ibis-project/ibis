@@ -96,6 +96,51 @@ jobs:
           flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  test_sqlglot_bounds:
+    name: Test sqlglot ${{ matrix.sqlglot }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sqlglot:
+          - floor
+          - latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+
+      - name: install python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v10.3.0
+
+      - uses: extractions/setup-just@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download test data
+        run: just download-data
+
+      - name: lock sqlglot at the floor of the range pyproject.toml declares
+        if: matrix.sqlglot == 'floor'
+        run: |
+          set -euo pipefail
+
+          spec="$(grep -o '"sqlglot[^"]*"' pyproject.toml | tr -d '"')"
+          pin="$(uv pip compile --resolution lowest-direct --no-header -q - <<< "$spec")"
+          echo "pinning $pin"
+          uv lock --upgrade-package "$pin"
+
+      - name: lock sqlglot at its latest release
+        if: matrix.sqlglot == 'latest'
+        run: uv lock --upgrade-package sqlglot
+
+      - name: run the parse_sql and decompile tests
+        run: just ci-check "--extra duckdb --extra decompiler" ibis/backends/duckdb/tests/test_parse_sql.py ibis/backends/duckdb/tests/test_decompile_tpch.py ibis/expr/tests/test_decompile.py ibis/expr/tests/test_rewrites.py ibis/expr/tests/test_sql.py -rfEs
+
   test_doctests:
     name: Doctests
     runs-on: ubuntu-latest
