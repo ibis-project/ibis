@@ -363,7 +363,10 @@ def rewrite_window_input(value, window):
 # TODO(kszucs): schema comparison should be updated to not distinguish between
 # different column order
 @replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))
-def complete_reprojection(_, y):
+def complete_reprojection(_, y, keep=frozenset()):
+    # a subquery needs a relation with values, which a bare table lacks
+    if _ in keep and not y.values:
+        return _
     # TODO(kszucs): this could be moved to the pattern itself but not sure how
     # to express it, especially in a shorter way then the following check
     for name in _.schema:
@@ -381,6 +384,11 @@ def subsequent_projects(_, y):
 
 @replace(p.Filter(y @ p.Filter))
 def subsequent_filters(_, y):
+    # a subquery in a predicate may be correlated to the inner filter's rows;
+    # merging would leave it referencing a relation the result no longer has
+    if any(v.find(p.Subquery, filter=p.Value) for v in _.predicates):
+        return _
+
     rule = p.Field(y, name) >> d.Field(y.parent, name)
     preds = tuple(v.replace(rule, filter=ops.Value) for v in _.predicates)
     return ops.Filter(y.parent, y.predicates + preds)
@@ -388,6 +396,11 @@ def subsequent_filters(_, y):
 
 @replace(p.Filter(y @ p.Project))
 def reorder_filter_project(_, y):
+    # a window function computed in the projection must keep seeing the
+    # unfiltered rows, so the filter cannot move below it
+    if any(v.find(p.WindowFunction, filter=p.Value) for v in y.values.values()):
+        return _
+
     rule = p.Field(y, name) >> Item(y.values, name)
     preds = tuple(v.replace(rule, filter=ops.Value) for v in _.predicates)
 
@@ -404,5 +417,6 @@ def simplify(node):
     node = node.replace(reorder_filter_project)
     node = node.replace(reorder_filter_project)
     node = node.replace(subsequent_projects | subsequent_filters)
-    node = node.replace(complete_reprojection)
+    keep = frozenset(sub.rel for sub in node.find(ops.Subquery))
+    node = node.replace(complete_reprojection, context={"keep": keep})
     return node

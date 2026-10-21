@@ -15,6 +15,28 @@ t = ibis.table(
 )
 
 
+def test_simplify_keeps_window_above_filter():
+    # the window must keep seeing the unfiltered rows
+    w = t.select(t.int_col, avg=t.int_col.mean().over(group_by=t.string_col))
+    f = w.filter(w.avg > 1)
+    assert simplify(f.op()) == f.op()
+
+
+def test_simplify_keeps_subquery_relation():
+    # a subquery needs a relation with values, which a bare table lacks
+    u = ibis.table({"int_col": "int64"}, name="u")
+    expr = t.filter(t.int_col.isin(u.int_col))
+    assert simplify(expr.op()) == expr.op()
+
+
+def test_simplify_keeps_filter_with_subquery_predicate():
+    # the EXISTS is correlated to the filtered rows, not to the table
+    u = ibis.table({"int_col": "int64"}, name="u")
+    f = t.filter(t.int_col > 1)
+    expr = f.filter((u.int_col == f.int_col).any())
+    assert simplify(expr.op()) == expr.op()
+
+
 def test_simplify_full_reprojection():
     t1 = t.select(t)
     t1_opt = simplify(t1.op())
