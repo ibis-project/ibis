@@ -16,7 +16,11 @@ from ibis.common.exceptions import (
     InputTypeError,
     IntegrityError,
 )
-from ibis.expr.rewrites import flatten_predicates, peel_join_field
+from ibis.expr.rewrites import (
+    flatten_predicates,
+    peel_join_field,
+    rewrite_project_input,
+)
 from ibis.expr.types.generic import Value
 from ibis.expr.types.relations import (
     DerefMap,
@@ -203,8 +207,20 @@ class Join(Table):
 
     def __init__(self, arg, collisions=(), equalities=()):
         assert isinstance(arg, ops.Node)
-        if not isinstance(arg, ops.JoinChain):
-            # coerce the input node to a join chain operation
+        if not isinstance(arg, ops.JoinChain) or any(
+            value.find(ops.WindowFunction, filter=ops.Value)
+            for value in arg.values.values()
+        ):
+            # coerce the input node to a join chain operation:
+            # - a relation that isn't a join chain, like `customers` in
+            #   `customers.join(orders, "customer_id")`, becomes the first
+            #   table of a new join chain
+            # - a join chain with window functions, like
+            #   `customers.join(orders, "customer_id").select(rn=ibis.row_number())`
+            #   in `<that>.join(vips, "customer_id")`, becomes the first table
+            #   of a new join chain instead of being extended, since joining
+            #   `vips` would change the rows the window functions are
+            #   evaluated over
             arg = ops.JoinReference(arg, identifier=0)
             arg = ops.JoinChain(arg, rest=(), values=arg.fields)
         super().__init__(arg)
@@ -385,7 +401,10 @@ class Join(Table):
         values = unwrap_aliases(values)
 
         links = [link.table for link in chain.rest if link.how not in ("semi", "anti")]
-        derefmap = DerefMap.from_targets([chain.first, *links])
+        # subqueries referencing fields of the join chain constructed so far
+        # must reference the fields of the join links instead
+        peeled = {ops.Field(chain, k): v for k, v in chain.values.items()}
+        derefmap = DerefMap.from_targets([chain.first, *links], extra=peeled)
 
         # if there are values referencing fields from the join chain constructed
         # so far, we need to replace them the fields from one of the join links
@@ -397,7 +416,9 @@ class Join(Table):
         for k, v in values.items():
             # ensure that there's only a single thing returned from dereferencing
             (new_value,) = derefmap.dereference(v)
-            new_values[k] = new_value
+            # analytic functions and reductions over the joined tables have to
+            # be turned into window functions, the same way as in Table.select
+            new_values[k] = rewrite_project_input(new_value, chain.first, *links)
 
         node = chain.copy(values=new_values)
         return Table(node)
