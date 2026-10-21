@@ -39,3 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "No build required"
+  test_sqlglot_bounds:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"
