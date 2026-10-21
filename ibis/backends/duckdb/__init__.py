@@ -1380,10 +1380,19 @@ class Backend(
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
 
-        def batch_producer(cur):
-            yield from cur.fetch_record_batch(rows_per_batch=chunk_size)
+        if vparse(self.version) >= vparse("2"):
+            # DuckDB 2.0 removed `fetch_record_batch` from DB-API results
+            result = self.con.sql(sql)
 
-        result = self.raw_sql(sql)
+            def batch_producer(rel):
+                yield from rel.to_arrow_reader(chunk_size)
+
+        else:
+            result = self.raw_sql(sql)
+
+            def batch_producer(cur):
+                yield from cur.fetch_record_batch(rows_per_batch=chunk_size)
+
         return pa.ipc.RecordBatchReader.from_batches(
             expr.as_table().schema().to_pyarrow(), batch_producer(result)
         )
