@@ -5,6 +5,6 @@ employee = ibis.table(
     schema={"first_name": "string", "last_name": "string", "id": "int64"},
 )
 f = employee.filter((employee.id < 5))
-s = f.order_by(f.id.desc())
+p = f.select(f.first_name, f.last_name, f.id, f.first_name.name("first"))
 
-result = s.select(s.first_name, s.last_name, s.id, s.first_name.name("first"))
+result = p.order_by(p.id.desc())

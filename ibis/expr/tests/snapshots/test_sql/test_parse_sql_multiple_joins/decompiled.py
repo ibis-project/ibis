@@ -4,7 +4,6 @@ employee = ibis.table(
     name="employee",
     schema={"first_name": "string", "last_name": "string", "id": "int64"},
 )
-lit = ibis.literal(True)
 call = ibis.table(
     name="call",
     schema={
@@ -20,8 +19,8 @@ call_outcome = ibis.table(
 )
 
 result = (
-    employee.inner_join(call, [(employee.id == call.employee_id), lit])
-    .inner_join(call_outcome, [(call.call_outcome_id == call_outcome.id), lit])
+    employee.inner_join(call, (employee.id == call.employee_id))
+    .inner_join(call_outcome, (call.call_outcome_id == call_outcome.id))
     .select(
         employee.first_name,
         employee.last_name,
