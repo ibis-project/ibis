@@ -192,6 +192,55 @@ CREATE USER TEMPORARY TABLESPACE IBIS_TEMP_32K PAGESIZE 32K
 Temporary tables are created with `ON COMMIT PRESERVE ROWS`, and the connection
 runs with autocommit enabled.
 
+## Overwriting tables
+
+`create_table(..., overwrite=True)` **replaces the table**. The new table is
+built under a temporary name first, so a query that fails leaves the existing
+table as it was. After that the old table is dropped and the new one takes its
+name. The replacement has only the columns of the new data: primary keys and
+other constraints, indexes, triggers and grants on the old table are not
+carried over. Recreate them after the overwrite, for example:
+
+```python
+con.create_table("t", new_data, overwrite=True)
+con.raw_sql('ALTER TABLE "t" ADD PRIMARY KEY ("id")')
+con.raw_sql('CREATE INDEX "t_ix" ON "t" ("name")')
+```
+
+To replace the rows and keep the table definition, use
+`con.insert("t", new_data, overwrite=True)` instead. It truncates the table
+first, so it must be the first statement of its unit of work.
+
+Db2 cannot rename a temporary table, so with `temp=True` the new data is
+copied into a re-created table. The query still runs before the old table is
+touched, but the old temporary table is gone if that final copy fails.
+
+## Existing connections and autocommit
+
+`ibis.db2.connect` turns autocommit on. `Backend.from_connection` uses the
+connection as it is and never commits for you. If the connection has autocommit
+off, Ibis issues a warning, reads may hold locks, and changes (including
+created tables) stay uncommitted and invisible to other connections until you
+call `con.commit()`. Call `con.set_autocommit(True)` before passing the
+connection in to avoid this.
+
+## Db2 server versions
+
+The backend is tested against Db2 12.1.5, which the test suite uses in CI.
+The full test suite was also run against Db2 11.5.9: everything passes except
+the 7 tests below, which need `ibis.uuid()`.
+
+| Feature | Db2 12.1 | Db2 11.5 |
+| ------- | -------- | -------- |
+| `ibis.uuid()` | Works | Fails when executed with `SQL0440N`: the `GENERATE_UUID` function it uses does not exist before 12.1 |
+
+On 11.5.9 these tests fail for that reason:
+`test_uuid_function`, `test_uuid_unique_each_row`, the four `uuid` cases of
+`test_impure_correlated`, `test_chained_selections`,
+`test_impure_uncorrelated_same_id` and `test_impure_uncorrelated_different_id`,
+and `test_self_join_with_generated_keys`. `pi` and casting strings to dates,
+times and timestamps work on both versions.
+
 ## Limitations
 
 - **Python UDFs**: Not currently supported
