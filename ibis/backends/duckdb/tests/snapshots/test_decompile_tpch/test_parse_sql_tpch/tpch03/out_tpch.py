@@ -13,7 +13,6 @@ customer = ibis.table(
         "c_comment": "string",
     },
 )
-lit = ibis.literal(True)
 orders = ibis.table(
     name="orders",
     schema={
@@ -51,14 +50,8 @@ lineitem = ibis.table(
 )
 cast = ibis.literal("1995-03-15").cast("date")
 joinchain = (
-    customer.inner_join(
-        orders,
-        [(customer.c_custkey == orders.o_custkey), lit, (orders.o_orderdate < cast)],
-    )
-    .inner_join(
-        lineitem,
-        [(orders.o_orderkey == lineitem.l_orderkey), lit, (lineitem.l_shipdate > cast)],
-    )
+    customer.inner_join(orders, (customer.c_custkey == orders.o_custkey))
+    .inner_join(lineitem, (lineitem.l_orderkey == orders.o_orderkey))
     .select(
         customer.c_custkey,
         customer.c_name,
@@ -95,11 +88,15 @@ joinchain = (
         lineitem.l_comment,
     )
 )
-f = joinchain.filter((joinchain.c_mktsegment == "BUILDING"))
+f = joinchain.filter(
+    (joinchain.c_mktsegment == "BUILDING"),
+    (joinchain.o_orderdate < cast),
+    (joinchain.l_shipdate > cast),
+)
 agg = f.aggregate(
     [(f.l_extendedprice * ((ibis.literal(1) - f.l_discount))).sum().name("revenue")],
     by=[f.l_orderkey, f.o_orderdate, f.o_shippriority],
 )
-s = agg.order_by(agg.revenue.desc(), agg.o_orderdate.asc())
+p = agg.select(agg.l_orderkey, agg.revenue, agg.o_orderdate, agg.o_shippriority)
 
-result = s.select(s.l_orderkey, s.revenue, s.o_orderdate, s.o_shippriority).limit(10)
+result = p.order_by(p.revenue.desc(), p.o_orderdate.asc()).limit(10)
