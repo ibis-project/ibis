@@ -621,6 +621,29 @@ def test_join_unambiguous_select():
         )
 
 
+def test_join_select_windowizes_analytic_functions_and_reductions():
+    # GH #10261
+    a = ibis.table(name="a", schema={"a_int": "int64", "a_str": "string"})
+    b = ibis.table(name="b", schema={"b_int": "int64", "b_str": "string"})
+
+    join = a.join(b, a.a_int == b.b_int)
+    expr = join.select(
+        "a_int", rn=ibis.row_number(), prev=a.a_str.lag(), total=b.b_int.sum()
+    )
+
+    with join_tables(join) as (r1, r2):
+        assert expr.op() == JoinChain(
+            first=r1,
+            rest=[JoinLink("inner", r2, [r1.a_int == r2.b_int])],
+            values={
+                "a_int": r1.a_int,
+                "rn": ops.WindowFunction(ops.RowNumber()),
+                "prev": r1.a_str.lag().over(),
+                "total": r2.b_int.sum().over(),
+            },
+        )
+
+
 def test_join_with_subsequent_projection():
     t1 = ibis.table(name="t1", schema={"a": "int64", "b": "string"})
     t2 = ibis.table(name="t2", schema={"c": "int64", "d": "string"})

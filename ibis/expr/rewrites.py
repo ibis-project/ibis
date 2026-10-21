@@ -256,11 +256,11 @@ def wrap_analytic(_, **__):
 
 
 @replace(p.Reduction)
-def project_wrap_reduction(_, rel):
+def project_wrap_reduction(_, rels):
     # Query all the tables that the reduction depends on
-    if _.relations == {rel}:
-        # The reduction is fully originating from the `rel`, so turn
-        # it into a window function of `rel`
+    if _.relations and _.relations <= rels:
+        # The reduction is fully originating from `rels`, so turn
+        # it into a window function of `rels`
         return ops.WindowFunction(_, order_by=getattr(_, "order_by", ()))
     else:
         # 1. The reduction doesn't depend on any table, constructed from
@@ -272,14 +272,14 @@ def project_wrap_reduction(_, rel):
         return ops.ScalarSubquery(_.to_expr().as_table())
 
 
-def rewrite_project_input(value, relation):
+def rewrite_project_input(value, *relations):
     # we need to detect reductions which are either turned into window functions
     # or scalar subqueries depending on whether they are originating from the
-    # relation
+    # relations
     return value.replace(
         wrap_analytic | project_wrap_reduction,
         filter=p.Value & ~p.WindowFunction,
-        context={"rel": relation},
+        context={"rels": frozenset(relations)},
     )
 
 
