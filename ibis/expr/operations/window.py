@@ -12,6 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
+from ibis import util
 from ibis.common.patterns import CoercionError
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.operations.analytic import Analytic  # noqa: TC001
@@ -20,9 +21,46 @@ from ibis.expr.operations.generic import Literal
 from ibis.expr.operations.numeric import Negate
 from ibis.expr.operations.reductions import Reduction  # noqa: TC001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TC001
+from ibis.expr.operations.temporal import IntervalAdd, IntervalSubtract
 
 T = TypeVar("T", bound=dt.Numeric | dt.Interval, covariant=True)
 S = TypeVar("S", bound=ds.DataShape, default=ds.Any, covariant=True)
+
+# the shortest and longest possible length, in days, of calendar units
+_CALENDAR_UNIT_DAYS = {"Y": (365, 366), "Q": (89, 92), "M": (28, 31)}
+
+
+def _interval_bounds(op):
+    """Bound the length, in nanoseconds, of an expression of interval literals.
+
+    Returns `None` if `op` isn't built only from interval literals.
+    """
+    if isinstance(op, Literal) and op.dtype.is_interval():
+        unit = op.dtype.unit.short
+        if unit in _CALENDAR_UNIT_DAYS:
+            shortest, longest = _CALENDAR_UNIT_DAYS[unit]
+            low, high = sorted((op.value * shortest, op.value * longest))
+            return util.convert_unit(low, "D", "ns"), util.convert_unit(high, "D", "ns")
+        value = util.convert_unit(op.value, unit, "ns")
+        return value, value
+    elif isinstance(op, (IntervalAdd, IntervalSubtract)):
+        left, right = _interval_bounds(op.left), _interval_bounds(op.right)
+        if left is None or right is None:
+            return None
+        elif isinstance(op, IntervalAdd):
+            return left[0] + right[0], left[1] + right[1]
+        else:
+            return left[0] - right[1], left[1] - right[0]
+    return None
+
+
+def _negate_interval_literals(op):
+    if isinstance(op, Literal):
+        return op.copy(value=-op.value)
+    return op.copy(
+        left=_negate_interval_literals(op.left),
+        right=_negate_interval_literals(op.right),
+    )
 
 
 @public
@@ -57,6 +95,14 @@ class WindowBoundary(Value[T, S]):
         elif isinstance(arg, Literal):
             new = arg.copy(value=abs(arg.value))
             return cls(new, preceding=arg.value < 0)
+        elif (
+            isinstance(arg, (IntervalAdd, IntervalSubtract))
+            and (bounds := _interval_bounds(arg)) is not None
+            and bounds[1] < 0
+        ):
+            # a compound interval that is always negative, such as
+            # `ibis.interval(months=-1, days=1)`
+            return cls(_negate_interval_literals(arg), preceding=True)
         elif isinstance(arg, Value):
             return cls(arg, preceding=False)
         else:
