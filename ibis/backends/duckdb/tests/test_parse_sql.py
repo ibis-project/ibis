@@ -223,7 +223,9 @@ UNSUPPORTED = {
     "any_lt": ("SELECT a FROM t WHERE a < ANY (SELECT a FROM u)", "ANY"),
     "substring_from_zero": ("SELECT SUBSTRING(b, 0, 2) FROM t", "SUBSTRING"),
     "substring_from_negative": ("SELECT SUBSTRING(b, -1, 2) FROM t", "SUBSTRING"),
+    "split_part_zero": ("SELECT SPLIT_PART(b, 'a', 0) FROM t", "SPLIT_PART"),
     "extract_decade": ("SELECT EXTRACT(decade FROM d) FROM t", "(?i)decade"),
+    "regexp_flags": ("SELECT REGEXP_MATCHES(b, 'A', 'i') FROM t", "(?i)flags"),
     "trim_characters": ("SELECT TRIM('f' FROM b) FROM t", "TRIM"),
     "limit_percent": ("SELECT a FROM t LIMIT 10%", "PERCENT"),
     "fetch_with_ties": (
@@ -318,28 +320,6 @@ INVALID = {
 }
 
 
-# the everyday functions the next commit translates; strict xfails until then
-NOT_YET = frozenset(
-    {
-        "bool_or_and",
-        "current_date",
-        "date_diff",
-        "date_part",
-        "exp_log",
-        "extract_day_of_week",
-        "extract_more_units",
-        "int_div",
-        "is_distinct_from",
-        "is_not_distinct_from_null",
-        "join_is_not_distinct_from",
-        "position",
-        "regexp_matches",
-        "split_part",
-        "string_agg",
-        "string_agg_group",
-    }
-)
-
 # ``parse_sql`` raises for these on the oldest sqlglot releases the declared
 # range admits, so they are skipped there
 OLD_SQLGLOT = {
@@ -360,29 +340,13 @@ OLD_SQLGLOT["limit_percent"] = pytest.mark.skipif(
 )
 
 
-def _params(table, not_yet=frozenset()):
-    """Parametrize over ``table``.
-
-    A case in ``OLD_SQLGLOT`` is skipped on the releases it names; a case in
-    ``not_yet`` is a strict xfail.
-    """
+def _params(table):
+    """Parametrize over ``table``; a case in ``OLD_SQLGLOT`` is skipped there."""
     return [
         pytest.param(
             *(value if isinstance(value, tuple) else (value,)),
             id=name,
-            marks=[
-                *([OLD_SQLGLOT[name]] if name in OLD_SQLGLOT else []),
-                *(
-                    [
-                        pytest.mark.xfail(
-                            reason="parse_sql does not translate this function yet",
-                            strict=True,
-                        )
-                    ]
-                    if name in not_yet
-                    else []
-                ),
-            ],
+            marks=[OLD_SQLGLOT[name]] if name in OLD_SQLGLOT else [],
         )
         for name, value in table.items()
     ]
@@ -396,13 +360,13 @@ def assert_matches_duckdb(duck, expr, sql):
     assert_same_result(result, expected, sort_keys=sort_keys)
 
 
-@pytest.mark.parametrize("sql", _params(CASES, NOT_YET))
+@pytest.mark.parametrize("sql", _params(CASES))
 def test_parse_sql_matches_duckdb(duck, sql):
     expr = ibis.parse_sql(sql, CATALOG, dialect="duckdb")
     assert_matches_duckdb(duck, expr, sql)
 
 
-@pytest.mark.parametrize("sql", _params(CASES, NOT_YET))
+@pytest.mark.parametrize("sql", _params(CASES))
 def test_decompile_roundtrip_matches_duckdb(duck, sql):
     """Parsed SQL decompiles to Python that rebuilds an equivalent expression."""
     expr = decompile_roundtrip(ibis.parse_sql(sql, CATALOG, dialect="duckdb"))
