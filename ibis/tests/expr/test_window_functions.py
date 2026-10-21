@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.common.exceptions import ExpressionError
 
@@ -66,6 +67,11 @@ def test_conflicting_window_boundaries(alltypes):
 
     with pytest.raises(ExpressionError, match="Unable to merge windows"):
         t.f.cumsum().over(rows=(0, 1))
+
+
+def test_over_with_invalid_window_type(alltypes):
+    with pytest.raises(com.IbisTypeError, match="Unexpected window type: 5"):
+        alltypes.f.sum().over(5)
 
 
 def test_rank_followed_by_over_call_merge_frames(alltypes):

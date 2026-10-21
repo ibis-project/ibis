@@ -898,7 +898,7 @@ class Value(Expr):
                 order_by=order_by,
             )
         elif not isinstance(window, bl.WindowBuilder):
-            raise com.IbisTypeError("Unexpected window type: {window!r}")
+            raise com.IbisTypeError(f"Unexpected window type: {window!r}")
 
         node = self.op()
         if len(node.relations) == 0:
