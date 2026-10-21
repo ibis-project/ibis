@@ -305,7 +305,6 @@ backend_type_mapping = {
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
-@pytest.mark.notimpl(["db2"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     new_table = con.create_table(temp_table, schema=new_schema)
     backend_mapping = backend_type_mapping.get(con.name, {})
@@ -666,7 +665,6 @@ def test_insert_overwrite_from_expr(
     reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
     # Ref: https://materialize.com/docs/sql/begin/
 )
-@pytest.mark.notimpl(["db2"])
 def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
     def _emp(a, b, c, d):
         return dict(first_name=a, last_name=b, department_name=c, salary=d)
@@ -1167,11 +1165,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
         param(
             lambda: pa.table({"a": ["a"], "b": [1]}),
             "df_arrow",
-            marks=[
-                pytest.mark.notimpl(
-                    ["db2"], raises=(ValueError, TypeError), strict=False
-                )
-            ],
             id="pyarrow table",
         ),
         param(
@@ -1199,18 +1192,14 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "athena",
                         "singlestoredb",
                     ]
-                )
+                ),
+                pytest.mark.notimpl(["db2"], raises=TypeError),
             ],
             id="pyarrow_rbr",
         ),
         param(
             lambda: pa.table({"a": ["a"], "b": [1]}).to_batches()[0],
             "df_arrow_single_batch",
-            marks=[
-                pytest.mark.notimpl(
-                    ["db2"], raises=(ValueError, TypeError), strict=False
-                )
-            ],
             id="pyarrow_single_batch",
         ),
         param(
@@ -1221,6 +1210,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                     [
                         "bigquery",
                         "clickhouse",
+                        "db2",
                         "exasol",
                         "impala",
                         "materialize",
@@ -1241,7 +1231,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                     reason="we don't materialize datasets to avoid perf footguns",
                 ),
                 pytest.mark.notimpl(["polars"], raises=NotImplementedError),
-                pytest.mark.notimpl(["db2"], raises=(ValueError, TypeError)),
             ],
             id="pyarrow dataset",
         ),
@@ -1638,7 +1627,6 @@ def gen_test_name(con: BaseBackend):
         "If `obj` is of `ir.Table`, the operation must be `InMemoryTable`."
     ),
 )
-@pytest.mark.notimpl(["db2"])
 def test_overwrite(ddl_con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", ddl_con)
 
@@ -1936,7 +1924,6 @@ def test_schema_with_caching(alltypes):
         ),
     ],
 )
-@pytest.mark.notimpl(["db2"])
 def test_insert_using_col_name_not_position(con, first_row, second_row, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     table_name = gen_name("table")
@@ -2066,7 +2053,6 @@ def test_cross_database_join(con_create_database, monkeypatch):
     reason="Materialize restricts INSERT operations within transaction blocks (write-only transactions only).",
     # Ref: https://materialize.com/docs/sql/begin/
 )
-@pytest.mark.notimpl(["db2"])
 def test_insert_into_table_missing_columns(con, temp_table):
     db = getattr(con, "current_database", None)
 

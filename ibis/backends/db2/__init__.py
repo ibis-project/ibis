@@ -11,11 +11,13 @@ from urllib.parse import unquote_plus
 import sqlglot as sg
 import sqlglot.expressions as sge
 
+import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends import CanListDatabase, HasCurrentDatabase, PyArrowExampleLoader
 from ibis.backends.db2.converter import Db2PandasData
 from ibis.backends.sql import SQLBackend
@@ -26,6 +28,7 @@ if TYPE_CHECKING:
 
     import ibm_db_dbi
     import pandas as pd
+    import pyarrow as pa
 
 # Result-set column kinds reported by ibm_db.field_type that map to a single
 # Ibis type, regardless of precision or scale.
@@ -37,6 +40,16 @@ _SIMPLE_FIELD_TYPES = {
     "time": dt.Time,
     "timestamp": dt.Timestamp,
 }
+
+
+def _temporary_properties():
+    # Db2 deletes the rows of a GLOBAL TEMPORARY table at every commit by
+    # default; keep them for the life of the session.
+    return [
+        sge.GlobalProperty(),
+        sge.TemporaryProperty(),
+        sge.OnCommitProperty(delete=False),
+    ]
 
 
 class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoader):
@@ -161,9 +174,8 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
 
         if not ibm_db.autocommit(con.conn_handler):
             warnings.warn(
-                "The Db2 connection has autocommit off. Ibis does not commit, so "
-                "changes made through this backend stay uncommitted and hold "
-                "locks until you call `con.commit()`.",
+                "autocommit is off; reads may hold locks and changes stay "
+                "uncommitted until you call con.commit()",
                 stacklevel=2,
             )
         new_backend = cls()
@@ -409,168 +421,129 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
     def create_table(
         self,
         name: str,
-        obj: ir.Table | pd.DataFrame | None = None,
+        /,
+        obj: ir.Table | pd.DataFrame | pa.Table | None = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
     ) -> ir.Table:
-        """Create a new table.
+        """Create a table.
 
         Parameters
         ----------
-        name : str
-            Table name
-        obj : ir.Table | pd.DataFrame, optional
-            Data to insert
-        schema : sch.Schema, optional
-            Table schema
-        database : str, optional
-            Schema name
-        temp : bool, default False
-            Create temporary table
-        overwrite : bool, default False
-            Overwrite if exists
+        name
+            Name of the new table.
+        obj
+            An Ibis table expression, pandas DataFrame or PyArrow table that
+            is used to populate the new table.
+        schema
+            The schema for the new table. Only one of `schema` or `obj` is
+            required.
+        database
+            Name of the schema in which to create the table.
+        temp
+            Create a `GLOBAL TEMPORARY` table. Its rows are kept until the
+            end of the session and it needs a `USER TEMPORARY` tablespace.
+        overwrite
+            Replace the table if it exists.
+
+        Notes
+        -----
+        With `overwrite=True` the new table is built under a temporary name
+        first, so a failing query leaves the existing table untouched. The
+        old table is then dropped and replaced. **The replacement is a new
+        table: primary keys, other constraints, indexes, triggers and
+        grants on the old table are not carried over.** Recreate them
+        after the overwrite, for example with `con.raw_sql("ALTER TABLE ... ADD
+        PRIMARY KEY ...")`. Use `con.insert(name, obj, overwrite=True)` to
+        replace the rows and keep the table definition.
+
+        Db2 cannot rename a temporary table, so a temporary table is
+        overwritten by copying the new table into a re-created one. The
+        query is still evaluated before the old table is touched, but the
+        old table is gone if that final copy fails.
 
         Returns
         -------
-        ir.Table
-            Table expression
+        Table
+            The table that was just created
         """
-        import pandas as pd
-
         if obj is None and schema is None:
-            raise exc.IbisError("Either obj or schema must be provided")
+            raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
-        # Normalise schema: accept dict.items() (tuples) and plain dicts in
-        # addition to ibis.Schema objects.
-        if schema is not None and not isinstance(schema, sch.Schema):
-            schema = sch.schema(schema)
+        properties = _temporary_properties() if temp else []
 
-        # Normalise obj: convert pyarrow.Table to pandas DataFrame so the rest
-        # of the method can treat obj as either pd.DataFrame or ir.Table.
+        if obj is not None:
+            table = obj if isinstance(obj, ir.Expr) else ibis.memtable(obj)
+            self._run_pre_execute_hooks(table)
+            query = self.compiler.to_sqlglot(table)
+            column_defs = (schema or table.schema()).to_sqlglot_column_defs(
+                self.dialect
+            )
+        else:
+            query = None
+            column_defs = schema.to_sqlglot_column_defs(self.dialect)
+
+        quoted = self.compiler.quoted
+        # An overwrite is built under a temporary name so that the existing
+        # table survives a failure.
+        staging = util.gen_name(f"{self.name}_table") if overwrite else name
+        staging_table = sg.table(staging, db=database, quoted=quoted)
+
+        def create(table_name):
+            with self._safe_raw_sql(
+                sge.Create(
+                    kind="TABLE",
+                    this=sge.Schema(this=table_name, expressions=column_defs),
+                    properties=sge.Properties(expressions=properties),
+                )
+            ):
+                pass
+
         try:
-            import pyarrow as pa
-
-            if isinstance(obj, pa.RecordBatchReader):
-                obj = obj.read_all().to_pandas()
-            elif isinstance(obj, (pa.Table, pa.RecordBatch)):
-                obj = obj.to_pandas()
-        except ImportError:
-            pass
-
-        if schema is None:
-            if isinstance(obj, pd.DataFrame):
-                schema = sch.infer(obj)
-            elif isinstance(obj, ir.Table):
-                schema = obj.schema()
-            else:
-                obj = pd.DataFrame(obj)
-                schema = sch.infer(obj)
-
-        table = sg.table(name, db=database, quoted=self.compiler.quoted)
-        full_name = table.sql(self.dialect)
+            create(staging_table)
+            if query is not None:
+                with self._safe_raw_sql(
+                    sge.Insert(this=staging_table, expression=query)
+                ):
+                    pass
+        except BaseException:
+            if overwrite:
+                self.drop_table(staging, database=database, force=True)
+            raise
 
         if overwrite:
             self.drop_table(name, database=database, force=True)
-
-        properties = []
-        if temp:
-            # Db2 deletes the rows of a GLOBAL TEMPORARY table at every commit
-            # by default, and this connection commits after each statement.
-            properties = [
-                sge.GlobalProperty(),
-                sge.TemporaryProperty(),
-                sge.OnCommitProperty(delete=False),
-            ]
-
-        create_stmt = sge.Create(
-            kind="TABLE",
-            this=sge.Schema(
-                this=table, expressions=schema.to_sqlglot_column_defs(self.dialect)
-            ),
-            properties=sge.Properties(expressions=properties),
-        )
-
-        with self._safe_raw_sql(create_stmt):
-            pass
-        # Commit the CREATE TABLE statement so it is visible to new connections.
-        self.con.commit()
-
-        # Insert data if provided
-        if obj is not None:
-            if isinstance(obj, pd.DataFrame):
-                self.insert(name, obj, database=database)
-            elif isinstance(obj, ir.Table):
-                # Ensure any in-memory tables referenced by obj (e.g. memtables)
-                # are registered in the database before the INSERT is executed.
-                self._register_in_memory_tables(obj)
-                insert_sql = f"INSERT INTO {full_name} {self.compile(obj)}"
-                with self._safe_raw_sql(insert_sql):
+            final_table = sg.table(name, db=database, quoted=quoted)
+            if temp:
+                # Db2 cannot rename a temporary table (SQL0526N).
+                create(final_table)
+                with self._safe_raw_sql(
+                    sge.Insert(
+                        this=final_table,
+                        expression=sg.select(sge.Star()).from_(staging_table),
+                    )
+                ):
                     pass
+                self.drop_table(staging, database=database, force=True)
             else:
-                # Fallback: list of dicts etc.
-                self.insert(name, pd.DataFrame(obj), database=database)
+                new_name = sg.to_identifier(name, quoted=quoted).sql(self.dialect)
+                with self._safe_raw_sql(
+                    f"RENAME TABLE {staging_table.sql(self.dialect)} TO {new_name}"
+                ):
+                    pass
 
-        return self.table(name, database=database)
+        if schema is None:
+            return self.table(name, database=database)
 
-    def drop_table(
-        self,
-        name: str,
-        /,
-        *,
-        database: str | None = None,
-        force: bool = False,
-    ) -> None:
-        """Drop a table.
-
-        Parameters
-        ----------
-        name : str
-            Table name
-        database : str, optional
-            Schema name
-        force : bool, default False
-            Suppress errors if table doesn't exist
-        """
-        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
-            self.dialect
-        )
-
-        if force:
-            # Check if table exists first using parameterized query
-            cursor = self.con.cursor()
-            try:
-                if database:
-                    check_sql = """
-                        SELECT COUNT(*)
-                        FROM SYSCAT.TABLES
-                        WHERE TABNAME = ?
-                        AND TABSCHEMA = ?
-                    """
-                    cursor.execute(check_sql, (name, database))
-                else:
-                    check_sql = """
-                        SELECT COUNT(*)
-                        FROM SYSCAT.TABLES
-                        WHERE TABNAME = ?
-                        AND TABSCHEMA = CURRENT SCHEMA
-                    """
-                    cursor.execute(check_sql, (name,))
-
-                exists = cursor.fetchone()[0] > 0
-            finally:
-                cursor.close()
-
-            if not exists:
-                return
-
-        drop_sql = f"DROP TABLE {full_name}"
-        with self._safe_raw_sql(drop_sql):
-            pass
-        # Commit the DROP TABLE statement
-        self.con.commit()
+        # preserve the input schema if it was provided
+        return ops.DatabaseTable(
+            name, schema=schema, source=self, namespace=ops.Namespace(database=database)
+        ).to_expr()
 
     def drop_view(
         self,
@@ -611,94 +584,28 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
 
         with self._safe_raw_sql(f"DROP VIEW {full_name}"):
             pass
-        self.con.commit()
 
-    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
+    def truncate_table(
+        self, name: str, /, *, database: str | tuple[str, str] | None = None
+    ) -> None:
         """Delete all rows from a table.
 
         Parameters
         ----------
-        name : str
+        name
             Table name
-        database : str, optional
-            Schema name
+        database
+            Schema name, or a `(catalog, schema)` tuple
         """
-        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
-            self.dialect
-        )
-        # Db2 does not accept a bare TRUNCATE TABLE; IMMEDIATE is required.
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+        full_name = sg.table(
+            name, db=db, catalog=catalog, quoted=self.compiler.quoted
+        ).sql(self.dialect)
+        # Db2 does not accept a bare TRUNCATE TABLE; IMMEDIATE is required, and
+        # it must be the first statement in its unit of work.
         with self._safe_raw_sql(f"TRUNCATE TABLE {full_name} IMMEDIATE"):
             pass
-
-    def insert(
-        self,
-        name: str,
-        /,
-        obj: pd.DataFrame | ir.Table,
-        *,
-        database: str | None = None,
-        overwrite: bool = False,
-    ) -> None:
-        """Insert data into a table.
-
-        Parameters
-        ----------
-        name : str
-            Target table name
-        obj : pd.DataFrame | ir.Table
-            Data to insert
-        database : str, optional
-            Schema name
-        overwrite : bool, default False
-            Truncate table before insert
-        """
-        import pandas as pd
-
-        full_name = sg.table(name, db=database, quoted=self.compiler.quoted).sql(
-            self.dialect
-        )
-
-        if overwrite:
-            # Commit any open transaction first to ensure TRUNCATE can be first statement
-            self.con.commit()
-            # TRUNCATE TABLE ... IMMEDIATE must be first statement in transaction
-            self.truncate_table(name, database=database)
-            # Commit the TRUNCATE to complete the transaction
-            self.con.commit()
-
-        if isinstance(obj, pd.DataFrame):
-            # Batch insert from DataFrame
-            if obj.empty:
-                return
-
-            # Same quoting primitive SQLGlot uses for column references
-            quoted_columns = [
-                sg.to_identifier(col, quoted=self.compiler.quoted).sql(self.dialect)
-                for col in obj.columns
-            ]
-            columns = ", ".join(quoted_columns)
-            placeholders = ", ".join(["?" for _ in obj.columns])
-            insert_sql = f"INSERT INTO {full_name} ({columns}) VALUES ({placeholders})"  # noqa: S608
-
-            cursor = self.con.cursor()
-            try:
-                # Insert in batches
-                batch_size = 1000
-                for i in range(0, len(obj), batch_size):
-                    batch = obj.iloc[i : i + batch_size]
-                    # Convert NaN/NaT/pd.NA to None for Db2 compatibility
-                    rows = self._convert_dataframe_to_rows(batch)
-                    cursor.executemany(insert_sql, rows)
-                self.con.commit()
-            finally:
-                cursor.close()
-        else:
-            # Insert from table expression — ensure any in-memory tables
-            # referenced (e.g. memtables) are registered first.
-            self._register_in_memory_tables(obj)
-            insert_sql = f"INSERT INTO {full_name} {self.compile(obj)}"
-            with self._safe_raw_sql(insert_sql):
-                pass
 
     @staticmethod
     def _convert_dataframe_to_rows(df: pd.DataFrame) -> list[tuple]:
@@ -799,7 +706,25 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
                 f"got null typed columns: {null_columns}"
             )
 
-        # Use op.schema (the declared schema) instead of inferring from the
-        # DataFrame.  For empty tables, pandas assigns object dtype to every
-        # column, which sch.infer maps to dt.Null.
-        self.create_table(op.name, op.data.to_frame(), schema=schema, temp=True)
+        name = op.name
+        create_stmt = sge.Create(
+            kind="TABLE",
+            this=sge.Schema(
+                this=sg.to_identifier(name, quoted=self.compiler.quoted),
+                expressions=schema.to_sqlglot_column_defs(self.dialect),
+            ),
+            properties=sge.Properties(expressions=_temporary_properties()),
+        )
+        insert_stmt = self._build_insert_template(name, schema=schema, columns=True)
+
+        data = op.data.to_frame()
+        with self._safe_raw_sql(create_stmt):
+            pass
+        cursor = self.con.cursor()
+        try:
+            for start, end in util.chunks(len(data), chunk_size=1000):
+                cursor.executemany(
+                    insert_stmt, self._convert_dataframe_to_rows(data.iloc[start:end])
+                )
+        finally:
+            cursor.close()
