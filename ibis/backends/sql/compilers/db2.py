@@ -343,6 +343,13 @@ class Db2Compiler(SQLGlotCompiler):
                     sge.If(this=sge.Not(this=arg), true=sge.Literal.string("false")),
                 ]
             )
+        if op.arg.dtype.is_string() and (
+            to.is_date() or to.is_time() or to.is_timestamp()
+        ):
+            # Db2 11.5 types a long string concatenation as LONG VARCHAR, which
+            # it cannot cast to a datetime type. Casting to VARCHAR(32672)
+            # first makes it castable; Db2 12.1 accepts both forms.
+            arg = self.cast(arg, dt.string)
         # Db2 uses CAST syntax
         return self.cast(arg, to)
 
