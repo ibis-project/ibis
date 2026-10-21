@@ -16,7 +16,7 @@ call = ibis.table(
 )
 
 result = (
-    employee.inner_join(call, [(employee.id == call.employee_id), ibis.literal(True)])
+    employee.inner_join(call, (employee.id == call.employee_id))
     .select(
         employee.first_name,
         employee.last_name,
