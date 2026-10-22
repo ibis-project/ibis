@@ -3,8 +3,6 @@ from __future__ import annotations
 import pytest
 from packaging.version import parse as vparse
 
-from ibis.conftest import IS_PYFLINK_1X
-
 pa = pytest.importorskip("pyarrow")
 
 pytestmark = pytest.mark.skipif(
@@ -55,7 +53,6 @@ def test_dataframe_interchange_no_execute(con, alltypes, mocker):
     assert not to_pyarrow.called
 
 
-@pytest.mark.notimpl(["flink"], condition=IS_PYFLINK_1X)
 def test_dataframe_interchange_dataframe_methods_execute(con, alltypes, mocker):
     t = alltypes.select("int_col", "double_col", "string_col")
     pa_df = t.to_pyarrow().__dataframe__()
@@ -72,7 +69,6 @@ def test_dataframe_interchange_dataframe_methods_execute(con, alltypes, mocker):
     to_pyarrow.assert_called_once()
 
 
-@pytest.mark.notimpl(["flink"], condition=IS_PYFLINK_1X)
 def test_dataframe_interchange_column_methods_execute(con, alltypes, mocker):
     t = alltypes.select("int_col", "double_col", "string_col")
     pa_df = t.to_pyarrow().__dataframe__()
@@ -101,7 +97,6 @@ def test_dataframe_interchange_column_methods_execute(con, alltypes, mocker):
     assert col2.size() == pa_col2.size()
 
 
-@pytest.mark.notimpl(["flink"], condition=IS_PYFLINK_1X)
 def test_dataframe_interchange_select_after_execution_no_reexecute(
     con, alltypes, mocker
 ):

@@ -406,14 +406,13 @@ keys = pytest.mark.parametrize(
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+                # on 2.x only getting a struct key fails, see
+                # `test_map_get_all_types`
                 pytest.mark.notyet(
                     ["flink"],
+                    condition=IS_PYFLINK_1X,
                     raises=Py4JJavaError,
-                    # NullPointerException: keyType.getSqlTypeName().getFamily()
-                    # null, type is ROW
-                    reason="type inference for COALESCE trips over ROW map keys",
-                    # `map_contains` with struct keys works, `get` doesn't
-                    strict=False,
+                    reason="does not support selecting struct key from map",
                 ),
             ],
             id="struct",
@@ -450,7 +449,21 @@ values = pytest.mark.parametrize(
 @values
 @keys
 @mark_notyet_datafusion
-def test_map_get_all_types(con, keys, values):
+def test_map_get_all_types(request, con, keys, values):
+    if (
+        con.name == "flink"
+        and not IS_PYFLINK_1X
+        and isinstance(keys[0], ibis.Expr)
+        and keys[0].type().is_struct()
+    ):
+        request.applymarker(
+            pytest.mark.xfail(
+                raises=Py4JJavaError,
+                # NullPointerException: keyType.getSqlTypeName().getFamily()
+                # null, type is ROW
+                reason="type inference for COALESCE trips over ROW map keys",
+            )
+        )
     m = ibis.map(ibis.array(keys), ibis.array(values))
     for key, val in zip(keys, values):
         if isinstance(val, ibis.Expr):
