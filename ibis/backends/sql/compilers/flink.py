@@ -277,7 +277,16 @@ class FlinkCompiler(SQLGlotCompiler):
                     for v in value.values()
                 )
             )
-            return self.cast(sge.Map(keys=keys, values=values), dtype)
+            return self._map(keys, values, dtype)
+        elif dtype.is_struct():
+            # type the fields from the ibis dtype, like a struct column; left
+            # to the dialect, sqlglot would infer them from the values, as INT
+            # for any integer
+            fields = [
+                self.visit_Literal(ops.Literal(v, dtype=t), value=v, dtype=t)
+                for t, v in zip(dtype.types, value.values())
+            ]
+            return self.cast(sge.Struct(expressions=fields), dtype)
         elif dtype.is_timestamp():
             return self.cast(
                 value.replace(tzinfo=None).isoformat(sep=" ", timespec="microseconds"),
@@ -603,8 +612,68 @@ class FlinkCompiler(SQLGlotCompiler):
             self.cast(key, key_type),
         )
 
+    def _typed_row(self, e, dtype):
+        """Turn `CAST(ROW(v, ...) AS ROW<...>)` into `ROW(CAST(v AS t), ...)`.
+
+        Indexing a `MAP[...]` makes Flink 1.x's Calcite derive the entry types
+        eagerly, and in that path CAST's operand check asks for the validated
+        type of a bare ROW call before it has one, which dies with
+        `UnsupportedOperationException: class org.apache.calcite.sql.SqlBasicCall: ROW(1)`.
+        Typing the fields instead avoids it, and the cast of the whole map
+        still names them. Anything else is returned unchanged.
+        """
+        if not (
+            dtype.is_struct()
+            and type(e) is sge.Cast
+            and type(e.this) is sge.Struct
+            and len(e.this.expressions) == len(dtype.types)
+        ):
+            return e
+        fields = []
+        for field, t in zip(e.this.expressions, dtype.types):
+            if isinstance(field, (sge.Alias, sge.PropertyEQ)):
+                return e
+            if t.is_struct():
+                fields.append(self._typed_row(field, t))
+            elif type(field) is sge.Cast and field.to == self.type_mapper.from_ibis(t):
+                fields.append(field)
+            else:
+                fields.append(self.cast(field, t))
+        return sge.Struct(expressions=fields)
+
+    def _map(self, keys, values, dtype):
+        """Build a map, with Flink's `MAP[k1, v1, ...]` constructor if possible.
+
+        Flink 2.x compiles indexing into `CAST(MAP_FROM_ARRAYS(...) AS MAP<...>)`
+        into code that assumes a `GenericMapData`, but the function hands it
+        the lazy `MapDataForMapFromArrays`, so the query dies at runtime with a
+        `ClassCastException` (FLINK-40726). The value constructor doesn't go
+        through that path, but it needs the entries statically, and on Flink
+        1.x none of them can be a cast ROW (see `_typed_row`); otherwise this
+        falls back to `MAP_FROM_ARRAYS`.
+        """
+        if isinstance(keys, sge.Array) and isinstance(values, sge.Array):
+            entries = [
+                *(self._typed_row(k, dtype.key_type) for k in keys.expressions),
+                *(self._typed_row(v, dtype.value_type) for v in values.expressions),
+            ]
+            if not any(
+                isinstance(cast.this, sge.Struct)
+                for entry in entries
+                for cast in entry.find_all(sge.Cast)
+            ):
+                n = len(keys.expressions)
+                return self.cast(
+                    sge.Map(
+                        keys=sge.Array(expressions=entries[:n]),
+                        values=sge.Array(expressions=entries[n:]),
+                    ),
+                    dtype,
+                )
+        return self.cast(self.f.map_from_arrays(keys, values), dtype)
+
     def visit_Map(self, op: ops.Map, *, keys, values):
-        return self.cast(sge.Map(keys=keys, values=values), op.dtype)
+        return self._map(keys, values, op.dtype)
 
     def visit_MapMerge(self, op: ops.MapMerge, *, left, right):
         left_keys = self.f.map_keys(left)
@@ -616,7 +685,7 @@ class FlinkCompiler(SQLGlotCompiler):
         keys = self.f.array_concat(left_keys, right_keys)
         values = self.f.array_concat(left_values, right_values)
 
-        return self.cast(sge.Map(keys=keys, values=values), op.dtype)
+        return self._map(keys, values, op.dtype)
 
     def visit_StructColumn(self, op, *, names, values):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)

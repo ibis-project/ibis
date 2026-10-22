@@ -78,6 +78,12 @@ def test_literal(backend, con):
     backend.assert_series_equal(result, expected.astype(dtype))
 
 
+@pytest.mark.notimpl(["postgres", "risingwave"])
+def test_literal_with_big_int_field(con):
+    expr = ibis.struct(dict(x=2**40), type="struct<x: int64>")
+    assert con.execute(expr) == dict(x=2**40)
+
+
 @pytest.mark.notimpl(["postgres"])
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.parametrize("field", ["a", "b", "c"])
