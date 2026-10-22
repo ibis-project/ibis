@@ -298,6 +298,30 @@ def test_literal_map_merge(con):
 
 
 @mark_notyet_datafusion
+@pytest.mark.notyet(
+    ["databricks"], reason="says one thing, does something completely different"
+)
+def test_literal_map_merge_get(con):
+    a = ibis.literal({"a": 0, "b": 2})
+    b = ibis.literal({"a": 1, "c": 3})
+    expr = (a + b)["a"]
+
+    assert con.execute(expr) == 1
+
+
+@mark_notyet_datafusion
+@pytest.mark.notyet(
+    ["databricks"], reason="says one thing, does something completely different"
+)
+def test_literal_map_merge_keys(con):
+    a = ibis.literal({"a": 0, "b": 2})
+    b = ibis.literal({"a": 1, "c": 3})
+    expr = (a + b).keys()
+
+    assert sorted(con.execute(expr)) == ["a", "b", "c"]
+
+
+@mark_notyet_datafusion
 def test_literal_map_getitem_broadcast(backend, alltypes, df):
     value = {"1": "a", "2": "b"}
 
