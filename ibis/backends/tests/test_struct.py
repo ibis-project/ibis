@@ -138,7 +138,6 @@ def test_collect_into_struct(alltypes):
     ["flink"],
     condition=IS_PYFLINK_1X,
     raises=Py4JJavaError,
-    # UnsupportedOperationException: class org.apache.calcite.sql.SqlBasicCall: ROW(4)
     reason="Flink 1.x's Calcite can't type a struct literal as a CASE operand",
 )
 def test_field_access_after_case(con):

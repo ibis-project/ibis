@@ -12,6 +12,7 @@ from ibis.backends.tests.errors import (
     Py4JJavaError,
     PyAthenaOperationalError,
 )
+from ibis.conftest import IS_PYFLINK_1X
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -431,6 +432,24 @@ def test_map_get_all_types(con, keys, values):
         if isinstance(val, ibis.Expr):
             val = con.execute(val)
         assert con.execute(m[key]) == val
+
+
+@mark_notyet_postgres
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@mark_notyet_datafusion
+@pytest.mark.notyet(
+    ["flink"],
+    condition=IS_PYFLINK_1X,
+    raises=Py4JJavaError,
+    # the map is fine; the struct default isn't, as in `test_field_access_after_case`
+    reason="Flink 1.x's Calcite can't type a struct literal as a COALESCE operand",
+)
+def test_map_get_struct_value_with_default(con):
+    m = ibis.map(ibis.array(["a"]), ibis.array([ibis.struct(dict(x=1))]))
+    default = ibis.struct(dict(x=0))
+
+    assert con.execute(m.get("a", default)) == con.execute(ibis.struct(dict(x=1)))
+    assert con.execute(m.get("b", default)) == con.execute(default)
 
 
 @keys
