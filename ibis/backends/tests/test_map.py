@@ -301,6 +301,13 @@ def test_literal_map_merge(con):
 @pytest.mark.notyet(
     ["databricks"], reason="says one thing, does something completely different"
 )
+@pytest.mark.notyet(
+    ["flink"],
+    raises=Py4JJavaError,
+    # ClassCastException: MapFromArraysFunction$MapDataForMapFromArrays cannot be
+    # cast to GenericMapData
+    reason="indexing a map built with MAP_FROM_ARRAYS fails (FLINK-40726)",
+)
 def test_literal_map_merge_get(con):
     a = ibis.literal({"a": 0, "b": 2})
     b = ibis.literal({"a": 1, "c": 3})
@@ -312,6 +319,12 @@ def test_literal_map_merge_get(con):
 @mark_notyet_datafusion
 @pytest.mark.notyet(
     ["databricks"], reason="says one thing, does something completely different"
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=AssertionError,
+    # executing the map itself collapses them on the way out
+    reason="a map built with MAP_FROM_ARRAYS keeps duplicate keys",
 )
 def test_literal_map_merge_keys(con):
     a = ibis.literal({"a": 0, "b": 2})
@@ -492,6 +505,9 @@ def test_map_get_struct_value_with_default(con):
 @mark_notyet_postgres
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @mark_notyet_datafusion
+@pytest.mark.notimpl(
+    ["clickhouse"], raises=AssertionError, reason="reads back the wrong value"
+)
 def test_map_get_struct_value_with_big_int_field(con):
     m = ibis.literal({"a": dict(x=2**40)}, type="map<string, struct<x: int64>>")
     assert con.execute(m["a"]) == dict(x=2**40)
@@ -500,6 +516,9 @@ def test_map_get_struct_value_with_big_int_field(con):
 @mark_notyet_postgres
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @mark_notyet_datafusion
+@pytest.mark.notimpl(
+    ["clickhouse"], raises=AssertionError, reason="reads back the wrong value"
+)
 def test_map_get_cast_struct_value(con):
     value = ibis.struct(dict(x=1)).cast("struct<x: int64>")
     m = ibis.map(ibis.array(["a"]), ibis.array([value]))

@@ -7,7 +7,7 @@ def test_empty_result_with_unsupported_arrow_type(con):
     # pyflink can't build an arrow schema for an array of structs, which only
     # matters when an empty result is rebuilt from the table schema
     t = con.table("functional_alltypes")
-    expr = t.filter(t.int_col < 0).select(a=ibis.array([ibis.struct({"x": t.int_col})]))
+    expr = t.filter(t.int_col < 0).select(a=ibis.array([ibis.struct({"x": 1})]))
     result = expr.execute()
     assert result.empty
     assert list(result.columns) == ["a"]
