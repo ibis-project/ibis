@@ -12,6 +12,7 @@ from ibis.backends.tests.errors import (
     Py4JJavaError,
     PyAthenaOperationalError,
 )
+from ibis.conftest import IS_PYFLINK_1X
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -297,6 +298,43 @@ def test_literal_map_merge(con):
 
 
 @mark_notyet_datafusion
+@pytest.mark.notyet(
+    ["databricks"], reason="says one thing, does something completely different"
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=Py4JJavaError,
+    # ClassCastException: MapFromArraysFunction$MapDataForMapFromArrays cannot be
+    # cast to GenericMapData
+    reason="indexing a map built with MAP_FROM_ARRAYS fails (FLINK-40726)",
+)
+def test_literal_map_merge_get(con):
+    a = ibis.literal({"a": 0, "b": 2})
+    b = ibis.literal({"a": 1, "c": 3})
+    expr = (a + b)["a"]
+
+    assert con.execute(expr) == 1
+
+
+@mark_notyet_datafusion
+@pytest.mark.notyet(
+    ["databricks"], reason="says one thing, does something completely different"
+)
+@pytest.mark.notyet(
+    ["flink"],
+    raises=AssertionError,
+    # executing the map itself collapses them on the way out
+    reason="a map built with MAP_FROM_ARRAYS keeps duplicate keys",
+)
+def test_literal_map_merge_keys(con):
+    a = ibis.literal({"a": 0, "b": 2})
+    b = ibis.literal({"a": 1, "c": 3})
+    expr = (a + b).keys()
+
+    assert sorted(con.execute(expr)) == ["a", "b", "c"]
+
+
+@mark_notyet_datafusion
 def test_literal_map_getitem_broadcast(backend, alltypes, df):
     value = {"1": "a", "2": "b"}
 
@@ -379,13 +417,16 @@ keys = pytest.mark.parametrize(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
                 mark_notyet_postgres,
+                mark_notyet_snowflake,
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+                # on 2.x only getting a struct key fails, see
+                # `test_map_get_all_types`
                 pytest.mark.notyet(
                     ["flink"],
+                    condition=IS_PYFLINK_1X,
                     raises=Py4JJavaError,
                     reason="does not support selecting struct key from map",
                 ),
-                mark_notyet_snowflake,
-                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
             id="struct",
         ),
@@ -421,12 +462,67 @@ values = pytest.mark.parametrize(
 @values
 @keys
 @mark_notyet_datafusion
-def test_map_get_all_types(con, keys, values):
+def test_map_get_all_types(request, con, keys, values):
+    if (
+        con.name == "flink"
+        and not IS_PYFLINK_1X
+        and isinstance(keys[0], ibis.Expr)
+        and keys[0].type().is_struct()
+    ):
+        request.applymarker(
+            pytest.mark.xfail(
+                raises=Py4JJavaError,
+                # NullPointerException: keyType.getSqlTypeName().getFamily()
+                # null, type is ROW
+                reason="type inference for COALESCE trips over ROW map keys",
+            )
+        )
     m = ibis.map(ibis.array(keys), ibis.array(values))
     for key, val in zip(keys, values):
         if isinstance(val, ibis.Expr):
             val = con.execute(val)
         assert con.execute(m[key]) == val
+
+
+@mark_notyet_postgres
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@mark_notyet_datafusion
+@pytest.mark.notyet(
+    ["flink"],
+    condition=IS_PYFLINK_1X,
+    raises=Py4JJavaError,
+    # the map is fine; the struct default isn't, as in `test_field_access_after_case`
+    reason="Flink 1.x's Calcite can't type a struct literal as a COALESCE operand",
+)
+def test_map_get_struct_value_with_default(con):
+    m = ibis.map(ibis.array(["a"]), ibis.array([ibis.struct(dict(x=1))]))
+    default = ibis.struct(dict(x=0))
+
+    assert con.execute(m.get("a", default)) == con.execute(ibis.struct(dict(x=1)))
+    assert con.execute(m.get("b", default)) == con.execute(default)
+
+
+@mark_notyet_postgres
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@mark_notyet_datafusion
+@pytest.mark.notimpl(
+    ["clickhouse"], raises=AssertionError, reason="reads back the wrong value"
+)
+def test_map_get_struct_value_with_big_int_field(con):
+    m = ibis.literal({"a": dict(x=2**40)}, type="map<string, struct<x: int64>>")
+    assert con.execute(m["a"]) == dict(x=2**40)
+
+
+@mark_notyet_postgres
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@mark_notyet_datafusion
+@pytest.mark.notimpl(
+    ["clickhouse"], raises=AssertionError, reason="reads back the wrong value"
+)
+def test_map_get_cast_struct_value(con):
+    value = ibis.struct(dict(x=1)).cast("struct<x: int64>")
+    m = ibis.map(ibis.array(["a"]), ibis.array([value]))
+    assert con.execute(m["a"]) == dict(x=1)
 
 
 @keys

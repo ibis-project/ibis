@@ -21,6 +21,7 @@ from ibis.backends.tests.errors import (
     PySparkAnalysisException,
 )
 from ibis.common.exceptions import IbisError, UnsupportedOperationError
+from ibis.conftest import IS_PYFLINK_1X
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -75,6 +76,12 @@ def test_literal(backend, con):
     result = result.replace({np.nan: None})
     expected = pd.Series([_SIMPLE_DICT])
     backend.assert_series_equal(result, expected.astype(dtype))
+
+
+@pytest.mark.notimpl(["postgres", "risingwave"])
+def test_literal_with_big_int_field(con):
+    expr = ibis.struct(dict(x=2**40), type="struct<x: int64>")
+    assert con.execute(expr) == dict(x=2**40)
 
 
 @pytest.mark.notimpl(["postgres"])
@@ -133,7 +140,12 @@ def test_collect_into_struct(alltypes):
     reason="struct literals not implemented",
     raises=PsycoPg2InternalError,
 )
-@pytest.mark.notimpl(["flink"], raises=Py4JJavaError, reason="not implemented in ibis")
+@pytest.mark.notyet(
+    ["flink"],
+    condition=IS_PYFLINK_1X,
+    raises=Py4JJavaError,
+    reason="Flink 1.x's Calcite can't type a struct literal as a CASE operand",
+)
 def test_field_access_after_case(con):
     s = ibis.struct({"a": 3})
     x = ibis.cases((True, s), else_=ibis.struct({"a": 4}))

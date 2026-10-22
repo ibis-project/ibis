@@ -38,6 +38,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
+from ibis.conftest import IS_PYFLINK_1X
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -744,6 +745,7 @@ def test_array_filter_with_index_lambda(con, input, output, predicate):
             marks=[
                 pytest.mark.notimpl(
                     ["flink"],
+                    condition=IS_PYFLINK_1X,
                     raises=Py4JJavaError,
                     reason="unknown; NPE during execution",
                 )

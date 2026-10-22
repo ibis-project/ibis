@@ -106,3 +106,9 @@ def test_timestamp_cast_to_seconds_respects_unit():
     expr = ibis.now()
     compiled = ibis.to_sql(expr.cast("timestamp('s')"), dialect="flink")
     assert "yyyy-MM-dd HH:mm:ss.SSS" not in compiled
+
+
+def test_map_with_mismatched_lengths():
+    # pairing up the entries of `MAP[...]` would drop the unmatched key
+    sql = ibis.to_sql(ibis.map(["a", "b"], [1]).name("m"), dialect="flink")
+    assert "MAP_FROM_ARRAYS(ARRAY['a', 'b'], ARRAY[1])" in sql
