@@ -435,7 +435,7 @@ class Backend(
             # `DataFrame.from_records([], columns=...)`, whose columns are all
             # object dtype; rebuild it from the schema so that an empty result
             # has the same dtypes a non-empty one would have, in particular the
-            # same datetime resolution
+            # same datetime resolution (FLINK-41032)
             pyflink_schema = table.get_schema()
             arrow_schema = create_arrow_schema(
                 pyflink_schema.get_field_names(), get_field_data_types(pyflink_schema)
