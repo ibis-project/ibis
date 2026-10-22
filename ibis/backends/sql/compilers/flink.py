@@ -53,6 +53,20 @@ class FlinkAggGen(AggGen):
         return func(*args)
 
 
+def _has_cast_row(e: sge.Expression) -> bool:
+    """Whether `e` holds a ROW the dialect renders as a cast, see `_typed_row`."""
+    return any(
+        (isinstance(node, sge.Cast) and isinstance(node.this, sge.Struct))
+        or (
+            isinstance(node, sge.Struct)
+            and any(
+                isinstance(f, (sge.Alias, sge.PropertyEQ)) for f in node.expressions
+            )
+        )
+        for node in e.walk()
+    )
+
+
 class FlinkCompiler(SQLGlotCompiler):
     quoted = True
     dialect = Flink
@@ -279,14 +293,18 @@ class FlinkCompiler(SQLGlotCompiler):
             )
             return self._map(keys, values, dtype)
         elif dtype.is_struct():
-            # type the fields from the ibis dtype, like a struct column; left
-            # to the dialect, sqlglot would infer them from the values, as INT
-            # for any integer
-            fields = [
-                self.visit_Literal(ops.Literal(v, dtype=t), value=v, dtype=t)
-                for t, v in zip(dtype.types, value.values())
-            ]
-            return self.cast(sge.Struct(expressions=fields), dtype)
+            # cast the fields to their ibis types: the dialect types a named
+            # ROW from its fields' values, and would infer INT for any integer.
+            # It writes the row type as `ROW(name type, ...)`, which Flink 1.x
+            # accepts inside `ARRAY[...]` and `VALUES`, unlike `ROW<...>`
+            # (FLINK-34898)
+            fields = []
+            for (name, v), t in zip(value.items(), dtype.types):
+                field = self.visit_Literal(ops.Literal(v, dtype=t), value=v, dtype=t)
+                if not (t.is_struct() or isinstance(field, sge.Cast)):
+                    field = self.cast(field, t)
+                fields.append(field.as_(name, quoted=self.quoted))
+            return sge.Struct(expressions=fields)
         elif dtype.is_timestamp():
             return self.cast(
                 value.replace(tzinfo=None).isoformat(sep=" ", timespec="microseconds"),
@@ -613,33 +631,43 @@ class FlinkCompiler(SQLGlotCompiler):
         )
 
     def _typed_row(self, e, dtype):
-        """Turn `CAST(ROW(v, ...) AS ROW<...>)` into `ROW(CAST(v AS t), ...)`.
+        """Spell a struct as `ROW(CAST(v AS t), ...)` with `dtype`'s types.
 
         Indexing a `MAP[...]` makes Flink 1.x's Calcite derive the entry types
         eagerly, and in that path CAST's operand check asks for the validated
         type of a bare ROW call before it has one, which dies with
         `UnsupportedOperationException: class org.apache.calcite.sql.SqlBasicCall: ROW(1)`.
         Typing the fields instead avoids it, and the cast of the whole map
-        still names them. Anything else is returned unchanged.
+        names them.
+
+        Handles a struct literal (a named `ROW(v AS name, ...)`) and a cast of
+        a ROW (a struct column, or a struct cast to another one), which casts
+        field by field. Anything else is returned unchanged.
         """
-        if not (
-            dtype.is_struct()
-            and type(e) is sge.Cast
-            and type(e.this) is sge.Struct
-            and len(e.this.expressions) == len(dtype.types)
-        ):
+        if not dtype.is_struct():
             return e
-        fields = []
-        for field, t in zip(e.this.expressions, dtype.types):
-            if isinstance(field, (sge.Alias, sge.PropertyEQ)):
-                return e
-            if t.is_struct():
-                fields.append(self._typed_row(field, t))
+        if type(e) is sge.Cast and type(e.this) is sge.Struct:
+            fields = e.this.expressions
+        elif type(e) is sge.Struct:
+            fields = e.expressions
+        else:
+            return e
+        if len(fields) != len(dtype.types):
+            return e
+
+        typed = []
+        for field, t in zip(fields, dtype.types):
+            if isinstance(field, sge.Alias):
+                field = field.this
+            elif isinstance(field, sge.PropertyEQ):
+                field = field.expression
+            if t.is_struct() and (row := self._typed_row(field, t)) is not field:
+                typed.append(row)
             elif type(field) is sge.Cast and field.to == self.type_mapper.from_ibis(t):
-                fields.append(field)
+                typed.append(field)
             else:
-                fields.append(self.cast(field, t))
-        return sge.Struct(expressions=fields)
+                typed.append(self.cast(field, t))
+        return sge.Struct(expressions=typed)
 
     def _map(self, keys, values, dtype):
         """Build a map, with Flink's `MAP[k1, v1, ...]` constructor if possible.
@@ -657,11 +685,7 @@ class FlinkCompiler(SQLGlotCompiler):
                 *(self._typed_row(k, dtype.key_type) for k in keys.expressions),
                 *(self._typed_row(v, dtype.value_type) for v in values.expressions),
             ]
-            if not any(
-                isinstance(cast.this, sge.Struct)
-                for entry in entries
-                for cast in entry.find_all(sge.Cast)
-            ):
+            if not any(map(_has_cast_row, entries)):
                 n = len(keys.expressions)
                 return self.cast(
                     sge.Map(
