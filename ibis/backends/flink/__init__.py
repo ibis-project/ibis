@@ -437,9 +437,15 @@ class Backend(
             # has the same dtypes a non-empty one would have, in particular the
             # same datetime resolution (FLINK-41032)
             pyflink_schema = table.get_schema()
-            arrow_schema = create_arrow_schema(
-                pyflink_schema.get_field_names(), get_field_data_types(pyflink_schema)
-            )
+            try:
+                arrow_schema = create_arrow_schema(
+                    pyflink_schema.get_field_names(),
+                    get_field_data_types(pyflink_schema),
+                )
+            except (TypeError, ValueError):
+                # pyflink can't turn every type into an arrow one, such as an
+                # array of structs, which flink's own (java) conversion can
+                arrow_schema = expr.as_table().schema().to_pyarrow()
             df = arrow_schema.empty_table().to_pandas()
 
         return expr.__pandas_result__(df)
