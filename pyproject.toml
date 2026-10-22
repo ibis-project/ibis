@@ -472,8 +472,8 @@ filterwarnings = [
   # flink 1.x is STILL using pkg_resources
   "ignore:pkg_resources is deprecated as an API.:UserWarning",
   # pyflink's @Deprecated decorator warns when it is *applied*, so importing
-  # any pyflink module warns for every deprecated API it defines
-  'ignore:.+ has been deprecated since version \d+\.\d+\.\d+:DeprecationWarning',
+  # any pyflink module warns for every deprecated API it defines (FLINK-40529)
+  'ignore:.+ has been deprecated since version \d+\.\d+\.\d+:DeprecationWarning:pyflink',
   # snowpark logging warnings
   "ignore:The 'warn' method is deprecated, use 'warning' instead:DeprecationWarning",
   # botocore is still using utcnow
