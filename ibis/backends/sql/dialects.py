@@ -208,8 +208,9 @@ def _map_constructor(self, e):
     if not isinstance(keys, sge.Array) or not isinstance(values, sge.Array):
         return self.func("MAP_FROM_ARRAYS", keys, values)
 
-    # `MAP[]` doesn't parse, and an empty map is spelled with the function
-    if not keys.expressions:
+    # `MAP[]` doesn't parse, and an empty map is spelled with the function;
+    # so are mismatched lengths, which pairing the entries up would truncate
+    if not keys.expressions or len(keys.expressions) != len(values.expressions):
         return self.func("MAP_FROM_ARRAYS", keys, values)
 
     entries = ", ".join(
