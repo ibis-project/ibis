@@ -495,8 +495,8 @@ no_recursive_cte = toolz.compose(
         raises=SingleStoreDBOperationalError,
         reason="unsupported recursive common table expression query shape",
     ),
-    pytest.mark.notyet(
-        ["pyspark"],
+    pytest.mark.xfail_version(
+        pyspark=["pyspark<4.1"],
         reason="Spark < 4.1 doesn't support recursive CTEs (3.5 fails to parse, 4.0 to plan)",
     ),
 )
