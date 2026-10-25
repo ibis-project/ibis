@@ -56,15 +56,8 @@ def ftname(con, ftname_raw):
 @pytest.mark.parametrize(
     "schema",
     [
-        param(
-            None,
-            id="implicit_schema",
-            marks=[pytest.mark.notimpl(["druid"])],
-        ),
-        param(
-            {"s": "string", "new_col": "double"},
-            id="explicit_schema",
-        ),
+        param(None, id="implicit_schema", marks=[pytest.mark.notimpl(["druid"])]),
+        param({"s": "string", "new_col": "double"}, id="explicit_schema"),
     ],
 )
 def test_con_dot_sql(backend, con, schema, ftname):

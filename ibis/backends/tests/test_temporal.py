@@ -2385,13 +2385,7 @@ def test_cast_string_to_timestamp_keeps_default_precision(con):
                 pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError),
             ],
         ),
-        param(
-            ibis.date("1992-09-30"),
-            ibis.date("1992-10-01"),
-            "day",
-            1,
-            id="date",
-        ),
+        param(ibis.date("1992-09-30"), ibis.date("1992-10-01"), "day", 1, id="date"),
         param(
             ibis.timestamp("1992-09-30 23:59:59"),
             ibis.timestamp("1992-10-01 01:58:00"),

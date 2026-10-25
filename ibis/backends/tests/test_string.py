@@ -618,12 +618,10 @@ def uses_java_re(t):
             lambda t: ibis.literal("-").join(["a", t.string_col, "c"]),
             lambda t: "a-" + t.string_col + "-c",
             id="join",
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-            ],
+            marks=pytest.mark.notimpl(
+                ["exasol"],
+                raises=com.OperationNotDefinedError,
+            ),
         ),
         param(
             lambda t: t.string_col + t.date_string_col,

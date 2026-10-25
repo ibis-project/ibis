@@ -854,7 +854,11 @@ def test_isnan_isinf(
                 ),
             ],
         ),
-        param(L(5.556).log10(), math.log10(5.556), id="log10"),
+        param(
+            L(5.556).log10(),
+            math.log10(5.556),
+            id="log10",
+        ),
         param(
             L(5.556).radians(),
             math.radians(5.556),

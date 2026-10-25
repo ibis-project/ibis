@@ -92,9 +92,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             lambda t, win: t.float_col.lag().over(win),
             lambda t: t.float_col.shift(1),
             id="lag",
-            marks=[
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
@@ -113,17 +111,13 @@ with pytest.warns(FutureWarning, match="v9.0"):
             lambda t, win: t.id.rank().over(win),
             lambda t: t.id.rank(method="min").astype("int64") - 1,
             id="rank",
-            marks=[
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.id.dense_rank().over(win),
             lambda t: t.id.rank(method="dense").astype("int64") - 1,
             id="dense_rank",
-            marks=[
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.id.percent_rank().over(win),
@@ -226,9 +220,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             lambda _, win: ibis.row_number().over(win),
             lambda t: t.cumcount(),
             id="row_number",
-            marks=[
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.double_col.cumsum().over(win),
@@ -260,9 +252,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 .astype(bool)
             ),
             id="cumany",
-            marks=[
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: (t.double_col == 0).notany().over(win),
@@ -273,9 +263,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 .astype(bool)
             ),
             id="cumnotany",
-            marks=[
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: (t.double_col == 0).all().over(win),
@@ -286,9 +274,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 .astype(bool)
             ),
             id="cumall",
-            marks=[
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: (t.double_col == 0).notall().over(win),
@@ -299,9 +285,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 .astype(bool)
             ),
             id="cumnotall",
-            marks=[
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-            ],
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),

@@ -20,7 +20,20 @@ DB2_DATABASE = os.environ.get("IBIS_TEST_DB2_DATABASE", "ibistest")
 
 
 def pytest_collection_modifyitems(items, config):  # noqa: ARG001
-    """Do not run shared tests that Db2 cannot complete or that crash the driver."""
+    """Do not run shared tests that Db2 cannot complete or that crash the driver.
+
+    This is a hook and not a `notyet` mark in the shared test files because
+    `ibis/backends/conftest.py` only turns those marks into `xfail` while the
+    test is already running (in `pytest_runtest_call`), so `run=False` has no
+    effect and the test body still executes. These two tests cannot be run:
+    one segfaults the interpreter and the other takes longer than the CI job
+    allows.
+
+    This hook only applies when `ibis/backends/db2/tests` is collected.
+    Running a shared test file alone with `-m db2` skips it, and the emoji
+    test then segfaults the driver. Run `pytest ibis -m db2` or include this
+    directory in the path.
+    """
     for item in items:
         if (
             item.originalname == "test_string_methods_accents_and_emoji"

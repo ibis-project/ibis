@@ -447,9 +447,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
             lambda t, where: t.double_col.var(how="sample", where=where),
             lambda t, where: t.double_col[where].var(ddof=1),
             id="var",
-            marks=[
-                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t, where: t.double_col.std(how="pop", where=where),
@@ -461,9 +459,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
             lambda t, where: t.double_col.var(how="pop", where=where),
             lambda t, where: t.double_col[where].var(ddof=0),
             id="var_pop",
-            marks=[
-                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
-            ],
+            marks=[pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t, where: t.string_col.approx_nunique(where=where),

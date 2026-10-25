@@ -1162,11 +1162,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
 @pytest.mark.parametrize(
     "obj, table_name",
     [
-        param(
-            lambda: pa.table({"a": ["a"], "b": [1]}),
-            "df_arrow",
-            id="pyarrow table",
-        ),
+        param(lambda: pa.table({"a": ["a"], "b": [1]}), "df_arrow", id="pyarrow table"),
         param(
             lambda: pa.table({"a": ["a"], "b": [1]}).to_reader(),
             "df_arrow_batch_reader",
