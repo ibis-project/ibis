@@ -518,3 +518,20 @@ def test_basic_enum_schema_inference(con, converter):
     t = con.table(name)
     assert t.e.type() == dt.string
     assert set(converter(t.e)) == {"a", "b"}
+
+
+def test_table_slice_out_of_range():
+    con = ibis.duckdb.connect()
+    t = con.create_table("t_slice_out_of_range", {"a": list(range(10))})
+    for s in [
+        slice(-20, None),
+        slice(-20, 5),
+        slice(12, -1),
+        slice(None, -20),
+        slice(-5, -20),
+        slice(-20, -5),
+        slice(5, 2),
+        slice(100, 200),
+    ]:
+        res = t[s].to_pandas()
+        assert len(res) == len(list(range(10))[s])

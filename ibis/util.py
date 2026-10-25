@@ -516,7 +516,7 @@ def slice_to_limit_offset(
       a int64
       b string
     <BLANKLINE>
-    Add(CountStar(t), -10): CountStar(r0) + -10
+    Greatest((Add(CountStar(t), -10), 0)): Greatest([CountStar(r0) + -10, 0])
 
     From 5th row to 10th row
     >>> what = slice(5, 10)
@@ -539,24 +539,26 @@ def slice_to_limit_offset(
         if stop is None:
             limit = None
         elif stop == 0:
-            limit = 0
+            limit = offset = 0
         elif stop < 0:
-            limit = count + (stop - offset)
+            limit = ibis.greatest(count + (stop - offset), 0)
         else:  # stop > 0
             limit = max(stop - offset, 0)
     else:  # start < 0
-        offset = count + start
+        offset = ibis.greatest(count + start, 0)
 
         if stop is None:
             limit = -start
         elif stop == 0:
             limit = offset = 0
         elif stop < 0:
-            limit = max(stop - start, 0)
-            if limit == 0:
-                offset = 0
+            if stop <= start:
+                limit = offset = 0
+            else:
+                stop_idx = ibis.greatest(count + stop, 0)
+                limit = stop_idx - offset
         else:  # stop > 0
-            limit = ibis.greatest((stop - start) - count, 0)
+            limit = ibis.greatest(stop - offset, 0)
     return limit, offset
 
 

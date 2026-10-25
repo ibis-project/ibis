@@ -171,6 +171,37 @@ def test_getitem_slice(table):
     assert_equal(expr3, table.limit(None, offset=2))
 
 
+def test_getitem_slice_negative_and_out_of_range(table):
+    # negative start
+    expr = table[-10:]
+    assert_equal(expr, table.limit(10, offset=ibis.greatest(table.count() + -10, 0)))
+
+    # negative stop
+    expr = table[:-10]
+    assert_equal(expr, table.limit(ibis.greatest(table.count() + -10, 0), offset=0))
+
+    # negative start and stop where stop <= start
+    expr = table[-5:-10]
+    assert_equal(expr, table.limit(0, offset=0))
+
+    # negative start and stop where stop > start
+    expr = table[-10:-5]
+    expected_offset = ibis.greatest(table.count() + -10, 0)
+    expected_limit = ibis.greatest(table.count() + -5, 0) - expected_offset
+    assert_equal(expr, table.limit(expected_limit, offset=expected_offset))
+
+    # negative start, positive stop
+    expr = table[-10:5]
+    expected_offset = ibis.greatest(table.count() + -10, 0)
+    expected_limit = ibis.greatest(5 - expected_offset, 0)
+    assert_equal(expr, table.limit(expected_limit, offset=expected_offset))
+
+    # positive start, negative stop
+    expr = table[5:-2]
+    expected_limit = ibis.greatest(table.count() + -7, 0)
+    assert_equal(expr, table.limit(expected_limit, offset=5))
+
+
 @pytest.mark.parametrize("step", [-1, 0, 2])
 def test_getitem_invalid_slice(table, step):
     with pytest.raises(ValueError):
