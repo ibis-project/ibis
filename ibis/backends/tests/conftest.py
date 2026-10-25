@@ -9,6 +9,7 @@ import ibis.common.exceptions as com
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     ExaQueryError,
+    IbmDb2Error,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     MySQLProgrammingError,
@@ -106,8 +107,9 @@ NO_MAP_SUPPORT_MARKS = [
 NO_MAP_SUPPORT = combine_marks(NO_MAP_SUPPORT_MARKS)
 
 NO_JSON_SUPPORT_MARKS = [
-    pytest.mark.never(["impala", "db2"], reason="doesn't support JSON and never will"),
+    pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
     pytest.mark.notyet(["clickhouse"], reason="upstream is broken"),
+    pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
     pytest.mark.notimpl(["datafusion", "exasol", "mssql", "druid", "oracle"]),
 ]
 NO_JSON_SUPPORT = combine_marks(NO_JSON_SUPPORT_MARKS)
