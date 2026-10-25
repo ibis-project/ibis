@@ -152,29 +152,6 @@ con = ibis.connect(
 )
 ```
 
-## Db2 Client Requirements
-
-The Db2 backend requires the IBM Db2 client libraries to be installed. You can install them using:
-
-```bash
-pip install ibm_db
-```
-
-::: {.callout-note}
-The `ibm_db` package includes `ibm_db_dbi` (the DB-API 2.0 compliant interface) and requires the Db2 client libraries to be installed on your system.
-For installation instructions, see the [IBM Db2 documentation](https://www.ibm.com/docs/en/db2).
-:::
-
-## Features
-
-The Db2 backend supports:
-
-- **Temporary tables**: Create temporary tables for intermediate results
-- **Schema operations**: List databases (schemas), tables, and get table schemas
-- **Data manipulation**: Insert, create, and drop tables
-- **Query execution**: Execute SQL queries and return results as pandas DataFrames or PyArrow tables
-- **Type mapping**: Automatic conversion between Ibis types and Db2 types
-
 ## Temporary tables require a USER TEMPORARY tablespace
 
 `CREATE GLOBAL TEMPORARY TABLE` fails with `SQL0286N` unless the database has a
@@ -276,39 +253,6 @@ times and timestamps work on both versions.
 - **Python versions**: The `db2-sqlglot-dialect` package that the backend
   depends on documents support for Python 3.10 to 3.12. The Db2 backend is
   not tested on Python 3.13 or 3.14.
-
-## Example Usage
-
-```python
-import ibis
-
-# Connect to Db2
-con = ibis.db2.connect(
-    database="SAMPLE",
-    host="localhost",
-    port=50000,
-    user="db2inst1",
-    password="password"
-)
-
-# List available tables
-tables = con.list_tables()
-print(tables)
-
-# Load a table
-employee = con.table("EMPLOYEE")
-
-# Query the table
-result = employee.filter(employee.SALARY > 50000).execute()
-print(result)
-
-# Create a new table
-con.create_table(
-    "new_table",
-    obj=result,
-    overwrite=True
-)
-```
 
 ```{python}
 #| echo: false
