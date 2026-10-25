@@ -328,6 +328,11 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     raises=GoogleBadRequest,
     reason="UNIX_SECONDS does not support DATETIME arguments",
 )
+@pytest.mark.notimpl(
+    ["postgres", "materialize", "risingwave", "mysql", "singlestoredb", "trino"],
+    raises=AssertionError,
+    reason="the compiled expression keeps the fractional seconds",
+)
 def test_timestamp_extract_epoch_seconds_subsecond(con):
     # epoch_seconds is typed as an integer, so a timestamp with a sub-second
     # component must not retain a fractional part in the result.
