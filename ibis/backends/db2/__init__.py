@@ -109,6 +109,37 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
             environments).
         **kwargs
             Additional IBM Db2 connection string key=value parameters.
+
+        Examples
+        --------
+        >>> import os
+        >>> import ibis
+        >>> host = os.environ.get("IBIS_TEST_DB2_HOST", "localhost")
+        >>> port = int(os.environ.get("IBIS_TEST_DB2_PORT", "50000"))
+        >>> user = os.environ.get("IBIS_TEST_DB2_USER", "db2inst1")
+        >>> password = os.environ.get("IBIS_TEST_DB2_PASSWORD", "ibistest")
+        >>> database = os.environ.get("IBIS_TEST_DB2_DATABASE", "ibistest")
+        >>> con = ibis.db2.connect(
+        ...     database=database, host=host, port=port, user=user, password=password
+        ... )
+        >>> con.list_tables()  # doctest: +ELLIPSIS
+        [...]
+        >>> t = con.table("functional_alltypes")
+        >>> t
+        DatabaseTable: functional_alltypes
+          id              int32
+          bool_col        int16
+          tinyint_col     int16
+          smallint_col    int16
+          int_col         int32
+          bigint_col      int64
+          float_col       float32
+          double_col      float64
+          date_string_col string(255)
+          string_col      string(255)
+          timestamp_col   timestamp
+          year            int32
+          month           int32
         """
         import ibm_db_dbi
 
