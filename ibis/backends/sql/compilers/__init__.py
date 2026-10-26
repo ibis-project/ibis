@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
-
 __all__ = [
     "AthenaCompiler",
     "BigQueryCompiler",
     "ClickHouseCompiler",
     "DataFusionCompiler",
     "DatabricksCompiler",
+    "Db2Compiler",
     "DruidCompiler",
     "DuckDBCompiler",
     "ExasolCompiler",
@@ -31,6 +30,7 @@ from ibis.backends.sql.compilers.bigquery import BigQueryCompiler
 from ibis.backends.sql.compilers.clickhouse import ClickHouseCompiler
 from ibis.backends.sql.compilers.databricks import DatabricksCompiler
 from ibis.backends.sql.compilers.datafusion import DataFusionCompiler
+from ibis.backends.sql.compilers.db2 import Db2Compiler
 from ibis.backends.sql.compilers.druid import DruidCompiler
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 from ibis.backends.sql.compilers.exasol import ExasolCompiler
@@ -47,23 +47,3 @@ from ibis.backends.sql.compilers.singlestoredb import SingleStoreDBCompiler
 from ibis.backends.sql.compilers.snowflake import SnowflakeCompiler
 from ibis.backends.sql.compilers.sqlite import SQLiteCompiler
 from ibis.backends.sql.compilers.trino import TrinoCompiler
-
-
-def __getattr__(name: str) -> Any:
-    # The Db2 compiler depends on the optional `db2-sqlglot-dialect` package
-    # (the `db2` extra), so it must not be imported along with the others:
-    # that would make `import ibis` fail for everyone without the extra.
-    if name in ("db2", "Db2Compiler"):
-        from importlib import import_module
-
-        try:
-            module = import_module("ibis.backends.sql.compilers.db2")
-        except ModuleNotFoundError as e:
-            if e.name != "db2_sqlglot":
-                raise
-            raise ImportError(
-                "The Db2 compiler requires the optional `db2-sqlglot-dialect` "
-                "package. Install it with `pip install 'ibis-framework[db2]'`."
-            ) from e
-        return module if name == "db2" else module.Db2Compiler
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

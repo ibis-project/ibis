@@ -1525,18 +1525,6 @@ wheels = [
 ]
 
 [[package]]
-name = "db2-sqlglot-dialect"
-version = "1.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "sqlglot" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/8c/5a/365807a9710898df80a3a0de575b181f4a3fbd29b6adafc1987f95759c6b/db2_sqlglot_dialect-1.1.0.tar.gz", hash = "sha256:083d5b04bb98801dfb605a1bb73bc46a09da38ed3a74e0266735cfc10f9492b4", size = 24905, upload-time = "2026-10-08T06:46:16.936945Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/63/947bd83b6d2584ad5033be3d9a3fdfe8df787ed5a6b6cf67fedb3a01ca96/db2_sqlglot_dialect-1.1.0-py3-none-any.whl", hash = "sha256:a5807e5e00726b7e9c1a6f85da313373b1739f4b2a2390231629d3aafe075a93", size = 17856, upload-time = "2026-10-08T06:46:15.781790Z" },
-]
-
-[[package]]
 name = "debugpy"
 version = "1.8.20"
 source = { registry = "https://pypi.org/simple" }
@@ -2523,7 +2511,6 @@ datafusion = [
     { name = "rich" },
 ]
 db2 = [
-    { name = "db2-sqlglot-dialect" },
     { name = "ibm-db" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -2781,7 +2768,6 @@ requires-dist = [
     { name = "databricks-sql-connector", marker = "extra == 'databricks'", specifier = ">=4" },
     { name = "datafusion", marker = "extra == 'datafusion'", specifier = ">=0.6" },
     { name = "db-dtypes", marker = "extra == 'bigquery'", specifier = ">=0.3" },
-    { name = "db2-sqlglot-dialect", marker = "extra == 'db2'", specifier = ">=1.1.0" },
     { name = "deltalake", marker = "extra == 'deltalake'", specifier = ">=0.9.0" },
     { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=0.10.3,!=1.3.0" },
     { name = "fsspec", extras = ["s3"], marker = "extra == 'athena'" },

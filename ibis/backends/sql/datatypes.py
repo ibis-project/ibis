@@ -1748,7 +1748,7 @@ class SingleStoreDBType(MySQLType):
 
 
 class Db2Type(SqlglotType):
-    dialect = "db2dialect"
+    dialect = "db2"
 
     default_decimal_precision = 31
     default_decimal_scale = 6

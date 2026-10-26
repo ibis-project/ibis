@@ -53,7 +53,6 @@ databackend==0.0.3
 databricks-sql-connector==4.2.4
 datafusion==53.0.0
 db-dtypes==1.5.0
-db2-sqlglot-dialect==1.1.0
 debugpy==1.8.20
 decorator==5.2.1
 defusedxml==0.7.1

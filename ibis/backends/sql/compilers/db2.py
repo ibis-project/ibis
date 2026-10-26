@@ -5,15 +5,13 @@ from __future__ import annotations
 import string
 
 import sqlglot.expressions as sge
-from db2_sqlglot import Db2 as _Db2BaseDialect
-from sqlglot import exp, transforms
-from sqlglot.generator import Generator
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import Db2Type
+from ibis.backends.sql.dialects import Db2
 from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
@@ -25,182 +23,12 @@ from ibis.backends.sql.rewrites import (
 )
 
 
-class Db2Generator(Generator):
-    """Custom SQL generator for Db2."""
-
-    # Only Ibis-specific keys — no base spread. The base Generator keys are
-    # inherited by Db2Dialect.Generator via the MRO and must not be spread here,
-    # because spreading **Generator.TRANSFORMS would overwrite the external
-    # dialect's specialised transforms for keys that appear in both dicts.
-    TRANSFORMS = {
-        exp.DateDiff: lambda self, e: self.func(
-            "DAYS_BETWEEN", e.this, self.sql(e, "expression")
-        ),
-        exp.StrPosition: lambda self, e: self.func(
-            "LOCATE", self.sql(e, "substr"), self.sql(e, "this")
-        ),
-        exp.GroupConcat: lambda self, e: self.func(
-            "LISTAGG",
-            e.this,
-            self.sql(e, "separator")
-            if e.args.get("separator")
-            else self.sql(exp.Literal.string(",")),
-        ),
-        # Db2's STDDEV is the population standard deviation; STDDEV_SAMP is
-        # the sample one that other engines mean by STDDEV.
-        exp.Stddev: lambda self, e: self.func("STDDEV_SAMP", e.this),
-        # Likewise, Db2's VARIANCE is the population variance; VAR_SAMP and
-        # VAR_POP are the explicit sample and population forms.
-        exp.Variance: lambda self, e: self.func("VAR_SAMP", e.this),
-        exp.VariancePop: lambda self, e: self.func("VAR_POP", e.this),
-    }
-
-    # Db2 rejects the RECURSIVE keyword (SQL0104N) and requires explicit
-    # column names on a recursive common table expression (SQL0343N).
-    CTE_RECURSIVE_KEYWORD_REQUIRED = False
-
-    def cte_sql(self, expression: exp.CTE) -> str:
-        alias = expression.args.get("alias")
-        with_ = expression.parent
-        if (
-            alias is not None
-            and not alias.args.get("columns")
-            and with_ is not None
-            and with_.args.get("recursive")
-        ):
-            alias.set(
-                "columns",
-                [
-                    exp.to_identifier(name, quoted=True)
-                    for name in expression.this.named_selects
-                ],
-            )
-        return super().cte_sql(expression)
-
-    # Only Ibis-specific overrides — no **Generator.TYPE_MAPPING spread.
-    TYPE_MAPPING = {
-        exp.DataType.Type.BOOLEAN: "BOOLEAN",
-        exp.DataType.Type.TINYINT: "SMALLINT",
-        exp.DataType.Type.SMALLINT: "SMALLINT",
-        exp.DataType.Type.INT: "INTEGER",
-        exp.DataType.Type.BIGINT: "BIGINT",
-        exp.DataType.Type.FLOAT: "REAL",
-        exp.DataType.Type.DOUBLE: "DOUBLE",
-        exp.DataType.Type.DECIMAL: "DECIMAL",
-        exp.DataType.Type.VARCHAR: "VARCHAR",
-        exp.DataType.Type.CHAR: "CHAR",
-        exp.DataType.Type.TEXT: "CLOB",
-        exp.DataType.Type.BINARY: "VARBINARY",
-        exp.DataType.Type.VARBINARY: "VARBINARY",
-        exp.DataType.Type.DATE: "DATE",
-        exp.DataType.Type.DATETIME: "TIMESTAMP",
-        exp.DataType.Type.TIMESTAMP: "TIMESTAMP",
-        exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-    }
-
-    def interval_sql(self, expression: exp.Interval) -> str:
-        """Render a Db2 labeled duration: `(n) DAYS`, not `INTERVAL n DAY`."""
-        return f"({self.sql(expression, 'this')}) {self.sql(expression, 'unit')}"
-
-    def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
-        """Generate CAST expression for Db2."""
-        return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
-
-    def trycast_sql(
-        self, expression: exp.TryCast, safe_prefix: str | None = None
-    ) -> str:
-        """Db2 doesn't have TRY_CAST, use regular CAST."""
-        return self.cast_sql(expression, safe_prefix)
-
-    def boolean_sql(self, expression: exp.Boolean) -> str:
-        """Generate boolean literal for Db2."""
-        return "TRUE" if expression.this else "FALSE"
-
-    def concat_sql(self, expression: exp.Concat) -> str:
-        """Generate CONCAT expression for Db2.
-
-        Db2's CONCAT() takes exactly two arguments. Use || for arbitrary
-        numbers of operands, which is valid for any count. Parenthesise
-        to preserve precedence inside larger expressions.
-        """
-        return "(" + " || ".join(self.sql(e) for e in expression.expressions) + ")"
-
-    def substring_sql(self, expression: exp.Substring) -> str:
-        """Generate SUBSTRING expression for Db2."""
-        # Db2 uses SUBSTR function
-        args = [expression.this]
-        if expression.args.get("start"):
-            args.append(expression.args["start"])
-        if expression.args.get("length"):
-            args.append(expression.args["length"])
-        return self.func("SUBSTR", *args)
-
-    def regexp_like_sql(self, expression: exp.RegexpLike) -> str:
-        """Generate REGEXP_LIKE for Db2."""
-        return self.func("REGEXP_LIKE", expression.this, expression.expression)
-
-    def mod_sql(self, expression: exp.Mod) -> str:
-        """Generate modulo for Db2."""
-        return self.func("MOD", expression.this, expression.expression)
-
-    def sqrt_sql(self, expression: exp.Sqrt) -> str:
-        """Generate square root for Db2."""
-        return self.func("SQRT", expression.this)
-
-    def power_sql(self, expression: exp.Pow) -> str:
-        """Generate power function for Db2."""
-        return self.func("POWER", expression.this, expression.expression)
-
-
-class Db2Dialect(_Db2BaseDialect):
-    """Db2 SQL dialect for SQLGlot, extending the base dialect from db2_sqlglot."""
-
-    class Generator(Db2Generator, _Db2BaseDialect.Generator):
-        """Extended Db2 generator with Ibis-specific customisations.
-
-        Db2Generator comes first in the MRO so all Ibis-defined methods
-        (boolean_sql, cast_sql, trycast_sql, extract_sql, etc.) take
-        precedence over the external dialect's defaults.  The external
-        generator fills in anything not overridden here.
-        """
-
-        TYPE_MAPPING = {
-            **_Db2BaseDialect.Generator.TYPE_MAPPING,
-            **Db2Generator.TYPE_MAPPING,
-        }
-
-        TRANSFORMS = {
-            # External dialect is the base; Db2Generator keys are the only
-            # overrides, so they win for every key they define.
-            **_Db2BaseDialect.Generator.TRANSFORMS,
-            **Db2Generator.TRANSFORMS,
-            # Db2 has no SEMI/ANTI JOIN syntax; rewrite them as [NOT] EXISTS
-            # before the external dialect's own Select transform runs.
-            exp.Select: lambda self, e: _Db2BaseDialect.Generator.TRANSFORMS[
-                exp.Select
-            ](self, transforms.eliminate_semi_and_anti_joins(e)),
-        }
-
-    class Parser(_Db2BaseDialect.Parser):
-        """Extended Db2 parser with Ibis-specific customisations."""
-
-        FUNCTIONS = {
-            **_Db2BaseDialect.Parser.FUNCTIONS,
-            "LOCATE": exp.StrPosition.from_arg_list,
-            "LISTAGG": exp.GroupConcat.from_arg_list,
-            "DAYS_BETWEEN": exp.DateDiff.from_arg_list,
-            "REGEXP_LIKE": lambda args: exp.RegexpLike(
-                this=args[0], expression=args[1]
-            ),
-        }
-
-
 class Db2Compiler(SQLGlotCompiler):
     """SQL compiler for the Db2 backend."""
 
     __slots__ = ()
 
-    dialect = Db2Dialect
+    dialect = Db2
     type_mapper = Db2Type
 
     LOWERED_OPS = {

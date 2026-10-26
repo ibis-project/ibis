@@ -400,11 +400,6 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     ["flink"],
     reason="Flink engine does not support generic window clause with no order by",
 )
-@pytest.mark.notimpl(
-    ["db2"],
-    raises=AssertionError,
-    reason="DB2 filter with window op returns different results",
-)
 # TODO(kszucs): this is not supported at the expression level
 def test_filter_with_window_op(backend, alltypes, sorted_df):
     table = alltypes

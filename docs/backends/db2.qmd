@@ -250,9 +250,7 @@ times and timestamps work on both versions.
 - **Long literal aliases**: An unnamed string literal longer than about 120
   characters fails with `SQL0107N`, because its text becomes the column name.
   Give it a name with `.name(...)`.
-- **Python versions**: The `db2-sqlglot-dialect` package that the backend
-  depends on documents support for Python 3.10 to 3.12. The Db2 backend is
-  not tested on Python 3.13 or 3.14.
+- **Python versions**: The Db2 backend is not tested on Python 3.13 or 3.14.
 
 ```{python}
 #| echo: false
