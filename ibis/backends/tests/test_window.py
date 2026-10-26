@@ -15,6 +15,7 @@ from ibis.backends.tests.errors import (
     IbmDb2Error,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
+    MySQLProgrammingError,
     PsycoPg2InternalError,
     Py4JJavaError,
     PyDruidProgrammingError,
@@ -979,7 +980,7 @@ def test_ungrouped_unbounded_window(
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notyet(
     ["mysql"],
-    raises=MySQLOperationalError,
+    raises=(MySQLOperationalError, MySQLProgrammingError),
     reason="https://github.com/tobymao/sqlglot/issues/2779",
 )
 @pytest.mark.notyet(
@@ -1161,7 +1162,7 @@ def test_first_last(backend):
     ["impala"], raises=ImpalaHiveServer2Error, reason="not supported by Impala"
 )
 @pytest.mark.notyet(
-    ["mysql"], raises=MySQLOperationalError, reason="not supported by MySQL"
+    ["mysql"], raises=MySQLProgrammingError, reason="not supported by MySQL"
 )
 @pytest.mark.notyet(
     ["singlestoredb"],
