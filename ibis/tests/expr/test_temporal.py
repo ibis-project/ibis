@@ -347,6 +347,42 @@ def test_timedelta_generic_api(case, expected):
     assert case.equals(expected)
 
 
+@pytest.mark.parametrize(
+    ("interval", "prop", "expected_unit"),
+    [
+        (api.interval(years=2), "years", IntervalUnit.YEAR),
+        (api.interval(years=2), "quarters", IntervalUnit.QUARTER),
+        (api.interval(years=2), "months", IntervalUnit.MONTH),
+        (api.interval(weeks=2), "weeks", IntervalUnit.WEEK),
+        (api.interval(weeks=2), "days", IntervalUnit.DAY),
+        (api.interval(days=2), "hours", IntervalUnit.HOUR),
+        (api.interval(hours=2), "minutes", IntervalUnit.MINUTE),
+        (api.interval(minutes=2), "seconds", IntervalUnit.SECOND),
+        (api.interval(seconds=2), "milliseconds", IntervalUnit.MILLISECOND),
+        (api.interval(milliseconds=2), "microseconds", IntervalUnit.MICROSECOND),
+        (api.interval(microseconds=2), "nanoseconds", IntervalUnit.NANOSECOND),
+    ],
+)
+def test_interval_unit_properties(interval, prop, expected_unit, table):
+    scalar_result = getattr(interval, prop)
+    assert isinstance(scalar_result, ir.IntervalValue)
+    assert isinstance(scalar_result, ir.IntervalScalar)
+    assert not isinstance(scalar_result, ir.IntegerValue)
+    assert scalar_result.type().unit == expected_unit
+
+    col = table.c.as_interval(interval.type().unit)
+    col_result = getattr(col, prop)
+    assert isinstance(col_result, ir.IntervalValue)
+    assert isinstance(col_result, ir.IntervalColumn)
+    assert not isinstance(col_result, ir.IntegerValue)
+    assert col_result.type().unit == expected_unit
+
+    assert (
+        getattr(ir.IntervalValue, prop).fget.__annotations__["return"]
+        == "IntervalValue"
+    )
+
+
 ONE_DAY = ibis.interval(days=1)
 ONE_HOUR = ibis.interval(hours=1)
 ONE_SECOND = ibis.interval(seconds=1)

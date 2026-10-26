@@ -1278,58 +1278,58 @@ class IntervalValue(Value):
         return self.as_unit(target_unit)
 
     @property
-    def years(self) -> ir.IntegerValue:
-        """The number of years (IntegerValue)."""
+    def years(self) -> IntervalValue:
+        """The number of years (IntervalValue)."""
         return self.as_unit("Y")
 
     @property
-    def quarters(self) -> ir.IntegerValue:
-        """The number of quarters (IntegerValue)."""
+    def quarters(self) -> IntervalValue:
+        """The number of quarters (IntervalValue)."""
         return self.as_unit("Q")
 
     @property
-    def months(self) -> ir.IntegerValue:
-        """The number of months (IntegerValue)."""
+    def months(self) -> IntervalValue:
+        """The number of months (IntervalValue)."""
         return self.as_unit("M")
 
     @property
-    def weeks(self) -> ir.IntegerValue:
-        """The number of weeks (IntegerValue)."""
+    def weeks(self) -> IntervalValue:
+        """The number of weeks (IntervalValue)."""
         return self.as_unit("W")
 
     @property
-    def days(self) -> ir.IntegerValue:
-        """The number of days (IntegerValue)."""
+    def days(self) -> IntervalValue:
+        """The number of days (IntervalValue)."""
         return self.as_unit("D")
 
     @property
-    def hours(self) -> ir.IntegerValue:
-        """The number of hours (IntegerValue)."""
+    def hours(self) -> IntervalValue:
+        """The number of hours (IntervalValue)."""
         return self.as_unit("h")
 
     @property
-    def minutes(self) -> ir.IntegerValue:
-        """The number of minutes (IntegerValue)."""
+    def minutes(self) -> IntervalValue:
+        """The number of minutes (IntervalValue)."""
         return self.as_unit("m")
 
     @property
-    def seconds(self) -> ir.IntegerValue:
-        """The number of seconds (IntegerValue)."""
+    def seconds(self) -> IntervalValue:
+        """The number of seconds (IntervalValue)."""
         return self.as_unit("s")
 
     @property
-    def milliseconds(self) -> ir.IntegerValue:
-        """The number of milliseconds (IntegerValue)."""
+    def milliseconds(self) -> IntervalValue:
+        """The number of milliseconds (IntervalValue)."""
         return self.as_unit("ms")
 
     @property
-    def microseconds(self) -> ir.IntegerValue:
-        """The number of microseconds (IntegerValue)."""
+    def microseconds(self) -> IntervalValue:
+        """The number of microseconds (IntervalValue)."""
         return self.as_unit("us")
 
     @property
-    def nanoseconds(self) -> ir.IntegerValue:
-        """The number of nanoseconds (IntegerValue)."""
+    def nanoseconds(self) -> IntervalValue:
+        """The number of nanoseconds (IntervalValue)."""
         return self.as_unit("ns")
 
     def __add__(
