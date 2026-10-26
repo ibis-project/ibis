@@ -20,7 +20,7 @@ from sqlglot.dialects import (
     Trino,
 )
 from sqlglot.dialects import ClickHouse as _ClickHouse
-from sqlglot.dialects.dialect import rename_func
+from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, rename_func
 from sqlglot.helper import find_new_name, seq_get
 
 
@@ -63,6 +63,175 @@ class DataFusion(Postgres):
 
 with contextlib.suppress(AttributeError):
     DataFusion.Generator.TRANSFORMS[sge.Median] = rename_func("median")
+
+
+def _db2_add_sysdummy(expression: sge.Expr) -> sge.Expr:
+    """Db2 requires a FROM clause on every SELECT."""
+    if isinstance(expression, sge.Select) and not expression.args.get("from_"):
+        expression.set(
+            "from_",
+            sge.From(
+                this=sge.Table(
+                    this=sge.to_identifier("SYSDUMMY1"), db=sge.to_identifier("SYSIBM")
+                )
+            ),
+        )
+    return expression
+
+
+class Db2(Postgres):
+    NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
+
+    class Generator(Postgres.Generator):
+        LIMIT_FETCH = "FETCH"
+        # Db2 rejects the RECURSIVE keyword (SQL0104N)
+        CTE_RECURSIVE_KEYWORD_REQUIRED = False
+        TRY_SUPPORTED = True
+        SUPPORTS_SELECT_INTO = False
+        SUPPORTS_UNLOGGED_TABLES = False
+        SUPPORTS_WINDOW_EXCLUDE = False
+        SUPPORTS_BETWEEN_FLAGS = False
+        SUPPORTS_MEDIAN = True
+        SINGLE_STRING_INTERVAL = False
+        MULTI_ARG_DISTINCT = True
+        LAST_DAY_SUPPORTS_DATE_PART = False
+        LOCKING_READS_SUPPORTED = False
+        LIKE_PROPERTY_INSIDE_SCHEMA = False
+        JSON_KEY_VALUE_PAIR_SEP = " VALUE"
+        TABLESAMPLE_SEED_KEYWORD = "SEED"
+        TABLESAMPLE_SIZE_IS_ROWS = True
+
+        TYPE_MAPPING = Postgres.Generator.TYPE_MAPPING.copy() | {
+            sge.DataType.Type.TINYINT: "SMALLINT",
+            sge.DataType.Type.INT: "INTEGER",
+            sge.DataType.Type.FLOAT: "REAL",
+            sge.DataType.Type.DOUBLE: "DOUBLE",
+            sge.DataType.Type.NCHAR: "NCHAR",
+            sge.DataType.Type.NVARCHAR: "NVARCHAR",
+            sge.DataType.Type.TEXT: "CLOB",
+            sge.DataType.Type.BINARY: "VARBINARY",
+            sge.DataType.Type.VARBINARY: "VARBINARY",
+            sge.DataType.Type.DATETIME: "TIMESTAMP",
+            sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            sge.DataType.Type.UUID: "CHAR(36)",
+        }
+
+        TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
+            # Db2 has no SEMI/ANTI JOIN, DISTINCT ON or QUALIFY, and needs a FROM
+            sge.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_semi_and_anti_joins,
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    _db2_add_sysdummy,
+                ]
+            ),
+            sge.ILike: no_ilike_sql,
+            sge.Round: rename_func("ROUND"),
+            sge.Mod: rename_func("MOD"),
+            sge.Pow: rename_func("POWER"),
+            sge.BitwiseXor: lambda self, e: self.binary(e, "^"),
+            sge.Substring: lambda self, e: self.func(
+                "SUBSTR", e.this, e.args.get("start"), e.args.get("length")
+            ),
+            sge.StrToTime: lambda self, e: self.func("TIMESTAMP", e.this),
+            sge.DateDiff: lambda self, e: self.func(
+                "DAYS_BETWEEN", e.this, e.expression
+            ),
+            sge.StrPosition: lambda self, e: self.func(
+                "LOCATE", e.args["substr"], e.this, e.args.get("position")
+            ),
+            sge.GroupConcat: lambda self, e: self.func(
+                "LISTAGG", e.this, e.args.get("separator") or sge.Literal.string(",")
+            ),
+            # Db2's STDDEV and VARIANCE are the population forms
+            sge.Stddev: rename_func("STDDEV_SAMP"),
+            sge.Variance: rename_func("VAR_SAMP"),
+            sge.VariancePop: rename_func("VAR_POP"),
+            sge.RegexpLike: lambda self, e: self.func(
+                "REGEXP_LIKE", e.this, e.expression, e.args.get("flag")
+            ),
+            sge.CurrentDate: lambda *_: "CURRENT DATE",
+            sge.CurrentTimestamp: lambda *_: "CURRENT TIMESTAMP",
+            # CONCAT() takes exactly two arguments in Db2
+            sge.Concat: lambda self, e: (
+                f"({' || '.join(map(self.sql, e.expressions))})"
+            ),
+        }
+
+        def identifier_sql(self, expression: sge.Identifier) -> str:
+            # Db2 rejects unquoted identifiers starting with an underscore
+            # (SQL20521N), such as the _t and _w aliases from eliminate_qualify
+            if not expression.quoted and expression.name.startswith("_"):
+                expression = expression.copy()
+                expression.set("quoted", True)
+            return super().identifier_sql(expression)
+
+        def interval_sql(self, expression: sge.Interval) -> str:
+            # Db2 labeled duration: `(n) DAYS`, not `INTERVAL 'n DAY'`
+            return f"({self.sql(expression, 'this')}) {self.sql(expression, 'unit')}"
+
+        def cast_sql(self, expression, safe_prefix=None):
+            return (
+                f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
+            )
+
+        def trycast_sql(self, expression, safe_prefix=None):
+            # Db2 has no TRY_CAST
+            return self.cast_sql(expression)
+
+        def boolean_sql(self, expression: sge.Boolean) -> str:
+            return "TRUE" if expression.this else "FALSE"
+
+        def extract_sql(self, expression: sge.Extract) -> str:
+            this = self.sql(expression, "this")
+            if this.upper() in ("DAYOFWEEK", "DAYOFYEAR"):
+                return f"{this.upper()}({self.sql(expression, 'expression')})"
+            return f"EXTRACT({this} FROM {self.sql(expression, 'expression')})"
+
+        def offset_sql(self, expression: sge.Offset) -> str:
+            return f"{super().offset_sql(expression)} ROWS"
+
+        def fetch_sql(self, expression: sge.Fetch) -> str:
+            count = expression.args.get("count")
+            if count:
+                return f" FETCH FIRST {self.sql(count)} ROWS ONLY"
+            return " FETCH FIRST ROW ONLY"
+
+        def cte_sql(self, expression: sge.CTE) -> str:
+            # Db2 requires explicit column names on a recursive CTE (SQL0343N)
+            alias = expression.args.get("alias")
+            with_ = expression.parent
+            if (
+                alias is not None
+                and not alias.args.get("columns")
+                and with_ is not None
+                and with_.args.get("recursive")
+            ):
+                alias.set(
+                    "columns",
+                    [
+                        sge.to_identifier(name, quoted=True)
+                        for name in expression.this.named_selects
+                    ],
+                )
+            return super().cte_sql(expression)
+
+    class Parser(Postgres.Parser):
+        FUNCTIONS = {
+            **Postgres.Parser.FUNCTIONS,
+            # LOCATE(needle, haystack[, start])
+            "LOCATE": lambda args: sge.StrPosition(
+                this=seq_get(args, 1),
+                substr=seq_get(args, 0),
+                position=seq_get(args, 2),
+            ),
+            "LISTAGG": sge.GroupConcat.from_arg_list,
+            "DAYS_BETWEEN": sge.DateDiff.from_arg_list,
+            "REGEXP_LIKE": lambda args: sge.RegexpLike(
+                this=args[0], expression=args[1]
+            ),
+        }
 
 
 class Druid(Postgres):
