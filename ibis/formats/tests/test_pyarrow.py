@@ -78,10 +78,24 @@ def test_roundtripable_types(arrow_type):
             dt.Array(dt.Int64(nullable=True), nullable=False),
             pa.list_(pa.int64()),
         ),
+        *(
+            [pytest.param(pa.json_(), dt.JSON(nullable=False), pa.string(), id="json")]
+            if hasattr(pa, "json_")
+            else []
+        ),
     ],
 )
 def test_non_roundtripable_types(arrow_type, ibis_type, restored_type):
     assert_dtype_roundtrip(arrow_type, ibis_type, restored_type)
+
+
+def test_json_type():
+    if not hasattr(pa, "json_"):
+        pytest.skip("pyarrow.json_ is not available")
+    assert PyArrowType.to_ibis(pa.json_()) == dt.json
+    assert PyArrowType.to_ibis(pa.json_(), nullable=False) == dt.JSON(nullable=False)
+    schema = pa.schema([("data", pa.json_())])
+    assert PyArrowSchema.to_ibis(schema) == sch.Schema({"data": dt.json})
 
 
 @pytest.mark.parametrize("timezone", [None, "UTC"])

@@ -47,6 +47,9 @@ _from_pyarrow_types = {
 with contextlib.suppress(AttributeError):
     _from_pyarrow_types[pa.string_view()] = dt.String
 
+with contextlib.suppress(AttributeError):
+    _from_pyarrow_types[pa.json_()] = dt.JSON
+
 
 _to_pyarrow_types = {
     dt.Null: pa.null(),
