@@ -4,6 +4,7 @@ import pytest
 
 import ibis
 import ibis.expr.operations as ops
+from ibis import _
 from ibis.expr.rewrites import simplify
 
 t = ibis.table(
@@ -46,6 +47,104 @@ def test_simplify_collapses_subquery_relation_with_values():
     expr = t.filter(t.int_col.isin(f.int_col))
     (sub,) = simplify(expr.op()).find(ops.InSubquery)
     assert sub.rel == f.op()
+
+
+v = ibis.table({"int_col": "int64", "arr": "array<int64>"}, name="v")
+
+# a correlated subquery must name its parent, which `_` cannot do
+filtered = t.filter(_.int_col > 1)
+computed = t.select("int_col", x=_.int_col + 1)
+projected = t.select("int_col", "string_col")
+
+
+@pytest.mark.parametrize(
+    "expr",
+    [
+        # a filter over a filter
+        # safe to merge, since the plain predicate still runs first, but the
+        # guard keeps every window apart
+        pytest.param(
+            t.filter(_.int_col > 1).filter(_.int_col > _.int_col.mean().over()),
+            id="filters-outer-window",
+        ),
+        pytest.param(
+            t.filter(_.int_col > _.int_col.mean().over()).filter(_.int_col > 1),
+            id="filters-inner-window",
+        ),
+        pytest.param(
+            filtered.filter((u.int_col == filtered.int_col).any()),
+            id="filters-exists",
+        ),
+        pytest.param(
+            filtered.filter(
+                filtered.int_col.isin(v.filter(v.int_col == filtered.int_col).int_col)
+            ),
+            id="filters-isin",
+        ),
+        # a filter over a projection
+        pytest.param(
+            t.select("int_col", cs=_.int_col.cumsum(order_by=_.int_col)).filter(
+                _.cs > 5
+            ),
+            id="reorder-window",
+        ),
+        pytest.param(
+            t.select(
+                "int_col", avg=_.int_col.mean().over(group_by=_.string_col)
+            ).filter(_.int_col > 1),
+            id="reorder-window-other-column",
+        ),
+        pytest.param(
+            t.select("int_col", flag=(u.int_col == t.int_col).any()).filter(
+                _.int_col > 1
+            ),
+            id="reorder-inner-exists",
+        ),
+        pytest.param(
+            computed.filter((u.int_col == computed.int_col).any()),
+            id="reorder-outer-exists",
+        ),
+        pytest.param(
+            computed.filter(
+                computed.int_col.isin(v.filter(v.int_col == computed.int_col).int_col)
+            ),
+            id="reorder-outer-isin",
+        ),
+        pytest.param(
+            t.select("int_col", r=ibis.random()).filter(_.r > 0.5),
+            id="reorder-impure",
+        ),
+        pytest.param(
+            v.select("int_col", x=_.arr.unnest()).filter(_.x > 1),
+            id="reorder-unnest",
+        ),
+        pytest.param(
+            v.select("int_col", rid=_.rowid()).filter(_.int_col > 1),
+            id="reorder-rowid",
+        ),
+        # a projection over a projection
+        pytest.param(
+            t.select(
+                "int_col", avg=_.int_col.mean().over(group_by=_.string_col)
+            ).select("int_col", r=_.avg.rank()),
+            id="projects-window",
+        ),
+        pytest.param(
+            t.select("int_col", r=ibis.random()).select(a=_.r + 1, b=_.r + 2),
+            id="projects-impure",
+        ),
+        pytest.param(
+            projected.select(
+                projected.int_col, flag=(u.int_col == projected.int_col).any()
+            ),
+            id="projects-exists",
+        ),
+    ],
+)
+def test_simplify_keeps_blocked_relations_apart(expr):
+    # merging would move a window, subquery, impure call, UNNEST or row id
+    # across the relation it is tied to
+    assert simplify(expr.op()) == expr.op()
 
 
 def test_simplify_full_reprojection():
