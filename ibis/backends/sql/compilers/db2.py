@@ -32,6 +32,7 @@ class Db2Compiler(SQLGlotCompiler):
     type_mapper = Db2Type
 
     LOWERED_OPS = {
+        ops.Capitalize: None,
         ops.Log2: lower_log2,
         ops.Log10: lower_log10,
     }
@@ -330,6 +331,20 @@ class Db2Compiler(SQLGlotCompiler):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.listagg(arg, sep)
+
+    def visit_Capitalize(self, op, *, arg):
+        # The default lowering emits SUBSTR(s, 2, LENGTH(s)). Db2 pads that
+        # result with blanks on VARCHAR columns, raises SQL0138N on literals,
+        # and counts bytes rather than characters. SUBSTRING with CODEUNITS32
+        # counts characters, and omitting the length returns the rest.
+        units = sge.Var(this="CODEUNITS32")
+        first = self.f.anon.substring(arg, 1, 1, units)
+        rest = self.f.anon.substring(arg, 2, units)
+        return self.if_(
+            self.f.anon.character_length(arg, units) < 2,
+            self.f.upper(arg),
+            sge.DPipe(this=self.f.upper(first), expression=self.f.lower(rest)),
+        )
 
     # Db2's TRIM removes a single character; LTRIM/RTRIM take a set. `f.anon`
     # keeps sqlglot from parsing them into `exp.Trim` (rendered as TRIM).
