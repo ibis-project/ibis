@@ -292,6 +292,18 @@ class Db2Compiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         return sge.Min(this=arg)
 
+    def visit_Mean(self, op, *, arg, where):
+        dtype = op.arg.dtype
+        if dtype.is_boolean():
+            # Db2 cannot cast BOOLEAN directly to DOUBLE (SQL0461N); go through
+            # int32 first.
+            arg = self.cast(arg, dt.int32)
+        if dtype.is_boolean() or dtype.is_integer():
+            # AVG over an integer column returns an integer in Db2, which
+            # truncates the mean.
+            arg = self.cast(arg, dt.float64)
+        return self.agg.avg(arg, where=where)
+
     def visit_CountStar(self, op, *, arg, where):
         # Db2 does not accept `*` inside a CASE expression, so count a
         # constant for the rows that match `where` instead.
