@@ -87,6 +87,7 @@ class Db2Compiler(SQLGlotCompiler):
         ops.ArrayRemove,
         ops.ArrayRepeat,
         ops.ArraySort,
+        ops.ArrayStringJoin,
         ops.ArrayUnion,
         ops.ArrayZip,
         ops.Unnest,
