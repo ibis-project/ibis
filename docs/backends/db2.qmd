@@ -23,7 +23,7 @@ And connect:
 ```{.python}
 import ibis
 
-con = ibis.db2.connect()  # <1>
+con = ibis.db2.connect(database="SAMPLE")  # <1>
 ```
 
 1. Adjust connection parameters as needed.
@@ -41,7 +41,7 @@ And connect:
 ```{.python}
 import ibis
 
-con = ibis.db2.connect()  # <1>
+con = ibis.db2.connect(database="SAMPLE")  # <1>
 ```
 
 1. Adjust connection parameters as needed.
@@ -59,7 +59,7 @@ And connect:
 ```{.python}
 import ibis
 
-con = ibis.db2.connect()  # <1>
+con = ibis.db2.connect(database="SAMPLE")  # <1>
 ```
 
 1. Adjust connection parameters as needed.
@@ -231,6 +231,11 @@ times and timestamps work on both versions.
   `ArgMin`, `ArgMax`, `Mode`, `First`, `Last`, `Kurtosis`, `Reverse`, `IsNan`,
   `Strftime`, and array and map operations) raise `OperationNotDefinedError`
   when compiled.
+- **Rounding**: `round()` with no digits rounds half away from zero and
+  returns an integer, while pandas rounds half to even and returns a float.
+- **Non-ASCII text**: `lpad` and `rpad` count bytes, not characters, so they
+  pad non-ASCII text too short. `translate` fails with an error on non-ASCII
+  text.
 - **Whitespace stripping**: `strip`, `lstrip` and `rstrip` remove ASCII
   whitespace only. Unicode whitespace such as the non-breaking space is kept,
   which differs from pandas.
