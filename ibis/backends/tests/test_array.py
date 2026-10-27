@@ -1766,6 +1766,17 @@ def test_table_unnest_array_of_struct_of_array(con):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.notimpl(["postgres", "materialize"], raises=PsycoPgSyntaxError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+def test_empty_result_with_array_of_struct(alltypes):
+    expr = alltypes.filter(alltypes.int_col < 0).select(
+        a=ibis.array([ibis.struct({"x": 1})])
+    )
+    result = expr.execute()
+    assert result.empty
+    assert list(result.columns) == ["a"]
+
+
 notimpl_aggs = pytest.mark.notimpl(
     ["datafusion", "flink"], raises=com.OperationNotDefinedError
 )

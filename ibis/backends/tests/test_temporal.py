@@ -1605,6 +1605,19 @@ def test_now_from_projection(alltypes):
     assert not pd.isna(ts.iat[0])
 
 
+@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
+@pytest.mark.notimpl(
+    ["clickhouse", "mysql"],
+    raises=AssertionError,
+    reason="non-empty results have second resolution, empty ones nanosecond",
+)
+def test_now_from_empty_projection(alltypes):
+    nonempty = alltypes.select(now=ibis.now()).limit(1).execute()
+    empty = alltypes.filter(alltypes.int_col < 0).select(now=ibis.now()).execute()
+    assert empty.empty
+    assert empty.dtypes["now"] == nonempty.dtypes["now"]
+
+
 def test_today(con):
     result = con.execute(ibis.today())
     assert isinstance(result, datetime.date)
