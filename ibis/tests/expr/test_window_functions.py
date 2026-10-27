@@ -3,9 +3,8 @@ from __future__ import annotations
 import pytest
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.common.exceptions import ExpressionError
+from ibis.common.exceptions import ExpressionError, IbisTypeError
 
 
 def test_mutate_with_analytic_functions(alltypes):
@@ -70,7 +69,7 @@ def test_conflicting_window_boundaries(alltypes):
 
 
 def test_over_with_invalid_window_type(alltypes):
-    with pytest.raises(com.IbisTypeError, match="Unexpected window type: 5"):
+    with pytest.raises(IbisTypeError, match="Expected a window specification, got int"):
         alltypes.f.sum().over(5)
 
 
