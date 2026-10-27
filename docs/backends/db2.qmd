@@ -192,6 +192,9 @@ runs with autocommit enabled.
   zero (50.5 gives 51), where pandas rounds half to even. `lpad` and `rpad`
   count bytes, not characters, so multi-byte characters such as accented
   letters reduce the pad count.
+- **`greatest` and `least`**: Db2's `GREATEST` and `LEAST` return NULL if any
+  argument is NULL; Ibis's docstring says NULL arguments are ignored. Convert
+  NULLs first if you need that behaviour.
 - **Emoji**: `ibm_db` can segfault when fetching emoji, so avoid querying them.
 - **Timestamps**: Db2 timestamps have no time zone, so a literal with a
   non-zero UTC offset raises `UnsupportedOperationError`; convert it to UTC
