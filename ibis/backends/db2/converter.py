@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pandas as pd
-
 from ibis.formats.pandas import PandasData
 
 
@@ -19,7 +17,7 @@ class Db2PandasData(PandasData):
     - Booleans    → Python ``int`` (0/1)    (override required — see convert_Boolean)
     - DATE        → ``datetime.date``       (base class handles)
     - TIME        → ``datetime.time``       (base class handles)
-    - TIMESTAMP   → ``datetime.datetime``   (override required — see convert_Timestamp_element)
+    - TIMESTAMP   → ``datetime.datetime``   (base class handles)
     """
 
     @classmethod
@@ -35,12 +33,3 @@ class Db2PandasData(PandasData):
         if s.empty:
             return s.astype(pandas_type)
         return s.map(bool, na_action="ignore")
-
-    @classmethod
-    def convert_Timestamp_element(cls, dtype):
-        """Return a converter for a single timestamp value from ibm_db_dbi.
-
-        ``ibm_db_dbi`` returns ``datetime.datetime`` objects; this converts
-        them to ``pd.Timestamp`` which is what ibis expects.
-        """
-        return pd.Timestamp.fromisoformat
