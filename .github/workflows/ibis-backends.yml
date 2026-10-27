@@ -313,10 +313,6 @@ jobs:
                 - --extra decompiler
                 - --extra polars
         exclude:
-          # The Db2 backend has not been tested on Python 3.14.
-          - python-version: "3.14"
-            backend:
-              name: db2
           - os: windows-latest
             python-version: "3.14"
             backend:
