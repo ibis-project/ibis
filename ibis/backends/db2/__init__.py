@@ -98,7 +98,8 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
         user : str, optional
             Username for authentication
         password : str, optional
-            Password for authentication
+            Password for authentication. Db2 does not support ``;`` in a
+            password, so a value that contains it raises ``ValueError``.
         schema : str, optional
             Default schema
         ssl : bool, default False
@@ -183,6 +184,17 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
 
         if schema:
             conn_str_parts.append(f"CURRENTSCHEMA={schema}")
+
+        # Db2 does not support `;` in a connection value and has no way to
+        # escape it. The driver ends the value at the `;`, so a wrong password
+        # such as `secret;x` would connect as `secret`.
+        for part in conn_str_parts:
+            if ";" in part:
+                key = part.split("=", 1)[0]
+                raise ValueError(
+                    f"The value of {key} contains ';', which the Db2 driver "
+                    "does not support in a connection string"
+                )
 
         # ibm_db_dbi.connect() defaults to autocommit OFF, which makes every
         # read hold locks until the next commit. Every statement here is

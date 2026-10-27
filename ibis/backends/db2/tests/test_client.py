@@ -158,3 +158,29 @@ def test_execute_decimal_wider_than_float(con):
     value = decimal.Decimal("9" * 25 + "." + "9" * 6)
     result = con.execute(ibis.literal(value, type="decimal(31, 6)"))
     assert result == value
+
+
+@pytest.mark.parametrize(
+    ("key", "override"),
+    [
+        ("PWD", {"password": "secret;junk"}),
+        ("UID", {"user": "someone;else"}),
+        ("HOSTNAME", {"host": "localhost;x"}),
+        ("DATABASE", {"database": "db;x"}),
+        ("CURRENTSCHEMA", {"schema": "s;x"}),
+        ("CONNECTTIMEOUT", {"connecttimeout": "5;x"}),
+    ],
+)
+def test_connect_rejects_semicolon(key, override):
+    # Without the check the driver ends the value at `;`, so `secret;junk`
+    # would be accepted as `secret`.
+    kwargs = {
+        "database": DB2_DATABASE,
+        "host": DB2_HOST,
+        "port": DB2_PORT,
+        "user": DB2_USER,
+        "password": DB2_PASS,
+        **override,
+    }
+    with pytest.raises(ValueError, match=key):
+        ibis.db2.connect(**kwargs)
