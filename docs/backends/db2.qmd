@@ -231,8 +231,9 @@ times and timestamps work on both versions.
   `ArgMin`, `ArgMax`, `Mode`, `First`, `Last`, `Kurtosis`, `Reverse`, `IsNan`,
   `Strftime`, and array and map operations) raise `OperationNotDefinedError`
   when compiled.
-- **Rounding**: `round()` with no digits rounds half away from zero and
-  returns an integer, while pandas rounds half to even and returns a float.
+- **Rounding**: `round()` with no digits rounds half away from zero, while
+  pandas rounds half to even, so exact `.5` values can differ (for example,
+  50.5 gives 51 in Db2 and 50.0 in pandas).
 - **Non-ASCII text**: `lpad` and `rpad` count bytes, not characters, so they
   pad non-ASCII text too short. `translate` fails with an error on non-ASCII
   text.

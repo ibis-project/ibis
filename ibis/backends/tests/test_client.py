@@ -30,6 +30,7 @@ from ibis.backends.tests.errors import (
     ArrowTypeError,
     DatabricksServerOperationError,
     ExaQueryError,
+    IbmDb2Error,
     ImpalaHiveServer2Error,
     OracleDatabaseError,
     PsycoPg2InternalError,
@@ -1588,7 +1589,11 @@ def test_set_backend_url(url, monkeypatch):
     reason="Materialize timestamp precision is limited to 0-6 (microsecond precision max), not 0-9 like Postgres.",
     # Ref: https://materialize.com/docs/sql/types/timestamp/
 )
-@pytest.mark.notimpl(["db2"])
+@pytest.mark.notyet(
+    ["db2"],
+    raises=IbmDb2Error,
+    reason="DESCRIBE is not an SQL statement in Db2; the driver rejects it with SQL0104N",
+)
 def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))

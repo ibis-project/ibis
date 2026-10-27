@@ -1176,7 +1176,11 @@ def test_complex_math_functions_columns(
                     raises=AssertionError,
                     reason="rounding behavior is slightly different",
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
+                pytest.mark.notimpl(
+                    ["db2"],
+                    raises=AssertionError,
+                    reason="Db2 rounds ties away from zero, pandas rounds half to even",
+                ),
             ],
         ),
         param(
