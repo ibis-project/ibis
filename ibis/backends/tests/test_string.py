@@ -872,46 +872,14 @@ def test_parse_url(con, result_func, expected):
                 pytest.mark.notyet(["exasol"], raises=AssertionError),
             ],
         ),
-        param(
-            "Abc",
-            "Abc",
-            id="no_change",
-        ),
-        param(
-            "abc",
-            "Abc",
-            id="lower_to_upper",
-        ),
-        param(
-            "aBC",
-            "Abc",
-            id="mixed_to_upper",
-        ),
-        param(
-            " abc",
-            " abc",
-            id="leading_space",
-        ),
-        param(
-            "9abc",
-            "9abc",
-            id="leading_digit",
-        ),
-        param(
-            "aBc dEf",
-            "Abc def",
-            id="mixed_with_space",
-        ),
-        param(
-            "aBc-dEf",
-            "Abc-def",
-            id="mixed_with_hyphen",
-        ),
-        param(
-            "aBc1dEf",
-            "Abc1def",
-            id="mixed_with_digit",
-        ),
+        param("Abc", "Abc", id="no_change"),
+        param("abc", "Abc", id="lower_to_upper"),
+        param("aBC", "Abc", id="mixed_to_upper"),
+        param(" abc", " abc", id="leading_space"),
+        param("9abc", "9abc", id="leading_digit"),
+        param("aBc dEf", "Abc def", id="mixed_with_space"),
+        param("aBc-dEf", "Abc-def", id="mixed_with_hyphen"),
+        param("aBc1dEf", "Abc1def", id="mixed_with_digit"),
     ],
 )
 def test_capitalize(con, inp, expected):
