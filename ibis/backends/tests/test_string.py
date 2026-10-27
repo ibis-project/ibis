@@ -866,7 +866,6 @@ def test_parse_url(con, result_func, expected):
             "",
             id="empty",
             marks=[
-                pytest.mark.notimpl(["db2"], raises=SystemError),
                 pytest.mark.notyet(
                     ["oracle"],
                     reason="https://github.com/oracle/python-oracledb/issues/298",
@@ -879,49 +878,41 @@ def test_parse_url(con, result_func, expected):
             "Abc",
             "Abc",
             id="no_change",
-            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
         ),
         param(
             "abc",
             "Abc",
             id="lower_to_upper",
-            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
         ),
         param(
             "aBC",
             "Abc",
             id="mixed_to_upper",
-            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
         ),
         param(
             " abc",
             " abc",
             id="leading_space",
-            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
         ),
         param(
             "9abc",
             "9abc",
             id="leading_digit",
-            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
         ),
         param(
             "aBc dEf",
             "Abc def",
             id="mixed_with_space",
-            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
         ),
         param(
             "aBc-dEf",
             "Abc-def",
             id="mixed_with_hyphen",
-            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
         ),
         param(
             "aBc1dEf",
             "Abc1def",
             id="mixed_with_digit",
-            marks=[pytest.mark.notimpl(["db2"], raises=SystemError)],
         ),
     ],
 )
