@@ -130,6 +130,24 @@ class Db2Compiler(SQLGlotCompiler):
 
     def visit_WindowFunction(self, op, *, how, func, start, end, group_by, order_by):
         """Visit a WindowFunction operation."""
+        name = type(op.func).__name__
+        if isinstance(
+            op.func,
+            (ops.CountDistinct, ops.ApproxCountDistinct, ops.Median, ops.ApproxMedian),
+        ):
+            # Db2 rejects these aggregates inside OVER (SQL0441N, SQL0104N).
+            raise com.OperationNotDefinedError(
+                f"Db2 does not support {name} over a window"
+            )
+        if isinstance(op.func, (ops.Any, ops.All)) and all(
+            isinstance(key.arg, ops.Literal) and key.arg.value is None
+            for key in op.order_by
+        ):
+            # The shared window rewrite gives an unordered Any/All the sort key
+            # `ORDER BY NULL`, which Db2 rejects with an aggregate (SQL0418N).
+            raise com.OperationNotDefinedError(
+                f"Db2 does not support {name} over a window without an order_by"
+            )
         window = super().visit_WindowFunction(
             op,
             how=how,
