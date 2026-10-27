@@ -12,6 +12,7 @@ from ibis.backends.tests.errors import (
     Py4JJavaError,
     PyAthenaOperationalError,
 )
+from ibis.conftest import IS_PYFLINK_1X
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -379,13 +380,16 @@ keys = pytest.mark.parametrize(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
                 mark_notyet_postgres,
+                mark_notyet_snowflake,
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+                # on 2.x only getting a struct key fails, see
+                # `test_map_get_all_types`
                 pytest.mark.notyet(
                     ["flink"],
+                    condition=IS_PYFLINK_1X,
                     raises=Py4JJavaError,
                     reason="does not support selecting struct key from map",
                 ),
-                mark_notyet_snowflake,
-                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
             id="struct",
         ),
@@ -421,7 +425,21 @@ values = pytest.mark.parametrize(
 @values
 @keys
 @mark_notyet_datafusion
-def test_map_get_all_types(con, keys, values):
+def test_map_get_all_types(request, con, keys, values):
+    if (
+        con.name == "flink"
+        and not IS_PYFLINK_1X
+        and isinstance(keys[0], ibis.Expr)
+        and keys[0].type().is_struct()
+    ):
+        request.applymarker(
+            pytest.mark.xfail(
+                raises=Py4JJavaError,
+                # NullPointerException: keyType.getSqlTypeName().getFamily()
+                # null, type is ROW
+                reason="type inference for COALESCE trips over ROW map keys",
+            )
+        )
     m = ibis.map(ibis.array(keys), ibis.array(values))
     for key, val in zip(keys, values):
         if isinstance(val, ibis.Expr):
@@ -434,6 +452,7 @@ def test_map_get_all_types(con, keys, values):
 @mark_notyet_datafusion
 @pytest.mark.notyet(
     ["flink"],
+    condition=IS_PYFLINK_1X,
     raises=Py4JJavaError,
     # the map is fine; the struct default isn't, as in `test_field_access_after_case`
     reason="Flink 1.x's Calcite can't type a struct literal as a COALESCE operand",
