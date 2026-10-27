@@ -24,6 +24,4 @@ f1 = functional_alltypes.filter((functional_alltypes.int_col <= lit))
 
 result = f.select(
     f.string_col.name("key"), f.float_col.cast("float64").name("value")
-).intersect(
-    f1.select(f1.string_col.name("key"), f1.double_col.name("value")), distinct=True
-)
+).intersect(f1.select(f1.string_col.name("key"), f1.double_col.name("value")))

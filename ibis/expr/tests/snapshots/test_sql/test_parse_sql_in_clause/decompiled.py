@@ -6,13 +6,13 @@ employee = ibis.table(
 )
 f = employee.filter(
     employee.first_name.isin(
-        (
+        [
             ibis.literal("Graham"),
             ibis.literal("John"),
             ibis.literal("Terry"),
             ibis.literal("Eric"),
             ibis.literal("Michael"),
-        )
+        ]
     )
 )
 
