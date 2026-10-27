@@ -111,6 +111,7 @@ class Db2Compiler(SQLGlotCompiler):
             ops.StartsWith,  # → visit_StartsWith (LEFT + LENGTH)
             ops.StringLength,  # → visit_StringLength (CODEUNITS32)
             ops.StrRight,  # → visit_StrRight (CODEUNITS32)
+            ops.Translate,  # → visit_Translate (Db2 swaps from and to)
             ops.Any,  # → visit_Any (MAX over CASE)
             ops.All,  # → visit_All (MIN over CASE)
             ops.StringContains,  # → visit_StringContains (LOCATE)
@@ -263,6 +264,11 @@ class Db2Compiler(SQLGlotCompiler):
         units = self._char_units()
         nchars = self.f.least(nchars, self.f.anon.character_length(arg, units))
         return self.f.anon.right(arg, nchars, units)
+
+    def visit_Translate(self, op, *, arg, from_str, to_str):
+        # Db2 takes the replacement characters before the ones to replace:
+        # TRANSLATE(string, to, from).
+        return self.f.translate(arg, to_str, from_str)
 
     def visit_StringFind(self, op, *, arg, substr, start, end, **kwargs):
         """Visit a StringFind operation."""

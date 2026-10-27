@@ -442,7 +442,6 @@ def uses_java_re(t):
                     raises=com.OperationNotDefinedError,
                     reason="doesn't support `TRANSLATE`",
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
         ),
         param(
