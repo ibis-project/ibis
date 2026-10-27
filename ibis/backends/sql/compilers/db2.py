@@ -109,6 +109,8 @@ class Db2Compiler(SQLGlotCompiler):
         if k
         not in (
             ops.StartsWith,  # → visit_StartsWith (LEFT + LENGTH)
+            ops.StringLength,  # → visit_StringLength (CODEUNITS32)
+            ops.StrRight,  # → visit_StrRight (CODEUNITS32)
             ops.Any,  # → visit_Any (MAX over CASE)
             ops.All,  # → visit_All (MIN over CASE)
             ops.StringContains,  # → visit_StringContains (LOCATE)
@@ -232,16 +234,43 @@ class Db2Compiler(SQLGlotCompiler):
         """
         return sge.Left(this=arg, expression=sge.Length(this=start)).eq(start)
 
+    @staticmethod
+    def _char_units():
+        # Db2 string functions count bytes when STRING_UNITS is SYSTEM (the
+        # default), so non-ASCII text gives wrong lengths and positions.
+        # CODEUNITS32 makes them count characters.
+        return sge.Var(this="CODEUNITS32")
+
+    def visit_StringLength(self, op, *, arg):
+        return self.f.anon.character_length(arg, self._char_units())
+
+    def visit_Substring(self, op, *, arg, start, length):
+        if isinstance(op.length, ops.Literal) and (value := op.length.value) < 0:
+            raise com.IbisInputError(
+                f"Length parameter must be a non-negative value; got {value}"
+            )
+        units = self._char_units()
+        start += 1
+        start = self.if_(
+            start >= 1, start, start + self.f.anon.character_length(arg, units)
+        )
+        if length is None:
+            return self.f.anon.substring(arg, start, units)
+        return self.f.anon.substring(arg, start, length, units)
+
+    def visit_StrRight(self, op, *, arg, nchars):
+        # RIGHT pads with blanks when nchars exceeds the string length.
+        units = self._char_units()
+        nchars = self.f.least(nchars, self.f.anon.character_length(arg, units))
+        return self.f.anon.right(arg, nchars, units)
+
     def visit_StringFind(self, op, *, arg, substr, start, end, **kwargs):
         """Visit a StringFind operation."""
-        # Db2 uses LOCATE function. LOCATE is 1-based, ibis `start` is 0-based;
-        # the 1->0 conversion of the result is done by the `one_to_zero_index`
-        # rewrite, so only `start` needs shifting here.
-        if start is not None:
-            return sge.Anonymous(
-                this="LOCATE", expressions=[substr, arg, start + sge.convert(1)]
-            )
-        return sge.Anonymous(this="LOCATE", expressions=[substr, arg])
+        # LOCATE is 1-based, ibis `start` is 0-based; the 1->0 conversion of the
+        # result is done by the `one_to_zero_index` rewrite, so only `start`
+        # needs shifting here.
+        start = sge.convert(1) if start is None else start + sge.convert(1)
+        return self.f.anon.locate(substr, arg, start, self._char_units())
 
     def visit_RegexSearch(self, op, *, arg, pattern, **kwargs):
         """Visit a RegexSearch operation."""
@@ -337,7 +366,7 @@ class Db2Compiler(SQLGlotCompiler):
         # result with blanks on VARCHAR columns, raises SQL0138N on literals,
         # and counts bytes rather than characters. SUBSTRING with CODEUNITS32
         # counts characters, and omitting the length returns the rest.
-        units = sge.Var(this="CODEUNITS32")
+        units = self._char_units()
         first = self.f.anon.substring(arg, 1, 1, units)
         rest = self.f.anon.substring(arg, 2, units)
         return self.if_(

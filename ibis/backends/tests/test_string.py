@@ -742,7 +742,6 @@ def test_re_replace_global(con):
 
 
 @pytest.mark.notimpl(["druid"], raises=ValidationError)
-@pytest.mark.notimpl(["db2"], raises=AssertionError)
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
         substr_col_null=ibis.cases(
