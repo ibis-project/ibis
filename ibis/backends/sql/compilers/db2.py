@@ -145,7 +145,6 @@ class Db2Compiler(SQLGlotCompiler):
         return self.f.acos(-1)
 
     def visit_Cast(self, op, *, arg, to, **kwargs):
-        """Visit a Cast operation."""
         from_ = op.arg.dtype
         if to.is_interval():
             return self._make_interval(arg, to.unit)
@@ -176,52 +175,30 @@ class Db2Compiler(SQLGlotCompiler):
             # it cannot cast to a datetime type. Casting to VARCHAR(32672)
             # first makes it castable; Db2 12.1 accepts both forms.
             arg = self.cast(arg, dt.string)
-        # Db2 uses CAST syntax
         return self.cast(arg, to)
 
     def visit_Log(self, op, *, arg, base):
-        """Logarithm for Db2.
-
-        Db2 has LN (natural log) and LOG10 (base 10), but no two-argument
-        LOG(base, x).  Arbitrary bases use LN(x) / LN(base).
-        Log2 and Log10 are lowered by LOWERED_OPS to ops.Log(arg, base=2/10)
-        before this method runs.
-        """
+        # Db2 has LN and LOG10 but no two-argument LOG(base, x); other bases
+        # use LN(x) / LN(base).
         if base is None:
             return self.f.ln(arg)
         base_value = op.base.value if isinstance(op.base, ops.Literal) else None
         if base_value == 10:
-            # self.f.log10 produces LOG(10, x) on some sqlglot versions;
-            # use Anonymous to guarantee LOG10(x).
-            return sge.Anonymous(this="LOG10", expressions=[arg])
+            # self.f.log10 produces LOG(10, x) on some sqlglot versions.
+            return self.f.anon.log10(arg)
         if base_value == 2:
             return self.f.ln(arg) / self.f.ln(sge.convert(2))
         return self.f.ln(arg) / self.f.ln(base)
 
     def visit_StringContains(self, op, *, haystack, needle, **kwargs):
-        """Visit a StringContains operation."""
-        # Db2 uses LOCATE function
-        return sge.GT(
-            this=sge.Anonymous(this="LOCATE", expressions=[needle, haystack]),
-            expression=sge.convert(0),
-        )
+        return self.f.anon.locate(needle, haystack) > 0
 
     def visit_EndsWith(self, op, *, arg, end, **kwargs):
-        """Visit an EndsWith operation.
-
-        Generates SQL: RIGHT(arg, LENGTH(end)) = end
-        Db2 built-ins RIGHT() and LENGTH() treat the value as a literal,
-        so wildcard characters (% and _) require no escaping.
-        """
+        # RIGHT/LENGTH treat the value literally, so % and _ need no escaping.
         return sge.Right(this=arg, expression=sge.Length(this=end)).eq(end)
 
     def visit_StartsWith(self, op, *, arg, start, **kwargs):
-        """Visit a StartsWith operation.
-
-        Generates SQL: LEFT(arg, LENGTH(start)) = start
-        Db2 built-ins LEFT() and LENGTH() treat the value as a literal,
-        so wildcard characters (% and _) require no escaping.
-        """
+        # LEFT/LENGTH treat the value literally, so % and _ need no escaping.
         return sge.Left(this=arg, expression=sge.Length(this=start)).eq(start)
 
     @staticmethod
@@ -264,7 +241,6 @@ class Db2Compiler(SQLGlotCompiler):
         return self.f.translate(arg, to_str, from_str)
 
     def visit_StringFind(self, op, *, arg, substr, start, end, **kwargs):
-        """Visit a StringFind operation."""
         # LOCATE is 1-based, ibis `start` is 0-based; the 1->0 conversion of the
         # result is done by the `one_to_zero_index` rewrite, so only `start`
         # needs shifting here.
@@ -272,47 +248,29 @@ class Db2Compiler(SQLGlotCompiler):
         return self.f.anon.locate(substr, arg, start, self._char_units())
 
     def visit_RegexExtract(self, op, *, arg, pattern, index, **kwargs):
-        """Visit a RegexExtract operation."""
-        # Db2 uses REGEXP_SUBSTR(source, pattern, start, occurrence, flags, group)
-        return sge.Anonymous(
-            this="REGEXP_SUBSTR",
-            expressions=[
-                arg,
-                pattern,
-                sge.convert(1),
-                sge.convert(1),
-                sge.convert(""),
-                index,
-            ],
-        )
+        # REGEXP_SUBSTR(source, pattern, start, occurrence, flags, group)
+        return self.f.anon.regexp_substr(arg, pattern, 1, 1, "", index)
 
     def visit_RegexReplace(self, op, *, arg, pattern, replacement, **kwargs):
-        """Visit a RegexReplace operation."""
-        # Db2 uses REGEXP_REPLACE function
-        return sge.Anonymous(
-            this="REGEXP_REPLACE", expressions=[arg, pattern, replacement]
-        )
+        return self.f.anon.regexp_replace(arg, pattern, replacement)
 
     def visit_Arbitrary(self, op, *, arg, where):
-        """Visit an Arbitrary operation using MIN (Db2 does not have ANY_VALUE)."""
-        # Arbitrary only promises *some* non-null value, so MIN is a valid
+        # Db2 has no ANY_VALUE. Arbitrary only promises *some* non-null value, so MIN is a valid
         # choice: it ignores NULLs and is deterministic. `where` is folded
         # into a CASE by `self.agg` because Db2 has no FILTER clause.
         return self.agg.min(arg, where=where)
 
     def visit_ApproxMedian(self, op, *, arg, where):
-        """Visit an ApproxMedian operation using MEDIAN (Db2 has no APPROX_QUANTILE)."""
+        # Db2 has no APPROX_QUANTILE.
         return self.visit_Median(op, arg=arg, where=where)
 
     def visit_CountDistinct(self, op, *, arg, where):
-        """Visit a CountDistinct operation."""
         if where is not None:
             arg = self.if_(where, arg, None)
         return sge.Count(this=sge.Distinct(expressions=[arg]))
 
     def visit_ApproxCountDistinct(self, op, *, arg, where):
-        """Visit an ApproxCountDistinct operation."""
-        # Db2 doesn't have APPROX_COUNT_DISTINCT, use COUNT(DISTINCT)
+        # Db2 has no APPROX_COUNT_DISTINCT.
         return self.visit_CountDistinct(op, arg=arg, where=where)
 
     def visit_Any(self, op, *, arg, where):
@@ -479,54 +437,36 @@ class Db2Compiler(SQLGlotCompiler):
         if (fmt := subsecond_mapping.get(unit.short)) is not None:
             # TRUNC cannot truncate below a second; round-trip through a format.
             pattern = sge.Literal.string(f"YYYY-MM-DD HH24:MI:SS.{fmt}")
-            varchar_format = sge.Anonymous(
-                this="VARCHAR_FORMAT", expressions=[arg, pattern]
-            )
-            return sge.Anonymous(
-                this="TIMESTAMP_FORMAT", expressions=[varchar_format, pattern]
+            return self.f.anon.timestamp_format(
+                self.f.anon.varchar_format(arg, pattern), pattern
             )
 
         if (mapped := trunc_unit_mapping.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
-        return sge.Anonymous(this="TRUNC", expressions=[arg, sge.convert(mapped)])
+        return self.f.anon.trunc(arg, mapped)
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
-        """Visit a TimestampTruncate operation."""
-        # Similar to DateTruncate but for timestamps
         return self.visit_DateTruncate(op, arg=arg, unit=unit)
 
     def visit_ExtractSecond(self, op, *, arg):
-        """Visit an ExtractSecond operation."""
-        return sge.Anonymous(this="SECOND", expressions=[arg])
+        # EXTRACT(SECOND ...) returns the fractional seconds; SECOND() does not.
+        return self.f.anon.second(arg)
 
     def visit_DayOfWeekIndex(self, op, *, arg):
-        """Visit a DayOfWeekIndex operation."""
-        # Db2 uses DAYOFWEEK function (1=Sunday, 7=Saturday)
-        # ibis expects 0=Monday, 1=Tuesday, ..., 6=Sunday
-        # Formula: (DAYOFWEEK(x) + 5) % 7
-        return sge.Mod(
-            this=sge.Add(
-                this=sge.Anonymous(this="DAYOFWEEK", expressions=[arg]),
-                expression=sge.convert(5),
-            ),
-            expression=sge.convert(7),
-        )
+        # DAYOFWEEK is 1=Sunday..7=Saturday; Ibis wants 0=Monday..6=Sunday.
+        return sge.Mod(this=self.f.anon.dayofweek(arg) + 5, expression=sge.convert(7))
 
     def visit_DayOfWeekName(self, op, *, arg):
-        """Visit a DayOfWeekName operation."""
-        # Db2 uses DAYNAME function
-        return sge.Anonymous(this="DAYNAME", expressions=[arg])
+        return self.f.anon.dayname(arg)
 
     def visit_RandomScalar(self, op):
-        """Visit a RandomScalar operation."""
-        # Db2 uses RAND() function
-        return sge.Anonymous(this="RAND", expressions=[])
+        return self.f.anon.rand()
 
     def visit_RandomUUID(self, op):
         # Built-in since Db2 12.1: returns a version 4 UUID as CHAR(36), in
         # uppercase; Ibis (like Python's uuid) uses lowercase.
         # (GENERATE_UNIQUE() is not a UUID.)
-        return self.f.lower(sge.Anonymous(this="GENERATE_UUID", expressions=[]))
+        return self.f.lower(self.f.anon.generate_uuid())
 
 
 compiler = Db2Compiler()
