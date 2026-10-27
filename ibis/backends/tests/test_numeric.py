@@ -923,7 +923,6 @@ def test_math_functions_literals(con, expr, expected):
                     raises=PsycoPgInternalError,
                     reason='function "atan2" does not exist',
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
             ],
         ),
         param(L(0.0).cos(), math.cos(0.0), id="cos"),
