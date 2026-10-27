@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import builtins
+import importlib.metadata
 import os
 import platform
 from pathlib import Path
 
 import pytest
+from packaging.version import Version
 
 import ibis
 
@@ -20,6 +22,16 @@ ARM64 = platform.machine() in ("arm64", "aarch64")
 CI = os.environ.get("CI") is not None
 SPARK_REMOTE = os.environ.get("SPARK_REMOTE")
 IS_SPARK_REMOTE = bool(SPARK_REMOTE)
+# the flink extra doesn't depend on apache-flink (see pyproject.toml), so look
+# the installed version up; None when PyFlink isn't installed
+try:
+    PYFLINK_VERSION = Version(importlib.metadata.version("apache-flink"))
+except importlib.metadata.PackageNotFoundError:
+    PYFLINK_VERSION = None
+IS_PYFLINK_1X = PYFLINK_VERSION is not None and PYFLINK_VERSION.major == 1
+# python that flink's taskmanager runs UDFs with: the version shipped by the
+# ubuntu release the flink image is built on (see docker/flink/Dockerfile)
+FLINK_WORKER_PYTHON_VERSION = (3, 10) if IS_PYFLINK_1X else (3, 12)
 
 
 @pytest.fixture(autouse=True)
