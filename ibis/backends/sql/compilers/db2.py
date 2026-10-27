@@ -72,6 +72,8 @@ class Db2Compiler(SQLGlotCompiler):
         ops.JSONGetItem,
         # logical
         ops.Xor,
+        ops.BitwiseLeftShift,
+        ops.BitwiseRightShift,
         # array
         ops.Array,
         ops.ArrayCollect,
@@ -166,6 +168,19 @@ class Db2Compiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to, **kwargs):
         """Visit a Cast operation."""
+        from_ = op.arg.dtype
+        if to.is_interval():
+            return self._make_interval(arg, to.unit)
+        if to.is_timestamp() and (from_.is_integer() or from_.is_floating()):
+            # Db2 cannot CAST a number to TIMESTAMP; add the seconds to the epoch.
+            seconds = self.f.floor(arg) if from_.is_floating() else arg
+            result = self.f.timestamp(
+                sge.convert("1970-01-01 00:00:00")
+            ) + sge.Interval(this=self.cast(seconds, dt.int64), unit=self.v.SECOND)
+            if from_.is_floating():
+                micros = self.cast((arg - self.f.floor(arg)) * 1000000, dt.int64)
+                result += sge.Interval(this=micros, unit=self.v.MICROSECOND)
+            return self.cast(result, to)
         if op.arg.dtype.is_boolean() and to.is_string():
             # CAST(boolean AS VARCHAR) renders TRUE/FALSE; use the lowercase
             # rendering that the other backends produce. NULL matches neither
@@ -444,7 +459,14 @@ class Db2Compiler(SQLGlotCompiler):
         return self.f.days_between(left, right)
 
     def visit_TimestampDiff(self, op, *, left, right):
-        return self.f.seconds_between(left, right)
+        # SECONDS_BETWEEN truncates toward zero; floor the exact difference so
+        # negative fractions round the same way as the other backends.
+        days = self.cast(self.f.days(left), dt.int64) - self.f.days(right)
+        secs = self.f.midnight_seconds(left) - self.f.midnight_seconds(right)
+        frac = (
+            self.f.microsecond(left) - self.f.microsecond(right)
+        ) / sge.Literal.number("1000000.0")
+        return days * 86400 + self.cast(self.f.floor(secs + frac), dt.int64)
 
     def visit_TimeDiff(self, op, *, left, right):
         return self.f.midnight_seconds(left) - self.f.midnight_seconds(right)

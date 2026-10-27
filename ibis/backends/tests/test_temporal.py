@@ -845,7 +845,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     ["snowflake", "sqlite", "exasol", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(["db2"], raises=AssertionError),
                 pytest.mark.notimpl(
                     ["athena"],
                     raises=PyAthenaOperationalError,
@@ -1075,7 +1074,6 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
     strict=False,
 )
 @pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 @sqlite_without_ymd_intervals
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
@@ -1087,7 +1085,6 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 @pytest.mark.never(
     ["materialize"],
     raises=AssertionError,
@@ -2030,7 +2027,6 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
 )
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError, reason="ORA-00932")
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
@@ -2040,7 +2036,6 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
 
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
@@ -2078,7 +2073,6 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     raises=OracleDatabaseError,
     reason="ORA-00932: expression is of data type NUMBER, which is incompatible with expected data type TIMESTAMP",
 )
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 @pytest.mark.parametrize(
     "dtype", ["timestamp", "timestamp(1)", "timestamp(3)", "timestamp(6)"]
 )

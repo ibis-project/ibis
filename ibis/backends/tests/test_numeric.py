@@ -1608,7 +1608,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     ],
 )
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(
     ["materialize"],
     raises=AssertionError,
@@ -1660,7 +1660,7 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     ("left", "right"),
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error, strict=False)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError, strict=False)
 @pytest.mark.never(
     ["materialize"],
     raises=AssertionError,
