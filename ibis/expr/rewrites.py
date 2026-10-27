@@ -15,7 +15,7 @@ from ibis.common.exceptions import ExpressionError, IbisInputError
 from ibis.common.graph import Node as Traversable
 from ibis.common.graph import traverse
 from ibis.common.grounds import Annotable
-from ibis.common.patterns import Check, pattern, replace
+from ibis.common.patterns import Check, NoMatch, pattern, replace
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.util import Namespace, promote_list
 
@@ -404,5 +404,15 @@ def simplify(node):
     node = node.replace(reorder_filter_project)
     node = node.replace(reorder_filter_project)
     node = node.replace(subsequent_projects | subsequent_filters)
-    node = node.replace(complete_reprojection)
-    return node
+    # a subquery needs a relation with values, which a bare table lacks; check
+    # the original node, since collapsing its children recreates it
+    keep = frozenset(sub.rel for sub in node.find(ops.Subquery))
+
+    def reproject(op, kwargs):
+        new = op.__recreate__(kwargs) if kwargs else op
+        result = complete_reprojection.match(new, {})
+        if result is NoMatch or (op in keep and not result.values):
+            return new
+        return result
+
+    return node.replace(reproject)

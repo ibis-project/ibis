@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis
 import ibis.expr.operations as ops
 from ibis.expr.rewrites import simplify
@@ -13,6 +15,37 @@ t = ibis.table(
         "string_col": "string",
     },
 )
+u = ibis.table({"int_col": "int64"}, name="u")
+
+
+@pytest.mark.parametrize(
+    "expr",
+    [
+        pytest.param(t.filter(t.int_col.isin(u.int_col)), id="in-table"),
+        pytest.param(
+            t.filter(t.int_col.isin(u.select(u.int_col).union(u).int_col)),
+            id="in-union",
+        ),
+        pytest.param(
+            t.filter(t.int_col.isin(u.select(u).view().int_col)), id="in-view"
+        ),
+        pytest.param(t.select(s=u.int_col.as_scalar()), id="scalar"),
+        pytest.param(
+            t.filter(ops.ExistsSubquery(u.select(u).op()).to_expr()), id="exists"
+        ),
+    ],
+)
+def test_simplify_keeps_subquery_relation(expr):
+    # a subquery needs a relation with values, which a bare table, set
+    # operation or view lacks
+    ibis.to_sql(simplify(expr.op()).to_expr(), dialect="duckdb")
+
+
+def test_simplify_collapses_subquery_relation_with_values():
+    f = u.filter(u.int_col > 0)
+    expr = t.filter(t.int_col.isin(f.int_col))
+    (sub,) = simplify(expr.op()).find(ops.InSubquery)
+    assert sub.rel == f.op()
 
 
 def test_simplify_full_reprojection():
