@@ -246,6 +246,15 @@ times and timestamps work on both versions.
   querying them with this backend. Characters outside the Basic Multilingual
   Plane (such as emoji) also corrupt the statement text when used in a SQL
   literal.
+- **Timestamp precision**: Db2 stores up to 12 fractional digits, but the
+  driver returns Python `datetime` objects, which hold microseconds. The
+  schema therefore reports at most `timestamp(6)`. A `TIMESTAMP(9)` or
+  `TIMESTAMP(12)` column is read as `timestamp(6)`, so `to_pyarrow` gives
+  microsecond (`us`) columns, not nanosecond ones, and the digits beyond the
+  sixth are dropped when the values are fetched. Columns declared with
+  `TIMESTAMP(0)` to `TIMESTAMP(6)` are read back with the scale they were
+  declared with. A bare `TIMESTAMP` is stored as `TIMESTAMP(6)`, so it is read
+  back as `timestamp(6)`.
 - **String length**: `string` columns map to `VARCHAR(32672)`, the longest
   `VARCHAR` Db2 allows. Longer values fail with `SQL0302N`.
 - **NaN and infinity**: `DOUBLE` and `REAL` columns can't store `NaN` or

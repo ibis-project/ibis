@@ -30,6 +30,10 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
+# The driver returns Python datetimes, which hold microseconds, so report no
+# more than 6 fractional digits even if the column is declared with more.
+_MAX_TIMESTAMP_SCALE = 6
+
 # Result-set column kinds reported by ibm_db.field_type that map to a single
 # Ibis type, regardless of precision or scale.
 _SIMPLE_FIELD_TYPES = {
@@ -38,7 +42,6 @@ _SIMPLE_FIELD_TYPES = {
     "clob": dt.String,
     "date": dt.Date,
     "time": dt.Time,
-    "timestamp": dt.Timestamp,
 }
 
 
@@ -426,6 +429,8 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
             # the compiler uses, rather than duplicating the mapping by hand.
             if type_name in ("DECIMAL", "NUMERIC"):
                 type_str = f"{type_name}({length},{scale})"
+            elif type_name == "TIMESTAMP":
+                type_str = f"TIMESTAMP({min(scale, _MAX_TIMESTAMP_SCALE)})"
             elif type_name in ("VARCHAR", "CHARACTER", "VARBINARY"):
                 type_str = f"{type_name}({length})"
             else:
@@ -705,6 +710,10 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
                         ibis_type = dt.Int16(nullable=nullable)
                     else:
                         ibis_type = dt.Int32(nullable=nullable)
+                elif kind == "timestamp":
+                    ibis_type = dt.Timestamp(
+                        scale=min(scale, _MAX_TIMESTAMP_SCALE), nullable=nullable
+                    )
                 elif kind == "decimal":
                     ibis_type = dt.Decimal(precision, scale, nullable=nullable)
                 elif kind == "real":
