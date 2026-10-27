@@ -1018,7 +1018,6 @@ def test_temporal_binop_pandas_timedelta(
     raises=PyDruidProgrammingError,
     reason="Invalid SQL; druid doesn't know about TIMESTAMPTZ",
 )
-@pytest.mark.notimpl(["db2"], raises=SystemError)
 def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
     ts = pd.Timestamp("20100302", tz="UTC").to_pydatetime()
 

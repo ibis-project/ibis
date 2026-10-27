@@ -350,6 +350,19 @@ class Db2Compiler(SQLGlotCompiler):
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_date():
             return self.f.date(value.isoformat())
+        if dtype.is_timestamp() and value.utcoffset():
+            # Db2 timestamps have no time zone and reject an offset in the
+            # string, so a non-zero offset can't be represented. `utcoffset()`
+            # is None for a naive value and a zero timedelta for UTC.
+            raise com.UnsupportedOperationError(
+                "Db2 timestamps have no time zone; cannot compile a timestamp "
+                f"literal with a non-zero UTC offset: {value}"
+            )
+        if dtype.is_timestamp() and value.tzinfo is not None:
+            # A zero offset is stored as a naive UTC value.
+            return self.cast(
+                value.replace(tzinfo=None).isoformat(" "), dtype.copy(timezone=None)
+            )
         if dtype.is_interval():
             return self._make_interval(sge.convert(value), dtype.unit)
         return None  # fall back to the default literal handling

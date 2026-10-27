@@ -255,6 +255,10 @@ times and timestamps work on both versions.
   `TIMESTAMP(0)` to `TIMESTAMP(6)` are read back with the scale they were
   declared with. A bare `TIMESTAMP` is stored as `TIMESTAMP(6)`, so it is read
   back as `timestamp(6)`.
+- **Time zones**: Db2 timestamps have no time zone. A timestamp literal with a
+  non-zero UTC offset, such as `datetime(..., tzinfo=timezone(timedelta(hours=2)))`,
+  raises `UnsupportedOperationError`. Convert the value to UTC first. A literal
+  with a zero offset is stored as a naive UTC value.
 - **String length**: `string` columns map to `VARCHAR(32672)`, the longest
   `VARCHAR` Db2 allows. Longer values fail with `SQL0302N`.
 - **NaN and infinity**: `DOUBLE` and `REAL` columns can't store `NaN` or
