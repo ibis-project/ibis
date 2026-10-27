@@ -104,30 +104,8 @@ class Db2Compiler(SQLGlotCompiler):
         ops.HashBytes,
     )
 
-    # Exclude operations from SIMPLE_OPS that need custom implementations
-    SIMPLE_OPS = {
-        k: v
-        for k, v in SQLGlotCompiler.SIMPLE_OPS.items()
-        if k
-        not in (
-            ops.StartsWith,  # → visit_StartsWith (LEFT + LENGTH)
-            ops.StringLength,  # → visit_StringLength (CODEUNITS32)
-            ops.StrRight,  # → visit_StrRight (CODEUNITS32)
-            ops.Translate,  # → visit_Translate (Db2 swaps from and to)
-            ops.Atan2,  # → visit_Atan2 (Db2 takes x before y)
-            ops.Any,  # → visit_Any (MAX over CASE)
-            ops.All,  # → visit_All (MIN over CASE)
-            ops.StringContains,  # → visit_StringContains (LOCATE)
-            ops.ApproxCountDistinct,  # → visit_ApproxCountDistinct (COUNT DISTINCT)
-            ops.RandomUUID,  # → visit_RandomUUID (GENERATE_UUID)
-            ops.Median,  # → visit_Median (MEDIAN)
-            ops.RegexSearch,  # → visit_RegexSearch (REGEXP_LIKE)
-            ops.RegexExtract,  # → visit_RegexExtract (REGEXP_SUBSTR)
-            ops.RandomScalar,  # → visit_RandomScalar (RAND())
-            ops.GroupConcat,  # → visit_GroupConcat (LISTAGG)
-            ops.Pi,  # → visit_Pi (ACOS(-1))
-        )
-    }
+    # Db2 adds no simple function mappings; the base ones are inherited.
+    SIMPLE_OPS = {}
 
     @staticmethod
     def _generate_groups(groups):
@@ -199,11 +177,6 @@ class Db2Compiler(SQLGlotCompiler):
             # first makes it castable; Db2 12.1 accepts both forms.
             arg = self.cast(arg, dt.string)
         # Db2 uses CAST syntax
-        return self.cast(arg, to)
-
-    def visit_TryCast(self, op, *, arg, to, **kwargs):
-        """Visit a TryCast operation."""
-        # Db2 has no TRY_CAST; fall back to regular CAST.
         return self.cast(arg, to)
 
     def visit_Log(self, op, *, arg, base):
@@ -298,11 +271,6 @@ class Db2Compiler(SQLGlotCompiler):
         start = sge.convert(1) if start is None else start + sge.convert(1)
         return self.f.anon.locate(substr, arg, start, self._char_units())
 
-    def visit_RegexSearch(self, op, *, arg, pattern, **kwargs):
-        """Visit a RegexSearch operation."""
-        # Db2 uses REGEXP_LIKE function
-        return sge.Anonymous(this="REGEXP_LIKE", expressions=[arg, pattern])
-
     def visit_RegexExtract(self, op, *, arg, pattern, index, **kwargs):
         """Visit a RegexExtract operation."""
         # Db2 uses REGEXP_SUBSTR(source, pattern, start, occurrence, flags, group)
@@ -331,13 +299,6 @@ class Db2Compiler(SQLGlotCompiler):
         # choice: it ignores NULLs and is deterministic. `where` is folded
         # into a CASE by `self.agg` because Db2 has no FILTER clause.
         return self.agg.min(arg, where=where)
-
-    def visit_Median(self, op, *, arg, where):
-        """Visit a Median operation."""
-        # Db2 uses MEDIAN function; fold where into arg as CASE (no FILTER support)
-        if where is not None:
-            arg = self.if_(where, arg, None)
-        return sge.Anonymous(this="MEDIAN", expressions=[arg])
 
     def visit_ApproxMedian(self, op, *, arg, where):
         """Visit an ApproxMedian operation using MEDIAN (Db2 has no APPROX_QUANTILE)."""
@@ -533,26 +494,6 @@ class Db2Compiler(SQLGlotCompiler):
         """Visit a TimestampTruncate operation."""
         # Similar to DateTruncate but for timestamps
         return self.visit_DateTruncate(op, arg=arg, unit=unit)
-
-    def visit_ExtractYear(self, op, *, arg):
-        """Visit an ExtractYear operation."""
-        return sge.Anonymous(this="YEAR", expressions=[arg])
-
-    def visit_ExtractMonth(self, op, *, arg):
-        """Visit an ExtractMonth operation."""
-        return sge.Anonymous(this="MONTH", expressions=[arg])
-
-    def visit_ExtractDay(self, op, *, arg):
-        """Visit an ExtractDay operation."""
-        return sge.Anonymous(this="DAY", expressions=[arg])
-
-    def visit_ExtractHour(self, op, *, arg):
-        """Visit an ExtractHour operation."""
-        return sge.Anonymous(this="HOUR", expressions=[arg])
-
-    def visit_ExtractMinute(self, op, *, arg):
-        """Visit an ExtractMinute operation."""
-        return sge.Anonymous(this="MINUTE", expressions=[arg])
 
     def visit_ExtractSecond(self, op, *, arg):
         """Visit an ExtractSecond operation."""
