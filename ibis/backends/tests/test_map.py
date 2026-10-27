@@ -429,6 +429,46 @@ def test_map_get_all_types(con, keys, values):
         assert con.execute(m[key]) == val
 
 
+@mark_notyet_postgres
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@mark_notyet_datafusion
+@pytest.mark.notyet(
+    ["flink"],
+    raises=Py4JJavaError,
+    # the map is fine; the struct default isn't, as in `test_field_access_after_case`
+    reason="Flink 1.x's Calcite can't type a struct literal as a COALESCE operand",
+)
+def test_map_get_struct_value_with_default(con):
+    m = ibis.map(ibis.array(["a"]), ibis.array([ibis.struct(dict(x=1))]))
+    default = ibis.struct(dict(x=0))
+
+    assert con.execute(m.get("a", default)) == con.execute(ibis.struct(dict(x=1)))
+    assert con.execute(m.get("b", default)) == con.execute(default)
+
+
+@mark_notyet_postgres
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@mark_notyet_datafusion
+@pytest.mark.notimpl(
+    ["clickhouse"], raises=AssertionError, reason="reads back the wrong value"
+)
+def test_map_get_struct_value_with_big_int_field(con):
+    m = ibis.literal({"a": dict(x=2**40)}, type="map<string, struct<x: int64>>")
+    assert con.execute(m["a"]) == dict(x=2**40)
+
+
+@mark_notyet_postgres
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@mark_notyet_datafusion
+@pytest.mark.notimpl(
+    ["clickhouse"], raises=AssertionError, reason="reads back the wrong value"
+)
+def test_map_get_cast_struct_value(con):
+    value = ibis.struct(dict(x=1)).cast("struct<x: int64>")
+    m = ibis.map(ibis.array(["a"]), ibis.array([value]))
+    assert con.execute(m["a"]) == dict(x=1)
+
+
 @keys
 def test_map_contains_all_types(con, keys):
     a = ibis.array(keys)
