@@ -278,16 +278,27 @@ class Db2Compiler(SQLGlotCompiler):
         # Db2 has no APPROX_COUNT_DISTINCT.
         return self.visit_CountDistinct(op, arg=arg, where=where)
 
-    def visit_Any(self, op, *, arg, where):
+    @staticmethod
+    def _bool_as_int(arg):
         # Db2 has no boolean aggregates (BOOL_OR, or MAX over a boolean), so
-        # aggregate the argument as 1/0.
-        arg = self.if_(arg, 1, 0)
+        # aggregate the argument as 1/0. A NULL argument stays NULL, because
+        # neither WHEN branch fires for it and there is no ELSE; MAX and MIN
+        # then ignore it, as Ibis expects.
+        return sge.Case(
+            ifs=[
+                sge.If(this=arg, true=sge.convert(1)),
+                sge.If(this=sge.Not(this=arg), true=sge.convert(0)),
+            ]
+        )
+
+    def visit_Any(self, op, *, arg, where):
+        arg = self._bool_as_int(arg)
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return sge.Max(this=arg)
 
     def visit_All(self, op, *, arg, where):
-        arg = self.if_(arg, 1, 0)
+        arg = self._bool_as_int(arg)
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return sge.Min(this=arg)
