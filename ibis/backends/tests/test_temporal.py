@@ -2525,7 +2525,7 @@ def test_delta(con, start, end, unit, expected):
     strict=False,
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -2567,7 +2567,7 @@ def test_timestamp_bucket(backend, kws, pd_freq):
 )
 @pytest.mark.parametrize("offset_mins", [2, -2], ids=["pos", "neg"])
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,

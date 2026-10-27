@@ -65,6 +65,7 @@ class Db2Compiler(SQLGlotCompiler):
         ops.TimeDelta,
         ops.ExtractEpochSeconds,
         ops.Strftime,
+        ops.TimestampBucket,
         # numeric
         ops.IsNan,
         ops.IsInf,
