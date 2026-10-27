@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import decimal
+
 import pytest
 
 import ibis
@@ -130,3 +132,29 @@ def test_overwrite_insert(con):
         assert sorted(result["x"].tolist()) == [10, 20]
     finally:
         con.drop_table(name, force=True)
+
+
+def test_execute_keeps_decimal_exact(con):
+    import pandas as pd
+
+    values = [
+        decimal.Decimal("123456789012345678.99"),
+        decimal.Decimal("-0.01"),
+        None,
+    ]
+    name = gen_name("db2_test")
+    con.create_table(name, schema={"d": "decimal(20, 2)"})
+    try:
+        con.insert(name, pd.DataFrame({"d": values}))
+        result = con.table(name).execute()["d"]
+        assert sorted(result.dropna()) == sorted(v for v in values if v is not None)
+        assert result.isna().sum() == 1
+    finally:
+        con.drop_table(name, force=True)
+
+
+def test_execute_decimal_wider_than_float(con):
+    # 25 nines do not fit in a float64; they used to raise TypeError.
+    value = decimal.Decimal("9" * 25 + "." + "9" * 6)
+    result = con.execute(ibis.literal(value, type="decimal(31, 6)"))
+    assert result == value

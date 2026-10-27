@@ -308,8 +308,9 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
 
+        # coerce_float=False keeps Decimal values exact.
         df = pd.DataFrame.from_records(
-            cursor.fetchall(), columns=schema.names, coerce_float=True
+            cursor.fetchall(), columns=schema.names, coerce_float=False
         )
         return Db2PandasData.convert_table(df, schema)
 
