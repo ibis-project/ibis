@@ -443,7 +443,10 @@ class Backend(
             ("md:", "motherduck:", ":memory:")
         ):
             database = Path(database).absolute()
-        self.con = duckdb.connect(str(database), config=config, read_only=read_only)
+        # DuckDB 2.0 rejects non-bool values for read_only (e.g. 1 from a URL)
+        self.con = duckdb.connect(
+            str(database), config=config, read_only=bool(read_only)
+        )
         self._post_connect(extensions)
 
     @util.experimental
