@@ -169,106 +169,34 @@ CREATE USER TEMPORARY TABLESPACE IBIS_TEMP_32K PAGESIZE 32K
 Temporary tables are created with `ON COMMIT PRESERVE ROWS`, and the connection
 runs with autocommit enabled.
 
-## Overwriting tables
+## Things to know
 
-`create_table(..., overwrite=True)` **replaces the table**. The new table is
-built under a temporary name first, so a query that fails leaves the existing
-table as it was. After that the old table is dropped and the new one takes its
-name. The replacement has only the columns of the new data: primary keys and
-other constraints, indexes, triggers and grants on the old table are not
-carried over. Recreate them after the overwrite, for example:
-
-```python
-con.create_table("t", new_data, overwrite=True)
-con.raw_sql('ALTER TABLE "t" ADD PRIMARY KEY ("id")')
-con.raw_sql('CREATE INDEX "t_ix" ON "t" ("name")')
-```
-
-To replace the rows and keep the table definition, use
-`con.insert("t", new_data, overwrite=True)` instead. It truncates the table
-first, so it must be the first statement of its unit of work.
-
-Db2 cannot rename a temporary table, so with `temp=True` the new data is
-copied into a re-created table. The query still runs before the old table is
-touched, but the old temporary table is gone if that final copy fails.
-
-## Existing connections and autocommit
-
-`ibis.db2.connect` turns autocommit on. `Backend.from_connection` uses the
-connection as it is and never commits for you. If the connection has autocommit
-off, Ibis issues a warning, reads may hold locks, and changes (including
-created tables) stay uncommitted and invisible to other connections until you
-call `con.commit()`. Call `con.set_autocommit(True)` before passing the
-connection in to avoid this.
-
-## Db2 server versions
-
-The backend is tested against Db2 12.1.5, which the test suite uses in CI.
-The full test suite was also run against Db2 11.5.9: everything passes except
-the 7 tests below, which need `ibis.uuid()`.
-
-| Feature | Db2 12.1 | Db2 11.5 |
-| ------- | -------- | -------- |
-| `ibis.uuid()` | Works | Fails when executed with `SQL0440N`: the `GENERATE_UUID` function it uses does not exist before 12.1 |
-
-On 11.5.9 these tests fail for that reason:
-`test_uuid_function`, `test_uuid_unique_each_row`, the four `uuid` cases of
-`test_impure_correlated`, `test_chained_selections`,
-`test_impure_uncorrelated_same_id` and `test_impure_uncorrelated_different_id`,
-and `test_self_join_with_generated_keys`. `pi` and casting strings to dates,
-times and timestamps work on both versions.
-
-## Limitations
-
-- **Python UDFs**: Not currently supported
-- **Streaming**: Not supported
-- **Unsupported types**: Array, map, struct, JSON, null, and unsigned integer
-  types raise `UnsupportedBackendType`, because Db2 has no equivalent.
-  `XML` columns are reported with an `unknown` type.
-- **Decimal precision**: Db2 allows at most 31 digits, so `decimal(38, 9)`
-  isn't supported. The default `decimal` maps to `DECIMAL(31, 6)`.
-- **Unsupported operations**: Operations with no Db2 equivalent (for example
-  `ArgMin`, `ArgMax`, `Mode`, `First`, `Last`, `Kurtosis`, `Reverse`, `IsNan`,
-  `Strftime`, and array and map operations) raise `OperationNotDefinedError`
-  when compiled.
-- **Rounding**: `round()` with no digits rounds half away from zero, while
-  pandas rounds half to even, so exact `.5` values can differ (for example,
-  50.5 gives 51 in Db2 and 50.0 in pandas).
-- **Non-ASCII text**: `lpad` and `rpad` count bytes, not characters, so they
-  pad non-ASCII text too short. `translate` fails with an error on non-ASCII
-  text.
-- **Whitespace stripping**: `strip`, `lstrip` and `rstrip` remove ASCII
-  whitespace only. Unicode whitespace such as the non-breaking space is kept,
-  which differs from pandas.
-- **Ordered `group_concat`**: Passing `order_by` to `group_concat` raises
-  `UnsupportedOperationError`, because Db2 rejects the `NULLS FIRST/LAST` that
-  Ibis adds to the ordering.
-- **Emoji**: `ibm_db` can segfault when fetching emoji characters, so avoid
-  querying them with this backend. Characters outside the Basic Multilingual
-  Plane (such as emoji) also corrupt the statement text when used in a SQL
-  literal.
-- **Timestamp precision**: Db2 stores up to 12 fractional digits, but the
-  driver returns Python `datetime` objects, which hold microseconds. The
-  schema therefore reports at most `timestamp(6)`. A `TIMESTAMP(9)` or
-  `TIMESTAMP(12)` column is read as `timestamp(6)`, so `to_pyarrow` gives
-  microsecond (`us`) columns, not nanosecond ones, and the digits beyond the
-  sixth are dropped when the values are fetched. Columns declared with
-  `TIMESTAMP(0)` to `TIMESTAMP(6)` are read back with the scale they were
-  declared with. A bare `TIMESTAMP` is stored as `TIMESTAMP(6)`, so it is read
-  back as `timestamp(6)`.
-- **Time zones**: Db2 timestamps have no time zone. A timestamp literal with a
-  non-zero UTC offset, such as `datetime(..., tzinfo=timezone(timedelta(hours=2)))`,
-  raises `UnsupportedOperationError`. Convert the value to UTC first. A literal
-  with a zero offset is stored as a naive UTC value.
-- **String length**: `string` columns map to `VARCHAR(32672)`, the longest
-  `VARCHAR` Db2 allows. Longer values fail with `SQL0302N`.
-- **NaN and infinity**: `DOUBLE` and `REAL` columns can't store `NaN` or
-  infinity, so inserting them fails with `SQL0302N`.
-- **Division by zero**: Dividing by zero raises `SQL0801N` instead of
-  returning `NULL` or infinity.
-- **Long literal aliases**: An unnamed string literal longer than about 120
-  characters fails with `SQL0107N`, because its text becomes the column name.
-  Give it a name with `.name(...)`.
+- **Overwriting tables**: `create_table(..., overwrite=True)` replaces the
+  table, so constraints, indexes, triggers and grants on the old table are not
+  carried over. To keep the table definition, use
+  `con.insert("t", new_data, overwrite=True)`. It truncates first, so it must
+  be the first statement of its unit of work.
+- **Existing connections**: `ibis.db2.connect` turns autocommit on.
+  `Backend.from_connection` uses the connection as it is. If autocommit is off,
+  Ibis warns "autocommit is off; reads may hold locks and changes stay
+  uncommitted until you call con.commit()".
+- **Db2 11.5**: CI tests against Db2 12.1.5. On 11.5.9 the test suite passes
+  except tests that use `ibis.uuid()`, which fail with `SQL0440N` because the
+  `GENERATE_UUID` function does not exist before Db2 12.1.
+- **Unsupported types and operations**: Array, map, struct, JSON and unsigned
+  integer types raise `UnsupportedBackendType`. Operations with no Db2
+  equivalent (for example `ArgMin`, `ArgMax`, `Mode`, `First`, `Last`,
+  `Kurtosis`, `Reverse`, `IsNan`, `Strftime`, and array and map operations)
+  raise `OperationNotDefinedError` when compiled.
+- **Different results, no error**: `round()` rounds exact `.5` values away from
+  zero (50.5 gives 51), where pandas rounds half to even. `lpad` and `rpad`
+  count bytes, not characters, so multi-byte characters such as accented
+  letters reduce the pad count.
+- **Emoji**: `ibm_db` can segfault when fetching emoji, so avoid querying them.
+- **Timestamps**: Db2 timestamps have no time zone, so a literal with a
+  non-zero UTC offset raises `UnsupportedOperationError`; convert it to UTC
+  first. The driver returns microseconds, so the schema reports at most
+  `timestamp(6)`: a `TIMESTAMP(9)` column is read as `timestamp(6)`.
 
 ```{python}
 #| echo: false
