@@ -140,7 +140,7 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
           double_col      float64
           date_string_col string(255)
           string_col      string(255)
-          timestamp_col   timestamp
+          timestamp_col   timestamp(6)
           year            int32
           month           int32
         """
