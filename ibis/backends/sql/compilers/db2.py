@@ -105,7 +105,10 @@ class Db2Compiler(SQLGlotCompiler):
         ops.HashBytes,
     )
 
-    # Db2 adds no simple function mappings; the base ones are inherited.
+    # Keep this empty; do not delete it. `__init_subclass__` runs after the class
+    # body and applies every entry of the inherited SIMPLE_OPS table, which
+    # overwrites `visit_*` methods the class already defines (for example
+    # StringLength, Atan2, Translate and Any).
     SIMPLE_OPS = {}
 
     @staticmethod
