@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import decimal
 
 import pytest
@@ -293,3 +294,30 @@ def test_to_pyarrow_join_with_computed_columns(con, arrow_table):
     assert result.schema.equals(expr.schema().to_pyarrow())
     assert result["scaled"].to_pylist() == [1.5, 3.0, 4.5, None]
     assert result["flag"].to_pylist() == [True, False, None, True]
+
+
+def test_cast_float_to_boolean(con):
+    # Used to fail with SQL0440N: Db2 cannot CAST a DOUBLE to BOOLEAN.
+    t = ibis.memtable({"f": [0.0, 2.5, -1.0, None]}, schema={"f": "float64"})
+    result = con.execute(t.f.cast("boolean"))
+    assert result.tolist() == [False, True, True, None]
+
+
+def test_cast_timestamp_to_string(con):
+    # Used to return 2020-01-31-10.11.12.345678, with dashes and dots.
+    t = ibis.memtable(
+        {
+            "ts": [
+                datetime.datetime(2020, 1, 31, 10, 11, 12, 345678),
+                datetime.datetime(2020, 1, 31, 10, 11, 12),
+                None,
+            ]
+        },
+        schema={"ts": "timestamp(6)"},
+    )
+    result = con.execute(t.ts.cast("string"))
+    assert result.tolist() == [
+        "2020-01-31 10:11:12.345678",
+        "2020-01-31 10:11:12.000000",
+        None,
+    ]

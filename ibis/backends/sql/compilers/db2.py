@@ -189,6 +189,19 @@ class Db2Compiler(SQLGlotCompiler):
                 micros = self.cast((arg - self.f.floor(arg)) * 1000000, dt.int64)
                 result += sge.Interval(this=micros, unit=self.v.MICROSECOND)
             return self.cast(result, to)
+        if from_.is_floating() and to.is_boolean():
+            # Db2 cannot CAST a DOUBLE to BOOLEAN (SQL0440N). NULL matches
+            # neither branch, so it stays NULL.
+            return sge.Case(
+                ifs=[
+                    sge.If(this=arg.neq(0), true=sge.true()),
+                    sge.If(this=arg.eq(0), true=sge.false()),
+                ]
+            )
+        if from_.is_timestamp() and to.is_string():
+            # Db2 renders a timestamp as 2020-01-31-10.11.12.345678; use the
+            # space-separated form the other backends produce.
+            return self.f.anon.varchar_format(arg, "YYYY-MM-DD HH24:MI:SS.FF6")
         if op.arg.dtype.is_boolean() and to.is_string():
             # CAST(boolean AS VARCHAR) renders TRUE/FALSE; use the lowercase
             # rendering that the other backends produce. NULL matches neither
