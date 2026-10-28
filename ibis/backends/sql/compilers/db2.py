@@ -167,6 +167,14 @@ class Db2Compiler(SQLGlotCompiler):
         # Db2 11.5 has no PI(); ACOS(-1) works on 11.5 and 12.1.
         return self.f.acos(-1)
 
+    def visit_Divide(self, op, *, left, right):
+        # Db2 divides integers as integers. sqlglot adds the CAST to DOUBLE
+        # itself, but `compile` generates SQL with copy=False, so the cast is
+        # lost when a node is shared (e.g. `x / x.sum()`) and the result is 0.
+        if all(arg.dtype.is_integer() for arg in op.args):
+            left = self.cast(left, dt.float64)
+        return self.binop(sge.Div, left, right)
+
     def visit_Cast(self, op, *, arg, to, **kwargs):
         from_ = op.arg.dtype
         if to.is_interval():

@@ -184,3 +184,39 @@ def test_connect_rejects_semicolon(key, override):
     }
     with pytest.raises(ValueError, match=key):
         ibis.db2.connect(**kwargs)
+
+
+@pytest.mark.parametrize(
+    ("make_expr", "expected"),
+    [
+        pytest.param(lambda t: t.x / t.x.sum(), [0.1, 0.2, 0.3, 0.4], id="sum"),
+        pytest.param(lambda t: t.x / t.count(), [0.25, 0.5, 0.75, 1.0], id="count"),
+        pytest.param(lambda t: t.x / t.y, [0.5] * 4, id="column"),
+        pytest.param(lambda t: t.x / 2, [0.5, 1.0, 1.5, 2.0], id="literal"),
+        pytest.param(lambda t: t.x / t.x, [1.0] * 4, id="self"),
+    ],
+)
+def test_divide_integers_is_not_integer_division(con, make_expr, expected):
+    # Used to return whole numbers (0.0 for `x / x.sum()`): the integer-to-DOUBLE
+    # cast that sqlglot adds was lost when `compile` generated SQL without copying.
+    t = ibis.memtable({"x": [1, 2, 3, 4], "y": [2, 4, 6, 8]})
+    expr = t.mutate(r=make_expr(t)).order_by("x")
+    assert con.execute(expr)["r"].tolist() == pytest.approx(expected)
+
+
+def test_divide_integers_after_filter(con):
+    t = ibis.memtable({"x": [1, 2, 3, 4]})
+    filtered = t.filter(t.x > 1)
+    expr = filtered.mutate(r=filtered.x / filtered.x.sum()).order_by("x")
+    assert con.execute(expr)["r"].tolist() == pytest.approx([2 / 9, 3 / 9, 4 / 9])
+
+
+def test_divide_decimal_and_float_are_unchanged(con):
+    t = ibis.memtable(
+        {"f": [1.0, 3.0], "d": [decimal.Decimal("1.50"), decimal.Decimal("3.50")]},
+        schema={"f": "float64", "d": "decimal(10, 2)"},
+    )
+    expr = t.mutate(rf=t.f / t.f.sum(), rd=t.d / t.d.sum()).order_by("f")
+    result = con.execute(expr)
+    assert result["rf"].tolist() == pytest.approx([0.25, 0.75])
+    assert [float(v) for v in result["rd"]] == pytest.approx([0.3, 0.7], abs=1e-3)
