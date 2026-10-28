@@ -191,7 +191,11 @@ runs with autocommit enabled.
 - **Different results, no error**: `round()` rounds exact `.5` values away from
   zero (50.5 gives 51), where pandas rounds half to even. `lpad` and `rpad`
   count bytes, not characters, so multi-byte characters such as accented
-  letters reduce the pad count.
+  letters reduce the pad count. `round(x, n)` on a `float64` column with
+  `n > 0` can be off in the last digits (0.75 rounded to 1 digit gives
+  0.7000000000000001). An integer raised to a negative power, such as
+  `i ** -1`, returns 0, because Db2 computes it as an integer; cast to
+  `float64` first.
 - **`greatest` and `least`**: Db2's `GREATEST` and `LEAST` return NULL if any
   argument is NULL; Ibis's docstring says NULL arguments are ignored. Convert
   NULLs first if you need that behaviour.
@@ -200,6 +204,17 @@ runs with autocommit enabled.
   non-zero UTC offset raises `UnsupportedOperationError`; convert it to UTC
   first. The driver returns microseconds, so the schema reports at most
   `timestamp(6)`: a `TIMESTAMP(9)` column is read as `timestamp(6)`.
+- **Trailing blanks**: Db2 ignores trailing blanks when it compares strings, so
+  `'a' = 'a '` is true. Equality, `isin`, `nunique`, `distinct` and `group_by`
+  treat the two as the same value.
+- **Identifier case**: Ibis quotes every name, so `create_table("my_table")`
+  creates a lower-case table that plain SQL such as `select * from my_table`
+  cannot find. A table created outside Ibis with unquoted DDL is stored in
+  upper case and must be requested as `con.table("MY_TABLE")`.
+- **Long names**: Db2 limits names to 128 characters. Ibis names an unnamed
+  result after its expression, for example `CountStar(<table name>)` or a long
+  string literal, so a long name fails with `SQL0107N`. Name the result, for
+  example `t.count().name("n")`.
 
 ```{python}
 #| echo: false
