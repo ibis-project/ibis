@@ -195,7 +195,10 @@ runs with autocommit enabled.
   `n > 0` can be off in the last digits (0.75 rounded to 1 digit gives
   0.7000000000000001). An integer raised to a negative power, such as
   `i ** -1`, returns 0, because Db2 computes it as an integer; cast to
-  `float64` first.
+  `float64` first. Casting a float to a string can produce scientific notation
+  (for example, `'1.5E0'` instead of `'1.5'`); casting a float to an integer
+  truncates rather than rounds, and converting a timestamp to `TIME` loses
+  fractional seconds.
 - **`greatest` and `least`**: Db2's `GREATEST` and `LEAST` return NULL if any
   argument is NULL; Ibis's docstring says NULL arguments are ignored. Convert
   NULLs first if you need that behaviour.
