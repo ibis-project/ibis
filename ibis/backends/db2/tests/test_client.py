@@ -220,3 +220,76 @@ def test_divide_decimal_and_float_are_unchanged(con):
     result = con.execute(expr)
     assert result["rf"].tolist() == pytest.approx([0.25, 0.75])
     assert [float(v) for v in result["rd"]] == pytest.approx([0.3, 0.7], abs=1e-3)
+
+
+@pytest.fixture
+def arrow_table():
+    return ibis.memtable(
+        {"k": [1, 2, 3, 4], "i": [1, 2, 3, None], "b": [True, False, None, True]},
+        schema={"k": "int32", "i": "int32", "b": "boolean"},
+    )
+
+
+@pytest.mark.parametrize(
+    ("make_expr", "expected"),
+    [
+        pytest.param(lambda t: t.i * 1.5, [1.5, 3.0, 4.5, None], id="times_float"),
+        pytest.param(lambda t: t.i + 0.5, [1.5, 2.5, 3.5, None], id="plus_float"),
+        pytest.param(lambda t: t.i * 2.0, [2.0, 4.0, 6.0, None], id="times_float_2"),
+        pytest.param(lambda t: t.i - 0.25, [0.75, 1.75, 2.75, None], id="minus_float"),
+        pytest.param(lambda t: t.i % 1.5, [1.0, 0.5, 0.0, None], id="mod_float"),
+        pytest.param(lambda t: t.i > 1, [False, True, True, None], id="comparison"),
+        pytest.param(
+            lambda t: ibis.ifelse(t.b, 0.5, 1.5), [0.5, 1.5, 1.5, 0.5], id="ifelse"
+        ),
+        pytest.param(lambda t: t.b, [True, False, None, True], id="boolean_column"),
+    ],
+)
+def test_to_pyarrow_column(con, arrow_table, make_expr, expected):
+    # Used to raise ArrowInvalid: the driver returns Decimal for `int * 1.5`
+    # and 0/1 for booleans, and pyarrow does not convert either.
+    expr = arrow_table.mutate(v=make_expr(arrow_table)).order_by("k").select("v")
+    result = con.to_pyarrow(expr)
+    assert result.schema.equals(expr.schema().to_pyarrow())
+    assert result["v"].to_pylist() == expected
+
+
+@pytest.mark.parametrize(
+    ("make_expr", "expected"),
+    [
+        pytest.param(lambda t: t.b.any(), True, id="any"),
+        pytest.param(lambda t: t.b.all(), False, id="all"),
+        pytest.param(lambda t: (t.i > 1).any(), True, id="comparison_any"),
+        pytest.param(lambda t: (t.i > 1).all(), False, id="comparison_all"),
+    ],
+)
+def test_to_pyarrow_boolean_scalar(con, arrow_table, make_expr, expected):
+    result = con.to_pyarrow(make_expr(arrow_table))
+    assert result.type == "bool"
+    assert result.as_py() is expected
+
+
+def test_to_pyarrow_batches_are_normalized_in_every_chunk(con, arrow_table):
+    expr = arrow_table.mutate(v=arrow_table.i * 1.5).order_by("k")
+    batches = list(con.to_pyarrow_batches(expr, chunk_size=3))
+    assert [len(b) for b in batches] == [3, 1]
+    values = [v for b in batches for v in b.column("v").to_pylist()]
+    assert values == [1.5, 3.0, 4.5, None]
+
+
+def test_to_pyarrow_empty_result(con, arrow_table):
+    expr = arrow_table.filter(arrow_table.k > 100).mutate(v=arrow_table.i * 1.5)
+    result = con.to_pyarrow(expr)
+    assert result.num_rows == 0
+    assert result.schema.equals(expr.schema().to_pyarrow())
+
+
+def test_to_pyarrow_join_with_computed_columns(con, arrow_table):
+    other = arrow_table.view()
+    right = other.select("k", flag=other.b)
+    joined = arrow_table.join(right, "k")
+    expr = joined.select("k", scaled=joined.i * 1.5, flag=joined.flag).order_by("k")
+    result = con.to_pyarrow(expr)
+    assert result.schema.equals(expr.schema().to_pyarrow())
+    assert result["scaled"].to_pylist() == [1.5, 3.0, 4.5, None]
+    assert result["flag"].to_pylist() == [True, False, None, True]

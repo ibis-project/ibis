@@ -24,6 +24,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.db2 import Db2Compiler
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
     from urllib.parse import ParseResult
 
     import ibm_db_dbi
@@ -325,6 +326,23 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
             cursor.fetchall(), columns=schema.names, coerce_float=False
         )
         return Db2PandasData.convert_table(df, schema)
+
+    def _cursor_batches(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1 << 20,
+    ) -> Iterable[list]:
+        # The driver returns Decimal for `int * 1.5` and 0/1 for booleans,
+        # which pyarrow rejects; normalize each value to its Ibis type.
+        self._run_pre_execute_hooks(expr)
+        dtypes = expr.as_table().schema().values()
+        with self._safe_raw_sql(
+            self.compile(expr, limit=limit, params=params)
+        ) as cursor:
+            while batch := cursor.fetchmany(chunk_size):
+                yield (tuple(map(dt.normalize, dtypes, row)) for row in batch)
 
     def list_tables(
         self, like: str | None = None, database: str | None = None
