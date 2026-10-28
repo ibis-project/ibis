@@ -150,8 +150,12 @@ t.to_pyarrow()
 Or PyArrow batches:
 
 ```{python}
-t.to_pyarrow_batches()
+with t.to_pyarrow_batches(chunk_size=100) as batches:  # <1>
+    for batch in batches:
+        print(batch.num_rows)
 ```
+
+1. Read the batches inside a `with` block so the reader is closed afterwards. Some backends, such as DuckDB 2.0, can't run other queries on the connection while a reader is still open.
 
 And you can convert PyArrow tables to Ibis tables.
 
