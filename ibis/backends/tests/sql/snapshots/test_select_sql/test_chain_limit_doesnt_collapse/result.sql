@@ -18,7 +18,7 @@ FROM (
 LIMIT 5
 OFFSET (
   SELECT
-    COUNT(*) + -5
+    GREATEST(COUNT(*) + -5, 0)
   FROM (
     SELECT
       *
