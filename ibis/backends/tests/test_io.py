@@ -84,6 +84,7 @@ DIAMONDS_COLUMN_TYPES = {
 )
 @pytest.mark.notyet(
     [
+        "db2",
         "flink",
         "impala",
         "mssql",
@@ -129,6 +130,7 @@ def test_read_csv(con, data_dir, in_table_name, num_diamonds):
 @pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(
     [
+        "db2",
         "flink",
         "impala",
         "mssql",
@@ -150,6 +152,7 @@ def test_read_csv_gz(con, data_dir, gzip_csv):
 
 @pytest.mark.notyet(
     [
+        "db2",
         "flink",
         "impala",
         "mssql",
@@ -175,6 +178,7 @@ def test_read_csv_with_dotted_name(con, data_dir, tmp_path):
 
 @pytest.mark.notyet(
     [
+        "db2",
         "flink",
         "impala",
         "mssql",
@@ -210,6 +214,7 @@ def test_read_csv_schema(con, tmp_path):
 
 @pytest.mark.notyet(
     [
+        "db2",
         "flink",
         "impala",
         "mssql",
@@ -248,6 +253,7 @@ def test_read_csv_glob(con, tmp_path, ft_data):
 )
 @pytest.mark.notyet(
     [
+        "db2",
         "flink",
         "impala",
         "mssql",
@@ -298,6 +304,7 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
         "bigquery",
         "clickhouse",
         "datafusion",
+        "db2",
         "flink",
         "impala",
         "mssql",
@@ -338,6 +345,7 @@ def test_read_parquet_iterator(
 
 @pytest.mark.notyet(
     [
+        "db2",
         "flink",
         "impala",
         "mssql",
@@ -370,6 +378,7 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
     [
         "clickhouse",
         "datafusion",
+        "db2",
         "impala",
         "mssql",
         "mysql",
@@ -408,6 +417,7 @@ def test_read_json_glob(con, tmp_path, ft_data):
         "bigquery",
         "clickhouse",
         "datafusion",
+        "db2",
         "flink",
         "impala",
         "mysql",

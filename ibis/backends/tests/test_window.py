@@ -12,6 +12,7 @@ import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     GoogleBadRequest,
+    IbmDb2Error,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     MySQLProgrammingError,
@@ -369,6 +370,7 @@ def test_grouped_bounded_expanding_window(
                     [
                         "bigquery",
                         "clickhouse",
+                        "db2",
                         "duckdb",
                         "druid",
                         "flink",
@@ -561,6 +563,7 @@ def test_grouped_bounded_preceding_window(
                     [
                         "bigquery",
                         "clickhouse",
+                        "db2",
                         "duckdb",
                         "druid",
                         "flink",
@@ -653,6 +656,7 @@ def test_simple_ungrouped_unbound_following_window(
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
     t = alltypes.filter(alltypes.double_col < 50).order_by("id")
     w = ibis.window(rows=(0, None), order_by=ibis.null())
@@ -715,6 +719,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     [
                         "bigquery",
                         "clickhouse",
+                        "db2",
                         "duckdb",
                         "druid",
                         "flink",
@@ -754,6 +759,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     [
                         "bigquery",
                         "clickhouse",
+                        "db2",
                         "duckdb",
                         "druid",
                         "impala",
@@ -823,6 +829,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
+                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -867,6 +874,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
+                pytest.mark.notimpl(["db2"], raises=IbmDb2Error),
             ],
         ),
         param(
@@ -879,6 +887,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     [
                         "bigquery",
                         "clickhouse",
+                        "db2",
                         "duckdb",
                         "druid",
                         "flink",
@@ -913,6 +922,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     [
                         "bigquery",
                         "clickhouse",
+                        "db2",
                         "duckdb",
                         "druid",
                         "impala",
@@ -1179,6 +1189,7 @@ def test_first_last(backend):
     reason="Materialize doesn't support INTERVAL in RANGE window frames",
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(["db2"], raises=IbmDb2Error)
 def test_range_expression_bounds(backend):
     t = ibis.memtable(
         {
