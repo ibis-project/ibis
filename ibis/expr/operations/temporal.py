@@ -161,6 +161,9 @@ class ExtractQuarter(ExtractDateField):
 class ExtractEpochSeconds(ExtractDateField):
     """Extract seconds since the UNIX epoch from a date or timestamp."""
 
+    # int32 seconds overflow in 2038
+    dtype = dt.int64
+
 
 @public
 class ExtractWeekOfYear(ExtractDateField):
