@@ -154,8 +154,9 @@ def get_field_data_types(pyflink_schema: TableSchema) -> list[DataType]:
     This is a re-implementation of `get_field_data_types()` available for PyFlink
     schemas. PyFlink's implementation currently supports only `precision = 3` for
     `TimestampType` (for some reason that we could not figure out -- might be just
-    a bug). The lack of precision support led to an error due to unmatched schemas
-    for batches and the file to write in `to_csv()` and `to_parquet()`.
+    a bug), and its default precision for `LocalZonedTimestampType`. The lack of
+    precision support led to an error due to unmatched schemas for batches and the
+    file to write in `to_csv()` and `to_parquet()`.
 
     :return: A list of all field data types.
     """
@@ -173,6 +174,12 @@ def get_field_data_types(pyflink_schema: TableSchema) -> list[DataType]:
             logical_type = j_data_type.getLogicalType()
             if is_instance_of(logical_type, gateway.jvm.TimestampType):
                 data_type = DataTypes.TIMESTAMP(
+                    precision=logical_type.getPrecision(),
+                    nullable=logical_type.isNullable(),
+                )
+
+            elif is_instance_of(logical_type, gateway.jvm.LocalZonedTimestampType):
+                data_type = DataTypes.TIMESTAMP_LTZ(
                     precision=logical_type.getPrecision(),
                     nullable=logical_type.isNullable(),
                 )

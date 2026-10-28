@@ -5,6 +5,13 @@ from pyflink.common.types import Row
 
 import ibis
 from ibis.backends.tests.errors import Py4JJavaError
+from ibis.conftest import IS_PYFLINK_1X
+
+
+def struct(*fields):
+    # pyflink 1.x hands a nested ROW back as a Row holding a single list of
+    # its fields rather than one holding the fields themselves
+    return Row(list(fields)) if IS_PYFLINK_1X else Row(*fields)
 
 
 @pytest.mark.parametrize(
@@ -13,19 +20,19 @@ from ibis.backends.tests.errors import Py4JJavaError
         pytest.param(
             {"value": [{"a": 1}, {"a": 2}]},
             {"value": "!struct<a: !int>"},
-            [Row(Row([1])), Row(Row([2]))],
+            [Row(struct(1)), Row(struct(2))],
             id="simple_named_struct",
         ),
         pytest.param(
             {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]},
             {"value": "!array<!struct<a: !int>>"},
-            [Row([Row([1]), Row([2])]), Row([Row([3]), Row([4])])],
+            [Row([struct(1), struct(2)]), Row([struct(3), struct(4)])],
             id="single_field_named_struct_array",
         ),
         pytest.param(
             {"value": [[{"a": 1, "b": 2}, {"a": 2, "b": 2}]]},
             {"value": "!array<!struct<a: !int, b: !int>>"},
-            [Row([Row([1, 2]), Row([2, 2])])],
+            [Row([struct(1, 2), struct(2, 2)])],
             id="named_struct_array",
         ),
     ],
@@ -42,6 +49,7 @@ def test_create_memtable(con, data, schema, expected):
 
 @pytest.mark.notyet(
     ["flink"],
+    condition=IS_PYFLINK_1X,
     raises=Py4JJavaError,
     reason="cannot create an ARRAY of named STRUCTs directly from the ARRAY[] constructor; https://issues.apache.org/jira/browse/FLINK-34898",
 )

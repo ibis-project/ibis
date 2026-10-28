@@ -242,15 +242,19 @@ jobs:
             serial: true
             extras:
               - --extra flink
-            additional_deps:
-              - "'apache-flink==1.20.2'"
+            # PyFlink 1.x caps pyarrow<12 through apache-beam, so it can't be
+            # added to uv.lock once any extra needs a newer pyarrow; install it
+            # into the synced environment instead
+            unlocked_deps:
+              - "'apache-flink==1.20.5'"
               - "'pandas<2.2'"
               - setuptools
+            flink-version: "1.20.5"
             services:
               - flink
         include:
           - os: ubuntu-latest
-            python-version: "3.11"
+            python-version: "3.12"
             backend:
               name: flink
               title: Flink
@@ -258,9 +262,9 @@ jobs:
               extras:
                 - --extra flink
               additional_deps:
-                - "'apache-flink==1.20.2'"
-                - "'pandas<2.2'"
+                - "'apache-flink==2.3.0'"
                 - setuptools
+              flink-version: "2.3.0"
               services:
                 - flink
           - os: ubuntu-latest
@@ -465,10 +469,11 @@ jobs:
               serial: true
               extras:
                 - --extra flink
-              additional_deps:
-                - "'apache-flink==1.20.2'"
+              unlocked_deps:
+                - "'apache-flink==1.20.5'"
                 - "'pandas<2.2'"
                 - setuptools
+              flink-version: "1.20.5"
               services:
                 - flink
           - os: windows-latest
@@ -478,10 +483,11 @@ jobs:
               serial: true
               extras:
                 - --extra flink
-              additional_deps:
-                - "'apache-flink==1.20.2'"
+              unlocked_deps:
+                - "'apache-flink==1.20.5'"
                 - "'pandas<2.2'"
                 - setuptools
+              flink-version: "1.20.5"
               services:
                 - flink
           - os: windows-latest
@@ -529,6 +535,8 @@ jobs:
       - name: start services
         if: matrix.backend.services != null
         run: just up ${{ join(matrix.backend.services, ' ') }}
+        env:
+          FLINK_VERSION: ${{ matrix.backend.flink-version }}
 
       - name: install python
         uses: actions/setup-python@v7
@@ -543,6 +551,12 @@ jobs:
         if: matrix.backend.additional_deps != null
         run: uv add --no-sync --optional ${{ matrix.backend.name }} ${{ join(matrix.backend.additional_deps, ' ') }}
 
+      - name: install other deps outside of the lock
+        if: matrix.backend.unlocked_deps != null
+        run: |
+          uv sync --group tests ${{ join(matrix.backend.extras, ' ') }} --extra examples
+          uv pip install ${{ join(matrix.backend.unlocked_deps, ' ') }}
+
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
         timeout-minutes: 60
@@ -551,6 +565,7 @@ jobs:
           IBIS_TEST_IMPALA_HOST: localhost
           IBIS_TEST_IMPALA_PORT: 21050
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          UV_NO_SYNC: ${{ matrix.backend.unlocked_deps != null }}
 
       - name: "run serial tests: ${{ matrix.backend.name }}"
         if: matrix.backend.serial
@@ -560,6 +575,7 @@ jobs:
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          UV_NO_SYNC: ${{ matrix.backend.unlocked_deps != null }}
 
       - name: "run backend doctests: ${{ matrix.backend.name }}"
         if: matrix.os == 'ubuntu-latest'
@@ -568,6 +584,7 @@ jobs:
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          UV_NO_SYNC: ${{ matrix.backend.unlocked_deps != null }}
 
       - name: checkout uv.lock and pyproject.toml
         run: git checkout uv.lock pyproject.toml
