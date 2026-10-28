@@ -2433,7 +2433,18 @@ def test_static_table_slice(backend, slc, expected_count_fn):
         param(slice(3, -4), lambda t: t.count().to_pandas() - 7, id="[3:-4]"),
         # stop before start
         param(slice(None, -8000), lambda _: 0, id="[:-8000]"),
-        param(slice(5000, -3000), lambda _: 0, id="[5000:-3000]"),
+        param(
+            slice(5000, -3000),
+            lambda _: 0,
+            id="[5000:-3000]",
+            marks=[
+                pytest.mark.never(
+                    ["mssql"],
+                    raises=PyODBCProgrammingError,
+                    reason="sqlglot generates code that requires > 0 fetch rows",
+                ),
+            ],
+        ),
     ],
     ids=str,
 )
