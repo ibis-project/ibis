@@ -59,6 +59,19 @@ _UDF_INPUT_TYPE_MAPPING = {
     InputType.PYTHON: _duckdb_func.NATIVE,
 }
 
+_DUCKDB_VERSION = vparse(duckdb.__version__)
+
+# sqlglot generates SQL for the latest DuckDB by default, e.g. the
+# `LAMBDA x : ...` syntax that DuckDB 2.0 requires but DuckDB <1.3 can't parse.
+# Pin the dialect version for older DuckDB so it gets the `x -> ...` syntax.
+_OLD_DUCKDB_DIALECT = (
+    sg.Dialect.get_or_raise(
+        "duckdb, version=" + ".".join(map(str, _DUCKDB_VERSION.release[:3]))
+    )
+    if _DUCKDB_VERSION < vparse("1.3")
+    else None
+)
+
 
 class _Settings:
     def __init__(self, con: duckdb.DuckDBPyConnection) -> None:
@@ -92,6 +105,11 @@ class Backend(
     name = "duckdb"
     compiler = sc.duckdb.compiler
     supports_temporary_tables = True
+
+    @property
+    def dialect(self) -> sg.Dialect:
+        """Return the SQL dialect used by the backend."""
+        return _OLD_DUCKDB_DIALECT or super().dialect
 
     @property
     def settings(self) -> _Settings:

@@ -1800,6 +1800,9 @@ _TYPE_MAPPERS: dict[str, type[SqlglotType]] = {
 def get_type_mapper(dialect: str | sg.Dialect, /) -> type[SqlglotType]:
     if isinstance(dialect, str):
         dialect_str = dialect.lower()
+    elif isinstance(dialect, type):
+        dialect_str = dialect.__name__.lower()
     else:
-        dialect_str: str = dialect.__name__.lower()  # ty:ignore[unresolved-attribute]
+        # a dialect instance, e.g. one with settings such as a version
+        dialect_str = type(dialect).__name__.lower()
     return _TYPE_MAPPERS[dialect_str]
