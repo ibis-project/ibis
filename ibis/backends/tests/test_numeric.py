@@ -922,7 +922,7 @@ def test_math_functions_literals(con, expr, expected):
                     ["materialize"],
                     raises=PsycoPgInternalError,
                     reason='function "atan2" does not exist',
-                ),
+                )
             ],
         ),
         param(L(0.0).cos(), math.cos(0.0), id="cos"),

@@ -348,7 +348,11 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
-@pytest.mark.notimpl(["db2"])
+@pytest.mark.notyet(
+    ["db2"],
+    raises=AssertionError,
+    reason="Db2 keeps the definition of a global temporary table in the catalog after reconnect",
+)
 def test_create_temporary_table_from_schema(con_no_data, new_schema):
     if con_no_data.name == "snowflake" and os.environ.get("SNOWFLAKE_SNOWPARK"):
         with pytest.raises(
@@ -960,6 +964,9 @@ def test_list_database_contents(con):
 @pytest.mark.notyet(["databricks"], raises=DatabricksServerOperationError)
 @pytest.mark.notyet(["bigquery"], raises=com.UnsupportedBackendType)
 @pytest.mark.notyet(
+    ["db2"], raises=com.UnsupportedBackendType, reason="no unsigned int types"
+)
+@pytest.mark.notyet(
     ["postgres"], raises=PsycoPgUndefinedObject, reason="no unsigned int types"
 )
 @pytest.mark.notyet(
@@ -975,11 +982,6 @@ def test_list_database_contents(con):
     raises=PsycoPg2InternalError,
     reason="unsigned integers are not supported",
 )
-@pytest.mark.notyet(
-    ["db2"],
-    raises=AssertionError,
-    reason="Db2 maps unsigned integer types to signed equivalents; schema does not roundtrip",
-)
 @pytest.mark.notimpl(
     ["athena"], raises=com.UnsupportedOperationError, reason="no temp tables"
 )
@@ -988,7 +990,6 @@ def test_list_database_contents(con):
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
-@pytest.mark.notimpl(["db2"])
 def test_unsigned_integer_type(con, temp_table):
     con.create_table(
         temp_table,
@@ -1827,7 +1828,9 @@ def test_close_connection(con):
     reason="snowflake uses a custom pyarrow extension type for JSON pretty printing",
 )
 @pytest.mark.notimpl(["athena"], raises=AttributeError, reason="not yet implemented")
-@pytest.mark.notimpl(["db2"])
+@pytest.mark.notimpl(
+    ["db2"], raises=AttributeError, reason="the json_t table is not loaded for Db2"
+)
 def test_json_to_pyarrow(con):
     t = con.tables.json_t
     table = t.to_pyarrow()
