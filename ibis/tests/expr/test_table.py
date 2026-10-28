@@ -519,6 +519,12 @@ def test_rename():
     assert_equal(res, sol)
 
 
+def test_rename_duplicate_new_names():
+    t = ibis.table([("a", "int64")])
+    with pytest.raises(ValueError, match="for renaming 'a'"):
+        t.rename({"x": "a", "y": "a"})
+
+
 def test_rename_function():
     table = api.table({"x": "int32", "y": "string", "z": "double"})
 
