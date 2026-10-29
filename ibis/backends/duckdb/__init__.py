@@ -1660,6 +1660,17 @@ class Backend(
         kwargs
             Additional keyword arguments passed to the DuckDB `COPY` command.
 
+        Notes
+        -----
+        On DuckDB 2.0 and later, coordinates are written as (x, y), including
+        for coordinate reference systems whose authority axis order is
+        (latitude, longitude) such as EPSG:4326. This is done by enabling
+        DuckDB's `geometry_always_xy` setting for the duration of the write,
+        unless you have already set it yourself.
+
+        Before DuckDB 2.0, some formats (for example KML) write the
+        coordinates swapped when given such a coordinate reference system.
+
         Examples
         --------
         >>> import os
@@ -1727,8 +1738,35 @@ class Backend(
 
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
 
-        with self._safe_raw_sql(copy_cmd):
+        with self._geometry_always_xy(), self._safe_raw_sql(copy_cmd):
             pass
+
+    @contextlib.contextmanager
+    def _geometry_always_xy(self):
+        """Write geometries to GDAL with (x, y) axis order for the duration of the block.
+
+        DuckDB 2.0 refuses to write geometries that have a CRS through GDAL
+        unless `geometry_always_xy` is set explicitly. Without it, GDAL reads
+        the coordinates in the CRS's authority axis order (latitude, longitude
+        for EPSG:4326), which swaps them in some formats such as KML. Ibis
+        geometries are always (x, y), so enable the setting for the write,
+        unless the user has already chosen a value.
+        """
+        if _DUCKDB_VERSION < vparse("2"):
+            # the setting doesn't exist before DuckDB 2.0
+            yield
+            return
+
+        # the setting is defined by the spatial extension
+        self._load_extensions(["spatial"])
+        user_has_chosen = self.settings["geometry_always_xy"] is not None
+        if not user_has_chosen:
+            self.con.execute("SET geometry_always_xy = true")
+        try:
+            yield
+        finally:
+            if not user_has_chosen:
+                self.con.execute("RESET geometry_always_xy")
 
     @util.experimental
     def to_json(

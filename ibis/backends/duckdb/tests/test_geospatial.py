@@ -459,6 +459,9 @@ def no_roundtrip(
                     raises=duckdb.BinderException,
                     reason="the Geoconcept driver was removed in DuckDB 2.0",
                 ),
+                no_roundtrip(reason="not entirely sure"),
+            ],
+        ),
         param(
             "PGDUMP",
             None,
@@ -574,6 +577,73 @@ def test_to_geo_geom_only(con, driver, tmp_path):
     dread = con.read_geo(out)
 
     assert dread.count().execute() == 2
+
+
+@pytest.mark.xfail(
+    condition=vparse(duckdb.__version__) < vparse("2"),
+    raises=AssertionError,
+    reason=(
+        "before DuckDB 2.0, KML written with a (latitude, longitude) CRS "
+        "has its coordinates swapped"
+    ),
+)
+def test_to_geo_srs_keeps_xy_order(con, tmp_path):
+    data = ibis.memtable({"x": [1.0], "y": [2.0]}).select(geom=lambda t: t.x.point(t.y))
+    out = tmp_path / "outfile.kml"
+
+    # EPSG:4326 has (latitude, longitude) as its authority axis order
+    con.to_geo(data, path=out, format="KML", srs="EPSG:4326")
+
+    dread = con.read_geo(out)
+    (geom_col,) = (name for name, typ in dread.schema().items() if typ.is_geospatial())
+    result = dread[geom_col].to_pandas()
+    assert result.iloc[0] == Point(1.0, 2.0)
+
+
+needs_duckdb_2 = pytest.mark.skipif(
+    vparse(duckdb.__version__) < vparse("2"),
+    reason="the geometry_always_xy setting was added in DuckDB 2.0",
+)
+
+
+@needs_duckdb_2
+def test_to_geo_geometry_with_crs(tmp_path):
+    # the axis order matters when the geometry type has a CRS, even without
+    # passing an SRS to the writer
+    con = ibis.duckdb.connect()
+    con.load_extension("spatial")
+    data = con.sql("SELECT ST_Point(1, 2)::GEOMETRY('EPSG:4326') AS geom")
+    out = tmp_path / "outfile.geojson"
+
+    con.to_geo(data, path=out, format="GeoJSON")
+
+    assert con.read_geo(out).count().execute() == 1
+
+
+@needs_duckdb_2
+def test_to_geo_restores_always_xy_setting(tmp_path):
+    con = ibis.duckdb.connect()
+    data = ibis.memtable({"x": [1.0], "y": [2.0]}).select(geom=lambda t: t.x.point(t.y))
+
+    con.to_geo(
+        data, path=tmp_path / "outfile.geojson", format="GeoJSON", srs="EPSG:4326"
+    )
+
+    assert con.settings["geometry_always_xy"] is None
+
+
+@needs_duckdb_2
+def test_to_geo_respects_always_xy_setting(tmp_path):
+    con = ibis.duckdb.connect()
+    con.load_extension("spatial")
+    con.raw_sql("SET geometry_always_xy = false")
+    data = ibis.memtable({"x": [1.0], "y": [2.0]}).select(geom=lambda t: t.x.point(t.y))
+
+    con.to_geo(
+        data, path=tmp_path / "outfile.geojson", format="GeoJSON", srs="EPSG:4326"
+    )
+
+    assert str(con.settings["geometry_always_xy"]).lower() == "false"
 
 
 def test_cache_geometry(con, monkeypatch):
