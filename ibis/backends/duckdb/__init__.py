@@ -1679,32 +1679,22 @@ class Backend(
         >>> ibis.options.interactive = True
         >>> from ibis import _
 
-        Load some geospatial data
+        Load some geospatial data, where the `geom` column holds the geometries
 
         >>> con = ibis.duckdb.connect()
         >>> zones = ibis.examples.zones.fetch(backend=con)
-        >>> zones[["zone", "geom"]].head()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ zone                                  ┃ geom                                 ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                                │ geospatial:geometry                  │
-        ├───────────────────────────────────────┼──────────────────────────────────────┤
-        │                                       │ <POLYGON ((933100.918 192536.086,    │
-        │ Newark Airport                        │ 933091.011 192572.175, 933088.585    │
-        │                                       │ 192604.9...>                         │
-        │                                       │ <MULTIPOLYGON (((1033269.244         │
-        │ Jamaica Bay                           │ 172126.008, 1033439.643 170883.946,  │
-        │                                       │ 1033473.265...>                      │
-        │                                       │ <POLYGON ((1026308.77 256767.698,    │
-        │ Allerton/Pelham Gardens               │ 1026495.593 256638.616, 1026567.23   │
-        │                                       │ 256589....>                          │
-        │                                       │ <POLYGON ((992073.467 203714.076,    │
-        │ Alphabet City                         │ 992068.667 203711.502, 992061.716    │
-        │                                       │ 203711.7...>                         │
-        │                                       │ <POLYGON ((935843.31 144283.336,     │
-        │ Arden Heights                         │ 936046.565 144173.418, 936387.922    │
-        │                                       │ 143967.75...>                        │
-        └───────────────────────────────────────┴──────────────────────────────────────┘
+        >>> zones[["zone", "borough", "LocationID"]].head()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ zone                    ┃ borough       ┃ LocationID ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+        │ string                  │ string        │ int32      │
+        ├─────────────────────────┼───────────────┼────────────┤
+        │ Newark Airport          │ EWR           │          1 │
+        │ Jamaica Bay             │ Queens        │          2 │
+        │ Allerton/Pelham Gardens │ Bronx         │          3 │
+        │ Alphabet City           │ Manhattan     │          4 │
+        │ Arden Heights           │ Staten Island │          5 │
+        └─────────────────────────┴───────────────┴────────────┘
 
         Write to a GeoJSON file
 
