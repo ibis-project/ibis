@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import pytest
 import sqlglot.expressions as sge
+from pytest import param
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -524,6 +526,78 @@ class TestSingleStoreDBCompilerIntegration:
         # Should add columnstore hint for SELECT queries
         expected = "SELECT /*+ USE_COLUMNSTORE_STRATEGY */"
         assert result == expected
+
+
+def test_builtin_udf_name_unquoted():
+    """Quoted builtin names break server-side parametrization (error 2986)."""
+
+    @ibis.udf.scalar.builtin(name="JSON_EXTRACT_STRING")
+    def extract(doc: dt.JSON, key: str) -> str: ...
+
+    t = ibis.table({"doc": "json"}, name="t")
+    sql = ibis.to_sql(t.select(r=extract(t.doc, "k")), dialect="singlestoredb")
+    assert "JSON_EXTRACT_STRING(`t0`.`doc`, 'k')" in sql
+
+
+def test_builtin_udf_with_database_keeps_case():
+    """SingleStoreDB database names are case-sensitive."""
+
+    @ibis.udf.scalar.builtin(name="my_func", database="My_Db")
+    def my_func(x: int) -> int: ...
+
+    @ibis.udf.agg.builtin(name="my_agg", database="My_Db")
+    def my_agg(x: int) -> int: ...
+
+    t = ibis.table({"x": "int"}, name="t")
+    sql = ibis.to_sql(t.select(r=my_func(t.x)), dialect="singlestoredb")
+    assert "`My_Db`.my_func(`t0`.`x`)" in sql
+    sql = ibis.to_sql(t.aggregate(r=my_agg(t.x)), dialect="singlestoredb")
+    assert "`My_Db`.my_agg(`t0`.`x`)" in sql
+
+
+@pytest.mark.parametrize(
+    ("make_expr", "expected"),
+    [
+        param(lambda a: a.length(), "JSON_LENGTH(`t0`.`{col}`)", id="length"),
+        param(
+            lambda a: a[-1],
+            "JSON_EXTRACT_JSON(`t0`.`{col}`, CASE WHEN -1 < 0 "
+            "THEN JSON_LENGTH(`t0`.`{col}`) + -1 ELSE -1 END)",
+            id="index",
+        ),
+        param(
+            lambda a: a.contains(1.0),
+            "JSON_ARRAY_CONTAINS_DOUBLE(`t0`.`{col}`, 1.0)",
+            id="contains",
+        ),
+    ],
+)
+@pytest.mark.parametrize("col", ["a", "v"])
+def test_array_ops_use_json_functions(make_expr, expected, col):
+    """Arrays are JSON arrays, including fixed-length arrays read from VECTOR."""
+    t = ibis.table({"a": "array<float64>", "v": "array<float32, 3>"}, name="t")
+    sql = ibis.to_sql(make_expr(t[col]), dialect="singlestoredb")
+    assert expected.format(col=col) in sql
+
+
+@pytest.mark.parametrize(
+    "make_expr",
+    [
+        param(lambda a: a.sums(), id="sums"),
+        param(lambda a: a.sort(), id="sort"),
+    ],
+)
+@pytest.mark.parametrize("dtype", ["array<int64>", "array<float32, 3>"])
+def test_array_ops_not_defined(make_expr, dtype):
+    t = ibis.table({"a": dtype}, name="t")
+    with pytest.raises(com.OperationNotDefinedError):
+        ibis.to_sql(make_expr(t.a), dialect="singlestoredb")
+
+
+def test_array_contains_unsupported_type():
+    t = ibis.table({"doc": "json"}, name="t")
+    with pytest.raises(com.UnsupportedOperationError):
+        ibis.to_sql(t.doc.array.contains(True), dialect="singlestoredb")
 
 
 if __name__ == "__main__":

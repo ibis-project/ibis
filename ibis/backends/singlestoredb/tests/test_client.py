@@ -5,6 +5,7 @@ import json
 from datetime import date
 from operator import methodcaller
 
+import pandas as pd
 import pytest
 import sqlglot as sg
 from pytest import param
@@ -419,6 +420,32 @@ def test_table_creation_basic_types(con):
         assert "value" in actual_schema
         assert "created_at" in actual_schema
         assert "is_active" in actual_schema
+    finally:
+        con.drop_table(table_name, force=True)
+
+
+def test_create_table_from_dataframe_with_missing_values(con):
+    if _is_http_protocol(con):
+        # memtables are TEMPORARY tables, which aren't guaranteed to persist
+        # across HTTP requests
+        pytest.skip("memtables are unreliable over HTTP")
+    table_name = gen_name("missing")
+    # pandas 3 `str` columns store missing values as nan, not None
+    df = pd.DataFrame(
+        {
+            "s": pd.Series(["a", None], dtype=pd.StringDtype(na_value=float("nan"))),
+            "f": [1.5, float("nan")],
+            "i": [1, 2],
+        }
+    )
+    con.create_table(table_name, df, overwrite=True)
+    try:
+        t = con.table(table_name)
+        assert t.s.isnull().sum().execute() == 1
+        assert t.f.isnull().sum().execute() == 1
+        result = t.order_by("i").execute()
+        assert result["s"].iloc[0] == "a"
+        assert result["f"].iloc[0] == 1.5
     finally:
         con.drop_table(table_name, force=True)
 

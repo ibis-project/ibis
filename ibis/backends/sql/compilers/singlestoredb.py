@@ -8,7 +8,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers._compat import WITH_ARG
-from ibis.backends.sql.compilers.base import STAR
+from ibis.backends.sql.compilers.base import NULL, STAR
 from ibis.backends.sql.compilers.mysql import MySQLCompiler
 from ibis.backends.sql.datatypes import SingleStoreDBType
 from ibis.backends.sql.rewrites import (
@@ -18,6 +18,7 @@ from ibis.backends.sql.rewrites import (
     rewrite_empty_order_by_window,
 )
 from ibis.common.patterns import replace
+from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import p
 
 
@@ -65,6 +66,7 @@ class SingleStoreDBCompiler(MySQLCompiler):
         ops.CumeDist,  # CumeDist window function not supported in SingleStoreDB
         # Array operations - SingleStoreDB doesn't support arrays natively
         ops.ArrayStringJoin,  # No native array-to-string function
+        ops.ArraySort,  # No function to sort JSON arrays
     )
 
     # SingleStoreDB supports most MySQL simple operations
@@ -79,6 +81,36 @@ class SingleStoreDBCompiler(MySQLCompiler):
         raise NotImplementedError("SingleStoreDB does not support Infinity")
 
     NEG_INF = POS_INF
+
+    def __sql_name__(self, op: ops.ScalarUDF | ops.AggUDF) -> str:
+        # sqlglot's SingleStore dialect quotes every identifier, but the server
+        # fails to parametrize the constant arguments of some quoted builtins,
+        # e.g. `JSON_EXTRACT_STRING`(t0.doc, 'key') AS `r` raises error 2986
+        if self._is_simple_builtin(op):
+            return op.__func_name__
+        return super().__sql_name__(op)
+
+    @staticmethod
+    def _is_simple_builtin(op):
+        return (
+            op.__input_type__ == InputType.BUILTIN
+            and op.__udf_namespace__.catalog is None
+            and op.__func_name__.isidentifier()
+        )
+
+    def _qualify_udf(self, op, call):
+        # sqlglot uppercases dotted function names, e.g. MYDB.MY_FUNC(...), but
+        # SingleStoreDB database names are case-sensitive
+        database = op.__udf_namespace__.database
+        if database is None or not self._is_simple_builtin(op):
+            return call
+        return sge.Dot(this=sg.to_identifier(database, quoted=True), expression=call)
+
+    def visit_ScalarUDF(self, op, **kw):
+        return self._qualify_udf(op, super().visit_ScalarUDF(op, **kw))
+
+    def visit_AggUDF(self, op, **kw):
+        return self._qualify_udf(op, super().visit_AggUDF(op, **kw))
 
     def visit_Date(self, op, *, arg):
         """Extract the date part from a timestamp or date value."""
@@ -509,6 +541,70 @@ class SingleStoreDBCompiler(MySQLCompiler):
             json_value.eq(sge.convert("true")),
             1,
             self.if_(json_value.eq(sge.convert("false")), 0, sge.Null()),
+        )
+
+    # Maps and arrays are represented as JSON objects and arrays. JSON
+    # functions also accept VECTOR values, which they convert to JSON arrays
+    def _json_of_type(self, arg, json_type):
+        return self.if_(
+            sge.Anonymous(this="JSON_GET_TYPE", expressions=[arg]).eq(
+                sge.convert(json_type)
+            ),
+            arg,
+            NULL,
+        )
+
+    def _null_if_null(self, arg, result):
+        # JSON_LENGTH and JSON_ARRAY_CONTAINS_* return a non-NULL value for
+        # NULL input, as does MapGet with a default
+        return self.if_(arg.is_(NULL), NULL, result)
+
+    def visit_ToJSONMap(self, op, *, arg):
+        return self._json_of_type(arg, "object")
+
+    def visit_ToJSONArray(self, op, *, arg):
+        return self._json_of_type(arg, "array")
+
+    def visit_MapKeys(self, op, *, arg):
+        return sge.Anonymous(this="JSON_KEYS", expressions=[arg])
+
+    def visit_MapContains(self, op, *, arg, key):
+        return sge.Anonymous(this="JSON_MATCH_ANY_EXISTS", expressions=[arg, key])
+
+    def visit_MapGet(self, op, *, arg, key, default):
+        return self._null_if_null(
+            arg,
+            self.if_(
+                self.visit_MapContains(op, arg=arg, key=key),
+                sge.Anonymous(this="JSON_EXTRACT_JSON", expressions=[arg, key]),
+                default,
+            ),
+        )
+
+    def visit_ArrayLength(self, op, *, arg):
+        return self._null_if_null(
+            arg, sge.Anonymous(this="JSON_LENGTH", expressions=[arg])
+        )
+
+    def visit_ArrayIndex(self, op, *, arg, index):
+        length = sge.Anonymous(this="JSON_LENGTH", expressions=[arg])
+        index = self.if_(index < 0, length + index, index)
+        return sge.Anonymous(this="JSON_EXTRACT_JSON", expressions=[arg, index])
+
+    def visit_ArrayContains(self, op, *, arg, other):
+        dtype = op.other.dtype
+        if dtype.is_string():
+            func = "JSON_ARRAY_CONTAINS_STRING"
+        elif dtype.is_numeric():
+            func = "JSON_ARRAY_CONTAINS_DOUBLE"
+        elif dtype.is_json():
+            func = "JSON_ARRAY_CONTAINS_JSON"
+        else:
+            raise com.UnsupportedOperationError(
+                f"SingleStoreDB does not support searching arrays for {dtype} values"
+            )
+        return self._null_if_null(
+            arg, sge.Anonymous(this=func, expressions=[arg, other])
         )
 
     def visit_Intersection(self, op, *, left, right, distinct):
