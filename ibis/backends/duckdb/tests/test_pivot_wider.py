@@ -92,6 +92,31 @@ def test_multiple_values_fill(con, fish, snapshot):
     assert_pivot_equal(result, execute_generic(con, expr))
 
 
+@pytest.mark.parametrize("id_cols", [["0_n"], ["0_N"], ["0_n", "0__n"]])
+@pytest.mark.parametrize("values_fill", [None, 0])
+def test_generated_names_do_not_collide_with_id_cols(con, id_cols, values_fill):
+    data = {name: [42, 42] for name in id_cols}
+    data.update(station=["a", "b"], n=[10, 11], seen=[20, 21])
+    table = ibis.memtable(data)
+    expr = table.pivot_wider(
+        id_cols=id_cols,
+        names_from="station",
+        names=["a", "b"],
+        values_from=["n", "seen"],
+        values_agg="sum",
+        values_fill=values_fill,
+    )
+    assert "PIVOT(" in ibis.to_sql(expr)
+
+    expected = pd.DataFrame(
+        {name: [42] for name in id_cols}
+        | {"n_a": [10], "seen_a": [20], "n_b": [11], "seen_b": [21]}
+    )
+    result = con.execute(expr)
+    assert_pivot_equal(result, expected)
+    assert_pivot_equal(result, execute_generic(con, expr))
+
+
 def test_explicit_names_and_prefix(con, fish):
     expr = fish.pivot_wider(
         id_cols="fish",

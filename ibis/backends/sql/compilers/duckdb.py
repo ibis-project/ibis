@@ -769,11 +769,20 @@ class DuckDBCompiler(SQLGlotCompiler):
         outputs = iter(name for name in op.schema.names if name not in id_cols)
         entries = []
         renames = {}
+        used_names = {name.lower() for name in id_cols}
         for i, (key,) in enumerate(names):
             if multiple:
                 alias = str(i)
+                # DuckDB identifiers are case-insensitive, and duplicate pivot
+                # names get renamed before the outer projection can read them.
+                while any(
+                    f"{alias}_{name}".lower() in used_names for name in values_from
+                ):
+                    alias += "_"
                 for name in values_from:
-                    renames[f"{alias}_{name}"] = next(outputs)
+                    pivot_name = f"{alias}_{name}"
+                    used_names.add(pivot_name.lower())
+                    renames[pivot_name] = next(outputs)
             else:
                 alias = next(outputs)
                 renames[alias] = alias
