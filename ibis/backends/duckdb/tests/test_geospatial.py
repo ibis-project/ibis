@@ -453,8 +453,12 @@ def no_roundtrip(
             {"srs": "4326"},
             None,
             id="geoconcept",
-            marks=no_roundtrip(reason="not entirely sure"),
-        ),
+            marks=[
+                pytest.mark.xfail(
+                    condition=vparse(duckdb.__version__) >= vparse("2"),
+                    raises=duckdb.BinderException,
+                    reason="the Geoconcept driver was removed in DuckDB 2.0",
+                ),
         param(
             "PGDUMP",
             None,
