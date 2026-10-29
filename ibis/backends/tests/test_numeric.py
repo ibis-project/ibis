@@ -16,6 +16,7 @@ from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
+    DuckDBBinderException,
     DuckDBParserException,
     ExaQueryError,
     GoogleBadRequest,
@@ -411,7 +412,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["duckdb"],
                     reason="Unsupported precision.",
-                    raises=DuckDBParserException,
+                    raises=(DuckDBParserException, DuckDBBinderException),
                 ),
                 pytest.mark.notyet(
                     ["pyspark"],

@@ -360,7 +360,17 @@ class SqlglotType(TypeMapper):
         nullable: bool | None = None,
     ) -> sge.DataType:
         if arg is not None:
-            typeclass = _geotypes[arg.this.this]
+            arg_value = arg.this.this
+            if arg_value in _geotypes:
+                typeclass = _geotypes[arg_value]
+            else:
+                # DuckDB 1.5.3+ reports SRID as the first positional arg,
+                # e.g. GEOMETRY('EPSG:2263')
+                typeclass = dt.GeoSpatial
+                if srid is None and arg_value.startswith("EPSG:"):
+                    srid = sge.DataTypeParam(
+                        this=sge.Literal.number(arg_value.split(":")[1])
+                    )
         else:
             typeclass = dt.GeoSpatial
         if srid is not None:
@@ -375,7 +385,15 @@ class SqlglotType(TypeMapper):
         nullable: bool | None = None,
     ) -> sge.DataType:
         if arg is not None:
-            typeclass = _geotypes[arg.this.this]
+            arg_value = arg.this.this
+            if arg_value in _geotypes:
+                typeclass = _geotypes[arg_value]
+            else:
+                typeclass = dt.GeoSpatial
+                if srid is None and arg_value.startswith("EPSG:"):
+                    srid = sge.DataTypeParam(
+                        this=sge.Literal.number(arg_value.split(":")[1])
+                    )
         else:
             typeclass = dt.GeoSpatial
         if srid is not None:
@@ -1800,6 +1818,9 @@ _TYPE_MAPPERS: dict[str, type[SqlglotType]] = {
 def get_type_mapper(dialect: str | sg.Dialect, /) -> type[SqlglotType]:
     if isinstance(dialect, str):
         dialect_str = dialect.lower()
+    elif isinstance(dialect, type):
+        dialect_str = dialect.__name__.lower()
     else:
-        dialect_str: str = dialect.__name__.lower()  # ty:ignore[unresolved-attribute]
+        # a dialect instance, e.g. one with settings such as a version
+        dialect_str = type(dialect).__name__.lower()
     return _TYPE_MAPPERS[dialect_str]

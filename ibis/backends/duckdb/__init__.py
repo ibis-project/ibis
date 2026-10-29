@@ -59,6 +59,19 @@ _UDF_INPUT_TYPE_MAPPING = {
     InputType.PYTHON: _duckdb_func.NATIVE,
 }
 
+_DUCKDB_VERSION = vparse(duckdb.__version__)
+
+# sqlglot generates SQL for the latest DuckDB by default, e.g. the
+# `LAMBDA x : ...` syntax that DuckDB 2.0 requires but DuckDB <1.3 can't parse.
+# Pin the dialect version for older DuckDB so it gets the `x -> ...` syntax.
+_OLD_DUCKDB_DIALECT = (
+    sg.Dialect.get_or_raise(
+        "duckdb, version=" + ".".join(map(str, _DUCKDB_VERSION.release[:3]))
+    )
+    if _DUCKDB_VERSION < vparse("1.3")
+    else None
+)
+
 
 class _Settings:
     def __init__(self, con: duckdb.DuckDBPyConnection) -> None:
@@ -92,6 +105,11 @@ class Backend(
     name = "duckdb"
     compiler = sc.duckdb.compiler
     supports_temporary_tables = True
+
+    @property
+    def dialect(self) -> sg.Dialect:
+        """Return the SQL dialect used by the backend."""
+        return _OLD_DUCKDB_DIALECT or super().dialect
 
     @property
     def settings(self) -> _Settings:
@@ -425,7 +443,10 @@ class Backend(
             ("md:", "motherduck:", ":memory:")
         ):
             database = Path(database).absolute()
-        self.con = duckdb.connect(str(database), config=config, read_only=read_only)
+        # DuckDB 2.0 rejects non-bool values for read_only (e.g. 1 from a URL)
+        self.con = duckdb.connect(
+            str(database), config=config, read_only=bool(read_only)
+        )
         self._post_connect(extensions)
 
     @util.experimental
@@ -1340,10 +1361,35 @@ class Backend(
         """
         self._run_pre_execute_hooks(expr)
         table_expr = expr.as_table()
-        sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
-        if table_expr.schema().geospatial:
+        geocols = table_expr.schema().geospatial
+
+        if geocols:
             self._load_extensions(["spatial"])
-        return self.con.sql(sql)
+
+            # DuckDB 1.4.x: to_arrow_table() returns DuckDB's internal binary
+            # format for GEOMETRY columns, not WKB. Wrap geometry columns with
+            # ST_ASWKB so downstream Arrow → Shapely conversion gets valid WKB.
+            # DuckDB 1.5.x: new method to_arrow_reader() returns geoarrow.wkb natively,
+            # so no wrapping is needed (and is handled in to_pyarrow / execute).
+            if not hasattr(duckdb.DuckDBPyRelation, "to_arrow_reader"):
+                quoted = self.compiler.quoted
+                geocols_set = set(geocols)
+                inner = self.compiler.to_sqlglot(
+                    table_expr, limit=limit, params=params
+                ).subquery("t")
+                cols = [
+                    self.compiler.f.st_aswkb(sg.column(col, quoted=quoted)).as_(
+                        col, quoted=quoted
+                    )
+                    if col in geocols_set
+                    else sg.column(col, quoted=quoted)
+                    for col in table_expr.schema().keys()
+                ]
+                return self.con.sql(sg.select(*cols).from_(inner).sql(self.dialect))
+
+        return self.con.sql(
+            self.compile(table_expr, limit=limit, params=params, **kwargs)
+        )
 
     def to_pyarrow_batches(
         self,
@@ -1373,20 +1419,15 @@ class Backend(
         chunk_size
             The number of rows to fetch per batch
         """
-        import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
-        self._run_pre_execute_hooks(expr)
-        table = expr.as_table()
-        sql = self.compile(table, limit=limit, params=params)
-
-        def batch_producer(cur):
-            yield from cur.fetch_record_batch(rows_per_batch=chunk_size)
-
-        result = self.raw_sql(sql)
-        return pa.ipc.RecordBatchReader.from_batches(
-            expr.as_table().schema().to_pyarrow(), batch_producer(result)
-        )
+        rel = self._to_duckdb_relation(expr, params=params, limit=limit)
+        if hasattr(rel, "to_arrow_reader"):
+            # DuckDB 1.5.x: fetch_record_batch is deprecated and causes ABI errors
+            return rel.to_arrow_reader(batch_size=chunk_size)
+        else:
+            # DuckDB 1.4.x: fetch_arrow_reader accepts a positional batch_size
+            return rel.fetch_arrow_reader(chunk_size)
 
     def to_pyarrow(
         self,
@@ -1399,9 +1440,15 @@ class Backend(
     ) -> pa.Table:
         from ibis.backends.duckdb.converter import DuckDBPyArrowData
 
-        table = self._to_duckdb_relation(
-            expr, params=params, limit=limit, **kwargs
-        ).to_arrow_table()
+        rel = self._to_duckdb_relation(expr, params=params, limit=limit, **kwargs)
+        if hasattr(rel, "to_arrow_reader"):
+            # DuckDB 1.5.x: to_arrow_reader avoids InternalException when result
+            # contains GEOMETRY('EPSG:xxx') columns.
+            # See https://github.com/duckdb/duckdb-python/issues/475
+            table = rel.to_arrow_reader().read_all()
+        else:
+            # DuckDB 1.4.x
+            table = rel.to_arrow_table()
         return expr.__pyarrow_result__(table, data_mapper=DuckDBPyArrowData)
 
     def execute(
@@ -1421,7 +1468,14 @@ class Backend(
         from ibis.backends.duckdb.converter import DuckDBPandasData
 
         rel = self._to_duckdb_relation(expr, params=params, limit=limit, **kwargs)
-        table = rel.to_arrow_table()
+        if hasattr(rel, "to_arrow_reader"):
+            # DuckDB 1.5.x: to_arrow_reader avoids InternalException when result
+            # contains GEOMETRY('EPSG:xxx') columns.
+            # See https://github.com/duckdb/duckdb-python/issues/475
+            table = rel.to_arrow_reader().read_all()
+        else:
+            # DuckDB 1.4.x
+            table = rel.to_arrow_table()
 
         df = pd.DataFrame(
             {
@@ -1606,6 +1660,17 @@ class Backend(
         kwargs
             Additional keyword arguments passed to the DuckDB `COPY` command.
 
+        Notes
+        -----
+        On DuckDB 2.0 and later, coordinates are written as (x, y), including
+        for coordinate reference systems whose authority axis order is
+        (latitude, longitude) such as EPSG:4326. This is done by enabling
+        DuckDB's `geometry_always_xy` setting for the duration of the write,
+        unless you have already set it yourself.
+
+        Before DuckDB 2.0, some formats (for example KML) write the
+        coordinates swapped when given such a coordinate reference system.
+
         Examples
         --------
         >>> import os
@@ -1614,32 +1679,22 @@ class Backend(
         >>> ibis.options.interactive = True
         >>> from ibis import _
 
-        Load some geospatial data
+        Load some geospatial data, where the `geom` column holds the geometries
 
         >>> con = ibis.duckdb.connect()
         >>> zones = ibis.examples.zones.fetch(backend=con)
-        >>> zones[["zone", "geom"]].head()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ zone                                  ┃ geom                                 ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                                │ geospatial:geometry                  │
-        ├───────────────────────────────────────┼──────────────────────────────────────┤
-        │                                       │ <POLYGON ((933100.918 192536.086,    │
-        │ Newark Airport                        │ 933091.011 192572.175, 933088.585    │
-        │                                       │ 192604.9...>                         │
-        │                                       │ <MULTIPOLYGON (((1033269.244         │
-        │ Jamaica Bay                           │ 172126.008, 1033439.643 170883.946,  │
-        │                                       │ 1033473.265...>                      │
-        │                                       │ <POLYGON ((1026308.77 256767.698,    │
-        │ Allerton/Pelham Gardens               │ 1026495.593 256638.616, 1026567.23   │
-        │                                       │ 256589....>                          │
-        │                                       │ <POLYGON ((992073.467 203714.076,    │
-        │ Alphabet City                         │ 992068.667 203711.502, 992061.716    │
-        │                                       │ 203711.7...>                         │
-        │                                       │ <POLYGON ((935843.31 144283.336,     │
-        │ Arden Heights                         │ 936046.565 144173.418, 936387.922    │
-        │                                       │ 143967.75...>                        │
-        └───────────────────────────────────────┴──────────────────────────────────────┘
+        >>> zones[["zone", "borough", "LocationID"]].head()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ zone                    ┃ borough       ┃ LocationID ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+        │ string                  │ string        │ int32      │
+        ├─────────────────────────┼───────────────┼────────────┤
+        │ Newark Airport          │ EWR           │          1 │
+        │ Jamaica Bay             │ Queens        │          2 │
+        │ Allerton/Pelham Gardens │ Bronx         │          3 │
+        │ Alphabet City           │ Manhattan     │          4 │
+        │ Arden Heights           │ Staten Island │          5 │
+        └─────────────────────────┴───────────────┴────────────┘
 
         Write to a GeoJSON file
 
@@ -1673,8 +1728,35 @@ class Backend(
 
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
 
-        with self._safe_raw_sql(copy_cmd):
+        with self._geometry_always_xy(), self._safe_raw_sql(copy_cmd):
             pass
+
+    @contextlib.contextmanager
+    def _geometry_always_xy(self):
+        """Write geometries to GDAL with (x, y) axis order for the duration of the block.
+
+        DuckDB 2.0 refuses to write geometries that have a CRS through GDAL
+        unless `geometry_always_xy` is set explicitly. Without it, GDAL reads
+        the coordinates in the CRS's authority axis order (latitude, longitude
+        for EPSG:4326), which swaps them in some formats such as KML. Ibis
+        geometries are always (x, y), so enable the setting for the write,
+        unless the user has already chosen a value.
+        """
+        if _DUCKDB_VERSION < vparse("2"):
+            # the setting doesn't exist before DuckDB 2.0
+            yield
+            return
+
+        # the setting is defined by the spatial extension
+        self._load_extensions(["spatial"])
+        user_has_chosen = self.settings["geometry_always_xy"] is not None
+        if not user_has_chosen:
+            self.con.execute("SET geometry_always_xy = true")
+        try:
+            yield
+        finally:
+            if not user_has_chosen:
+                self.con.execute("RESET geometry_always_xy")
 
     @util.experimental
     def to_json(
