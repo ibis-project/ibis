@@ -6,6 +6,7 @@ import ibis
 import ibis.expr.types as ir
 from ibis import _
 from ibis.expr.decompile import decompile
+from ibis.tests.util import assert_decompile_roundtrip
 
 t = ibis.table([("a", "int64"), ("b", "string")], name="t")
 expr = t.a.sum()
@@ -99,3 +100,18 @@ def test_distinct():
 def test_method_overrides(method, override):
     expr = ibis.table({"x": "string", "y": "timestamp"}, name="t").select(method)
     assert override in decompile(expr)
+
+
+def test_pivot_wider():
+    fish = ibis.table({"fish": "int", "station": "string", "seen": "int"}, name="fish")
+    expr = fish.pivot_wider(
+        names=["Release", "Lisbon"],
+        names_from="station",
+        values_from="seen",
+        values_agg="sum",
+    )
+    assert ".aggregate(" in decompile(expr)
+    # decompile does not preserve reduction filters, so compare schemas only
+    assert_decompile_roundtrip(
+        expr, eq=lambda left, right: left.schema() == right.schema()
+    )

@@ -4935,7 +4935,6 @@ class Table(Expr, FixedTextJupyterMixin):
         └───────┴──────────┴──────────┴──────────┘
         """
         import ibis.selectors as s
-        from ibis.expr.rewrites import _, p, x
 
         orig_names_from = util.promote_list(names_from)
 
@@ -4967,47 +4966,24 @@ class Table(Expr, FixedTextJupyterMixin):
         if names_sort:
             names.sort()
 
-        values_cols = values_from.expand(self)
-        more_than_one_value = len(values_cols) > 1
-        aggs = {}
-
-        names_cols_exprs = [self[col] for col in columns]
-
-        for keys in names:
-            where = ibis.and_(*map(operator.eq, names_cols_exprs, keys))
-
-            for values_col in values_cols:
-                arg = values_agg(values_col)
-
-                # this allows users to write the aggregate without having to deal with
-                # the filter themselves
-                rules = (
-                    # add in the where clause to filter the appropriate values
-                    p.Reduction(where=None) >> _.copy(where=where)
-                    | p.Reduction(where=x) >> _.copy(where=where & x)
-                )
-                arg = arg.op().replace(rules, filter=p.Value).to_expr()
-
-                # build the components of the group by key
-                key_components = (
-                    # user provided prefix
-                    names_prefix,
-                    # include the `values` column name if there's more than one
-                    # `values` column
-                    values_col.get_name() * more_than_one_value,
-                    # values computed from `names`/`names_from`
-                    *keys,
-                )
-                key = names_sep.join(filter(None, key_components))
-                aggs[key] = arg if values_fill is None else arg.coalesce(values_fill)
-
-        grouping_keys = id_cols.expand(self)
-
-        # no id columns, so do an ungrouped aggregation
-        if not grouping_keys:
-            return self.aggregate(**aggs)
-
-        return self.group_by(*grouping_keys).aggregate(**aggs)
+        names_types = [self[col].type() for col in columns]
+        names = [
+            tuple(ibis.literal(key, type=typ) for key, typ in zip(keys, names_types))
+            for keys in names
+        ]
+        values_from = {
+            col.get_name(): values_agg(col) for col in values_from.expand(self)
+        }
+        return ops.PivotWider(
+            self,
+            id_cols=[col.get_name() for col in id_cols.expand(self)],
+            names_from=columns,
+            names=names,
+            values_from=values_from,
+            names_prefix=names_prefix,
+            names_sep=names_sep,
+            values_fill=values_fill,
+        ).to_expr()
 
     def relocate(
         self,
