@@ -22,6 +22,7 @@ from sqlglot.dialects import (
 from sqlglot.dialects import ClickHouse as _ClickHouse
 from sqlglot.dialects.dialect import NormalizationStrategy, no_ilike_sql, rename_func
 from sqlglot.helper import find_new_name, seq_get
+from sqlglot.tokens import TokenType
 
 
 class ClickHouse(_ClickHouse):
@@ -216,6 +217,14 @@ class Db2(Postgres):
                     ],
                 )
             return super().cte_sql(expression)
+
+    class Tokenizer(Postgres.Tokenizer):
+        KEYWORDS = {
+            **Postgres.Tokenizer.KEYWORDS,
+            # Db2 special registers are two words
+            "CURRENT DATE": TokenType.CURRENT_DATE,
+            "CURRENT TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
+        }
 
     class Parser(Postgres.Parser):
         FUNCTIONS = {

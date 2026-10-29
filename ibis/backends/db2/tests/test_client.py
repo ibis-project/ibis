@@ -303,6 +303,15 @@ def test_cast_float_to_boolean(con):
     assert result.tolist() == [False, True, True, None]
 
 
+def test_sql_accepts_current_date_special_register(con):
+    # Used to parse as `CURRENT AS DATE` or raise ParseError.
+    t = con.sql(
+        "SELECT CURRENT DATE AS d, CURRENT TIMESTAMP AS ts FROM SYSIBM.SYSDUMMY1"
+    )
+    assert t.schema() == ibis.schema({"D": "!date", "TS": "!timestamp(6)"})
+    assert len(t.execute()) == 1
+
+
 def test_cast_timestamp_to_string(con):
     # Used to return 2020-01-31-10.11.12.345678, with dashes and dots.
     t = ibis.memtable(
