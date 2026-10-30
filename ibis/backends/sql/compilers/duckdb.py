@@ -19,6 +19,8 @@ from ibis.backends.sql.rewrites import (
     lower_sample,
     subtract_one_from_array_map_filter_index,
 )
+from ibis.common.patterns import replace
+from ibis.expr.rewrites import p, pivot_wider_to_aggregate
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -39,6 +41,33 @@ _INTERVAL_SUFFIXES = {
 }
 
 
+@replace(p.PivotWider)
+def pivot_wider_to_pivot(_, **kwargs):
+    """Keep `PivotWider` where DuckDB's native `PIVOT` can express it.
+
+    `PIVOT` builds the cross product of several `FOR` columns and silently
+    ignores an aggregate's own `FILTER`, so those cases take the generic
+    filtered-aggregate lowering instead. First, Last and ArrayCollect also
+    introduce a FILTER during compilation when they exclude nulls.
+    """
+    # DuckDB rejects an empty PIVOT IN list. With no pivot names, the generic
+    # aggregation still returns the distinct ID combinations.
+    if not _.names:
+        return pivot_wider_to_aggregate(_)
+
+    if len(_.names_from) == 1 and all(
+        isinstance(value, ops.Reduction)
+        and value.where is None
+        and not (
+            isinstance(value, (ops.First, ops.Last, ops.ArrayCollect))
+            and not value.include_null
+        )
+        for value in _.values_from.values()
+    ):
+        return _
+    return pivot_wider_to_aggregate(_)
+
+
 class DuckDBCompiler(SQLGlotCompiler):
     __slots__ = ()
 
@@ -51,6 +80,7 @@ class DuckDBCompiler(SQLGlotCompiler):
     supports_qualify = True
 
     LOWERED_OPS = {
+        ops.PivotWider: pivot_wider_to_pivot,
         ops.Sample: lower_sample(),
         ops.StringSlice: None,
     }
@@ -712,6 +742,111 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_StringToTime(self, op, *, arg, format_str):
         return self.cast(self.f.str_to_time(arg, format_str), to=dt.time)
+
+    def visit_PivotWider(
+        self,
+        op,
+        *,
+        parent,
+        id_cols,
+        names_from,
+        names,
+        values_from,
+        names_prefix,
+        names_sep,
+        values_fill,
+    ):
+        quoted = self.quoted
+        (names_col,) = names_from
+
+        def unqualified(expr):
+            # PIVOT rejects table-qualified column references
+            return expr.transform(
+                lambda node: (
+                    sg.column(node.name, quoted=quoted)
+                    if isinstance(node, sge.Column)
+                    else node
+                )
+            )
+
+        multiple = len(values_from) > 1
+        aggs = [
+            unqualified(agg).as_(name, quoted=quoted) if multiple else unqualified(agg)
+            for name, agg in values_from.items()
+        ]
+
+        # PIVOT names each output column after its IN entry's alias, followed by
+        # the aggregate's alias when there is more than one aggregate
+        outputs = iter(name for name in op.schema.names if name not in id_cols)
+        entries = []
+        renames = {}
+        used_names = {name.lower() for name in id_cols}
+        for i, (key,) in enumerate(names):
+            if multiple:
+                alias = str(i)
+                # DuckDB identifiers are case-insensitive, and duplicate pivot
+                # names get renamed before the outer projection can read them.
+                while any(
+                    f"{alias}_{name}".lower() in used_names for name in values_from
+                ):
+                    alias += "_"
+                for name in values_from:
+                    pivot_name = f"{alias}_{name}"
+                    used_names.add(pivot_name.lower())
+                    renames[pivot_name] = next(outputs)
+            else:
+                alias = next(outputs)
+                renames[alias] = alias
+            entries.append(
+                sge.PivotAlias(this=key, alias=sg.to_identifier(alias, quoted=quoted))
+            )
+
+        pivot = sge.Pivot(
+            expressions=aggs,
+            fields=[
+                sge.In(this=sg.column(names_col, quoted=quoted), expressions=entries)
+            ],
+        )
+
+        if id_cols:
+            pivot.set(
+                "group",
+                sge.Group(expressions=[sg.column(c, quoted=quoted) for c in id_cols]),
+            )
+            source = parent
+        else:
+            # without GROUP BY, PIVOT groups by every remaining column, so keep
+            # only the columns the pivot reads
+            inputs = {names_col}
+            for value in op.values_from.values():
+                inputs.update(
+                    field.name for field in value.find(ops.Field, filter=ops.Value)
+                )
+            source = (
+                sg.select(
+                    *(
+                        sg.column(c, table=parent.alias_or_name, quoted=quoted)
+                        for c in op.parent.schema.names
+                        if c in inputs
+                    )
+                )
+                .from_(parent)
+                .subquery(copy=False)
+            )
+
+        source.set("pivots", [pivot])
+        pivoted = sg.select(STAR).from_(source)
+
+        if values_fill is None and all(k == v for k, v in renames.items()):
+            return pivoted
+
+        columns = [sg.column(c, quoted=quoted) for c in id_cols]
+        for pivot_name, name in renames.items():
+            column = sg.column(pivot_name, quoted=quoted)
+            if values_fill is not None:
+                column = self.f.coalesce(column, values_fill)
+            columns.append(column.as_(name, quoted=quoted))
+        return sg.select(*columns).from_(pivoted.subquery(copy=False))
 
 
 compiler = DuckDBCompiler()

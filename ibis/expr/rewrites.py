@@ -249,6 +249,22 @@ def lower_stringslice(_, **kwargs):
     return ops.Substring(_.arg, start=_.start, length=length)
 
 
+def pivot_wider_to_aggregate(op: ops.PivotWider) -> ops.Aggregate:
+    """Express a `PivotWider` as a grouped aggregation of filtered reductions."""
+    groups = {name: op.values[name] for name in op.id_cols}
+    metrics = {name: value for name, value in op.values.items() if name not in groups}
+    return ops.Aggregate(op.parent, groups=groups, metrics=metrics)
+
+
+@replace(p.PivotWider)
+def lower_pivot_wider(_, **kwargs):
+    """Rewrite `PivotWider` as a grouped aggregation of filtered reductions.
+
+    This is the lowering for backends without a native pivot.
+    """
+    return pivot_wider_to_aggregate(_)
+
+
 @replace(p.Analytic)
 def wrap_analytic(_, **__):
     # Wrap analytic functions in a window function

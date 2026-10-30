@@ -32,7 +32,7 @@ from ibis.backends.sql.rewrites import (
 )
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
-from ibis.expr.rewrites import lower_stringslice
+from ibis.expr.rewrites import lower_pivot_wider, lower_stringslice
 from ibis.util import get_subclasses
 
 try:
@@ -306,6 +306,7 @@ class SQLGlotCompiler(abc.ABC):
     LOWERED_OPS: dict[type[ops.Node], pats.Replace | None] = {
         ops.Bucket: lower_bucket,
         ops.Capitalize: lower_capitalize,
+        ops.PivotWider: lower_pivot_wider,
         ops.Sample: lower_sample(supported_methods=()),
         ops.StringSlice: lower_stringslice,
     }

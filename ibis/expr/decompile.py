@@ -10,7 +10,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.common.graph import Graph
-from ibis.expr.rewrites import simplify
+from ibis.expr.rewrites import lower_pivot_wider, simplify
 from ibis.util import experimental
 
 _method_overrides = {
@@ -446,6 +446,8 @@ def decompile(
         raise TypeError(f"Expected ibis expression, got {type(expr).__name__}")
 
     node = expr.op()
+    # pivots have no dedicated translation; render their aggregate form
+    node = node.replace(lower_pivot_wider)
     node = simplify(node)
     out = io.StringIO()
     ctx = CodeContext(assign_result_to=assign_result_to)

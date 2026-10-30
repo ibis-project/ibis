@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import functools
 import itertools
+import operator
 import typing
 from abc import abstractmethod
 from typing import Annotated, Any, Literal, Optional, TypeVar
@@ -322,6 +324,97 @@ class Aggregate(Relation):
     @attribute
     def values(self):
         return FrozenOrderedDict({**self.groups, **self.metrics})
+
+    @attribute
+    def schema(self):
+        return Schema({k: v.dtype for k, v in self.values.items()})
+
+
+@public
+class PivotWider(Relation):
+    """Pivot a table from long to wide.
+
+    Every combination of literals in `names` yields one output column per
+    entry of `values_from`: that entry's reduction restricted to the rows
+    whose `names_from` columns equal the combination.
+    """
+
+    parent: Relation
+    id_cols: VarTuple[str]
+    names_from: VarTuple[str]
+    names: VarTuple[VarTuple[Scalar]]
+    values_from: FrozenOrderedDict[str, Unaliased[Scalar]]
+    names_prefix: str = ""
+    names_sep: str = "_"
+    values_fill: Optional[Scalar] = None
+
+    def __init__(
+        self,
+        parent,
+        id_cols,
+        names_from,
+        names,
+        values_from,
+        names_prefix="",
+        names_sep="_",
+        values_fill=None,
+    ):
+        _check_integrity(values_from.values(), {parent})
+        if missing := (set(id_cols) | set(names_from)) - set(parent.schema):
+            raise IntegrityError(
+                f"Columns {missing} are not present in the parent relation"
+            )
+        for keys in names:
+            if len(keys) != len(names_from):
+                raise ValueError(
+                    f"Expected {len(names_from)} values per name, got {len(keys)}"
+                )
+        super().__init__(
+            parent=parent,
+            id_cols=id_cols,
+            names_from=names_from,
+            names=names,
+            values_from=values_from,
+            names_prefix=names_prefix,
+            names_sep=names_sep,
+            values_fill=values_fill,
+        )
+
+    @attribute
+    def values(self):
+        from ibis.expr.rewrites import _, p, x
+
+        parent = self.parent
+        multiple = len(self.values_from) > 1
+        fill = None if self.values_fill is None else self.values_fill.to_expr()
+
+        values = {name: Field(parent, name) for name in self.id_cols}
+        for keys in self.names:
+            where = functools.reduce(
+                operator.and_,
+                (
+                    Field(parent, name).to_expr() == key.to_expr()
+                    for name, key in zip(self.names_from, keys)
+                ),
+            )
+            # push the key predicate into every reduction, merging with any
+            # filter the reduction already has
+            add_where = p.Reduction(where=None) >> _.copy(where=where)
+            merge_where = p.Reduction(where=x) >> _.copy(where=where & x)
+            for name, value in self.values_from.items():
+                metric = value.replace(add_where | merge_where, filter=p.Value)
+                if fill is not None:
+                    metric = metric.to_expr().coalesce(fill).op()
+                components = (
+                    self.names_prefix,
+                    name * multiple,
+                    *(key.value for key in keys),
+                )
+                output = self.names_sep.join(filter(None, components))
+                if output in values:
+                    raise RelationError(f"Duplicate column name {output!r} in pivot")
+                values[output] = metric
+        return FrozenOrderedDict(values)
 
     @attribute
     def schema(self):

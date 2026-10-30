@@ -333,7 +333,15 @@ def merge_select_select(_, **kwargs):
 
 
 def extract_ctes(node: ops.Relation) -> set[ops.Relation]:
-    cte_types = (Select, ops.Aggregate, ops.JoinChain, ops.Set, ops.Limit, ops.Sample)
+    cte_types = (
+        Select,
+        ops.Aggregate,
+        ops.JoinChain,
+        ops.Set,
+        ops.Limit,
+        ops.Sample,
+        ops.PivotWider,
+    )
     dont_count = (ops.Field, ops.CountStar, ops.CountDistinctStar)
 
     g = Graph.from_bfs(node, filter=~InstanceOf(dont_count))
