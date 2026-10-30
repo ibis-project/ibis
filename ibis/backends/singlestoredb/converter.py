@@ -209,6 +209,13 @@ class SingleStoreDBPandasData(PandasData):
             if value is None:
                 return None
 
+            # JSON arrays, e.g. from JSON_KEYS or `.array` on a JSON column
+            if isinstance(value, str) and value.startswith("["):
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError:
+                    pass
+
             # Handle string values (typical for SET columns)
             if isinstance(value, str):
                 if not value:  # Empty string
@@ -223,6 +230,17 @@ class SingleStoreDBPandasData(PandasData):
             return value
 
         return s.map(convert_set, na_action="ignore")
+
+    @classmethod
+    def convert_Map(cls, s, dtype, pandas_type):
+        """Convert SingleStoreDB JSON objects to maps."""
+
+        def convert_map(value):
+            if isinstance(value, (str, bytes)):
+                return json.loads(value)
+            return value
+
+        return s.map(convert_map, na_action="ignore")
 
     def handle_null_value(self, value, dtype):
         """Handle various NULL representations."""

@@ -103,6 +103,26 @@ passing a properly-formatted SingleStoreDB connection URL to `ibis.connect`:
 con = ibis.connect(f"singlestoredb://{user}:{password}@{host}:{port}/{database}")
 ```
 
+## JSON objects and arrays
+
+Use `.map` and `.array` on JSON columns to work with JSON objects and arrays.
+Both give NULL when the value has a different JSON type:
+
+```python
+t = con.table("docs")
+t.select(
+    keys=t.metadata.map.keys(),
+    nested_keys=t.metadata["address"].map.keys(),
+    has_city=t.metadata["address"].map.contains("city"),
+    num_tags=t.metadata["tags"].array.length(),
+    first_tag=t.metadata["tags"].array[0],
+    has_red=t.metadata["tags"].array.contains("red"),
+)
+```
+
+`VECTOR` columns are read as fixed-length arrays and support the same array
+methods, `length`, indexing and `contains`, through the JSON functions.
+
 ```{python}
 #| echo: false
 BACKEND = "SingleStoreDB"

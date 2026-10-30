@@ -84,8 +84,13 @@ NO_STRUCT_SUPPORT = combine_marks(NO_STRUCT_SUPPORT_MARKS)
 
 NO_MAP_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["sqlite", "mysql", "singlestoredb", "mssql"],
+        ["sqlite", "mysql", "mssql"],
         reason="Unlikely to ever add map support",
+    ),
+    pytest.mark.never(
+        ["singlestoredb"],
+        reason="Only supports maps derived from JSON objects",
+        strict=False,
     ),
     pytest.mark.notyet(
         ["bigquery", "impala"],

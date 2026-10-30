@@ -782,7 +782,9 @@ class Backend(
         create_stmt_sql = create_stmt.sql(dialect)
 
         df = op.data.to_frame()
-        df = df.replace(float("nan"), None)
+        # nan can not be used with SingleStoreDB; astype(object) is needed
+        # because pandas 3 `str` columns can't hold None and keep nan
+        df = df.astype(object).where(df.notna(), None)
 
         # Fix: Convert itertuples result to list for SingleStoreDB compatibility
         data = list(df.itertuples(index=False))
