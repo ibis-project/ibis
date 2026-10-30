@@ -2,7 +2,7 @@ SELECT
   `t1`.`x`,
   `t1`.`y`,
   `t1`.`z`,
-  CASE WHEN `t1`.`y` = `t1`.`z` THEN 'big' ELSE 'small' END AS `size`
+  IF(`t1`.`y` = `t1`.`z`, 'big', 'small') AS `size`
 FROM (
   SELECT
     `t0`.`x`,
