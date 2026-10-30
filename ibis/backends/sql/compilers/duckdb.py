@@ -47,10 +47,16 @@ def pivot_wider_to_pivot(_, **kwargs):
 
     `PIVOT` builds the cross product of several `FOR` columns and silently
     ignores an aggregate's own `FILTER`, so those cases take the generic
-    filtered-aggregate lowering instead.
+    filtered-aggregate lowering instead. First, Last and ArrayCollect also
+    introduce a FILTER during compilation when they exclude nulls.
     """
     if len(_.names_from) == 1 and all(
-        isinstance(value, ops.Reduction) and value.where is None
+        isinstance(value, ops.Reduction)
+        and value.where is None
+        and not (
+            isinstance(value, (ops.First, ops.Last, ops.ArrayCollect))
+            and not value.include_null
+        )
         for value in _.values_from.values()
     ):
         return _

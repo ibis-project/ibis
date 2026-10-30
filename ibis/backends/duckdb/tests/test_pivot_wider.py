@@ -149,6 +149,40 @@ def test_no_id_cols(con, fish, snapshot):
     assert_pivot_equal(result, expected)
 
 
+@pytest.mark.parametrize("agg", ["first", "last", "collect"])
+@pytest.mark.parametrize("include_null", [False, True])
+@pytest.mark.parametrize("id_cols", [["id"], []])
+def test_null_handling_in_pivot_aggregates(con, agg, include_null, id_cols):
+    table = ibis.memtable(
+        {
+            "id": [1] * 4,
+            "station": ["a", "a", "a", "b"],
+            "n": [None, 2, None, None],
+        }
+    )
+    expr = table.pivot_wider(
+        id_cols=id_cols,
+        names_from="station",
+        names=["a", "b"],
+        values_from="n",
+        values_agg=(lambda v: getattr(v, agg)(include_null=True))
+        if include_null
+        else agg,
+    )
+    # Excluding nulls introduces a FILTER during SQL compilation, even though
+    # the reduction's operation-level `where` is None.
+    assert ("PIVOT(" in ibis.to_sql(expr)) == include_null
+
+    if agg == "collect":
+        a, b = ([None, 2, None], [None]) if include_null else ([2], None)
+    else:
+        a, b = (None if include_null else 2), None
+    expected = pd.DataFrame({name: [1] for name in id_cols} | {"a": [a], "b": [b]})
+    result = con.execute(expr)
+    assert_pivot_equal(result, expected)
+    assert_pivot_equal(result, execute_generic(con, expr))
+
+
 @pytest.mark.parametrize(
     ("kwargs", "reason"),
     [
