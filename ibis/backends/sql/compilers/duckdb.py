@@ -50,6 +50,11 @@ def pivot_wider_to_pivot(_, **kwargs):
     filtered-aggregate lowering instead. First, Last and ArrayCollect also
     introduce a FILTER during compilation when they exclude nulls.
     """
+    # DuckDB rejects an empty PIVOT IN list. With no pivot names, the generic
+    # aggregation still returns the distinct ID combinations.
+    if not _.names:
+        return pivot_wider_to_aggregate(_)
+
     if len(_.names_from) == 1 and all(
         isinstance(value, ops.Reduction)
         and value.where is None

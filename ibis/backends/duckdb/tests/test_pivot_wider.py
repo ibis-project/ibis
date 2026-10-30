@@ -149,6 +149,38 @@ def test_no_id_cols(con, fish, snapshot):
     assert_pivot_equal(result, expected)
 
 
+@pytest.mark.parametrize("id_cols", [["id"], ["id", "other"]])
+@pytest.mark.parametrize(("empty", "names"), [(False, []), (True, []), (True, None)])
+def test_empty_pivot_names(con, empty, names, id_cols):
+    table = ibis.memtable(
+        {
+            "id": [2, 1, 1, 2],
+            "other": ["a", "a", "a", "b"],
+            "station": ["a", "b", "a", "b"],
+            "n": [10, 20, 30, 40],
+        }
+    )
+    if empty:
+        table = table.filter(ibis.literal(False))
+    expr = table.pivot_wider(
+        id_cols=id_cols,
+        names_from="station",
+        names=names,
+        values_from="n",
+        values_agg="sum",
+    )
+    assert expr.columns == tuple(id_cols)
+    assert "PIVOT(" not in ibis.to_sql(expr)
+
+    result = con.execute(expr).sort_values(id_cols).reset_index(drop=True)
+    expected = (
+        con.execute(table.select(id_cols).distinct())
+        .sort_values(id_cols)
+        .reset_index(drop=True)
+    )
+    assert_pivot_equal(result, expected)
+
+
 @pytest.mark.parametrize("agg", ["first", "last", "collect"])
 @pytest.mark.parametrize("include_null", [False, True])
 @pytest.mark.parametrize("id_cols", [["id"], []])
