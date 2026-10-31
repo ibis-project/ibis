@@ -457,7 +457,7 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
 
     @property
     def current_database(self) -> str:
-        with self._safe_raw_sql("VALUES CURRENT SCHEMA") as cursor:
+        with self._safe_raw_sql("VALUES RTRIM(CURRENT SCHEMA)") as cursor:
             result = cursor.fetchone()
             return result[0] if result else None
 
@@ -520,8 +520,29 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
 
         properties = _temporary_properties() if temp else []
 
+        if overwrite:
+            # Reject a view before the staging table exists: the final DROP
+            # TABLE would fail on it and leave the staging table behind.
+            cursor = self.con.cursor()
+            try:
+                cursor.execute(
+                    "SELECT 1 FROM SYSCAT.TABLES WHERE TYPE = 'V' AND TABNAME = ?"
+                    " AND TABSCHEMA = COALESCE(?, CURRENT SCHEMA)",
+                    (name, database),
+                )
+                is_view = cursor.fetchone() is not None
+            finally:
+                cursor.close()
+            if is_view:
+                raise exc.IbisInputError(
+                    f"{name!r} is a view; drop it with `drop_view` before "
+                    "creating a table with that name"
+                )
+
         if obj is not None:
-            table = obj if isinstance(obj, ir.Expr) else ibis.memtable(obj)
+            table = (
+                obj if isinstance(obj, ir.Expr) else ibis.memtable(obj, schema=schema)
+            )
             self._run_pre_execute_hooks(table)
             query = self.compiler.to_sqlglot(table)
             column_defs = (schema or table.schema()).to_sqlglot_column_defs(
@@ -682,6 +703,17 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
             # cursor.execute() raises for the same bad query.
             raise ibm_db_dbi.ProgrammingError(str(e)) from e
         try:
+            names = [ibm_db.field_name(stmt, i) for i in range(num_fields)]
+            # Db2 allows a query to return the same label twice (`SELECT 1 AS a,
+            # 2 AS a`, or `SELECT *` over a join with a shared column), but a
+            # schema cannot hold both. Collapsing them would give a schema with
+            # fewer columns than the result.
+            if duplicates := sorted({name for name in names if names.count(name) > 1}):
+                raise exc.IntegrityError(
+                    f"Duplicate column name(s) in the query result: {duplicates}. "
+                    "Give each column an explicit alias with AS, or pass `schema=` "
+                    "to `sql()`."
+                )
             fields = {}
             for i in range(num_fields):
                 kind = ibm_db.field_type(stmt, i)
@@ -724,7 +756,7 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
                     raise exc.UnsupportedBackendType(
                         f"Unsupported Db2 result column type: {kind!r}"
                     )
-                fields[ibm_db.field_name(stmt, i)] = ibis_type
+                fields[names[i]] = ibis_type
             return sch.Schema(fields)
         finally:
             ibm_db.free_stmt(stmt)

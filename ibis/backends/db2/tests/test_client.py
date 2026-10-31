@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import decimal
 import string
+import uuid
 
 import pytest
 import sqlglot as sg
@@ -44,6 +45,42 @@ def test_current_database(con):
     db = con.current_database
     assert isinstance(db, str)
     assert len(db) > 0
+
+
+# Db2 blank-pads the CURRENT SCHEMA register to 8 characters.
+@pytest.mark.parametrize("length", [7, 8, 20])
+def test_current_database_is_not_padded(con, length):
+    schema = f"S{uuid.uuid4().hex.upper()}"[:length]
+    table = gen_name("current_database")
+
+    with con._safe_raw_sql(f'CREATE SCHEMA "{schema}"'):
+        pass
+    try:
+        with con._safe_raw_sql(f'CREATE TABLE "{schema}"."{table}" (x INTEGER)'):
+            pass
+        try:
+            other = ibis.db2.connect(
+                host=DB2_HOST,
+                port=DB2_PORT,
+                database=DB2_DATABASE,
+                user=DB2_USER,
+                password=DB2_PASS,
+                schema=schema,
+            )
+            try:
+                assert other.current_database == schema
+                assert other.current_database in other.list_databases()
+                # Db2 compares schema names without trailing blanks, so this
+                # passes even with a padded name; it guards the lookup itself.
+                assert other.list_tables(database=other.current_database) == [table]
+            finally:
+                other.disconnect()
+        finally:
+            with con._safe_raw_sql(f'DROP TABLE "{schema}"."{table}"'):
+                pass
+    finally:
+        with con._safe_raw_sql(f'DROP SCHEMA "{schema}" RESTRICT'):
+            pass
 
 
 def test_version(con):
@@ -747,8 +784,138 @@ def test_sql_schema_keeps_bit_data_length(con, temp_table):
         con.drop_table(temp_table, force=True)
 
 
+@pytest.fixture
+def join_tables(con, temp_table):
+    other = gen_name("db2_test_other")
+    for name in (temp_table, other):
+        with con._safe_raw_sql(f'CREATE TABLE "{name}" ("id" INTEGER, "y" INTEGER)'):
+            pass
+        with con._safe_raw_sql(f'INSERT INTO "{name}" VALUES (1, 10), (2, 20)'):
+            pass
+    try:
+        yield temp_table, other
+    finally:
+        con.drop_table(other, force=True)
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "SELECT 1 AS a, 2 AS a FROM SYSIBM.SYSDUMMY1",
+        'SELECT a."id", b."id" FROM "{t1}" a JOIN "{t2}" b ON a."id" = b."id"',
+        'SELECT * FROM "{t1}" a JOIN "{t2}" b ON a."id" = b."id"',
+    ],
+    ids=["same_alias", "self_join_labels", "star_over_join"],
+)
+def test_sql_duplicate_labels_raise(con, join_tables, query):
+    # The schema would silently have fewer columns than the result, so
+    # `execute()` failed with a confusing length mismatch and `to_pyarrow()`
+    # dropped columns. Ask for an alias instead of renaming anything.
+    t1, t2 = join_tables
+    with pytest.raises(com.IntegrityError, match=r"Duplicate column name.*alias"):
+        con.sql(query.format(t1=t1, t2=t2)).schema()
+
+
+def test_sql_duplicate_labels_name_the_columns(con):
+    with pytest.raises(com.IntegrityError, match=r"\['A'\]"):
+        con.sql("SELECT 1 AS a, 2 AS a FROM SYSIBM.SYSDUMMY1").schema()
+
+
+def test_sql_explicit_aliases_work(con, join_tables):
+    t1, t2 = join_tables
+    expr = con.sql(
+        f'SELECT a."id" AS aid, b."id" AS bid FROM "{t1}" a'
+        f' JOIN "{t2}" b ON a."id" = b."id"'
+    )
+    assert expr.columns == ("AID", "BID")
+    assert len(expr.execute()) == 2
+
+
+def test_sql_duplicate_labels_with_schema_override(con, join_tables):
+    # An explicit schema skips inference, so the user's choice is used as is.
+    t1, t2 = join_tables
+    expr = con.sql(
+        f'SELECT a."id", b."id" FROM "{t1}" a JOIN "{t2}" b ON a."id" = b."id"'
+        " ORDER BY 1",
+        schema={"x": "int32", "y": "int32"},
+    )
+    assert expr.columns == ("x", "y")
+    assert expr.execute().values.tolist() == [[1, 1], [2, 2]]
+
+
+def test_sql_unnamed_duplicate_expressions_work(con):
+    # Db2 names unnamed columns `1` and `2`, so these are not duplicates.
+    expr = con.sql("SELECT 1, 1 FROM SYSIBM.SYSDUMMY1")
+    assert expr.columns == ("1", "2")
+    assert expr.execute().values.tolist() == [[1, 1]]
+
+
+def test_sql_labels_differing_only_by_case_are_distinct(con):
+    expr = con.sql('SELECT 1 AS a, 2 AS "a" FROM SYSIBM.SYSDUMMY1')
+    assert expr.columns == ("A", "a")
+    assert expr.execute().values.tolist() == [[1, 2]]
+
+
 def test_string_to_time_not_defined(con):
     # Do not silently ignore the supplied format.
     expr = ibis.literal("12:34:56").as_time("%H:%M:%S")
     with pytest.raises(com.OperationNotDefinedError, match="StringToTime"):
         con.compile(expr)
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        pytest.param([], [], id="empty"),
+        pytest.param([None, None], [None, None], id="all-none"),
+        pytest.param(["a", None], ["a", None], id="values"),
+    ],
+)
+def test_create_table_dataframe_uses_explicit_schema(con, temp_table, data, expected):
+    # Object columns with no values infer as the null type unless the supplied
+    # schema is passed on when the DataFrame is wrapped.
+    import pandas as pd
+
+    schema = ibis.schema({"id": "int64", "name": "string"})
+    df = pd.DataFrame(
+        {
+            "id": pd.Series(range(len(data)), dtype="int64"),
+            "name": pd.Series(data, dtype=object),
+        }
+    )
+    con.create_table(temp_table, df, schema=schema)
+    try:
+        assert con.table(temp_table).schema() == schema
+        result = con.table(temp_table).order_by("id").execute()
+        assert len(result) == len(expected)
+        assert [None if pd.isna(v) else v for v in result["name"]] == expected
+    finally:
+        con.drop_table(temp_table, force=True)
+
+
+def test_create_table_overwrite_view_leaves_no_staging_table(
+    con, temp_table, monkeypatch
+):
+    # A fixed staging name makes a leftover table detectable.
+    staging = gen_name("ibis_db2_table")
+    monkeypatch.setattr(ibis.util, "gen_name", lambda _: staging)
+
+    base = gen_name("db2_test_base")
+    con.create_table(base, schema={"a": "int32"})
+    con.create_view(temp_table, con.table(base))
+    try:
+        with pytest.raises(com.IbisInputError, match="is a view"):
+            con.create_table(temp_table, schema={"a": "int32"}, overwrite=True)
+        with pytest.raises(com.IbisInputError, match="is a view"):
+            con.create_table(temp_table, con.table(base), overwrite=True, database=None)
+
+        assert staging not in con.list_tables()
+        # The view is still a view over the base table.
+        assert temp_table in con.list_tables()
+        assert con.table(temp_table).columns == ("a",)
+        con.drop_view(temp_table)
+        assert temp_table not in con.list_tables()
+    finally:
+        con.drop_view(temp_table, force=True)
+        con.drop_table(staging, force=True)
+        con.drop_table(base, force=True)

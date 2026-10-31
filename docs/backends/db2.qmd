@@ -8,12 +8,6 @@
 
 Install Ibis and dependencies for the Db2 backend:
 
-::: {.panel-tabset}
-
-## `pip`
-
-Install with the `db2` extra:
-
 ```{.bash}
 pip install 'ibis-framework[db2]'
 ```
@@ -27,44 +21,6 @@ con = ibis.db2.connect(database="SAMPLE")  # <1>
 ```
 
 1. Adjust connection parameters as needed.
-
-## `conda`
-
-Install for Db2:
-
-```{.bash}
-conda install -c conda-forge ibis-db2
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.db2.connect(database="SAMPLE")  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-## `mamba`
-
-Install for Db2:
-
-```{.bash}
-mamba install -c conda-forge ibis-db2
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.db2.connect(database="SAMPLE")  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-:::
 
 ## Connect
 
@@ -175,7 +131,11 @@ runs with autocommit enabled.
   table, so constraints, indexes, triggers and grants on the old table are not
   carried over. To keep the table definition, use
   `con.insert("t", new_data, overwrite=True)`. It truncates first, so it must
-  be the first statement of its unit of work.
+  be the first statement of its unit of work. The truncate takes effect
+  immediately and is not undone by a rollback. If the insert that follows
+  fails, for example on a constraint violation or a type mismatch, the
+  previous rows are not restored and the table is left empty. Check the new
+  data before you overwrite, or keep a copy of the old rows.
 - **Existing connections**: `ibis.db2.connect` turns autocommit on.
   `Backend.from_connection` uses the connection as it is. If autocommit is off,
   Ibis warns "autocommit is off; reads may hold locks and changes stay
@@ -218,6 +178,24 @@ runs with autocommit enabled.
   result after its expression, for example `CountStar(<table name>)` or a long
   string literal, so a long name fails with `SQL0107N`. Name the result, for
   example `t.count().name("n")`.
+- **Default schema**: `connect(schema=...)` sets Db2's `CURRENTSCHEMA`
+  connection property, and Db2 applies its unquoted-identifier rules to the
+  value: `schema="myschema"` selects `MYSCHEMA`, and quote characters are kept
+  as part of the name rather than removed. A schema whose name has lower-case
+  or mixed-case letters therefore cannot be selected this way. Connect without
+  `schema`, then run `con.raw_sql('SET SCHEMA "MixedCase"')`.
+- **`DECFLOAT`**: `DECFLOAT` columns are read as `float64`, which holds about
+  15 to 17 significant decimal digits. Longer values lose digits: a stored
+  `9007199254740993` is read as `9007199254740992.0`. The driver may also fail
+  with `SystemError` when it fetches a `DECFLOAT` value with 17 or more digits.
+- **`LONG VARCHAR FOR BIT DATA` and NUL bytes**: `ibm_db` 3.2.9 truncates
+  `LONG VARCHAR FOR BIT DATA` values at the first NUL byte (`\x00`). Values
+  stored without NUL bytes round-trip correctly. Use `VARCHAR(N) FOR BIT DATA`
+  or `VARBINARY(N)` when the data may contain NUL bytes.
+- **Duplicate result labels**: `con.sql()` raises `IntegrityError` when a query
+  returns the same column label twice, for example `SELECT a.id, b.id` or
+  `SELECT *` over a join with a shared column. Give each column an alias with
+  `AS`, or pass `schema=`.
 
 ```{python}
 #| echo: false
