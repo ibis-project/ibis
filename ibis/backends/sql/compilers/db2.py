@@ -1,5 +1,3 @@
-"""Db2 SQL compiler for Ibis expressions."""
-
 from __future__ import annotations
 
 import string
@@ -24,8 +22,6 @@ from ibis.backends.sql.rewrites import (
 
 
 class Db2Compiler(SQLGlotCompiler):
-    """SQL compiler for the Db2 backend."""
-
     __slots__ = ()
 
     dialect = Db2
@@ -58,6 +54,7 @@ class Db2Compiler(SQLGlotCompiler):
         ops.StringSplit,
         ops.StringToDate,
         ops.StringToTimestamp,
+        ops.StringToTime,
         ops.Levenshtein,
         ops.RegexSplit,
         # date/time
@@ -69,6 +66,7 @@ class Db2Compiler(SQLGlotCompiler):
         # numeric
         ops.IsNan,
         ops.IsInf,
+        ops.RowID,
         # JSON
         ops.JSONGetItem,
         # logical
@@ -114,7 +112,6 @@ class Db2Compiler(SQLGlotCompiler):
 
     @staticmethod
     def _generate_groups(groups):
-        """Generate GROUP BY clause."""
         return groups
 
     @staticmethod
@@ -129,7 +126,6 @@ class Db2Compiler(SQLGlotCompiler):
         return spec
 
     def visit_WindowFunction(self, op, *, how, func, start, end, group_by, order_by):
-        """Visit a WindowFunction operation."""
         name = type(op.func).__name__
         if isinstance(
             op.func,
@@ -148,6 +144,17 @@ class Db2Compiler(SQLGlotCompiler):
             raise com.OperationNotDefinedError(
                 f"Db2 does not support {name} over a window without an order_by"
             )
+        if any(
+            key.find(ops.RandomScalar, filter=ops.Value)
+            for key in (*op.group_by, *op.order_by)
+        ):
+            # Db2 rejects a non-deterministic function in a window's ORDER BY
+            # or PARTITION BY (SQL0583N). `filter=ops.Value` stops the search
+            # at a scalar subquery, which Db2 accepts.
+            raise com.OperationNotDefinedError(
+                f"Db2 does not support {name} over a window partitioned or "
+                "ordered by a random value"
+            )
         window = super().visit_WindowFunction(
             op,
             how=how,
@@ -158,8 +165,9 @@ class Db2Compiler(SQLGlotCompiler):
             order_by=order_by,
         )
         if isinstance(op.func, (ops.CumeDist, ops.PercentRank)):
-            # Db2 returns a type the ibm_db driver cannot fetch (SystemError);
-            # casting the whole windowed expression to DOUBLE makes it readable.
+            # ibm_db 3.2.9 can fail fetching Db2 DECFLOAT(34) results (CLI0111E).
+            # Cast to DOUBLE to avoid this driver limitation; see
+            # https://github.com/ibmdb/python-ibmdb/issues/1075.
             return self.cast(window, dt.float64)
         return window
 
@@ -299,9 +307,11 @@ class Db2Compiler(SQLGlotCompiler):
         return self.f.anon.regexp_replace(arg, pattern, replacement)
 
     def visit_Arbitrary(self, op, *, arg, where):
-        # Db2 has no ANY_VALUE. Arbitrary only promises *some* non-null value, so MIN is a valid
-        # choice: it ignores NULLs and is deterministic. `where` is folded
-        # into a CASE by `self.agg` because Db2 has no FILTER clause.
+        # Db2 has no ANY_VALUE, ARBITRARY or FIRST aggregate. Arbitrary only
+        # promises *some* non-null value, so MIN is a valid choice: it ignores
+        # NULLs and is deterministic. It may do more work than ANY_VALUE and
+        # fails on CLOB, BLOB, LONG VARCHAR, DBCLOB and XML columns. `where` is
+        # folded into a CASE by `self.agg` because Db2 has no FILTER clause.
         return self.agg.min(arg, where=where)
 
     def visit_ApproxMedian(self, op, *, arg, where):
@@ -411,6 +421,8 @@ class Db2Compiler(SQLGlotCompiler):
         return self.f.substr(self.f.concat(*terms), self.f.length(sep) + 1)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
+        if dtype.is_array() or dtype.is_struct() or dtype.is_map():
+            raise com.OperationNotDefinedError(f"Db2 does not support {dtype} literals")
         if dtype.is_date():
             return self.f.date(value.isoformat())
         if dtype.is_timestamp() and value.utcoffset():
@@ -501,7 +513,6 @@ class Db2Compiler(SQLGlotCompiler):
     visit_DateDelta = visit_TimestampDelta
 
     def visit_DateTruncate(self, op, *, arg, unit):
-        """Visit a DateTruncate operation."""
         trunc_unit_mapping = {
             "Y": "YEAR",
             "Q": "Q",
@@ -538,9 +549,6 @@ class Db2Compiler(SQLGlotCompiler):
 
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.anon.dayname(arg)
-
-    def visit_RandomScalar(self, op):
-        return self.f.anon.rand()
 
     def visit_RandomUUID(self, op):
         # Built-in since Db2 12.1: returns a version 4 UUID as CHAR(36), in

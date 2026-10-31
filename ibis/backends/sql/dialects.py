@@ -135,7 +135,6 @@ class Db2(Postgres):
             sge.Substring: lambda self, e: self.func(
                 "SUBSTR", e.this, e.args.get("start"), e.args.get("length")
             ),
-            sge.StrToTime: lambda self, e: self.func("TIMESTAMP", e.this),
             sge.DateDiff: lambda self, e: self.func(
                 "DAYS_BETWEEN", e.this, e.expression
             ),
@@ -145,10 +144,13 @@ class Db2(Postgres):
             sge.GroupConcat: lambda self, e: self.func(
                 "LISTAGG", e.this, e.args.get("separator") or sge.Literal.string(",")
             ),
-            # Db2's STDDEV and VARIANCE are the population forms
+            # Db2's STDDEV is the population form
             sge.Stddev: rename_func("STDDEV_SAMP"),
-            sge.Variance: rename_func("VAR_SAMP"),
-            sge.VariancePop: rename_func("VAR_POP"),
+            # sqlglot renders these as DAY_OF_WEEK, DAY_OF_YEAR and
+            # DAY_OF_MONTH, which Db2 does not have (SQL0440N)
+            sge.DayOfWeek: lambda self, e: self.func("DAYOFWEEK", e.this),
+            sge.DayOfYear: lambda self, e: self.func("DAYOFYEAR", e.this),
+            sge.DayOfMonth: lambda self, e: self.func("DAYOFMONTH", e.this),
             sge.RegexpLike: lambda self, e: self.func(
                 "REGEXP_LIKE", e.this, e.expression, e.args.get("flag")
             ),
@@ -173,16 +175,19 @@ class Db2(Postgres):
             return f"({self.sql(expression, 'this')}) {self.sql(expression, 'unit')}"
 
         def cast_sql(self, expression, safe_prefix=None):
+            # Do not call super(): Postgres rewrites CAST(a DIV b AS DECIMAL)
+            # to a bare DIV(a, b), which drops the cast. Keep the CAST as written.
+            # Db2 has no CAST ... FORMAT, DEFAULT ... ON CONVERSION ERROR or
+            # action clause; dropping them would change what the query means.
+            if modifiers := [
+                key
+                for key in ("format", "default", "action")
+                if expression.args.get(key) is not None
+            ]:
+                self.unsupported(f"Db2 does not support CAST {', '.join(modifiers)}")
             return (
                 f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
             )
-
-        def trycast_sql(self, expression, safe_prefix=None):
-            # Db2 has no TRY_CAST
-            return self.cast_sql(expression)
-
-        def boolean_sql(self, expression: sge.Boolean) -> str:
-            return "TRUE" if expression.this else "FALSE"
 
         def extract_sql(self, expression: sge.Extract) -> str:
             this = self.sql(expression, "this")

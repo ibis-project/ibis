@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import datetime
 import decimal
+import string
 
 import pytest
+import sqlglot as sg
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.db2.tests.conftest import (
     DB2_DATABASE,
@@ -187,6 +190,55 @@ def test_connect_rejects_semicolon(key, override):
         ibis.db2.connect(**kwargs)
 
 
+@pytest.fixture
+def connect_dsn(monkeypatch):
+    """Record the connection string instead of connecting."""
+    import ibm_db_dbi
+
+    seen = []
+
+    def connect(dsn, **_):
+        seen.append(dsn)
+        raise RuntimeError("no connection attempted")
+
+    monkeypatch.setattr(ibm_db_dbi, "connect", connect)
+    return seen
+
+
+@pytest.mark.parametrize("key", ["hostname", "HostName", "HOSTNAME"])
+def test_connect_rejects_hostname(connect_dsn, key):
+    # `hostname` used to be silently dropped, so the connection went to
+    # `localhost` whatever the caller wrote.
+    with pytest.raises(ValueError, match="use `host` instead"):
+        ibis.db2.connect(database="d", host="h1", **{key: "h2"})
+    assert not connect_dsn
+
+
+def test_connect_host_and_driver_options_are_passed_on(connect_dsn):
+    with pytest.raises(RuntimeError, match="no connection attempted"):
+        ibis.db2.connect(database="d", host="h1", connecttimeout=5)
+    (dsn,) = connect_dsn
+    assert "HOSTNAME=h1" in dsn
+    assert "CONNECTTIMEOUT=5" in dsn
+
+
+@pytest.mark.parametrize("key", ["hostname", "HostName", "HOSTNAME"])
+def test_connect_url_rejects_hostname(connect_dsn, key):
+    # The URL already names a host (h1), so a `hostname` query parameter must
+    # not be dropped silently either.
+    with pytest.raises(ValueError, match="use `host` instead"):
+        ibis.connect(f"db2://u:p@h1:50000/d?{key}=h2")
+    assert not connect_dsn
+
+
+def test_connect_url_host_and_driver_options_are_passed_on(connect_dsn):
+    with pytest.raises(RuntimeError, match="no connection attempted"):
+        ibis.connect("db2://u:p@h1:50000/d?connecttimeout=5")
+    (dsn,) = connect_dsn
+    assert "HOSTNAME=h1" in dsn
+    assert "CONNECTTIMEOUT=5" in dsn
+
+
 @pytest.mark.parametrize(
     ("make_expr", "expected"),
     [
@@ -330,3 +382,373 @@ def test_cast_timestamp_to_string(con):
         "2020-01-31 10:11:12.000000",
         None,
     ]
+
+
+_RANDOM_T = ibis.table({"x": "int", "y": "int"}, name="t")
+_RANDOM_U = ibis.table({"z": "int"}, name="u")
+_RANDOM_SUBQUERY = _RANDOM_U.filter(ibis.random() < 0.5).z.count().as_scalar()
+
+
+@pytest.mark.parametrize(
+    "window",
+    [
+        pytest.param({"order_by": ibis.random()}, id="order_by"),
+        pytest.param({"order_by": ibis.random() + 1}, id="order_by_nested"),
+        pytest.param(
+            {"order_by": [_RANDOM_T.x, ibis.random()]}, id="order_by_second_key"
+        ),
+        pytest.param(
+            {"group_by": ibis.random(), "order_by": _RANDOM_T.y}, id="group_by"
+        ),
+        pytest.param(
+            {"group_by": ibis.random() + 1, "order_by": _RANDOM_T.y},
+            id="group_by_nested",
+        ),
+    ],
+)
+def test_window_keyed_by_random_is_not_defined(window):
+    # Db2 rejects RAND() and RANDOM() in a window's ORDER BY or PARTITION BY (SQL0583N).
+    expr = _RANDOM_T.select(c=ibis.ntile(2).over(**window))
+    with pytest.raises(com.OperationNotDefinedError, match="by a random value"):
+        ibis.to_sql(expr, dialect="db2")
+
+
+@pytest.mark.parametrize(
+    "expr",
+    [
+        pytest.param(_RANDOM_T.select(r=ibis.random()), id="select"),
+        pytest.param(_RANDOM_T.filter(ibis.random() < 0.5), id="filter"),
+        pytest.param(_RANDOM_T.order_by(ibis.random()), id="order_by"),
+        pytest.param(
+            _RANDOM_T.select(
+                c=(_RANDOM_T.x + ibis.random()).sum().over(order_by=_RANDOM_T.y)
+            ),
+            id="window_argument",
+        ),
+        pytest.param(
+            _RANDOM_T.select(
+                c=ibis.ntile(2).over(order_by=_RANDOM_SUBQUERY),
+            ),
+            id="scalar_subquery_in_window_order_by",
+        ),
+        pytest.param(
+            _RANDOM_T.select(
+                c=ibis.ntile(2).over(group_by=_RANDOM_SUBQUERY, order_by=_RANDOM_T.y),
+            ),
+            id="scalar_subquery_in_window_group_by",
+        ),
+    ],
+)
+def test_random_outside_a_window_key_still_compiles(expr):
+    assert "RANDOM()" in ibis.to_sql(expr, dialect="db2")
+
+
+@pytest.mark.parametrize("name", ["DAYOFWEEK", "DAYOFYEAR", "DAYOFMONTH"])
+def test_day_functions_keep_their_db2_names(name):
+    # sqlglot parses these into nodes it prints as DAY_OF_WEEK, DAY_OF_YEAR
+    # and DAY_OF_MONTH. Db2 has no such functions (SQL0440N).
+    sql = sg.parse_one(f"SELECT {name}(d) FROM t", read="db2").sql(dialect="db2")
+    assert f"{name}(d)" in sql
+    assert "DAY_OF" not in sql
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected"),
+    [
+        pytest.param("DAYOFWEEK(DATE('2024-01-07'))", 1, id="dayofweek_sunday"),
+        pytest.param("DAYOFWEEK(DATE('2024-01-13'))", 7, id="dayofweek_saturday"),
+        pytest.param("DAYOFYEAR(DATE('2024-03-01'))", 61, id="dayofyear_leap"),
+        pytest.param("DAYOFYEAR(DATE('2024-12-31'))", 366, id="dayofyear_last"),
+        pytest.param("DAYOFMONTH(DATE('2024-02-29'))", 29, id="dayofmonth_leap"),
+        pytest.param("DAYOFMONTH(DATE('2024-01-01'))", 1, id="dayofmonth_first"),
+        pytest.param(
+            "DAYOFWEEK(TIMESTAMP('2024-01-07 23:59:59'))", 1, id="dayofweek_timestamp"
+        ),
+        pytest.param(
+            "DAYOFYEAR(TIMESTAMP('2024-03-01 00:00:00'))", 61, id="dayofyear_timestamp"
+        ),
+        pytest.param(
+            "DAYOFMONTH(TIMESTAMP('2024-02-29 12:30:00'))",
+            29,
+            id="dayofmonth_timestamp",
+        ),
+        pytest.param(
+            "DAYOFWEEK(DATE('2024-01-07')) + DAYOFYEAR(DATE('2024-03-01'))"
+            " + DAYOFMONTH(DATE('2024-02-29'))",
+            1 + 61 + 29,
+            id="nested",
+        ),
+        pytest.param(
+            "MOD(DAYOFYEAR(DATE('2024-12-31')), DAYOFMONTH(DATE('2024-01-07')))",
+            366 % 7,
+            id="nested_in_function",
+        ),
+    ],
+)
+def test_sql_accepts_day_functions(con, expr, expected):
+    t = con.sql(f'SELECT {expr} AS "v" FROM SYSIBM.SYSDUMMY1')
+    assert t.execute()["v"].tolist() == [expected]
+
+
+@pytest.mark.parametrize("name", ["DAYOFWEEK", "DAYOFYEAR", "DAYOFMONTH"])
+@pytest.mark.parametrize("arg_type", ["DATE", "TIMESTAMP"])
+def test_sql_day_functions_propagate_null(con, name, arg_type):
+    t = con.sql(f'SELECT {name}(CAST(NULL AS {arg_type})) AS "v" FROM SYSIBM.SYSDUMMY1')
+    assert t.execute()["v"].isna().all()
+
+
+def test_sql_day_functions_over_a_column(con, temp_table):
+    # The ibis expression API compiles to the same Db2 functions, so both
+    # routes must agree row by row.
+    with con._safe_raw_sql(f'CREATE TABLE "{temp_table}" ("ts" TIMESTAMP)'):
+        pass
+    try:
+        t = con.table(temp_table)
+        con.insert(
+            temp_table,
+            ibis.memtable(
+                {
+                    "ts": [
+                        datetime.datetime(2024, 1, 7),
+                        datetime.datetime(2024, 3, 1, 10, 30),
+                        datetime.datetime(2024, 12, 31, 23, 59, 59),
+                        None,
+                    ]
+                },
+                schema={"ts": "timestamp(6)"},
+            ),
+        )
+        query = con.sql(
+            'SELECT DAYOFWEEK("ts") AS "w", DAYOFYEAR("ts") AS "y",'
+            f' DAYOFMONTH("ts") AS "m" FROM "{temp_table}" ORDER BY "ts" NULLS LAST'
+        )
+        result = con.execute(query)
+        assert result["w"].tolist()[:3] == [1, 6, 3]
+        assert result["y"].tolist()[:3] == [7, 61, 366]
+        assert result["m"].tolist()[:3] == [7, 1, 31]
+        assert result[["w", "y", "m"]].iloc[3].isna().all()
+
+        ordered = t.order_by(ibis.asc("ts", nulls_first=False))
+        assert con.execute(ordered.ts.day_of_year()).tolist()[:3] == [7, 61, 366]
+    finally:
+        con.drop_table(temp_table, force=True)
+
+
+@pytest.mark.parametrize(
+    ("query", "modifier"),
+    [
+        pytest.param("CAST(a AS INTEGER FORMAT 'X')", "format", id="format"),
+        pytest.param(
+            "CAST(a AS INTEGER DEFAULT 0 ON CONVERSION ERROR)", "default", id="default"
+        ),
+    ],
+)
+def test_cast_modifiers_are_rejected(query, modifier):
+    tree = sg.parse_one(f"SELECT {query} FROM t", read="db2")
+    with pytest.raises(sg.errors.UnsupportedError, match=f"CAST {modifier}"):
+        tree.sql(dialect="db2", unsupported_level=sg.ErrorLevel.RAISE)
+
+
+def test_cast_modifiers_are_rejected_by_the_backend(con):
+    t = con.sql(
+        "SELECT CAST(1 AS INTEGER DEFAULT 0 ON CONVERSION ERROR) AS n"
+        " FROM SYSIBM.SYSDUMMY1",
+        schema={"n": "int32"},
+    )
+    with pytest.raises(com.UnsupportedOperationError, match="CAST default"):
+        con.compile(t)
+
+
+def test_cast_action_is_rejected():
+    cast = sg.parse_one("CAST(a AS INTEGER)", read="db2")
+    cast.set("action", sg.exp.var("ACTION"))
+    with pytest.raises(sg.errors.UnsupportedError, match="CAST action"):
+        cast.sql(dialect="db2", unsupported_level=sg.ErrorLevel.RAISE)
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected"),
+    [
+        pytest.param(
+            lambda t: t.s.cast("int32"), 'CAST("t0"."s" AS INTEGER)', id="to_int"
+        ),
+        pytest.param(
+            lambda t: t.s.try_cast("int32"), 'CAST("t0"."s" AS INTEGER)', id="try_cast"
+        ),
+        pytest.param(
+            lambda t: t.s.cast("decimal(10, 2)"),
+            'CAST("t0"."s" AS DECIMAL(10, 2))',
+            id="to_decimal",
+        ),
+    ],
+)
+def test_ibis_casts_are_unchanged(expr, expected):
+    sql = ibis.to_sql(expr(ibis.table({"s": "string"}, name="t")), dialect="db2")
+    assert expected in sql
+
+
+def test_cast_of_integer_division_keeps_the_cast():
+    # Postgres turns CAST(DIV(a, b) AS DECIMAL) into a bare DIV(a, b).
+    # Db2 has no DIV function, so keep the CAST as written.
+    cast = sg.exp.Cast(
+        this=sg.exp.IntDiv(this=sg.column("a"), expression=sg.column("b")),
+        to=sg.exp.DataType.build("decimal"),
+    )
+    assert cast.sql(dialect="db2") == "CAST(DIV(a, b) AS DECIMAL)"
+    assert cast.sql(dialect="postgres") == "DIV(a, b)"
+
+
+@pytest.mark.parametrize(
+    ("make_expr", "expected"),
+    [
+        # `default=` alone used to compile to LAG(a, 0): the default became the
+        # offset, so the column came back unshifted.
+        pytest.param(lambda c: c.lag(default=0), [0, 10, 20, 30, 40], id="lag_default"),
+        pytest.param(
+            lambda c: c.lead(default=0), [20, 30, 40, 50, 0], id="lead_default"
+        ),
+        pytest.param(
+            lambda c: c.lag(offset=2, default=0),
+            [0, 0, 10, 20, 30],
+            id="lag_offset_default",
+        ),
+        pytest.param(
+            lambda c: c.lead(offset=2, default=0),
+            [30, 40, 50, 0, 0],
+            id="lead_offset_default",
+        ),
+    ],
+)
+def test_lag_lead_default(con, make_expr, expected):
+    t = ibis.memtable(
+        {"k": [1, 2, 3, 4, 5], "a": [10, 20, 30, 40, 50]},
+        schema={"k": "int64", "a": "int64"},
+    )
+    expr = t.select("k", v=make_expr(t.a).over(ibis.window(order_by=t.k)))
+    result = con.to_pyarrow(expr.order_by("k"))
+    assert result["v"].to_pylist() == expected
+
+
+def test_strip_family_whitespace(con):
+    # Shared tests only strip digits; the whitespace test is not run on Db2.
+    values = ["  a b  ", "\t\n x \r\n", "   ", "", None, "ab", "\x0b\x0cz\x0b"]
+    t = ibis.memtable(
+        {"k": list(range(len(values))), "s": values},
+        schema={"k": "int64", "s": "string"},
+    )
+    for method in ("strip", "lstrip", "rstrip"):
+        expr = t.select("k", v=getattr(t.s, method)()).order_by("k")
+        expected = [
+            None if v is None else getattr(v, method)(string.whitespace) for v in values
+        ]
+        assert con.to_pyarrow(expr)["v"].to_pylist() == expected, method
+
+
+@pytest.mark.parametrize(
+    ("sep", "expected"),
+    [
+        pytest.param(",", ["x,y,z", "q", "", "p,r"], id="skips_nulls"),
+        pytest.param(", ", ["x, y, z", "q", "", "p, r"], id="multi_char_sep"),
+        pytest.param(None, [None] * 4, id="null_sep"),
+    ],
+)
+def test_string_join_null_semantics(con, sep, expected):
+    # Db2 has no CONCAT_WS; the compiler reproduces its NULL handling.
+    t = ibis.memtable(
+        {
+            "k": [1, 2, 3, 4],
+            "a": ["x", None, None, "p"],
+            "b": ["y", "q", None, None],
+            "c": ["z", None, None, "r"],
+        },
+        schema={"k": "int64", "a": "string", "b": "string", "c": "string"},
+    )
+    sep = ibis.literal(sep, type="string")
+    expr = t.select("k", v=sep.join([t.a, t.b, t.c])).order_by("k")
+    assert con.to_pyarrow(expr)["v"].to_pylist() == expected
+
+
+def test_number_cast_to_timestamp(con):
+    # Db2 cannot CAST a number to TIMESTAMP. Shared tests cover only 0..9.
+    epoch = datetime.datetime(1970, 1, 1)
+
+    def at(seconds, microseconds=0):
+        return epoch + datetime.timedelta(seconds=seconds, microseconds=microseconds)
+
+    ints = ibis.memtable(
+        {"k": [1, 2, 3, 4, 5], "v": [0, 86400, -1, 1700000000, None]},
+        schema={"k": "int64", "v": "int64"},
+    )
+    result = con.to_pyarrow(ints.select("k", v=ints.v.cast("timestamp")).order_by("k"))
+    assert result["v"].to_pylist() == [at(0), at(86400), at(-1), at(1700000000), None]
+
+    floats = ibis.memtable(
+        {"k": [1, 2, 3, 4], "v": [1.5, -0.5, 0.0, None]},
+        schema={"k": "int64", "v": "float64"},
+    )
+    result = con.to_pyarrow(
+        floats.select("k", v=floats.v.cast("timestamp")).order_by("k")
+    )
+    assert result["v"].to_pylist() == [at(1, 500000), at(-1, 500000), at(0), None]
+
+
+@pytest.mark.parametrize("hours", [5.5, -8], ids=["east", "west"])
+def test_timestamp_literal_with_offset_raises(con, hours):
+    tz = datetime.timezone(datetime.timedelta(hours=hours))
+    expr = ibis.literal(datetime.datetime(2020, 1, 2, 3, 4, 5, tzinfo=tz))
+    with pytest.raises(com.UnsupportedOperationError, match="non-zero UTC offset"):
+        con.compile(expr)
+
+
+def test_string_schema_round_trip(con, temp_table):
+    # `string` is created as VARCHAR(32672) and used to read back as
+    # string(32672), which does not equal `string`.
+    schema = ibis.schema({"a": "string", "b": "string(10)"})
+    con.create_table(temp_table, schema=schema)
+    try:
+        assert con.table(temp_table).schema() == schema
+        assert con.get_schema(temp_table) == schema
+        assert con.sql(f'SELECT * FROM "{temp_table}"').schema() == schema
+    finally:
+        con.drop_table(temp_table, force=True)
+
+
+@pytest.mark.parametrize("scale", [0, 3, 6])
+def test_timestamp_scale_round_trip(con, temp_table, scale):
+    # Scales above 6 are not covered: the driver returns microsecond datetimes,
+    # so they read back as timestamp(6).
+    schema = ibis.schema({"ts": f"timestamp({scale})"})
+    con.create_table(temp_table, schema=schema)
+    try:
+        assert con.get_schema(temp_table) == schema
+        assert con.table(temp_table).schema() == schema
+        assert con.sql(f'SELECT * FROM "{temp_table}"').schema() == schema
+    finally:
+        con.drop_table(temp_table, force=True)
+
+
+def test_sql_schema_keeps_bit_data_length(con, temp_table):
+    # FOR BIT DATA is not ordinary character data, so it must not be normalised
+    # to an unbounded string like VARCHAR(32672). The `string(32672)` asserted
+    # here only preserves the current bounded-string reconstruction through
+    # `con.sql()`. It does not claim that string is the right type for a binary
+    # column: `get_schema()` maps it to binary, and that mismatch is a separate
+    # issue.
+    with con._safe_raw_sql(
+        f'CREATE TABLE "{temp_table}" ("a" VARCHAR(32672),'
+        ' "b" VARCHAR(32672) FOR BIT DATA)'
+    ):
+        pass
+    try:
+        schema = con.sql(f'SELECT * FROM "{temp_table}"').schema()
+        assert schema["a"] == dt.string
+        assert schema["b"] == dt.String(length=32672)
+    finally:
+        con.drop_table(temp_table, force=True)
+
+
+def test_string_to_time_not_defined(con):
+    # Do not silently ignore the supplied format.
+    expr = ibis.literal("12:34:56").as_time("%H:%M:%S")
+    with pytest.raises(com.OperationNotDefinedError, match="StringToTime"):
+        con.compile(expr)

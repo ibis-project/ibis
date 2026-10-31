@@ -1530,7 +1530,7 @@ def test_string_as_date_single_digit_month_day(backend, con, expr_fn):
     reason="Materialize doesn't support time string parsing - backend limitation",
 )
 @pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedOperationError)
-@pytest.mark.notimpl(["db2"], raises=SystemError)
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 def test_string_as_time(backend, alltypes):
     fmt = "%H:%M:%S"
     table = alltypes.mutate(

@@ -8,4 +8,4 @@ FROM (
     "t0"."x" > 10
 ) AS "t1"
 WHERE
-  RAND() <= 0.5
+  RANDOM() <= 0.5

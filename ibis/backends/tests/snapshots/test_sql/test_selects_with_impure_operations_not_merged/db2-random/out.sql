@@ -6,7 +6,7 @@ SELECT
 FROM (
   SELECT
     "t0"."x",
-    RAND() AS "y",
-    RAND() AS "z"
+    RANDOM() AS "y",
+    RANDOM() AS "z"
   FROM "t" AS "t0"
 ) AS "t1"

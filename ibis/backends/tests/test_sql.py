@@ -44,6 +44,11 @@ sg = pytest.importorskip("sqlglot")
                 pytest.mark.notimpl(
                     ["mssql"], reason="struct literals are not yet implemented"
                 ),
+                pytest.mark.notimpl(
+                    ["db2"],
+                    raises=exc.OperationNotDefinedError,
+                    reason="Db2 does not support STRUCT literals",
+                ),
             ],
             id="struct_literal",
         ),
@@ -272,6 +277,11 @@ def test_mixed_qualified_and_unqualified_predicates(backend_name, snapshot):
     ["materialize"],
     raises=exc.OperationNotDefinedError,
     reason="Materialize will never support random() - nondeterministic functions can't be used in materialized views",
+)
+@pytest.mark.notimpl(
+    ["db2"],
+    raises=exc.OperationNotDefinedError,
+    reason="Db2 rejects RAND() in a window ORDER BY (SQL0583N)",
 )
 def test_rewrite_context(snapshot, backend_name):
     table = ibis.table({"test": "int"}, name="test")

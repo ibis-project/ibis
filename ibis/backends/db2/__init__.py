@@ -22,6 +22,7 @@ from ibis.backends import CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
 from ibis.backends.db2.converter import Db2PandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.db2 import Db2Compiler
+from ibis.backends.sql.datatypes import Db2Type
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -66,7 +67,6 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
 
     @property
     def version(self) -> str:
-        """Return the version of the Db2 server."""
         with self._safe_raw_sql(
             "SELECT SERVICE_LEVEL FROM SYSIBMADM.ENV_INST_INFO"
         ) as cur:
@@ -148,7 +148,12 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
         """
         import ibm_db_dbi
 
-        # Build connection string
+        # The driver's own name for `host` is HOSTNAME, and `_reserved` below
+        # drops it from **kwargs, so `hostname=` would silently connect to the
+        # default host instead.
+        if any(key.upper() == "HOSTNAME" for key in kwargs):
+            raise ValueError("`hostname` is not supported; use `host` instead")
+
         conn_str_parts = [
             f"DATABASE={database}",
             f"HOSTNAME={host}",
@@ -161,7 +166,6 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
         if password:
             conn_str_parts.append(f"PWD={password}")
 
-        # SSL parameters — ibm_db uses SECURITY=SSL in the connection string
         if ssl:
             conn_str_parts.append("SECURITY=SSL")
             if ssl_server_certificate is not None:
@@ -169,7 +173,6 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
                     f"SSLServerCertificate={Path(ssl_server_certificate)}"
                 )
 
-        # Add any additional connection parameters
         _reserved = {
             "DATABASE",
             "HOSTNAME",
@@ -235,28 +238,8 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
             kwargs["ssl"] = str(kwargs["ssl"]).lower() in ("1", "true", "yes")
 
     def _from_url(self, url: ParseResult, **kwarg_overrides):
-        """Create a Db2 backend from a URL.
-
-        Parameters
-        ----------
-        url : ParseResult
-            Parsed URL object
-        **kwarg_overrides
-            Additional keyword arguments to override URL parameters
-
-        Returns
-        -------
-        Self
-            Connected Db2 backend instance
-
-        Notes
-        -----
-        SSL can be enabled via query parameters in the URL::
-
-            db2://user:pass@host:50001/SAMPLE?ssl=true
-            db2://user:pass@host:50001/SAMPLE?ssl=true&ssl_server_certificate=/path/to/cert.pem
-        """
         kwargs = {}
+        # The path is /database or /database/schema.
         database, *schema = url.path[1:].split("/", 1)
         if url.username:
             kwargs["user"] = url.username
@@ -279,7 +262,6 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str | sg.Expression, **kwargs: Any):
-        """Execute raw SQL safely with cursor management."""
         if isinstance(query, sg.exp.Expression):
             query = query.sql(dialect=self.compiler.dialect)
 
@@ -454,10 +436,7 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
         type_mapper = self.compiler.type_mapper
         fields = {}
         for col_name, type_name, length, scale, nulls, codepage in rows:
-            # Reconstruct the full type string so SQLGlot's Db2 dialect parser
-            # can handle it — this delegates all type parsing to the same
-            # type_mapper (Db2Type / SqlglotType.from_string) that the rest of
-            # the compiler uses, rather than duplicating the mapping by hand.
+            # Parse through the shared type mapper instead of mapping by hand.
             if type_name in ("DECIMAL", "NUMERIC"):
                 type_str = f"{type_name}({length},{scale})"
             elif type_name == "TIMESTAMP":
@@ -467,20 +446,17 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
             else:
                 type_str = type_name
 
-            if type_name in ("VARCHAR", "CHARACTER") and codepage == 0:
+            if type_name in ("VARCHAR", "CHARACTER", "LONG VARCHAR") and codepage == 0:
                 # FOR BIT DATA columns have codepage 0 and the driver returns bytes
                 ibis_type = dt.Binary(nullable=(nulls == "Y"))
             else:
                 ibis_type = type_mapper.from_string(type_str, nullable=(nulls == "Y"))
-            # Return column names verbatim — SYSCAT stores them in the case they
-            # were defined with (uppercase for unquoted DDL, exact case for quoted).
             fields[col_name] = ibis_type
 
         return sch.Schema(fields)
 
     @property
     def current_database(self) -> str:
-        """Return the current schema."""
         with self._safe_raw_sql("VALUES CURRENT SCHEMA") as cursor:
             result = cursor.fetchone()
             return result[0] if result else None
@@ -607,7 +583,6 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
         if schema is None:
             return self.table(name, database=database)
 
-        # preserve the input schema if it was provided
         return ops.DatabaseTable(
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
@@ -687,30 +662,14 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
         return list(df.itertuples(index=False, name=None))
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        """Get schema from a SQL query.
-
-        Parameters
-        ----------
-        query : str
-            SQL query
-
-        Returns
-        -------
-        sch.Schema
-            Query result schema
-        """
         import ibm_db
         import ibm_db_dbi
 
-        # Preparing a statement returns its result-set metadata without running
-        # it. `conn_handler` is not part of the DB-API 2.0 interface: it is the
-        # native handle that ibm_db_dbi.Connection keeps, and the driver offers
-        # no other accessor. Verified against ibm_db / ibm_db_dbi 3.2.9.
-        #
-        # By default the driver defers the prepare until the first execute, so
-        # a syntax error or an undefined name in a non-SELECT statement goes
-        # unnoticed and the result looks like an empty schema. Turning
-        # deferred prepare off makes the server validate the statement now.
+        # Prepare the statement to read its result-set metadata without running
+        # it. `conn_handler` is the native handle of ibm_db_dbi.Connection; the
+        # driver has no other accessor. Deferred prepare is turned off so that
+        # the server validates the statement now, instead of a bad one looking
+        # like an empty schema.
         try:
             stmt = ibm_db.prepare(
                 self.con.conn_handler,
@@ -752,6 +711,14 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
                     float_type = dt.Float32 if precision <= 7 else dt.Float64
                     ibis_type = float_type(nullable=nullable)
                 elif kind == "string":
+                    # Same canonicalisation as `Db2Type._from_sqlglot_VARCHAR`,
+                    # for character data only. FOR BIT DATA and binary columns
+                    # report a display size of twice their length.
+                    if (
+                        precision == Db2Type.max_varchar_length
+                        and ibm_db.field_display_size(stmt, i) == precision
+                    ):
+                        precision = None
                     ibis_type = dt.String(length=precision, nullable=nullable)
                 else:
                     raise exc.UnsupportedBackendType(
@@ -763,13 +730,6 @@ class Backend(SQLBackend, CanListDatabase, HasCurrentDatabase, PyArrowExampleLoa
             ibm_db.free_stmt(stmt)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        """Register an in-memory table as a GLOBAL TEMPORARY table.
-
-        Parameters
-        ----------
-        op : ops.InMemoryTable
-            In-memory table operation
-        """
         schema = op.schema
         if null_columns := schema.null_fields:
             raise exc.IbisTypeError(

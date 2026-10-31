@@ -1795,19 +1795,37 @@ class Db2Type(SqlglotType):
     default_decimal_precision = 31
     default_decimal_scale = 6
 
+    # The longest VARCHAR, and what an unbounded `string` compiles to.
+    max_varchar_length = 32672
+
     unknown_type_strings = FrozenDict(
-        {"decfloat": dt.float64, "graphic": dt.string, "vargraphic": dt.string}
+        {
+            "decfloat": dt.float64,
+            "graphic": dt.string,
+            "long varchar": dt.string,
+            "vargraphic": dt.string,
+        }
     )
 
     @classmethod
+    def _from_sqlglot_VARCHAR(
+        cls, length: sge.DataTypeParam | None = None, nullable: bool | None = None
+    ) -> dt.String:
+        bound = int(length.this.this) if length is not None else None
+        # An unbounded `string` is created as VARCHAR(32672), so read that back
+        # as unbounded. A column declared VARCHAR(32672) is indistinguishable
+        # from it and is read back the same way.
+        if bound == cls.max_varchar_length:
+            bound = None
+        return dt.String(length=bound, nullable=nullable)
+
+    @classmethod
     def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
-        expressions = [
-            sge.DataTypeParam(
-                this=sge.convert(dtype.length if dtype.length is not None else 32672)
-            )
-        ]
+        length = dtype.length if dtype.length is not None else cls.max_varchar_length
         return sge.DataType(
-            this=typecode.VARCHAR, expressions=expressions, is_nested=False
+            this=typecode.VARCHAR,
+            expressions=[sge.DataTypeParam(this=sge.convert(length))],
+            is_nested=False,
         )
 
     @classmethod
