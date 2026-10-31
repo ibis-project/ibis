@@ -3,9 +3,9 @@ import ibis
 lineitem = ibis.table(
     name="lineitem",
     schema={
-        "l_orderkey": "int32",
-        "l_partkey": "int32",
-        "l_suppkey": "int32",
+        "l_orderkey": "int64",
+        "l_partkey": "int64",
+        "l_suppkey": "int64",
         "l_linenumber": "int32",
         "l_quantity": "decimal(15, 2)",
         "l_extendedprice": "decimal(15, 2)",
@@ -38,6 +38,4 @@ agg = f.aggregate(
     by=[f.l_returnflag, f.l_linestatus],
 )
 
-result = agg.order_by(
-    agg.l_returnflag.asc(nulls_first=True), agg.l_linestatus.asc(nulls_first=True)
-)
+result = agg.order_by(agg.l_returnflag.asc(), agg.l_linestatus.asc())

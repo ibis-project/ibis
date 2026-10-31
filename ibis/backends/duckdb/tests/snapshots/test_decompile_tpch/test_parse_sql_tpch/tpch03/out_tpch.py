@@ -6,9 +6,9 @@ customer = ibis.table(
         "c_custkey": "int64",
         "c_name": "string",
         "c_address": "string",
-        "c_nationkey": "int16",
+        "c_nationkey": "int32",
         "c_phone": "string",
-        "c_acctbal": "decimal",
+        "c_acctbal": "decimal(15, 2)",
         "c_mktsegment": "string",
         "c_comment": "string",
     },
@@ -20,7 +20,7 @@ orders = ibis.table(
         "o_orderkey": "int64",
         "o_custkey": "int64",
         "o_orderstatus": "string",
-        "o_totalprice": "decimal(12, 2)",
+        "o_totalprice": "decimal(15, 2)",
         "o_orderdate": "date",
         "o_orderpriority": "string",
         "o_clerk": "string",
@@ -31,9 +31,9 @@ orders = ibis.table(
 lineitem = ibis.table(
     name="lineitem",
     schema={
-        "l_orderkey": "int32",
-        "l_partkey": "int32",
-        "l_suppkey": "int32",
+        "l_orderkey": "int64",
+        "l_partkey": "int64",
+        "l_suppkey": "int64",
         "l_linenumber": "int32",
         "l_quantity": "decimal(15, 2)",
         "l_extendedprice": "decimal(15, 2)",
@@ -100,6 +100,6 @@ agg = f.aggregate(
     [(f.l_extendedprice * ((ibis.literal(1) - f.l_discount))).sum().name("revenue")],
     by=[f.l_orderkey, f.o_orderdate, f.o_shippriority],
 )
-s = agg.order_by(agg.revenue.desc(), agg.o_orderdate.asc(nulls_first=True))
+s = agg.order_by(agg.revenue.desc(), agg.o_orderdate.asc())
 
 result = s.select(s.l_orderkey, s.revenue, s.o_orderdate, s.o_shippriority).limit(10)
