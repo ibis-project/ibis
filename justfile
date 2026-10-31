@@ -357,8 +357,26 @@ compute-version:
 # bump the version number in necessary files
 bump-version:
     #!/usr/bin/env bash
+    set -euo pipefail
     ibis_dev_version="$(just compute-version)"
-    toml set pyproject.toml project.version "$ibis_dev_version" | sponge pyproject.toml
-    sed -i 's/__version__ = .\+/__version__ = "'$ibis_dev_version'"/g' ibis/__init__.py
+    just set-version "$ibis_dev_version"
     just lock > /dev/null
     echo "$ibis_dev_version"
+
+# write a version number into pyproject.toml and ibis/__init__.py
+set-version version:
+    #!/usr/bin/env python3
+    import re
+    import sys
+
+    version = "{{ version }}"
+    targets = [("pyproject.toml", "version"), ("ibis/__init__.py", "__version__")]
+
+    for path, name in targets:
+        with open(path) as f:
+            text = f.read()
+        text, count = re.subn(rf"(?m)^{name} = .+", f'{name} = "{version}"', text)
+        if count != 1:
+            sys.exit(f"expected exactly 1 {name} assignment in {path}, found {count}")
+        with open(path, "w") as f:
+            f.write(text)
