@@ -102,8 +102,34 @@ class _DateComponentMixin:
         Returns
         -------
         DayOfWeek
-            An namespace expression containing methods to use to extract
+            A namespace expression with methods for extracting day-of-week
             information.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import datetime as dt
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"date": [dt.datetime(2024, 4, x) for x in range(14, 21)]})
+        >>> t.mutate(
+        ...     day_of_week=_.date.day_of_week.index(),
+        ...     day_of_week_name=_.date.day_of_week.full_name(),
+        ...     iso_day_of_week=_.date.day_of_week.iso_index(),
+        ... )
+        ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+        ┃ date                ┃ day_of_week ┃ day_of_week_name ┃ iso_day_of_week ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+        │ timestamp           │ int16       │ string           │ int16           │
+        ├─────────────────────┼─────────────┼──────────────────┼─────────────────┤
+        │ 2024-04-14 00:00:00 │           6 │ Sunday           │               7 │
+        │ 2024-04-15 00:00:00 │           0 │ Monday           │               1 │
+        │ 2024-04-16 00:00:00 │           1 │ Tuesday          │               2 │
+        │ 2024-04-17 00:00:00 │           2 │ Wednesday        │               3 │
+        │ 2024-04-18 00:00:00 │           3 │ Thursday         │               4 │
+        │ 2024-04-19 00:00:00 │           4 │ Friday           │               5 │
+        │ 2024-04-20 00:00:00 │           5 │ Saturday         │               6 │
+        └─────────────────────┴─────────────┴──────────────────┴─────────────────┘
         """
         return DayOfWeek(self)
 
@@ -1513,3 +1539,13 @@ class DayOfWeek:
         └─────────────────────────┘
         """
         return ops.DayOfWeekName(self._expr).to_expr()
+
+    def iso_index(self):
+        """Get the index of the day of the week in iso-format (1=Monday, 7=Sunday).
+
+        Returns
+        -------
+        IntegerValue
+            The index of the day of the week in iso-format (1=Monday, 7=Sunday).
+        """
+        return ops.IsoDayOfWeekIndex(self._expr).to_expr()
