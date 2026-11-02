@@ -1134,6 +1134,18 @@ def test_interval_add_cast_column(backend, alltypes, df):
             ],
             id="column_format_str",
         ),
+        param(
+            lambda t: t.timestamp_col.strftime("%Y-%m-%d %H:%M:%S").name("formatted"),
+            "%Y-%m-%d %H:%M:%S",
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    raises=AssertionError,
+                    reason="sqlglot passes `%M` through, but ClickHouse spells minutes `%i`",
+                ),
+            ],
+            id="time_format_str",
+        ),
     ],
 )
 @pytest.mark.never(
