@@ -528,7 +528,14 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason='invalid input syntax for type numeric: "Infinity"',
                     raises=PsycoPgInternalError,
                 ),
-                pytest.mark.notimpl(["db2"], raises=SystemError),
+                pytest.mark.notyet(
+                    ["db2"],
+                    raises=SystemError,
+                    reason=(
+                        "Db2 rejects the Decimal infinity literal conversion with SQL0420N, "
+                        "which ibm_db surfaces as SystemError"
+                    ),
+                ),
             ],
             id="decimal-infinity+",
         ),
@@ -607,7 +614,14 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     reason='invalid input syntax for type numeric: "-Infinity"',
                     raises=PsycoPgInternalError,
                 ),
-                pytest.mark.notimpl(["db2"], raises=SystemError),
+                pytest.mark.notyet(
+                    ["db2"],
+                    raises=SystemError,
+                    reason=(
+                        "Db2 rejects the Decimal infinity literal conversion with SQL0420N, "
+                        "which ibm_db surfaces as SystemError"
+                    ),
+                ),
             ],
             id="decimal-infinity-",
         ),
@@ -684,7 +698,14 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
-                pytest.mark.notimpl(["db2"], raises=SystemError),
+                pytest.mark.notyet(
+                    ["db2"],
+                    raises=SystemError,
+                    reason=(
+                        "Db2 rejects the Decimal NaN literal conversion with SQL0420N, "
+                        "which ibm_db surfaces as SystemError"
+                    ),
+                ),
             ],
             id="decimal-NaN",
         ),
@@ -956,7 +977,14 @@ def test_trig_functions_literals(con, expr, expected):
                     raises=PsycoPgInternalError,
                     reason='function "atan2" does not exist',
                 ),
-                pytest.mark.notimpl(["db2"], raises=SystemError),
+                pytest.mark.notyet(
+                    ["db2"],
+                    raises=SystemError,
+                    reason=(
+                        "ATAN2(0, 0) raises division by zero in Db2 (SQL0801N, SQLSTATE "
+                        "22012), which ibm_db surfaces as SystemError"
+                    ),
+                ),
             ],
         ),
         param(_.dc.cos(), np.cos, id="cos"),
@@ -1175,11 +1203,6 @@ def test_complex_math_functions_columns(
                     ["polars"],
                     raises=AssertionError,
                     reason="rounding behavior is slightly different",
-                ),
-                pytest.mark.notimpl(
-                    ["db2"],
-                    raises=AssertionError,
-                    reason="Db2 rounds ties away from zero, pandas rounds half to even",
                 ),
             ],
         ),
@@ -1417,7 +1440,11 @@ def test_floating_mod(backend, alltypes, df):
     reason="Evaluation error: division by zero",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
-@pytest.mark.notimpl(["db2"], raises=SystemError)
+@pytest.mark.notyet(
+    ["db2"],
+    raises=SystemError,
+    reason="Db2 rejects division by zero (SQL0801N); ibm_db surfaces it as SystemError",
+)
 @pytest.mark.xfail_version(duckdb=["duckdb<1.1"])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator

@@ -1949,7 +1949,10 @@ bool_to_string_notimpl = [
                 pytest.mark.notyet(
                     ["db2"],
                     raises=SystemError,
-                    reason="Db2 TIME has no fractional seconds",
+                    reason=(
+                        "Db2 TIME has no fractional seconds and rejects the cast "
+                        "(SQL0180N); ibm_db surfaces the error as SystemError"
+                    ),
                 ),
             ],
             id="string_to_time_subsecond",

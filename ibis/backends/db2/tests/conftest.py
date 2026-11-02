@@ -62,7 +62,6 @@ class TestConf(ServiceBackendTest):
     supports_structs = False
     supports_json = False
     native_bool = False
-    rounding_method = "half_to_even"
     service_name = "db2"
     deps = ("ibm_db", "ibm_db_dbi")
 
