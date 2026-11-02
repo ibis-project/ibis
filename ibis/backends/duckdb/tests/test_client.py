@@ -426,17 +426,18 @@ def test_pyarrow_batches_chunk_size(con):  # 10443
             "age": random.choices(range(20, 71), k=10_000),  # noqa: S311
         }
     )
-    batches = con.to_pyarrow_batches(t, chunk_size=4096)
-    assert len(next(batches)) == 4096
-    assert len(next(batches)) == 4096
+    # DuckDB 2.0 blocks new queries on the connection while a reader is
+    # partially consumed, so close each reader before issuing the next query
+    with con.to_pyarrow_batches(t, chunk_size=4096) as batches:
+        assert len(next(batches)) == 4096
+        assert len(next(batches)) == 4096
 
-    batches = con.to_pyarrow_batches(t, chunk_size=800)
-    assert len(next(batches)) == 800
-    assert len(next(batches)) == 800
+    with con.to_pyarrow_batches(t, chunk_size=800) as batches:
+        assert len(next(batches)) == 800
+        assert len(next(batches)) == 800
 
-    batches = con.to_pyarrow_batches(t, chunk_size=-1)
     with pytest.raises(TypeError):
-        next(batches)
+        con.to_pyarrow_batches(t, chunk_size=-1)
 
 
 @pytest.mark.parametrize(
