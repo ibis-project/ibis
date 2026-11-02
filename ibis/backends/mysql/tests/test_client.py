@@ -7,11 +7,14 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlglot as sg
+from adbc_driver_manager import dbapi as adbc_dbapi
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
+from ibis.backends._adbc import detect_missing_adbc_driver
+from ibis.backends.mysql import _make_uri
 from ibis.backends.mysql.tests.conftest import (
     IBIS_TEST_MYSQL_DB,
     MYSQL_HOST,
@@ -20,6 +23,19 @@ from ibis.backends.mysql.tests.conftest import (
 )
 from ibis.backends.tests.errors import MySQLOperationalError, MySQLProgrammingError
 from ibis.util import gen_name
+
+# The ADBC driver's result set metadata doesn't carry enough detail to infer
+# the expected ibis type for these MySQL types:
+#
+# - uuid and inet6 are reported as CHAR, so they're inferred as `string`
+# - bit(n) is reported without its width, so it's inferred as `binary`
+#   rather than a sized integer
+# - char(n) and varchar(n) are reported without their length, so they're
+#   inferred as an unbounded `string`
+_adbc_metadata_xfail = pytest.mark.xfail(
+    raises=AssertionError,
+    reason="ADBC driver metadata is insufficient to infer this type",
+)
 
 MYSQL_TYPES = [
     param("tinyint", dt.int8, id="tinyint"),
@@ -45,15 +61,17 @@ MYSQL_TYPES = [
     param("time", dt.time, id="time"),
     param("datetime", dt.timestamp, id="datetime"),
     param("year", dt.uint8, id="year"),
-    param("char(32)", dt.String(length=32), id="char"),
+    param("char(32)", dt.String(length=32), marks=_adbc_metadata_xfail, id="char"),
     param("char byte", dt.binary, id="char_byte"),
-    param("varchar(42)", dt.String(length=42), id="varchar"),
+    param(
+        "varchar(42)", dt.String(length=42), marks=_adbc_metadata_xfail, id="varchar"
+    ),
     param("binary(42)", dt.binary, id="binary"),
     param("varbinary(42)", dt.binary, id="varbinary"),
-    param("bit(1)", dt.int8, id="bit_1"),
-    param("bit(9)", dt.int16, id="bit_9"),
-    param("bit(17)", dt.int32, id="bit_17"),
-    param("bit(33)", dt.int64, id="bit_33"),
+    param("bit(1)", dt.int8, marks=_adbc_metadata_xfail, id="bit_1"),
+    param("bit(9)", dt.int16, marks=_adbc_metadata_xfail, id="bit_9"),
+    param("bit(17)", dt.int32, marks=_adbc_metadata_xfail, id="bit_17"),
+    param("bit(33)", dt.int64, marks=_adbc_metadata_xfail, id="bit_33"),
     # mariadb doesn't have a distinct json type
     param("set('a', 'b', 'c', 'd')", dt.Array(dt.string), id="set"),
     param("mediumblob", dt.binary, id="mediumblob"),
@@ -63,6 +81,12 @@ MYSQL_TYPES = [
     param("int unsigned", dt.uint32, id="int-unsigned"),
     param("smallint unsigned", dt.uint16, id="smallint-unsigned"),
     param("tinyint unsigned", dt.uint8, id="tinyint-unsigned"),
+    param("json", dt.string, id="json"),
+    param("inet6", dt.inet, marks=_adbc_metadata_xfail, id="inet"),
+    param("uuid", dt.uuid, marks=_adbc_metadata_xfail, id="uuid"),
+    param("enum('small', 'medium', 'large')", dt.string, id="enum"),
+    param("mediumtext", dt.string, id="mediumtext"),
+    param("text", dt.string, id="text"),
 ] + [
     param(
         f"datetime({scale:d})",
@@ -91,42 +115,6 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
     assert t.schema() == expected_schema
 
 
-@pytest.mark.parametrize(
-    ("mysql_type", "get_schema_expected_type", "table_expected_type"),
-    [
-        param("json", dt.binary, dt.string, id="json"),
-        param("inet6", dt.binary, dt.inet, id="inet"),
-        param("uuid", dt.binary, dt.uuid, id="uuid"),
-        param(
-            "enum('small', 'medium', 'large')",
-            dt.String(length=6),
-            dt.string,
-            id="enum",
-        ),
-        param("mediumtext", dt.String(length=2**24 - 1), dt.string, id="mediumtext"),
-        param("text", dt.String(length=2**16 - 1), dt.string, id="text"),
-    ],
-)
-def test_get_schema_from_query_special_cases(
-    con, mysql_type, get_schema_expected_type, table_expected_type
-):
-    raw_name = ibis.util.guid()
-    name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
-    get_schema_expected_schema = ibis.schema(dict(x=get_schema_expected_type))
-    table_expected_schema = ibis.schema(dict(x=table_expected_type))
-
-    # temporary tables get cleaned up by the db when the session ends, so we
-    # don't need to explicitly drop the table
-    with con.begin() as c:
-        c.execute(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
-
-    result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
-    assert result_schema == get_schema_expected_schema
-
-    t = con.table(raw_name)
-    assert t.schema() == table_expected_schema
-
-
 @pytest.mark.parametrize("coltype", ["TINYBLOB", "MEDIUMBLOB", "BLOB", "LONGBLOB"])
 def test_blob_type(con, coltype):
     tmp = f"tmp_{ibis.util.guid()}"
@@ -145,6 +133,9 @@ def tmp_t(con):
         c.execute("DROP TABLE IF EXISTS test_schema.t")
 
 
+@pytest.mark.xfail(
+    reason="ADBC driver reports MariaDB inet6 as CHAR",
+)
 def test_get_schema_from_query_other_schema(con, tmp_t):
     t = con.table(tmp_t, database="test_schema")
     assert t.schema() == ibis.schema({"x": dt.inet})
@@ -176,8 +167,8 @@ def test_zero_timestamp_data(con):
             "name": ["C", "B", "C"],
             "tradedate": pd.to_datetime(
                 [date(2018, 10, 22), date(2017, 6, 7), date(2022, 12, 21)]
-            ),
-            "date": [pd.NaT, pd.NaT, pd.NaT],
+            ).as_unit("s"),
+            "date": pd.array([pd.NaT, pd.NaT, pd.NaT], dtype="datetime64[s]"),
         }
     )
     tm.assert_frame_equal(result, expected)
@@ -277,3 +268,36 @@ def test_drop_database_exists(con):
         con.drop_database(dbname)
 
     con.drop_database(dbname, force=True)
+
+
+@pytest.mark.parametrize(
+    ("host", "database", "expected"),
+    [
+        param(
+            "127.0.0.1",
+            "ibis-testing",
+            "mysql://127.0.0.1:3306/ibis-testing",
+            id="plain",
+        ),
+        param("127.0.0.1", None, "mysql://127.0.0.1:3306/", id="no_database"),
+        param("::1", "db", "mysql://[::1]:3306/db", id="ipv6"),
+        param("[::1]", "db", "mysql://[::1]:3306/db", id="ipv6_bracketed"),
+        param(
+            "127.0.0.1", "a?b", "mysql://127.0.0.1:3306/a%3Fb", id="db_question_mark"
+        ),
+        param("127.0.0.1", "100%", "mysql://127.0.0.1:3306/100%25", id="db_percent"),
+        param("127.0.0.1", "a b", "mysql://127.0.0.1:3306/a%20b", id="db_space"),
+    ],
+)
+def test_make_uri(host, database, expected):
+    assert _make_uri(host, 3306, database) == expected
+
+
+def test_missing_driver_suggests_install():
+    with (
+        pytest.raises(ImportError, match="dbc install not_a_real_driver"),
+        detect_missing_adbc_driver("not_a_real_driver"),
+    ):
+        adbc_dbapi.connect(
+            driver="not_a_real_driver", db_kwargs={"uri": "mysql://127.0.0.1:1/"}
+        )

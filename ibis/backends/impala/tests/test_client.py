@@ -40,6 +40,12 @@ def test_raw_sql(con):
     assert len(rows) == 10
 
 
+def test_raw_sql_without_default_database(env):
+    con = ibis.impala.connect(host=env.impala_host, port=env.impala_port, database=None)
+    with closing(con.raw_sql("SELECT 1")) as cur:
+        assert cur.fetchall() == [(1,)]
+
+
 def test_explain(con):
     t = con.table("functional_alltypes")
     expr = t.group_by("string_col").size()

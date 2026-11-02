@@ -1014,8 +1014,9 @@ Window functions in SQL allow you to write expressions that involve
 possibly-ordered groups of a table. Each window function involves one of
 the following:
 
-- An analytic function. Most aggregate functions are valid analytic functions,
-  and there are additional ones such as `LEAD`, `LAG`, `NTILE`, and others.
+- A function to compute over the window. Most aggregate functions, such as
+  `AVG` and `SUM`, can be used, along with functions that only work over a
+  window, such as `LEAD`, `LAG`, and `NTILE`.
 - A `PARTITION BY` clause. This may be omitted.
 - An `ORDER BY` clause. This may be omitted for many functions.
 - A window frame clause. The default is to use the entire partition.
@@ -1081,7 +1082,7 @@ ORDER BY `count` DESC
 LIMIT 10
 ```
 
-Ibis has a special analytic expression `topk`:
+Ibis has a special expression for this, `topk`:
 
 ```{python}
 expr = t1.key1.topk(10)

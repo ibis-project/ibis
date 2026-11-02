@@ -8,12 +8,15 @@ from packaging.version import parse as vparse
 import ibis.common.exceptions as com
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    ExaQueryError,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     MySQLProgrammingError,
     PsycoPg2InternalError,
     PsycoPgSyntaxError,
     Py4JJavaError,
+    PyAthenaOperationalError,
+    PyDruidProgrammingError,
     PySparkUnsupportedOperationException,
     SingleStoreDBOperationalError,
     SingleStoreDBProgrammingError,
@@ -106,6 +109,19 @@ NO_JSON_SUPPORT_MARKS = [
     pytest.mark.notimpl(["datafusion", "exasol", "mssql", "druid", "oracle"]),
 ]
 NO_JSON_SUPPORT = combine_marks(NO_JSON_SUPPORT_MARKS)
+
+NO_TIME_SUPPORT_MARKS = [
+    pytest.mark.notyet(
+        ["clickhouse", "impala"],
+        raises=AssertionError,
+        reason="backend doesn't have a time datatype",
+    ),
+    pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError),
+    pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+    pytest.mark.notyet(
+        ["athena"], raises=PyAthenaOperationalError, reason="no time type"
+    ),
+]
 
 try:
     import pyspark

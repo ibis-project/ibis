@@ -18,6 +18,18 @@ Install with the `mysql` extra:
 pip install 'ibis-framework[mysql]'
 ```
 
+The MySQL backend uses the [ADBC MySQL driver](https://docs.adbc-drivers.org/drivers/mysql/index.html),
+which sends and receives data using the efficient columnar Apache Arrow format
+instead of the traditional row-wise protocol.
+
+You must also install the MySQL ADBC driver binary.
+[There are several installation options](https://docs.adbc-drivers.org/drivers/mysql/index.html)
+(e.g. pipx, Homebrew, a bash installer, etc.), but if you have `uv` installed:
+
+```{.bash}
+uvx dbc install mysql
+```
+
 And connect:
 
 ```{.python}
@@ -36,6 +48,14 @@ Install for MySQL:
 conda install -c conda-forge ibis-mysql
 ```
 
+You must also install the MySQL ADBC driver binary.
+[There are several installation options](https://docs.adbc-drivers.org/drivers/mysql/index.html)
+(e.g. pipx, Homebrew, a bash installer, etc.), but if you have `uv` installed:
+
+```{.bash}
+uvx dbc install mysql
+```
+
 And connect:
 
 ```{.python}
@@ -52,6 +72,14 @@ Install for MySQL:
 
 ```{.bash}
 mamba install -c conda-forge ibis-mysql
+```
+
+You must also install the MySQL ADBC driver binary.
+[There are several installation options](https://docs.adbc-drivers.org/drivers/mysql/index.html)
+(e.g. pipx, Homebrew, a bash installer, etc.), but if you have `uv` installed:
+
+```{.bash}
+uvx dbc install mysql
 ```
 
 And connect:
@@ -108,6 +136,165 @@ con = ibis.connect(f"mysql://{user}:{password}@{host}:{port}/{database}")
 The MySQL backend also works with [MariaDB](https://mariadb.org). Use the same
 `ibis.mysql.connect()` API or a `mysql://` connection URL. Ibis development and
 CI use a MariaDB image in `compose.yaml`.
+
+## Migrating from `mysqlclient`
+
+Earlier versions of the MySQL backend used [`mysqlclient`](https://github.com/PyMySQL/mysqlclient)
+(`MySQLdb`). The backend now uses the
+[ADBC MySQL driver](https://docs.adbc-drivers.org/drivers/mysql/), which returns
+query results as Arrow data instead of Python row tuples.
+
+The details below describe driver version 0.7.0, the version Ibis's CI tests
+against. Newer driver versions may lift some of these limitations; check the
+[driver's documentation](https://docs.adbc-drivers.org/drivers/mysql/) for
+current behavior.
+
+### What you need to change
+
+**Install the ADBC driver.** On Linux and macOS, `mysqlclient` was compiled
+against a system MySQL client library (`libmysqlclient-dev` or
+`mariadb-connector-c`, plus `pkg-config`). That library is no longer used.
+Instead, install the prebuilt ADBC driver with [`dbc`](https://docs.columnar.tech/dbc/):
+
+```{.bash}
+uvx dbc install mysql
+# or, without uv:
+pip install dbc && dbc install mysql
+```
+
+If a virtual environment is active, `dbc` installs the driver into it;
+otherwise it installs it for the current user. On Windows, the `mysqlclient`
+wheel bundled its client library, so installing the driver is a new step.
+
+Every environment where Ibis runs, such as Docker images, CI jobs and servers,
+needs the driver too. In a Docker image, install it to a fixed directory with
+`ADBC_DRIVER_PATH`, so that it's found regardless of which user runs your
+application:
+
+```{.dockerfile}
+ENV ADBC_DRIVER_PATH=/opt/adbc/drivers
+RUN pip install 'ibis-framework[mysql]' dbc && dbc install mysql
+```
+
+**Pin the driver version for reproducible builds.** Python lockfiles don't
+cover the driver. Install a specific version with `dbc install "mysql=0.7.0"`,
+or see [dbc's version control guide](https://docs.columnar.tech/dbc/guides/version_control/).
+
+**Check how you connect.** `ibis.mysql.connect()` and `ibis.connect("mysql://...")`
+accept only `host`, `port`, `user`, `password` and `database` (plus
+`autocommit=True`, and `db` as a deprecated alias for `database`). Other keyword
+arguments, and query parameters in an `ibis.connect()` URL, used to be forwarded
+to `MySQLdb.connect()` and now raise a `TypeError`. If you only pass the
+arguments above, you don't need to change anything. If you pass anything else (TLS settings,
+`charset`, timeouts, `init_command`, ...), connect with the ADBC driver yourself
+and hand the connection to Ibis, as described in the next section.
+
+### Connecting with other options
+
+Open an ADBC connection with the options you need and pass it to
+`ibis.mysql.from_connection()`:
+
+```python
+import os
+
+import ibis
+from adbc_driver_manager import dbapi
+
+adbc_con = dbapi.connect(
+    driver="mysql",
+    db_kwargs={
+        "uri": "mysql://db.example.com:3306/mydb?tls=true&charset=utf8mb4",
+        "username": "me",
+        "password": os.environ["MYSQL_PASSWORD"],
+    },
+    # explicit transactions aren't supported by the driver
+    autocommit=True,
+)
+con = ibis.mysql.from_connection(adbc_con)
+```
+
+- Pass the user and password as the separate `username` and `password`
+  options rather than in the URI, so that they don't need escaping.
+- `from_connection()` applies the same session setup as `connect()`: the
+  session time zone is set to UTC, and zero dates (`0000-00-00`) are read as
+  `NULL`.
+- `con.disconnect()` closes `adbc_con`, and Ibis can't reconnect a connection
+  it didn't open.
+
+Options go in the URI's query string, using
+[go-sql-driver/mysql's parameter names](https://github.com/go-sql-driver/mysql#parameters)
+rather than `mysqlclient`'s:
+
+| `mysqlclient` argument | URI parameter |
+|---|---|
+| `ssl_mode="DISABLED"` | `tls=false` (the default) |
+| `ssl_mode="PREFERRED"` | `tls=preferred` |
+| `ssl_mode="REQUIRED"` or `ssl=True` | `tls=skip-verify` (encrypts without verifying the certificate) |
+| `ssl_mode="VERIFY_IDENTITY"` | `tls=true` (verifies the certificate against the system's CAs, and the host name) |
+| `charset="utf8mb4"` | `charset=utf8mb4` |
+| `connect_timeout=10` | `timeout=10s` |
+| `read_timeout=30`, `write_timeout=30` | `readTimeout=30s`, `writeTimeout=30s` |
+| `init_command="SET sql_mode='ANSI'"` | `sql_mode=%27ANSI%27` (other parameters are run as `SET` statements; quote string values with `%27`) |
+
+The driver always sets the session time zone to UTC, so a `time_zone` parameter
+has no effect. For other TLS settings, such as a custom CA or client
+certificates, see the [driver's documentation](https://docs.adbc-drivers.org/drivers/mysql/).
+
+`from_connection()` used to take a `MySQLdb` connection; it now takes an ADBC
+connection like `adbc_con` above.
+
+### Problems you might run into
+
+**`ImportError: The ADBC 'mysql' driver is not installed`**
+The driver isn't installed, or isn't where the driver manager looks. Run
+`dbc list` to see where it's installed. If it's in a custom location, set
+`ADBC_DRIVER_PATH` to that directory.
+
+**`TypeError: ... got an unexpected keyword argument 'ssl'`** (or `charset`, `unix_socket`, ...)
+`connect()` no longer accepts extra options. Use `from_connection()` as
+described in [Connecting with other options](#connecting-with-other-options).
+
+**`DeprecationWarning: Passing db is deprecated`**
+Rename `db=` to `database=`.
+
+**`ValueError: The MySQL backend only supports autocommit=True`**
+The driver can't run explicit transactions. Remove `autocommit=False`.
+
+**`except MySQLdb.OperationalError` no longer catches errors**
+Errors are now raised by `adbc_driver_manager`, and some errors that used to be
+`OperationalError` are now `ProgrammingError`. Catch
+`adbc_driver_manager.DatabaseError` to cover both. Missing tables still raise
+`ibis.common.exceptions.TableNotFound`.
+
+**`con.raw_sql()` returns a different cursor**
+It now returns an ADBC DB-API cursor. `fetchone()` and `fetchall()` work as
+before, and `fetch_arrow_table()` is new. `MySQLdb`-specific cursor attributes
+are gone. Close the cursor when you're done with it.
+
+**A column has a different type**
+The driver's result metadata is less detailed than `mysqlclient`'s, so these
+types are inferred differently:
+
+| MySQL type | Ibis type before | Ibis type now | Workaround |
+|---|---|---|---|
+| `uuid` (MariaDB) | `uuid` | `string` | `t.col.cast("uuid")` |
+| `inet6` (MariaDB) | `inet` | `string` | `t.col.cast("inet")` |
+| `bit(n)` | `int8` to `int64` | `binary` | |
+| `char(n)`, `varchar(n)` | `string` with length `n` | `string` | only the length is lost |
+
+**Timestamps in pandas have a different unit**
+With pandas 2, `execute()` and `to_pandas()` return `datetime64[s]` for
+`DATETIME` and `TIMESTAMP` columns, `datetime64[ms]` for `DATETIME(1)` to
+`DATETIME(3)` and `datetime64[us]` for `DATETIME(4)` to `DATETIME(6)`, instead
+of always `datetime64[ns]`. Values compare and merge as before, but
+`series.astype("int64")` now returns seconds rather than nanoseconds, and
+`df.equals()` against a `datetime64[ns]` frame returns `False`. To get the old
+dtype, use `df["ts"] = df["ts"].astype("datetime64[ns]")`. Dates after 2262 now come back
+as `datetime64` instead of `object`.
+
+**`con.version` includes a suffix on MariaDB**
+It now returns the server's full `VERSION()` string, for example
+`11.4.2-MariaDB-ubu2404` instead of `11.4.2`.
 
 ```{python}
 #| echo: false

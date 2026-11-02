@@ -65,7 +65,14 @@ class WindowBoundary(Value[T, S]):
 
 @public
 class WindowFunction(Value):
-    """Window function operation."""
+    """A function evaluated over a window.
+
+    Holds the function together with the window's frame bounds, grouping, and
+    ordering, so it corresponds to all of `func(...) OVER (...)` in SQL, not
+    just `func`. `func` is either an `Analytic`, which is only valid over a
+    window, or a `Reduction`, which is evaluated over each row's window
+    instead of over the whole table.
+    """
 
     func: Analytic | Reduction
     how: LiteralType["rows", "range"] = "rows"
