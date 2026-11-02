@@ -1575,10 +1575,13 @@ def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
 @pytest.mark.notimpl(
     ["impala"], raises=AssertionError, reason="backend doesn't support arrays"
 )
-@pytest.mark.never(
-    ["mysql", "singlestoredb"],
+@pytest.mark.notimpl(
+    ["singlestoredb"],
     raises=AssertionError,
-    reason="backend doesn't support arrays",
+    reason="array literals are not implemented",
+)
+@pytest.mark.never(
+    ["mysql"], raises=AssertionError, reason="backend doesn't support arrays"
 )
 def test_repr_timestamp_array(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
