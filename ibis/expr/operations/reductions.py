@@ -224,12 +224,7 @@ class Mean(Filterable, Reduction):
 
     arg: Column[dt.Numeric | dt.Boolean]
 
-    @attribute
-    def dtype(self):
-        if (dtype := self.arg.dtype).is_boolean():
-            return dt.float64
-        else:
-            return dt.higher_precedence(dtype, dt.float64)
+    dtype = dt.float64
 
 
 class QuantileBase(Filterable, Reduction):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import operator
+from decimal import Decimal
 
 import pytest
 
@@ -36,8 +37,8 @@ def test_promote_decimal_type_mul(lineitem):
     col_1 = lineitem.l_extendedprice
     col_2 = lineitem.l_discount
     result = col_1 * col_2
-    assert result.type().precision == 12
-    assert result.type().scale == 2
+    assert result.type().precision == 24
+    assert result.type().scale == 4
 
 
 def test_promote_decimal_type_add(lineitem):
@@ -59,8 +60,8 @@ def test_promote_decimal_type_mod(lineitem):
 def test_promote_decimal_type_max():
     t = ibis.table([("a", "decimal(31, 3)"), ("b", "decimal(31, 3)")], "t")
     result = t.a * t.b
-    assert result.type().precision == 31
-    assert result.type().scale == 3
+    assert result.type().precision == 62
+    assert result.type().scale == 6
 
 
 @pytest.mark.parametrize(
@@ -80,13 +81,29 @@ def test_decimal_sum_type_precision(precision, scale, expected):
     assert result.type() == dt.Decimal(*expected)
 
 
-@pytest.mark.parametrize("func", ["mean", "max", "min"])
+@pytest.mark.parametrize("func", ["max", "min"])
 def test_decimal_aggregate_function_type(lineitem, func):
     col = lineitem.l_extendedprice
     method = operator.methodcaller(func)
     result = method(col)
     assert isinstance(result, ir.DecimalScalar)
     assert result.type() == col.type()
+
+
+def test_decimal_mean_type(lineitem):
+    col = lineitem.l_extendedprice
+    result = col.mean()
+    assert isinstance(result, ir.FloatingScalar)
+    assert result.type() == dt.float64
+
+
+def test_decimal_mean_and_product_scale_12209():
+    # Issue #12209: Decimal mean and product were typed at input scale
+    t = ibis.memtable(
+        {"x": [Decimal("1.00"), Decimal("2.00"), Decimal("2.00"), Decimal("1.25")]}
+    )
+    assert t.x.mean().type() == dt.float64
+    assert (t.x * t.x).type() == dt.Decimal(precision=6, scale=4)
 
 
 def test_ifelse(lineitem):

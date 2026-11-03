@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import operator
 from itertools import product, starmap
 from typing import TYPE_CHECKING, Optional
 
@@ -120,6 +121,15 @@ def numeric_like(name: str, op) -> Attribute:
         dtypes = [arg.dtype for arg in args]
         if util.all_of(dtypes, dt.Integer):
             result = _promote_integral_binop(args, op)
+        elif op is operator.mul and util.all_of(dtypes, dt.Decimal):
+            precisions = [d.precision for d in dtypes]
+            scales = [d.scale for d in dtypes]
+            precision = (
+                sum(precisions) if all(p is not None for p in precisions) else None
+            )
+            scale = sum(scales) if all(s is not None for s in scales) else None
+            nullable = any(d.nullable for d in dtypes)
+            result = dt.Decimal(precision=precision, scale=scale, nullable=nullable)
         else:
             result = highest_precedence_dtype(args)
 
