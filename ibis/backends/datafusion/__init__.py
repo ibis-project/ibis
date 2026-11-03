@@ -713,7 +713,9 @@ class Backend(
 
         return self.table(name, database=database)
 
-    def truncate_table(self, name: str, /, *, database: str | None = None):
+    def truncate_table(
+        self, name: str, /, *, database: tuple[str, str] | str | None = None
+    ):
         """Delete all rows from a table.
 
         Parameters

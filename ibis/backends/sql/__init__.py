@@ -218,7 +218,7 @@ class SQLBackend(BaseBackend):
         /,
         obj: ir.Table,
         *,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
         """Create a view from an Ibis expression.
@@ -231,6 +231,10 @@ class SQLBackend(BaseBackend):
             The Ibis expression to create the view from.
         database
             The database that the view should be created in.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
         overwrite
             If `True`, replace an existing view with the same name.
 
@@ -254,7 +258,12 @@ class SQLBackend(BaseBackend):
         return self.table(name, database=(catalog, db))
 
     def drop_view(
-        self, name: str, /, *, database: str | None = None, force: bool = False
+        self,
+        name: str,
+        /,
+        *,
+        database: tuple[str, str] | str | None = None,
+        force: bool = False,
     ) -> None:
         """Drop a view from the backend.
 
@@ -264,6 +273,10 @@ class SQLBackend(BaseBackend):
             The name of the view to drop.
         database
             The database that the view is located in.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
         force
             If `True`, do not raise an error if the view does not exist.
         """
@@ -416,7 +429,7 @@ class SQLBackend(BaseBackend):
         /,
         obj: ir.Table | IntoMemtable,
         *,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         overwrite: bool = False,
     ) -> None:
         """Insert data into a table.
@@ -553,7 +566,7 @@ class SQLBackend(BaseBackend):
         obj: ir.Table | IntoMemtable,
         on: str | Iterable[str],
         *,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
     ) -> None:
         """Upsert data into a table.
 

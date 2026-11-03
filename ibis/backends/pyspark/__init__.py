@@ -386,7 +386,7 @@ class Backend(
         return self._filter_with_like(databases, like)
 
     def list_tables(
-        self, *, like: str | None = None, database: str | None = None
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -628,7 +628,7 @@ class Backend(
         ) = None,
         *,
         schema: sch.IntoSchema | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
         format: str = "parquet",

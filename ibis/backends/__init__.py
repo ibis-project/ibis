@@ -1351,7 +1351,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: ibis.Schema | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         temp: bool = False,
         overwrite: bool = False,
     ) -> ir.Table:
@@ -1371,6 +1371,10 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         database
             Name of the database where the table will be created, if not the
             default.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
         temp
             Whether a table is temporary or not
         overwrite
@@ -1388,7 +1392,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         name: str,
         /,
         *,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:
         """Drop a table.
@@ -1399,6 +1403,10 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
             Name of the table to drop.
         database
             Name of the database where the table exists, if not the default.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
         force
             If `False`, an exception is raised if the table does not exist.
         """
@@ -1428,7 +1436,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         /,
         obj: ir.Table,
         *,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
         """Create a new view from an expression.
@@ -1442,6 +1450,10 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         database
             Name of the database where the view will be created, if not
             provided the database's default is used.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
         overwrite
             Whether to clobber an existing view with the same name
 
@@ -1453,7 +1465,12 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
     @abc.abstractmethod
     def drop_view(
-        self, name: str, /, *, database: str | None = None, force: bool = False
+        self,
+        name: str,
+        /,
+        *,
+        database: tuple[str, str] | str | None = None,
+        force: bool = False,
     ) -> None:
         """Drop a view.
 
@@ -1463,6 +1480,10 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
             Name of the view to drop.
         database
             Name of the database where the view exists, if not the default.
+
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like `"catalog.database"` or a tuple of
+            strings like `("catalog", "database")`.
         force
             If `False`, an exception is raised if the view does not exist.
         """

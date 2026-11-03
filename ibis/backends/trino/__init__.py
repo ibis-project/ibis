@@ -388,7 +388,7 @@ class Backend(
         | None = None,
         *,
         schema: sch.IntoSchema | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         temp: bool = False,
         overwrite: bool = False,
         comment: str | None = None,

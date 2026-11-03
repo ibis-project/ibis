@@ -81,7 +81,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         | None = None,
         *,
         schema: sch.IntoSchema | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         temp: bool = False,
         overwrite: bool | None = None,
         comment: str | None = None,
@@ -225,7 +225,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
 
         return self.table(orig_table_ref.name, database=(catalog, db))
 
-    def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
+    def table(
+        self, name: str, /, *, database: tuple[str, str] | str | None = None
+    ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
 
         # TODO: set these to better defaults

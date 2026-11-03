@@ -127,7 +127,7 @@ class Backend(
         | None = None,
         *,
         schema: IntoSchema | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         temp: bool = False,
         overwrite: bool = False,
     ):
