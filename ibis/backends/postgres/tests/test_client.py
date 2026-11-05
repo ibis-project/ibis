@@ -515,3 +515,23 @@ def test_nans_nulls(con):
     assert value[0].as_py() == 1.0
     assert math.isnan(value[1].as_py())
     assert value[2].as_py() is None
+
+
+def test_get_schema_using_query_read_only(con):
+    with con.con.cursor() as cur, con.con.transaction():
+        cur.execute("SET LOCAL default_transaction_read_only = on")
+        schema = con._get_schema_using_query(
+            "SELECT 1::int AS id, 'read-only'::varchar(20) AS status, 99.95::numeric(8, 2) AS price"
+        )
+        assert schema == ibis.schema(
+            dict(id=dt.int32, status=dt.String(length=20), price=dt.Decimal(8, 2))
+        )
+        t = con.sql(
+            "SELECT 1::int AS id, 'read-only'::varchar(20) AS status, 99.95::numeric(8, 2) AS price"
+        )
+        assert t.schema() == schema
+
+
+def test_get_schema_using_query_duplicate_columns(con):
+    with pytest.raises(com.IntegrityError, match="Duplicate column name"):
+        con._get_schema_using_query("SELECT 1 AS a, 2 AS a")
