@@ -389,34 +389,6 @@ jobs:
               sys-deps:
                 - libgeos-dev
                 - libpq5
-          # TODO(deepyaman): Test whether this works upon releasing https://github.com/cloudera/impyla/commit/bf1f94c3c4106ded6267d2485c1e939775a6a87f
-          - os: ubuntu-latest
-            python-version: "3.14"
-            backend:
-              name: impala
-              title: Impala
-              serial: true
-              extras:
-                - --extra impala
-              services:
-                - impala
-                - kudu
-              sys-deps:
-                - cmake
-                - ninja-build
-          - os: windows-latest
-            backend:
-              name: impala
-              title: Impala
-              serial: true
-              extras:
-                - --extra impala
-              services:
-                - impala
-                - kudu
-              sys-deps:
-                - cmake
-                - ninja-build
           - os: windows-latest
             backend:
               name: mssql
