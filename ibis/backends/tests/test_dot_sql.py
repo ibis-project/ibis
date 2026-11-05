@@ -551,7 +551,9 @@ def _sql_query_result(query, compiler):
 
 no_recursive_keyword = toolz.compose(
     pytest.mark.never(
-        ["mssql"], raises=AssertionError, reason="T-SQL has no RECURSIVE keyword"
+        ["mssql", "db2"],
+        raises=AssertionError,
+        reason="T-SQL and Db2 have no RECURSIVE keyword",
     ),
     pytest.mark.notyet(
         ["flink", "impala"],

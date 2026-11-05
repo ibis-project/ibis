@@ -159,6 +159,7 @@ Ibis supports more than 20 backends:
 - [SQLite](https://ibis-project.org/backends/sqlite/)
 - [Snowflake](https://ibis-project.org/backends/snowflake)
 - [Trino](https://ibis-project.org/backends/trino/)
+- [Db2](https://ibis-project.org/backends/db2/)
 
 ## How it works
 

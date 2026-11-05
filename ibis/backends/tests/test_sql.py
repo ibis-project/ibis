@@ -25,6 +25,11 @@ sg = pytest.importorskip("sqlglot")
                     raises=(exc.OperationNotDefinedError, exc.UnsupportedBackendType),
                     reason="arrays not supported in the backend",
                 ),
+                pytest.mark.notimpl(
+                    ["db2"],
+                    raises=exc.OperationNotDefinedError,
+                    reason="Db2 does not support ARRAY literals",
+                ),
             ],
             id="array_literal",
         ),
@@ -38,6 +43,11 @@ sg = pytest.importorskip("sqlglot")
                 ),
                 pytest.mark.notimpl(
                     ["mssql"], reason="struct literals are not yet implemented"
+                ),
+                pytest.mark.notimpl(
+                    ["db2"],
+                    raises=exc.OperationNotDefinedError,
+                    reason="Db2 does not support STRUCT literals",
                 ),
             ],
             id="struct_literal",
@@ -110,6 +120,11 @@ def test_isin_bug(con, snapshot):
     ["materialize"],
     raises=exc.OperationNotDefinedError,
     reason="first/last/arbitrary not supported",
+)
+@pytest.mark.notimpl(
+    ["db2"],
+    raises=exc.OperationNotDefinedError,
+    reason="Db2 does not support STRUCT constructor",
 )
 @pytest.mark.parametrize("backend_name", _get_backends_to_test())
 def test_union_aliasing(backend_name, snapshot):
@@ -262,6 +277,11 @@ def test_mixed_qualified_and_unqualified_predicates(backend_name, snapshot):
     ["materialize"],
     raises=exc.OperationNotDefinedError,
     reason="Materialize will never support random() - nondeterministic functions can't be used in materialized views",
+)
+@pytest.mark.notimpl(
+    ["db2"],
+    raises=exc.OperationNotDefinedError,
+    reason="Db2 rejects RAND() in a window ORDER BY (SQL0583N)",
 )
 def test_rewrite_context(snapshot, backend_name):
     table = ibis.table({"test": "int"}, name="test")

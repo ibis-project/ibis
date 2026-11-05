@@ -30,6 +30,7 @@ from ibis.backends.tests.errors import (
     ArrowTypeError,
     DatabricksServerOperationError,
     ExaQueryError,
+    IbmDb2Error,
     ImpalaHiveServer2Error,
     OracleDatabaseError,
     PsycoPg2InternalError,
@@ -347,6 +348,11 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
 )
+@pytest.mark.notyet(
+    ["db2"],
+    raises=AssertionError,
+    reason="Db2 keeps the definition of a global temporary table in the catalog after reconnect",
+)
 def test_create_temporary_table_from_schema(con_no_data, new_schema):
     if con_no_data.name == "snowflake" and os.environ.get("SNOWFLAKE_SNOWPARK"):
         with pytest.raises(
@@ -378,6 +384,7 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
         "bigquery",
         "clickhouse",
         "datafusion",
+        "db2",
         "druid",
         "duckdb",
         "exasol",
@@ -881,6 +888,7 @@ def test_insert_from_memtable(con, temp_table):
     [
         "bigquery",
         "clickhouse",
+        "db2",
         "druid",
         "exasol",
         "impala",
@@ -928,6 +936,7 @@ def test_list_database_contents(con):
         "bigquery": {"ibis_gbq_testing"},
         "clickhouse": {"system", "default", "ibis_testing"},
         "datafusion": {"public"},
+        "db2": {"DB2INST1"},
         "duckdb": {"pg_catalog", "main", "information_schema"},
         "exasol": {"EXASOL"},
         "flink": {"default_database"},
@@ -954,6 +963,9 @@ def test_list_database_contents(con):
 @pytest.mark.notyet(["pyspark"], raises=com.IbisTypeError)
 @pytest.mark.notyet(["databricks"], raises=DatabricksServerOperationError)
 @pytest.mark.notyet(["bigquery"], raises=com.UnsupportedBackendType)
+@pytest.mark.notyet(
+    ["db2"], raises=com.UnsupportedBackendType, reason="no unsigned int types"
+)
 @pytest.mark.notyet(
     ["postgres"], raises=PsycoPgUndefinedObject, reason="no unsigned int types"
 )
@@ -1178,7 +1190,8 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "athena",
                         "singlestoredb",
                     ]
-                )
+                ),
+                pytest.mark.notimpl(["db2"], raises=TypeError),
             ],
             id="pyarrow_rbr",
         ),
@@ -1195,6 +1208,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                     [
                         "bigquery",
                         "clickhouse",
+                        "db2",
                         "exasol",
                         "impala",
                         "materialize",
@@ -1576,6 +1590,11 @@ def test_set_backend_url(url, monkeypatch):
     reason="Materialize timestamp precision is limited to 0-6 (microsecond precision max), not 0-9 like Postgres.",
     # Ref: https://materialize.com/docs/sql/types/timestamp/
 )
+@pytest.mark.notyet(
+    ["db2"],
+    raises=IbmDb2Error,
+    reason="DESCRIBE is not an SQL statement in Db2; the driver rejects it with SQL0104N",
+)
 def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
@@ -1809,6 +1828,9 @@ def test_close_connection(con):
     reason="snowflake uses a custom pyarrow extension type for JSON pretty printing",
 )
 @pytest.mark.notimpl(["athena"], raises=AttributeError, reason="not yet implemented")
+@pytest.mark.notimpl(
+    ["db2"], raises=AttributeError, reason="the json_t table is not loaded for Db2"
+)
 def test_json_to_pyarrow(con):
     t = con.tables.json_t
     table = t.to_pyarrow()

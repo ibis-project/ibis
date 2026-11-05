@@ -393,6 +393,33 @@ services:
     volumes:
       - oracle:/opt/oracle/data
 
+  db2:
+    image: icr.io/db2_community/db2:12.1.5.0
+    platform: linux/amd64
+    privileged: true
+    environment:
+      LICENSE: accept
+      DB2INSTANCE: db2inst1
+      DB2INST1_PASSWORD: ibistest
+      DBNAME: ibistest
+      ARCHIVE_LOGS: "false"
+      AUTOCONFIG: "false"
+    ports:
+      - 50000:50000
+    healthcheck:
+      interval: 30s
+      retries: 40
+      start_period: 600s
+      timeout: 30s
+      test:
+        - CMD-SHELL
+        - su - db2inst1 -c "db2 connect to ibistest user db2inst1 using ibistest && db2 -x \"SELECT COUNT(*) FROM SYSCAT.TABLESPACES WHERE TBSPACE IN ('IBIS_TEMP_4K','IBIS_TEMP_32K')\" | grep -q '^ *2 *$'"
+    networks:
+      - db2
+    volumes:
+      - db2:/database
+      - $PWD/docker/db2:/var/custom:ro
+
   exasol:
     image: exasol/docker-db:2025.2.1
     privileged: true
@@ -671,6 +698,7 @@ networks:
   trino:
   druid:
   oracle:
+  db2:
   exasol:
   flink:
   materialize:
@@ -683,6 +711,7 @@ volumes:
   mssql:
   mysql:
   oracle:
+  db2:
   postgres:
   singlestoredb:
   exasol:

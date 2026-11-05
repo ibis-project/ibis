@@ -11,6 +11,7 @@ import ibis
 import ibis.common.exceptions as com
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    IbmDb2Error,
     MySQLOperationalError,
     OracleDatabaseError,
     PsycoPg2InternalError,
@@ -482,6 +483,7 @@ def uses_java_re(t):
                         "exasol",
                         "databricks",
                         "athena",
+                        "db2",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -511,6 +513,7 @@ def uses_java_re(t):
                         "exasol",
                         "databricks",
                         "athena",
+                        "db2",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -535,6 +538,7 @@ def uses_java_re(t):
             lambda t: t.string_col.reverse(),
             lambda t: t.string_col.str[::-1],
             id="reverse",
+            marks=[pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)],
         ),
         param(
             lambda t: t.string_col.ascii_str(),
@@ -604,6 +608,7 @@ def uses_java_re(t):
                     "druid",
                     "oracle",
                     "exasol",
+                    "db2",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -833,6 +838,7 @@ def test_substr_with_null_values(backend, alltypes, df):
         "druid",
         "oracle",
         "databricks",
+        "db2",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -900,6 +906,7 @@ def test_capitalize(con, inp, expected):
     reason="Backend doesn't support arrays",
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
 )
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 def test_array_string_join(con):
     s = ibis.array(["a", "b", "c"])
     expected = "a,b,c"
@@ -929,6 +936,7 @@ def test_array_string_join(con):
     raises=PyDruidProgrammingError,
     reason="druid doesn't support empty array construction",
 )
+@pytest.mark.notimpl(["db2"], raises=Exception, strict=False)
 def test_empty_array_string_join(con):
     t = ibis.memtable({"arr": [[], ["a", "b", "c"]]})
 
@@ -979,6 +987,7 @@ def test_multiple_subs(con):
     raises=PsycoPg2InternalError,
     reason="Risingwave doesn't have levenshtein() function - backend limitation",
 )
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     "right", ["sitting", ibis.literal("sitting")], ids=["python", "ibis"]
 )
@@ -1023,6 +1032,7 @@ def test_non_match_regex_search_is_false(con):
     ],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 def test_re_split(con):
     lit = ibis.literal(",a,,,,c")
     expr = lit.re_split(",+")
@@ -1045,6 +1055,7 @@ def test_re_split(con):
     ],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.xfail_version(athena=["sqlglot>=26.29,<26.33.0"], raises=AssertionError)
 def test_re_split_column(alltypes):
     expr = alltypes.limit(5).string_col.re_split(r"\d+")
@@ -1067,6 +1078,7 @@ def test_re_split_column(alltypes):
     ],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,
@@ -1115,7 +1127,18 @@ def test_concat_with_null(con, fn):
         param((ibis.literal(None, str), None), id="null-null"),
         param((ibis.literal("abc"), None), id="abc-null"),
         param((ibis.literal("abc"), ibis.literal(None, str)), id="abc-typed-null"),
-        param((ibis.literal("abc"), "def", None), id="abc-def-null"),
+        param(
+            (ibis.literal("abc"), "def", None),
+            id="abc-def-null",
+            marks=[
+                pytest.mark.notimpl(
+                    ["db2"],
+                    raises=IbmDb2Error,
+                    reason="DB2 has no variadic CONCAT function; || operator propagates NULL so add method passes",
+                    strict=False,
+                )
+            ],
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -1301,6 +1324,7 @@ def string_temp_table(backend, con):
                         "trino",
                         "databricks",
                         "athena",
+                        "db2",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1339,6 +1363,7 @@ def string_temp_table(backend, con):
                         "trino",
                         "databricks",
                         "athena",
+                        "db2",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),

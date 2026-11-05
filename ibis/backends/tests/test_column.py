@@ -25,6 +25,7 @@ import ibis.common.exceptions as com
         "flink",
         "databricks",
         "athena",
+        "db2",
     ],
     raises=com.OperationNotDefinedError,
 )

@@ -7,6 +7,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis.backends.tests.errors import OracleDatabaseError
@@ -61,6 +62,7 @@ def test_timestamp_accepts_date_literals(alltypes):
 
 
 @pytest.mark.notimpl(["impala", "druid", "oracle", "exasol"])
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(
     ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="backend will never implement array types",
@@ -73,6 +75,7 @@ def test_scalar_param_array(con):
 
 
 @pytest.mark.notimpl(["impala", "postgres", "risingwave", "druid", "oracle", "exasol"])
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(
     ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
@@ -90,6 +93,7 @@ def test_scalar_param_struct(con):
 
 
 @pytest.mark.notimpl(["datafusion", "impala", "polars", "druid", "oracle", "exasol"])
+@pytest.mark.notimpl(["db2"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(
     ["mysql", "singlestoredb", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement map types",
@@ -197,6 +201,7 @@ def test_scalar_param_date(backend, alltypes, value):
         "mssql",
         "druid",
         "exasol",
+        "db2",
     ]
 )
 @pytest.mark.notimpl(

@@ -5,7 +5,7 @@ import operator
 import pytest
 
 import ibis
-from ibis.backends.tests.errors import DuckDBInvalidInputException
+from ibis.backends.tests.errors import DuckDBInvalidInputException, IbmDb2Error
 
 pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
@@ -102,6 +102,7 @@ def time_keyed_right(time_keyed_df2):
         "sqlite",
         "flink",
         "databricks",
+        "db2",
         "athena",
     ]
 )
@@ -148,6 +149,7 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
         "athena",
     ]
 )
+@pytest.mark.notyet(["db2"], raises=IbmDb2Error)
 def test_noop_keyed_asof_join(
     con, time_left, time_right, time_df1, time_df2, direction, op
 ):
@@ -193,6 +195,7 @@ def test_noop_keyed_asof_join(
         "athena",
     ]
 )
+@pytest.mark.notyet(["db2"], raises=IbmDb2Error)
 def test_keyed_asof_join(
     con,
     time_keyed_left,
@@ -244,6 +247,7 @@ def test_keyed_asof_join(
         "athena",
     ]
 )
+@pytest.mark.notyet(["db2"], raises=IbmDb2Error)
 @pytest.mark.xfail_version(
     duckdb=["duckdb>=0.10.2,<1.1.1"], raises=DuckDBInvalidInputException
 )
