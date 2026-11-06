@@ -2389,11 +2389,62 @@ def test_static_table_slice(backend, slc, expected_count_fn):
                 ),
             ],
         ),
+        # start before the first row
+        param(
+            slice(-8000, None),
+            lambda t: t.count().to_pandas(),
+            id="[-8000:]",
+            marks=[
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPgInternalError,
+                    reason="OFFSET does not allow subqueries",
+                ),
+            ],
+        ),
+        param(
+            slice(-8000, 5),
+            lambda _: 5,
+            id="[-8000:5]",
+            marks=[
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPgInternalError,
+                    reason="OFFSET does not allow subqueries",
+                ),
+            ],
+        ),
+        param(
+            slice(-8000, -7000),
+            lambda _: 300,
+            id="[-8000:-7000]",
+            marks=[
+                pytest.mark.notimpl(
+                    ["materialize"],
+                    raises=PsycoPgInternalError,
+                    reason="OFFSET does not allow subqueries",
+                ),
+            ],
+        ),
         ##################
         ### POSITIVE start
         # negative stop
         param(slice(3, -2), lambda t: t.count().to_pandas() - 5, id="[3:-2]"),
         param(slice(3, -4), lambda t: t.count().to_pandas() - 7, id="[3:-4]"),
+        # stop before start
+        param(slice(None, -8000), lambda _: 0, id="[:-8000]"),
+        param(
+            slice(5000, -3000),
+            lambda _: 0,
+            id="[5000:-3000]",
+            marks=[
+                pytest.mark.never(
+                    ["mssql"],
+                    raises=PyODBCProgrammingError,
+                    reason="sqlglot generates code that requires > 0 fetch rows",
+                ),
+            ],
+        ),
     ],
     ids=str,
 )
