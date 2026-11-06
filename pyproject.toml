@@ -546,6 +546,10 @@ markers = [
 python-downloads = "never"
 concurrent-installs = 1
 compile-bytecode = false
+# DuckDB 2.0 requires Python >= 3.11. Keep Python 3.10 on 1.4.x in the lock:
+# 1.5.x has known issues (e.g. "basic_string: construction from null is not
+# valid" when writing MapML/GeoRSS) that were only fixed in 2.0.
+constraint-dependencies = ["duckdb<1.5; python_full_version < '3.11'"]
 
 [tool.ruff]
 line-length = 88

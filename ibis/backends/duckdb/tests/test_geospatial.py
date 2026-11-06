@@ -118,7 +118,10 @@ def test_geospatial_unary_gtm(op, zones, zones_gdf):
     expr = getattr(zones.geom, op)().name("tmp")
     gp_expr = getattr(zones_gdf.geometry, op)
 
-    gtm.assert_geoseries_equal(expr.to_pandas(), gp_expr, check_crs=False)
+    # DuckDB 2.0 spatial computes centroids that differ from GEOS by ~1e-9
+    gtm.assert_geoseries_equal(
+        expr.to_pandas(), gp_expr, check_crs=False, check_less_precise=True
+    )
 
 
 # geospatial binary functions that return a geometry series
@@ -197,11 +200,25 @@ def test_geospatial_buffer_point(zones, zones_gdf):
     # geopandas resolution default is 16, while duckdb is 8.
     gp_buffer = gp_cen.buffer(100.0, resolution=8)
 
-    gtm.assert_geoseries_equal(buffer.to_pandas(), gp_buffer, check_crs=False)
+    # DuckDB 2.0 spatial computes centroids that differ from GEOS by ~1e-9
+    gtm.assert_geoseries_equal(
+        buffer.to_pandas(), gp_buffer, check_crs=False, check_less_precise=True
+    )
 
 
-@pytest.mark.xfail_version(
-    duckdb=["shapely>=2.1.0"], raises=AssertionError, reason="numerics are different"
+@pytest.mark.xfail(
+    condition=(
+        (vparse(duckdb.__version__) >= vparse("1.5"))
+        != (vparse(shapely.__version__) >= vparse("2.1.0"))
+    ),
+    raises=AssertionError,
+    reason=(
+        "buffer results depend on the GEOS version: they are identical when "
+        "duckdb and shapely are on the same side of the change (duckdb<1.5 "
+        "with shapely<2.1, or duckdb>=1.5 with shapely>=2.1; shapely 2.1 "
+        "bundles GEOS 3.13, 2.0 bundles 3.11), and differ in a few polygons "
+        "(by up to ~3e-3, sometimes in vertex count) for any other pairing"
+    ),
 )
 def test_geospatial_buffer(zones, zones_gdf):
     buffer = zones.geom.buffer(100.0)
@@ -436,7 +453,14 @@ def no_roundtrip(
             {"srs": "4326"},
             None,
             id="geoconcept",
-            marks=no_roundtrip(reason="not entirely sure"),
+            marks=[
+                pytest.mark.xfail(
+                    condition=vparse(duckdb.__version__) >= vparse("2"),
+                    raises=duckdb.BinderException,
+                    reason="the Geoconcept driver was removed in DuckDB 2.0",
+                ),
+                no_roundtrip(reason="not entirely sure"),
+            ],
         ),
         param(
             "PGDUMP",
@@ -463,7 +487,10 @@ def no_roundtrip(
             None,
             {},
             None,
-            marks=no_roundtrip(reason="duckdb wkb doesn't preserve the geometry type"),
+            marks=no_roundtrip(
+                reason="duckdb wkb doesn't preserve the geometry type",
+                raises=duckdb.Error,
+            ),
             id="selafin",
         ),
         param("JML", None, {}, None, id="jml"),
@@ -476,6 +503,9 @@ def no_roundtrip(
             marks=no_roundtrip(reason="can't read the written file"),
             id="mvt",
         ),
+        # NOTE: Writing MapML fails in DuckDB 1.5.3 with
+        # "basic_string: construction from null is not valid"
+        # https://github.com/duckdb/duckdb-spatial/issues/818
         param("MapML", None, {}, None, id="mapml"),
         param(
             "PMTiles",
@@ -527,7 +557,12 @@ GDAL_DATA = os.environ.get("GDAL_DATA")
                 reason="GDAL_DATA not set",
             ),
         ),
-        "GEORSS",
+        param(
+            # NOTE: Writing GeoRSS fails in DuckDB 1.5.3 with
+            # "basic_string: construction from null is not valid"
+            # https://github.com/duckdb/duckdb-spatial/issues/818
+            "GEORSS",
+        ),
     ],
 )
 def test_to_geo_geom_only(con, driver, tmp_path):
@@ -542,6 +577,73 @@ def test_to_geo_geom_only(con, driver, tmp_path):
     dread = con.read_geo(out)
 
     assert dread.count().execute() == 2
+
+
+@pytest.mark.xfail(
+    condition=vparse(duckdb.__version__) < vparse("2"),
+    raises=AssertionError,
+    reason=(
+        "before DuckDB 2.0, KML written with a (latitude, longitude) CRS "
+        "has its coordinates swapped"
+    ),
+)
+def test_to_geo_srs_keeps_xy_order(con, tmp_path):
+    data = ibis.memtable({"x": [1.0], "y": [2.0]}).select(geom=lambda t: t.x.point(t.y))
+    out = tmp_path / "outfile.kml"
+
+    # EPSG:4326 has (latitude, longitude) as its authority axis order
+    con.to_geo(data, path=out, format="KML", srs="EPSG:4326")
+
+    dread = con.read_geo(out)
+    (geom_col,) = (name for name, typ in dread.schema().items() if typ.is_geospatial())
+    result = dread[geom_col].to_pandas()
+    assert result.iloc[0] == Point(1.0, 2.0)
+
+
+needs_duckdb_2 = pytest.mark.skipif(
+    vparse(duckdb.__version__) < vparse("2"),
+    reason="the geometry_always_xy setting was added in DuckDB 2.0",
+)
+
+
+@needs_duckdb_2
+def test_to_geo_geometry_with_crs(tmp_path):
+    # the axis order matters when the geometry type has a CRS, even without
+    # passing an SRS to the writer
+    con = ibis.duckdb.connect()
+    con.load_extension("spatial")
+    data = con.sql("SELECT ST_Point(1, 2)::GEOMETRY('EPSG:4326') AS geom")
+    out = tmp_path / "outfile.geojson"
+
+    con.to_geo(data, path=out, format="GeoJSON")
+
+    assert con.read_geo(out).count().execute() == 1
+
+
+@needs_duckdb_2
+def test_to_geo_restores_always_xy_setting(tmp_path):
+    con = ibis.duckdb.connect()
+    data = ibis.memtable({"x": [1.0], "y": [2.0]}).select(geom=lambda t: t.x.point(t.y))
+
+    con.to_geo(
+        data, path=tmp_path / "outfile.geojson", format="GeoJSON", srs="EPSG:4326"
+    )
+
+    assert con.settings["geometry_always_xy"] is None
+
+
+@needs_duckdb_2
+def test_to_geo_respects_always_xy_setting(tmp_path):
+    con = ibis.duckdb.connect()
+    con.load_extension("spatial")
+    con.raw_sql("SET geometry_always_xy = false")
+    data = ibis.memtable({"x": [1.0], "y": [2.0]}).select(geom=lambda t: t.x.point(t.y))
+
+    con.to_geo(
+        data, path=tmp_path / "outfile.geojson", format="GeoJSON", srs="EPSG:4326"
+    )
+
+    assert str(con.settings["geometry_always_xy"]).lower() == "false"
 
 
 def test_cache_geometry(con, monkeypatch):
