@@ -218,6 +218,36 @@ def test_window_builder_between():
     assert w9.how == "range"
 
 
+@pytest.mark.parametrize(
+    ("value", "expected", "preceding"),
+    [
+        param(
+            ibis.interval(months=-1, days=1),
+            ibis.interval(months=1, days=-1),
+            True,
+            id="negative",
+        ),
+        param(
+            ibis.interval(months=1, days=-1),
+            ibis.interval(months=1, days=-1),
+            False,
+            id="positive",
+        ),
+        param(
+            ibis.interval(days=-1) - ibis.interval(hours=-2),
+            ibis.interval(days=1) - ibis.interval(hours=2),
+            True,
+            id="subtract",
+        ),
+    ],
+)
+def test_window_builder_between_compound_interval(value, expected, preceding):
+    # GH #11933
+    w = bl.WindowBuilder().between(value, 0)
+    assert w.start == ops.WindowBoundary(expected, preceding=preceding)
+    assert w.how == "range"
+
+
 def test_window_api_supports_value_expressions(t):
     w = ibis.window(between=(t.d, t.d + 1), group_by=t.b, order_by=t.c)
     func = t.a.sum().over(w).op()
