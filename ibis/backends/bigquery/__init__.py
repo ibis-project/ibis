@@ -711,7 +711,7 @@ class Backend(
         name: str,
         /,
         *,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
     ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
         table = sg.parse_one(f"`{name}`", into=sge.Table, read=self.name)
@@ -861,7 +861,7 @@ class Backend(
         /,
         obj: ir.Table | IntoMemtable,
         *,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         overwrite: bool = False,
     ) -> None:
         """Insert data into a table.
@@ -905,7 +905,7 @@ class Backend(
         obj: ir.Table | IntoMemtable,
         on: str | Iterable[str],
         *,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
     ) -> None:
         """Upsert data into a table.
 
@@ -1310,7 +1310,7 @@ class Backend(
         /,
         obj: ir.Table,
         *,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
@@ -1331,7 +1331,12 @@ class Backend(
         return self.table(name, database=(catalog, database))
 
     def drop_view(
-        self, name: str, /, *, database: str | None = None, force: bool = False
+        self,
+        name: str,
+        /,
+        *,
+        database: tuple[str, str] | str | None = None,
+        force: bool = False,
     ) -> None:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)

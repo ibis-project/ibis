@@ -133,7 +133,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
         | None = None,
         *,
         schema: IntoSchema | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         temp: bool = False,
         overwrite: bool = False,
         using: str = "delta",
@@ -258,7 +258,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
 
         return self.table(name, database=(catalog, database))
 
-    def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
+    def table(
+        self, name: str, /, *, database: tuple[str, str] | str | None = None
+    ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
 
         # TODO: set these to better defaults

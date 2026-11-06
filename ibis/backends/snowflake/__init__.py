@@ -1138,7 +1138,7 @@ $$ {defn["source"]} $$"""
         /,
         obj: IntoMemtable | ir.Table,
         *,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         overwrite: bool = False,
     ) -> None:
         """Insert data into a table.

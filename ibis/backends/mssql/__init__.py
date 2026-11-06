@@ -613,7 +613,7 @@ GO"""
         | None = None,
         *,
         schema: sch.IntoSchema | None = None,
-        database: str | None = None,
+        database: tuple[str, str] | str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
