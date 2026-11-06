@@ -94,6 +94,16 @@ class Backend(
     supports_temporary_tables = True
 
     @property
+    def dialect(self) -> sg.Dialect:
+        """Return the SQL dialect used by the backend."""
+        # sqlglot targets the latest DuckDB by default and writes lambdas as
+        # `LAMBDA x : ...`, which DuckDB < 1.3 can't parse. Pinning the dialect
+        # to the installed version keeps the `x -> ...` syntax for those versions.
+        if (version := vparse(duckdb.__version__)) < vparse("1.3"):
+            return sg.Dialect.get_or_raise(f"duckdb, version={version.base_version}")
+        return super().dialect
+
+    @property
     def settings(self) -> _Settings:
         return _Settings(self.con)
 
