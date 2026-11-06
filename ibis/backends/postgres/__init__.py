@@ -502,28 +502,41 @@ ORDER BY a.attnum ASC"""
         )
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        name = util.gen_name(f"{self.name}_metadata")
-
-        create_stmt = sge.Create(
-            kind="VIEW",
-            this=sg.table(name),
-            expression=sg.parse_one(query, read=self.dialect),
-            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-        ).sql(self.dialect)
-
-        drop_stmt = Drop(kind="VIEW", this=sg.table(name), exists=True).sql(
-            self.dialect
+        subquery = sg.parse_one(query, read=self.dialect).subquery(
+            "_ibis_postgres_metadata"
         )
+        empty_result = sg.select("*").from_(subquery).limit(0).sql(self.dialect)
 
         con = self.con
         with con.cursor() as cursor, con.transaction():
-            cursor.execute(create_stmt)
+            cursor.execute(empty_result)
+            if not cursor.description:
+                return sch.Schema({})
 
-        try:
-            return self.get_schema(name)
-        finally:
-            with con.cursor() as cursor, con.transaction():
-                cursor.execute(drop_stmt)
+            names = [column.name for column in cursor.description]
+            oids = [column.type_code for column in cursor.description]
+            mods = (
+                [cursor.pgresult.fmod(i) for i in range(len(names))]
+                if cursor.pgresult is not None
+                else [-1] * len(names)
+            )
+
+            type_names = cursor.execute(
+                """\
+SELECT CASE WHEN t.typtype = 'e' THEN 'enum' ELSE COALESCE(pg_catalog.format_type(c.oid, c.mod), 'text') END
+FROM unnest(%(oids)s::oid[], %(mods)s::int4[]) WITH ORDINALITY AS c(oid, mod, position)
+LEFT JOIN pg_catalog.pg_type t ON t.oid = c.oid
+ORDER BY c.position""",
+                {"oids": oids, "mods": mods},
+            ).fetchall()
+
+        type_mapper = self.compiler.type_mapper
+        return ibis.schema(
+            [
+                (name, type_mapper.from_string(type_name, nullable=True))
+                for name, (type_name,) in zip(names, type_names, strict=True)
+            ]
+        )
 
     def create_database(
         self, name: str, /, *, catalog: str | None = None, force: bool = False
