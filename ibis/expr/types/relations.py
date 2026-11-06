@@ -2438,9 +2438,7 @@ class Table(Expr, FixedTextJupyterMixin):
 
         # we need to detect reductions which are either turned into window functions
         # or scalar subqueries depending on whether they are originating from self
-        values = {
-            k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()
-        }
+        values = {k: rewrite_project_input(v, self.op()) for k, v in values.items()}
 
         # note that existing fields in node.fields will skip bind&dereferencing to improve performance
         # (unless overridden by mutations in **values)
@@ -2636,9 +2634,7 @@ class Table(Expr, FixedTextJupyterMixin):
 
         # we need to detect reductions which are either turned into window functions
         # or scalar subqueries depending on whether they are originating from self
-        values = {
-            k: rewrite_project_input(v, relation=self.op()) for k, v in values.items()
-        }
+        values = {k: rewrite_project_input(v, self.op()) for k, v in values.items()}
         return ops.Project(self, values).to_expr()
 
     projection = select
