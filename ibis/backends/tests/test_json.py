@@ -83,13 +83,17 @@ def test_json_literal(con):
 
 
 @pytest.mark.notimpl(["mysql", "risingwave"])
-@pytest.mark.notimpl(["mysql", "singlestoredb", "risingwave"])
 @pytest.mark.notyet(["bigquery", "sqlite"], reason="doesn't support maps")
 @pytest.mark.notyet(
     ["postgres", "materialize"], reason="only supports map<string, string>"
 )
 @pytest.mark.notyet(
     ["pyspark", "flink"], reason="should work but doesn't deserialize JSON"
+)
+@pytest.mark.notyet(
+    ["singlestoredb"],
+    raises=TypeError,
+    reason="force_sort can't order dicts; covered by backend tests",
 )
 def test_json_map(backend, json_t):
     expr = json_t.mutate("rowid", res=json_t.js.map).order_by("rowid")
@@ -107,7 +111,7 @@ def test_json_map(backend, json_t):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["mysql", "singlestoredb", "risingwave"])
+@pytest.mark.notimpl(["mysql", "risingwave"])
 @pytest.mark.notyet(["sqlite"], reason="doesn't support arrays")
 @pytest.mark.notyet(
     ["pyspark", "flink"], reason="should work but doesn't deserialize JSON"

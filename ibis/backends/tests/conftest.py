@@ -47,12 +47,21 @@ NO_ARRAY_SUPPORT_MARKS = [
         ),
     ),
     pytest.mark.never(
-        ["mysql", "singlestoredb"],
+        ["mysql"],
         reason="No array support",
         raises=(
             com.UnsupportedBackendType,
             com.OperationNotDefinedError,
             MySQLOperationalError,
+            com.TableNotFound,
+        ),
+    ),
+    pytest.mark.notimpl(
+        ["singlestoredb"],
+        reason="Only arrays derived from JSON are implemented",
+        raises=(
+            com.UnsupportedBackendType,
+            com.OperationNotDefinedError,
             SingleStoreDBOperationalError,
             SingleStoreDBProgrammingError,
             com.TableNotFound,
@@ -84,8 +93,13 @@ NO_STRUCT_SUPPORT = combine_marks(NO_STRUCT_SUPPORT_MARKS)
 
 NO_MAP_SUPPORT_MARKS = [
     pytest.mark.never(
-        ["sqlite", "mysql", "singlestoredb", "mssql"],
+        ["sqlite", "mysql", "mssql"],
         reason="Unlikely to ever add map support",
+    ),
+    pytest.mark.notimpl(
+        ["singlestoredb"],
+        reason="Only maps derived from JSON objects are implemented",
+        strict=False,
     ),
     pytest.mark.notyet(
         ["bigquery", "impala"],
