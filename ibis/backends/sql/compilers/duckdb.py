@@ -73,6 +73,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.TimestampRange: "range",
         ops.MapLength: "cardinality",
         ops.Mode: "mode",
+        ops.StringByteLength: "strlen",
         ops.TimeFromHMS: "make_time",
         ops.GeoPoint: "st_point",
         ops.GeoAsText: "st_astext",
