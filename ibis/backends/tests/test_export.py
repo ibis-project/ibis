@@ -10,6 +10,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import util
+from ibis.backends.tests.conftest import NO_STRUCT_SUPPORT
 from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
     DuckDBNotImplementedException,
@@ -189,6 +190,39 @@ def test_to_pyarrow_batches_borked_types(batting):
         assert isinstance(batch, pa.RecordBatch)
         assert len(batch) <= limit
         util.consume(batch_reader)
+
+
+@NO_STRUCT_SUPPORT
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=AssertionError,
+    reason="nested columns come back wrapped in the `ibis.json` extension type",
+)
+def test_to_pyarrow_nested_types(struct):
+    table = struct.select("abc").to_pyarrow()
+    assert pat.is_struct(table.schema.field("abc").type)
+
+
+@NO_STRUCT_SUPPORT
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=AssertionError,
+    reason="no typed wire format for VARIANT, ARRAY or OBJECT, so nested columns arrive as JSON text and stay that way",
+)
+def test_to_pyarrow_batches_nested_types(struct):
+    with struct.select("abc").to_pyarrow_batches() as reader:
+        table = reader.read_all()
+    assert pat.is_struct(table.schema.field("abc").type)
+
+
+@NO_STRUCT_SUPPORT
+def test_empty_nested_types_to_pyarrow(struct):
+    expr = struct.select("abc").limit(0)
+
+    assert len(expr.to_pyarrow()) == 0
+
+    with expr.to_pyarrow_batches() as reader:
+        assert len(reader.read_all()) == 0
 
 
 def test_to_pyarrow_memtable(con):
