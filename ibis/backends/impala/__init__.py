@@ -104,6 +104,7 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
         use_ssl: bool = False,
         ca_cert: str | Path | None = None,
         user: str | None = None,
+        username: str | None = None,
         password: str | None = None,
         auth_mechanism: Literal["NOSASL", "PLAIN", "GSSAPI", "LDAP"] = "NOSASL",
         kerberos_service_name: str = "impala",
@@ -129,6 +130,8 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
             this argument is `None`, then certificate validation is skipped.
         user
             LDAP user to authenticate
+        username
+            Alias for `user`
         password
             LDAP password to authenticate
         auth_mechanism
@@ -158,6 +161,8 @@ class Backend(SQLBackend, HasCurrentDatabase, NoExampleLoader):
         """
         if ca_cert is not None:
             params["ca_cert"] = str(ca_cert)
+        if user is None:
+            user = username
 
         # make sure the connection works
         con = impyla.connect(

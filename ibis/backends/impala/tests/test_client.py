@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 from contextlib import closing
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -13,6 +14,20 @@ from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
 thrift = pytest.importorskip("thrift")
+
+
+def test_connect_accepts_username_alias():
+    with patch("ibis.backends.impala.impyla.connect") as connect:
+        connection = connect.return_value
+        cursor = connection.cursor.return_value
+        cursor.__enter__ = Mock(return_value=cursor)
+        cursor.__exit__ = Mock(return_value=None)
+
+        ibis.impala.connect(host="example.com", username="user", password="pass")
+
+    connect.assert_called_once()
+    assert connect.call_args.kwargs["user"] == "user"
+    assert connect.call_args.kwargs["password"] == "pass"
 
 
 def test_run_sql(con, test_data_db):
