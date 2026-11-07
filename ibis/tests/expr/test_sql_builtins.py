@@ -165,6 +165,13 @@ def test_round(functional_alltypes, lineitem):
     result = dec.round(2)
     assert isinstance(result, ir.DecimalColumn)
 
+    # negative digits round to a power of ten, so the result is an integral
+    # decimal rather than one with a negative scale
+    result = dec.round(-1)
+    assert isinstance(result, ir.DecimalColumn)
+    assert result.type().scale == 0
+    assert result.type().precision == dec.type().precision
+
     result = ibis.literal(1.2345).round()
     assert isinstance(result, ir.IntegerScalar)
 
