@@ -444,6 +444,38 @@ class PySparkCompiler(SQLGlotCompiler):
             arg = sge.Distinct(expressions=[arg])
         return self.agg.array_agg(arg, order_by=order_by)
 
+    def visit_ArrayConcatAgg(
+        self, op, *, arg, where, order_by, include_null, distinct, limit
+    ):
+        """Compile with Spark collection and flattening functions."""
+        if include_null and distinct:
+            raise com.UnsupportedOperationError(
+                "combining `include_null=True` and `distinct=True` is not "
+                "supported by the pyspark backend"
+            )
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of `concat_agg` is not supported by the pyspark backend"
+            )
+        if include_null:
+            # collect_list drops nulls, so use empty arrays to preserve their
+            # participation in input-array limits without adding elements.
+            arg = self.f.coalesce(arg, self.cast(self.f.array(), op.dtype))
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        func = self.f.collect_set if distinct else self.f.collect_list
+        # COUNT checks retained rows without rendering the array aggregate twice.
+        has_inputs = self.f.count(arg) > 0
+        if isinstance(op.limit, ops.Literal) and op.limit.value == 0:
+            return self.if_(has_inputs, self.cast(self.f.array(), op.dtype), NULL)
+        arrays = func(arg)
+        if limit is not None:
+            arrays = self.f.slice(arrays, 1, limit)
+
+        # Spark returns an empty array when every input is null. Reductions
+        # return null when no input values remain after filtering.
+        return self.if_(has_inputs, self.f.flatten(arrays), NULL)
+
     def visit_Strip(self, op, *, arg):
         return self.f.trim(arg, self.f.concat(string.whitespace[:-2], VT, FF))
 

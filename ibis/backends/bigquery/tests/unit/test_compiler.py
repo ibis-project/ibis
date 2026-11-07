@@ -546,6 +546,110 @@ def test_bool_reducers_where_conj(alltypes, snapshot):
     snapshot.assert_match(to_sql(expr2), "out.sql")
 
 
+def test_array_concat_agg(snapshot):
+    """Compile an ordered, filtered, and limited concatenating aggregate."""
+    t = ibis.table(
+        {"arr": "array<int64>", "key": "int64", "keep": "boolean"},
+        name="t",
+    )
+    expr = t.arr.concat_agg(
+        where=_.keep,
+        order_by=_.key.desc(),
+        limit=2,
+    ).name("result")
+
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
+def test_array_collect_flatten_alias_lowering():
+    """Lower collected arrays through a transparent value alias."""
+    t = ibis.table({"arr": "array<int64>", "key": "int64"}, name="t")
+
+    actual = to_sql(t.arr.collect().name("collected").flatten().name("result"))
+    expected = to_sql(t.arr.concat_agg().name("result"))
+
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "expr",
+    [
+        pytest.param(
+            lambda t: t.arr.collect().over(order_by=t.key).flatten(),
+            id="collect-flatten",
+        ),
+        pytest.param(
+            lambda t: t.arr.collect().over(order_by=t.key).name("collected").flatten(),
+            id="aliased-collect-flatten",
+        ),
+        pytest.param(
+            lambda t: t.arr.concat_agg().over(order_by=t.key),
+            id="concat-agg",
+        ),
+    ],
+)
+def test_array_concat_agg_window_rejected(expr):
+    """Reject array concatenation aggregates used as window functions."""
+    t = ibis.table({"arr": "array<int64>", "key": "int64"}, name="t")
+
+    with pytest.raises(com.UnsupportedOperationError, match="window"):
+        to_sql(expr(t))
+
+
+def test_array_concat_agg_edge_cases():
+    """Compile supported edge cases and reject nonconstant limits."""
+    t = ibis.table(
+        {"arr": "array<int64>", "key": "int64", "keep": "boolean", "n": "int64"},
+        name="t",
+    )
+
+    collected = (
+        t.arr.collect(where=t.keep, order_by=t.key.desc()).flatten().name("result")
+    )
+    concatenated = t.arr.concat_agg(where=t.keep, order_by=t.key.desc()).name("result")
+    assert to_sql(collected) == to_sql(concatenated)
+
+    with pytest.raises(com.UnsupportedOperationError, match="constant"):
+        to_sql(t.arr.concat_agg(limit=t.n.max()))
+    with pytest.raises(com.UnsupportedOperationError, match="constant"):
+        to_sql(t.arr.concat_agg(limit=ibis.random().cast("int64")))
+    with pytest.raises(com.UnsupportedOperationError, match="non-null"):
+        to_sql(t.arr.concat_agg(limit=ibis.literal(None, type="int64")))
+
+    limit = ibis.param("int64")
+    assert "LIMIT 2" in to_sql(t.arr.concat_agg(limit=limit), params={limit: 2})
+
+    small_limit = ibis.param("int32")
+    cast_limit = small_limit.cast("int64")
+    cast_sql = to_sql(t.arr.concat_agg(limit=cast_limit), params={small_limit: 2})
+    assert "LIMIT CAST(2 AS INT64)" in cast_sql
+
+    arithmetic_limit = ibis.literal(1) + 1
+    assert "LIMIT 2" in to_sql(t.arr.concat_agg(limit=arithmetic_limit))
+
+    for zero_expression in (
+        ibis.literal("0").cast("int64"),
+        ibis.literal(0.4).floor().cast("int64"),
+    ):
+        expression_sql = to_sql(t.arr.concat_agg(limit=zero_expression))
+        assert "COUNTIF" in expression_sql
+        assert "ARRAY_CONCAT_AGG" in expression_sql
+
+    zero_sql = to_sql(t.arr.concat_agg(limit=0))
+    assert "COUNTIF" in zero_sql
+    assert "ARRAY_CONCAT_AGG" not in zero_sql
+
+    zero_param_sql = to_sql(t.arr.concat_agg(limit=limit), params={limit: 0})
+    assert "COUNTIF" in zero_param_sql
+    assert "ARRAY_CONCAT_AGG" not in zero_param_sql
+
+    zero_cast_sql = to_sql(t.arr.concat_agg(limit=cast_limit), params={small_limit: 0})
+    assert "COUNTIF" in zero_cast_sql
+    assert "ARRAY_CONCAT_AGG" not in zero_cast_sql
+
+    assert "COALESCE" in to_sql(t.arr.concat_agg(include_null=True))
+
+
 @pytest.mark.parametrize("agg", ["approx_median", "approx_nunique"])
 @pytest.mark.parametrize(
     "where",
