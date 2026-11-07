@@ -29,11 +29,11 @@ from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
     exclude_unsupported_window_frame_from_ops,
-    exclude_unsupported_window_frame_from_row_number,
+    row_number_one_to_zero_index,
     lower_log2,
     lower_log10,
     lower_sample,
-    rewrite_empty_order_by_window,
+    add_order_by_to_empty_ranking_window_functions,
     split_select_distinct_with_order_by,
     x,
 )
@@ -84,9 +84,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
     agg = AggGen(supports_order_by=True)
 
     rewrites = (
-        exclude_unsupported_window_frame_from_row_number,
+        row_number_one_to_zero_index,
         exclude_unsupported_window_frame_from_ops,
-        rewrite_empty_order_by_window,
+        add_order_by_to_empty_ranking_window_functions,
         multiple_args_to_zipped_struct_field_access,
         *SQLGlotCompiler.rewrites,
     )

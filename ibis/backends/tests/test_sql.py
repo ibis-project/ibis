@@ -302,3 +302,21 @@ def test_order_by_no_deference_literals(backend_name, snapshot):
     o = s.order_by("a", "i", "s")
     sql = ibis.to_sql(o, dialect=backend_name)
     snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.parametrize("backend_name", _get_backends_to_test())
+@pytest.mark.notimpl(["polars"], raises=ValueError, reason="not a SQL backend")
+def test_any_with_window(backend_name, snapshot):
+    t = ibis.table([("a", "bool"), ("x", "int64")], name="t")
+    expr = t.a.any().over(group_by=_.x)
+    result = ibis.to_sql(expr, dialect=backend_name)
+    snapshot.assert_match(result, "out.sql")
+
+
+@pytest.mark.parametrize("backend_name", _get_backends_to_test())
+@pytest.mark.notimpl(["polars"], raises=ValueError, reason="not a SQL backend")
+def test_all_with_window(backend_name, snapshot):
+    t = ibis.table([("a", "bool"), ("x", "int64")], name="t")
+    expr = t.a.all().over(group_by=_.x)
+    result = ibis.to_sql(expr, dialect=backend_name)
+    snapshot.assert_match(result, "out.sql")
