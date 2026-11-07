@@ -415,7 +415,15 @@ class Backend(
                 spark_udf = F.pandas_udf(udf_func, returnType=udf_return)
             elif udf.__input_type__ == InputType.PYTHON:
                 udf_func = udf.__func__
-                spark_udf = F.udf(udf_func, returnType=udf_return)
+                # pyspark >= 4.1 infers the eval type from type hints when
+                # `useArrow` is None, and warns when they aren't pandas-style
+                use_arrow = (
+                    self._session.conf.get(
+                        "spark.sql.execution.pythonUDF.arrow.enabled", "false"
+                    ).lower()
+                    == "true"
+                )
+                spark_udf = F.udf(udf_func, returnType=udf_return, useArrow=use_arrow)
             elif udf.__input_type__ == InputType.PYARROW:
                 # raise not implemented error if running on pyspark < 3.5
                 if PYSPARK_LT_35:

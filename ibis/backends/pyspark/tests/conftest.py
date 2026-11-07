@@ -290,7 +290,7 @@ else:
             )
             _, scala_version_str = scala_jarfile.stem.rsplit("-", 1)
             scala_ver = parse_version(scala_version_str)
-            iceberg_jar = f"iceberg-spark-runtime-{spark_ver.major}.{spark_ver.minor}_{scala_ver.major}.{scala_ver.minor}:1.10.1"
+            iceberg_jar = f"iceberg-spark-runtime-{spark_ver.major}.{spark_ver.minor}_{scala_ver.major}.{scala_ver.minor}:1.12.0"
 
             config = reduce(
                 lambda config, line: config.config(
