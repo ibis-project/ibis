@@ -15,7 +15,7 @@ from ibis.common.exceptions import ExpressionError, IbisInputError
 from ibis.common.graph import Node as Traversable
 from ibis.common.graph import traverse
 from ibis.common.grounds import Annotable
-from ibis.common.patterns import Check, pattern, replace
+from ibis.common.patterns import Check, NoMatch, pattern, replace
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.util import Namespace, promote_list
 
@@ -372,8 +372,29 @@ def complete_reprojection(_, y):
     return y
 
 
+# values tied to the relation they sit on: merging two relations when either
+# holds one can change the result (the compiler guards ``merge_select_select``
+# with a similar set)
+BLOCKING = (
+    ops.WindowFunction,  # a window sees the rows it was computed over
+    ops.Subquery,  # a subquery may be correlated to that relation
+    ops.Unnest,  # UNNEST cannot move into a predicate
+    ops.Impure,  # an impure call must run once per row
+    ops.RowID,  # a row id exists only on a physical table
+)
+
+
+def _blocked(outer, inner):
+    return bool(
+        outer.find_below(BLOCKING, filter=ops.Value)
+        or inner.find_below(BLOCKING, filter=ops.Value)
+    )
+
+
 @replace(p.Project(y @ p.Project))
 def subsequent_projects(_, y):
+    if _blocked(_, y):
+        return _
     rule = p.Field(y, name) >> Item(y.values, name)
     values = {k: v.replace(rule, filter=ops.Value) for k, v in _.values.items()}
     return ops.Project(y.parent, values)
@@ -381,6 +402,9 @@ def subsequent_projects(_, y):
 
 @replace(p.Filter(y @ p.Filter))
 def subsequent_filters(_, y):
+    if _blocked(_, y):
+        return _
+
     rule = p.Field(y, name) >> d.Field(y.parent, name)
     preds = tuple(v.replace(rule, filter=ops.Value) for v in _.predicates)
     return ops.Filter(y.parent, y.predicates + preds)
@@ -388,6 +412,9 @@ def subsequent_filters(_, y):
 
 @replace(p.Filter(y @ p.Project))
 def reorder_filter_project(_, y):
+    if _blocked(_, y):
+        return _
+
     rule = p.Field(y, name) >> Item(y.values, name)
     preds = tuple(v.replace(rule, filter=ops.Value) for v in _.predicates)
 
@@ -404,5 +431,15 @@ def simplify(node):
     node = node.replace(reorder_filter_project)
     node = node.replace(reorder_filter_project)
     node = node.replace(subsequent_projects | subsequent_filters)
-    node = node.replace(complete_reprojection)
-    return node
+    # a subquery needs a relation with values, which a bare table lacks; check
+    # the original node, since collapsing its children recreates it
+    keep = frozenset(sub.rel for sub in node.find(ops.Subquery))
+
+    def reproject(op, kwargs):
+        new = op.__recreate__(kwargs) if kwargs else op
+        result = complete_reprojection.match(new, {})
+        if result is NoMatch or (op in keep and not result.values):
+            return new
+        return result
+
+    return node.replace(reproject)
