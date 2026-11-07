@@ -666,6 +666,12 @@ required-imports = ["from __future__ import annotations"]
   "T201",
 ] # prints output using `print`
 "docs/**/{datafusion,polars}_*.py" = ["T201"] # prints output using `print`
+"ci/backend_usage/*.py" = [
+  "T201", # prints output using `print`
+  "S310", # fetches a fixed https URL
+  "S603", # runs git and gh with arguments under our control
+  "S607", # git and gh are found on PATH
+]
 "!**/test*.py" = ["ARG"] # check for  unused arguments in testing
 
 [tool.ruff.format]
