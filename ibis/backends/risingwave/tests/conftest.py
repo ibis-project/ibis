@@ -64,6 +64,9 @@ class TestConf(ServiceBackendTest):
         )
         cursor = con.raw_sql("SET RW_IMPLICIT_FLUSH TO true;")
         cursor.close()
+        # the test suite creates enough tables to trip the actor count check
+        cursor = con.raw_sql("SET bypass_cluster_limits TO true;")
+        cursor.close()
         return con
 
 
