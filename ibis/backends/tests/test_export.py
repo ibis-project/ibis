@@ -144,7 +144,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
 
 @pytest.mark.notimpl(["datafusion", "flink"])
 @pytest.mark.notyet(
-    ["clickhouse", "athena"],
+    ["clickhouse", "chdb", "athena"],
     raises=AssertionError,
     reason="backend doesn't respect chunk_size parameter",
 )
@@ -159,7 +159,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
 
 @pytest.mark.notimpl(["datafusion", "flink"])
 @pytest.mark.notyet(
-    ["clickhouse", "athena"],
+    ["clickhouse", "chdb", "athena"],
     raises=AssertionError,
     reason="backend doesn't respect chunk_size parameter",
 )
@@ -293,6 +293,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "impala",
         "materialize",
@@ -382,6 +383,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
         "athena",
         "bigquery",
         "clickhouse",
+        "chdb",
         "databricks",
         "datafusion",
         "druid",

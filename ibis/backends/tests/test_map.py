@@ -33,7 +33,7 @@ mark_notyet_datafusion = pytest.mark.notyet(
 )
 
 
-@pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+@pytest.mark.notyet(["clickhouse", "chdb"], reason="nested types can't be NULL")
 @pytest.mark.parametrize(
     ("k", "v"),
     [
@@ -50,7 +50,7 @@ def test_map_nulls(con, k, v):
     assert con.execute(m) is None
 
 
-@pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+@pytest.mark.notyet(["clickhouse", "chdb"], reason="nested types can't be NULL")
 @pytest.mark.parametrize(
     ("k", "v"),
     [
@@ -66,7 +66,7 @@ def test_map_keys_nulls(con, k, v):
     assert con.execute(m.keys()) is None
 
 
-@pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+@pytest.mark.notyet(["clickhouse", "chdb"], reason="nested types can't be NULL")
 @pytest.mark.parametrize(
     "map_",
     [
@@ -116,7 +116,9 @@ def test_map_values_nulls(con, map_):
             ),
             "a",
             marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
+                pytest.mark.notyet(
+                    ["clickhouse", "chdb"], reason="nested types can't be NULL"
+                ),
                 pytest.mark.notyet(["datafusion"], raises=Exception, strict=False),
             ],
             id="null_both_non_null_key",
@@ -128,7 +130,9 @@ def test_map_values_nulls(con, map_):
             ),
             ibis.literal(None, type="string"),
             marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
+                pytest.mark.notyet(
+                    ["clickhouse", "chdb"], reason="nested types can't be NULL"
+                ),
             ],
             id="null_both_null_key",
         ),
@@ -136,7 +140,9 @@ def test_map_values_nulls(con, map_):
             ibis.literal(None, type="map<string, string>"),
             "a",
             marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
+                pytest.mark.notyet(
+                    ["clickhouse", "chdb"], reason="nested types can't be NULL"
+                ),
                 mark_notyet_datafusion,
             ],
             id="null_map_non_null_key",
@@ -145,7 +151,9 @@ def test_map_values_nulls(con, map_):
             ibis.literal(None, type="map<string, string>"),
             ibis.literal(None, type="string"),
             marks=[
-                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
+                pytest.mark.notyet(
+                    ["clickhouse", "chdb"], reason="nested types can't be NULL"
+                ),
                 mark_notyet_datafusion,
             ],
             id="null_map_null_key",
@@ -158,7 +166,7 @@ def test_map_get_contains_nulls(con, map_, key, method):
     assert con.to_pyarrow(expr(key)).as_py() is None
 
 
-@pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+@pytest.mark.notyet(["clickhouse", "chdb"], reason="nested types can't be NULL")
 @pytest.mark.parametrize(
     ("m1", "m2"),
     [
@@ -329,7 +337,7 @@ keys = pytest.mark.parametrize(
             [1.0, 2.0],
             marks=[
                 pytest.mark.notyet(
-                    "clickhouse",
+                    ["clickhouse", "chdb"],
                     reason="only supports str,int,bool,timestamp keys",
                     strict=False,
                 ),
@@ -352,7 +360,8 @@ keys = pytest.mark.parametrize(
             [ibis.date(1, 2, 3), ibis.date(4, 5, 6)],
             marks=[
                 pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp keys"
+                    ["clickhouse", "chdb"],
+                    reason="only supports str,int,bool,timestamp keys",
                 ),
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
@@ -364,7 +373,8 @@ keys = pytest.mark.parametrize(
             [[1, 2], [3, 4]],
             marks=[
                 pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp keys"
+                    ["clickhouse", "chdb"],
+                    reason="only supports str,int,bool,timestamp keys",
                 ),
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
@@ -376,7 +386,8 @@ keys = pytest.mark.parametrize(
             [ibis.struct(dict(a=1)), ibis.struct(dict(a=2))],
             marks=[
                 pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp keys"
+                    ["clickhouse", "chdb"],
+                    reason="only supports str,int,bool,timestamp keys",
                 ),
                 mark_notyet_postgres,
                 pytest.mark.notyet(

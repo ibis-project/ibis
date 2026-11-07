@@ -144,6 +144,7 @@ Ibis supports more than 20 backends:
 - [Apache PySpark](https://ibis-project.org/backends/pyspark/)
 - [Athena](https://ibis-project.org/backends/athena/)
 - [BigQuery](https://ibis-project.org/backends/bigquery/)
+- [chDB](https://ibis-project.org/backends/chdb/)
 - [ClickHouse](https://ibis-project.org/backends/clickhouse/)
 - [Databricks](https://ibis-project.org/backends/databricks/)
 - [DuckDB](https://ibis-project.org/backends/duckdb/)

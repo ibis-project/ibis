@@ -46,6 +46,13 @@ with contextlib.suppress(AttributeError):
     ClickHouse.Generator.TRANSFORMS[sge.Median] = rename_func("median")
 
 
+class ChDB(ClickHouse):
+    """Subclass of ClickHouse dialect for chDB.
+
+    This is here to allow referring to the ClickHouse dialect as "chdb".
+    """
+
+
 class DataFusion(Postgres):
     class Generator(Postgres.Generator):
         TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {

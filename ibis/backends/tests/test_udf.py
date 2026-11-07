@@ -71,6 +71,11 @@ def test_udf(batting):
 @mark.notyet(
     ["sqlite"], raises=com.IbisTypeError, reason="sqlite doesn't support map types"
 )
+@mark.notyet(
+    ["chdb"],
+    raises=com.UnsupportedBackendType,
+    reason="chDB Python UDFs don't support map types",
+)
 def test_map_udf(batting):
     @udf.scalar.python
     def num_vowels_map(s: str, include_y: bool = False) -> dict[str, int]:
@@ -100,6 +105,11 @@ def test_map_udf(batting):
 )
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(["sqlite"], raises=TypeError, reason="sqlite doesn't support map types")
+@mark.notyet(
+    ["chdb"],
+    raises=com.UnsupportedBackendType,
+    reason="chDB Python UDFs don't support map types",
+)
 def test_map_merge_udf(batting):
     @udf.scalar.python
     def vowels_map(s: str) -> dict[str, int]:
@@ -165,6 +175,11 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
     condition=IS_SPARK_REMOTE,
     raises=PySparkPythonException,
     reason="remote udfs not yet tested due to environment complexities",
+)
+@mark.notyet(
+    ["chdb"],
+    raises=RuntimeError,
+    reason="chDB doesn't support pandas/pyarrow vectorized UDFs",
 )
 @mark.parametrize(
     "add_one",
