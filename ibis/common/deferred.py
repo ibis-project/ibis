@@ -408,7 +408,16 @@ class Call(FrozenSlotted, Resolver):
         super().__init__(func=func, args=args, kwargs=kwargs)
 
     def resolve(self, context):
-        func = self.func.resolve(context)
+        if (
+            isinstance(self.func, Attr)
+            and isinstance(self.func.obj, Call)
+            and isinstance(self.func.obj.func, Attr)
+        ):
+            receiver = self.func.obj.resolve(context)
+            func = getattr(receiver, self.func.name.resolve(context))
+            context = {**context, "_": receiver}
+        else:
+            func = self.func.resolve(context)
         args = tuple(arg.resolve(context) for arg in self.args)
         kwargs = {k: v.resolve(context) for k, v in self.kwargs.items()}
         return func(*args, **kwargs)
