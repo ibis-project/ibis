@@ -428,6 +428,7 @@ def schema(value: IntoSchema, /) -> Schema:
         - An existing `Schema` object
         - A mapping of column names to data types
         - An iterable of (column name, data type) pairs
+        - A `pandas.Series` or `pyarrow.Schema`
 
     Returns
     -------
