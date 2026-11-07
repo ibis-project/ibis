@@ -10,16 +10,16 @@ FROM (
   FROM "left" AS "t2"
   LEFT OUTER JOIN "right" AS "t3"
     ON "t2"."by" = "t3"."by"
-) AS "t5"
+) AS "t4"
 WHERE
-  "t5"."on_right" = (
+  "t4"."on_right" = (
     SELECT
-      MAX("t4"."on") AS "Max(on)"
+      MAX("t5"."on") AS "Max(on)"
     FROM (
       SELECT
         *
       FROM "right" AS "t1"
       WHERE
-        "t1"."by" = "t0"."by" AND "t1"."on" <= "t0"."on"
-    ) AS "t4"
+        "t1"."by" = "t4"."by" AND "t1"."on" <= "t4"."on"
+    ) AS "t5"
   )

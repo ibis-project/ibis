@@ -66,7 +66,7 @@ class DerefMap(Annotable, Traversable):
     extra: Optional[FrozenDict[ops.Node, ops.Node]]
 
     """Substitution mapping from values of earlier relations to the fields of `rels`."""
-    subs: Optional[FrozenDict[ops.Value, ops.Field]] = None
+    subs: Optional[FrozenDict[ops.Value, ops.Value]] = None
 
     """Ambiguous field references."""
     ambigs: Optional[FrozenDict[ops.Value, VarTuple[ops.Value]]] = None
@@ -178,9 +178,53 @@ class DerefMap(Annotable, Traversable):
                     raise IbisInputError(
                         f"Ambiguous field reference {ambigs!r} in expression {v!r}"
                     )
+                # relations which can't be dereferenced end up as subqueries,
+                # their references to the target relations must be dereferenced
+                subqueries = {
+                    field.rel
+                    for field in v.find(ops.Field, filter=ops.Value)
+                    if field not in self.subs
+                }
+                correlated = {}
+                for rel in subqueries - self.rels:
+                    if (new_rel := self._dereference_subquery(rel)) is not rel:
+                        correlated[rel] = new_rel
+                if correlated:
+                    v = v.replace(
+                        correlated,
+                        filter=p.Value | Check(correlated.__contains__),
+                    )
                 yield v.replace(self.subs, filter=ops.Value)
             else:
                 yield v
+
+    def _dereference_subquery(self, rel: ops.Relation) -> ops.Relation:
+        """Dereference the references of a subquery to joined relations.
+
+        The references are the fields of relations which are not the inputs of
+        any relation within the subquery. Only references to join chains and
+        join references are dereferenced, since other relations may be merged
+        into the outer query during compilation, leaving nothing to reference.
+        """
+        inputs = {rel}
+        for node in rel.find(ops.Relation):
+            for child in node.__children__:
+                if isinstance(child, ops.JoinLink):
+                    child = child.table
+                if isinstance(child, ops.Relation):
+                    inputs.add(child)
+
+        self._fill_substitution_mappings()
+        subs = {}
+        for field in rel.find(ops.Field):
+            if field.rel in inputs or field not in self.subs:
+                continue
+            target = self.subs[field]
+            if isinstance(target, ops.Field) and isinstance(
+                target.rel, (ops.JoinChain, ops.JoinReference)
+            ):
+                subs[field] = target
+        return rel.replace(subs) if subs else rel
 
 
 def flatten_predicates(node):
@@ -256,11 +300,11 @@ def wrap_analytic(_, **__):
 
 
 @replace(p.Reduction)
-def project_wrap_reduction(_, rel):
+def project_wrap_reduction(_, rels):
     # Query all the tables that the reduction depends on
-    if _.relations == {rel}:
-        # The reduction is fully originating from the `rel`, so turn
-        # it into a window function of `rel`
+    if _.relations and _.relations <= rels:
+        # The reduction is fully originating from `rels`, so turn
+        # it into a window function of `rels`
         return ops.WindowFunction(_, order_by=getattr(_, "order_by", ()))
     else:
         # 1. The reduction doesn't depend on any table, constructed from
@@ -272,14 +316,14 @@ def project_wrap_reduction(_, rel):
         return ops.ScalarSubquery(_.to_expr().as_table())
 
 
-def rewrite_project_input(value, relation):
+def rewrite_project_input(value, *relations):
     # we need to detect reductions which are either turned into window functions
     # or scalar subqueries depending on whether they are originating from the
-    # relation
+    # relations
     return value.replace(
         wrap_analytic | project_wrap_reduction,
         filter=p.Value & ~p.WindowFunction,
-        context={"rel": relation},
+        context={"rels": frozenset(relations)},
     )
 
 
