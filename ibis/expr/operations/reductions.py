@@ -11,7 +11,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import ValidationError, attribute
 from ibis.common.typing import VarTuple  # noqa: TC001
-from ibis.expr.operations.core import Column, Value
+from ibis.expr.operations.core import Column, Scalar, Value
 from ibis.expr.operations.relations import Relation  # noqa: TC001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TC001
 
@@ -74,6 +74,12 @@ class ArrayCollect(Orderable):
     @attribute
     def dtype(self):
         return dt.Array(self.arg.dtype)
+
+
+class LimitedArrayCollect(ArrayCollect):
+    """Collect a bounded prefix during backend-specific lowering."""
+
+    limit: Scalar[dt.Integer]
 
 
 # TODO(NickCrews): This is the only Orderable without a include_null parameter,
