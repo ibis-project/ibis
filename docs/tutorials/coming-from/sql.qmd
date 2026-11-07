@@ -869,7 +869,7 @@ WHERE EXISTS (
 ```
 
 To describe this operation in Ibis, you compare the `user_id` columns and use
-the `any` reduction:
+the `any` aggregation:
 
 ```{python}
 cond = (events.user_id == purchases.user_id).any()
