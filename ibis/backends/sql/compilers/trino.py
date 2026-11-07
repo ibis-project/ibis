@@ -510,7 +510,11 @@ class TrinoCompiler(SQLGlotCompiler):
 
         all_n, chunk = reduce(combine_zipped, chunks)
         assert all_n == len(op.dtype.value_type)
-        return chunk
+        # Trino's `zip`/`row` builds anonymous ROW fields, so downstream
+        # `struct.f1`/`struct.f2` access (e.g. inside a subsequent filter/map
+        # lambda) fails to resolve. Cast to the named struct type so the field
+        # names ibis assigns (f1, f2, ...) are carried on the ROW.
+        return self.cast(chunk, op.dtype)
 
     def visit_ExtractMicrosecond(self, op, *, arg):
         # trino only seems to store milliseconds, but the result of formatting
