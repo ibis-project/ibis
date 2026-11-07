@@ -5,9 +5,12 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
+import sqlglot
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 from ibis.tests.util import (
     assert_same_result,
     decompile_roundtrip,
@@ -20,35 +23,16 @@ root = Path(__file__).absolute().parents[3]
 SQL_QUERY_PATH = root / "backends" / "tests" / "tpc" / "queries" / "duckdb" / "h"
 TPCDS_QUERY_PATH = root / "backends" / "tests" / "tpc" / "queries" / "duckdb" / "ds"
 
+# Ibis has no ROLLUP / GROUPING SETS; parse_sql rejects them up front
+TPCDS_ROLLUP_QUERIES = frozenset({5, 14, 18, 22, 67, 70, 77, 80, 86})
+
 # the queries that return no rows on the test data, as in the TPC-DS suite
 TPCDS_EMPTY_QUERIES = frozenset({24, 25, 54, 64, 65, 73, 77, 82, 91, 93})
 
-# the queries the planner-based ``parse_sql`` translates today; every other
-# query is a strict xfail until the converter that replaces the planner lands
-TPCH_TRANSLATED_QUERIES = frozenset({1, 3, 5, 6, 10, 19})
-TPCDS_TRANSLATED_QUERIES = frozenset({7, 13, 26, 28, 37, 42, 48, 82, 96})
-
-# translated queries whose result still differs, and why
-TPCDS_MISTRANSLATED_QUERIES = {
-    28: "parse_sql turns COUNT(x) and COUNT(DISTINCT x) into COUNT(*)",
-    37: "parse_sql drops a GROUP BY that has no aggregates",
-}
-
-
-def _not_yet(translated: bool, mistranslated: str | None = None) -> list:
-    """The marks of a query ``parse_sql`` does (not) translate yet.
-
-    ``mistranslated`` is why a translated query's result still differs.
-    """
-    if mistranslated is not None:
-        return [pytest.mark.xfail(reason=mistranslated, strict=True)]
-    if translated:
-        return []
-    return [
-        pytest.mark.xfail(
-            reason="parse_sql cannot translate this query yet", strict=True
-        )
-    ]
+# sqlglot has no ``Rank`` class before 27.11, so parse_sql rejects RANK() there;
+# these queries use it (67, 70 and 86 do too, behind the ROLLUP mark)
+OLD_SQLGLOT = vparse(sqlglot.__version__) < vparse("27.11")
+TPCDS_RANKING_QUERIES = frozenset({36, 44, 47, 49, 57})
 
 
 @contextmanager
@@ -120,13 +104,7 @@ def test_parse_sql_tpch(tpch_query, snapshot, con, tpch_catalog):
 
 
 @pytest.mark.parametrize("decompile", [False, True], ids=["parse", "roundtrip"])
-@pytest.mark.parametrize(
-    "tpch_query",
-    [
-        param(q, id=f"tpch{q:02d}", marks=_not_yet(q in TPCH_TRANSLATED_QUERIES))
-        for q in range(1, 23)
-    ],
-)
+@pytest.mark.parametrize("tpch_query", range(1, 23), ids=lambda q: f"tpch{q:02d}")
 def test_parse_sql_tpch_results(tpch_query, decompile, con, tpch_catalog):
     """Every TPC-H query parses into an expression that computes the same result.
 
@@ -148,9 +126,20 @@ def test_parse_sql_tpch_results(tpch_query, decompile, con, tpch_catalog):
         param(
             q,
             id=f"tpcds{q:02d}",
-            marks=_not_yet(
-                q in TPCDS_TRANSLATED_QUERIES, TPCDS_MISTRANSLATED_QUERIES.get(q)
-            ),
+            marks=[
+                pytest.mark.xfail(
+                    raises=com.UnsupportedOperationError,
+                    reason="GROUP BY ROLLUP is not supported",
+                    strict=True,
+                )
+            ]
+            if q in TPCDS_ROLLUP_QUERIES
+            else [
+                pytest.mark.skipif(
+                    OLD_SQLGLOT and q in TPCDS_RANKING_QUERIES,
+                    reason="sqlglot has no ranking function classes before 27.11",
+                )
+            ],
         )
         for q in range(1, 100)
     ],

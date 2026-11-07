@@ -7,8 +7,11 @@ import decimal
 import duckdb
 import pandas as pd
 import pytest
+import sqlglot
+from packaging.version import parse as vparse
 
 import ibis
+import ibis.common.exceptions as com
 from ibis.tests.util import (
     assert_same_result,
     decompile_roundtrip,
@@ -190,101 +193,179 @@ CASES = {
     "exists_uncorrelated_rescan": "SELECT a FROM t WHERE NOT EXISTS (SELECT 1 FROM t AS t2)",
 }
 
+UNSUPPORTED = {
+    "distinct_on": ("SELECT DISTINCT ON (a) a, b FROM t ORDER BY a, b", "DISTINCT ON"),
+    "qualify": (
+        "SELECT a, ROW_NUMBER() OVER (ORDER BY a) AS rn FROM t QUALIFY rn = 1",
+        "QUALIFY",
+    ),
+    "rollup": ("SELECT a, COUNT(*) FROM t GROUP BY ROLLUP (a)", "ROLLUP"),
+    "cube": ("SELECT a, b, COUNT(*) FROM t GROUP BY CUBE (a, b)", "CUBE"),
+    "grouping_sets": (
+        "SELECT a, b, COUNT(*) FROM t GROUP BY GROUPING SETS ((a), (b))",
+        "GROUPING SETS",
+    ),
+    "natural_join": ("SELECT * FROM t NATURAL JOIN u", "NATURAL join"),
+    "natural_join_columns": ("SELECT a, b, x FROM t NATURAL JOIN u", "NATURAL join"),
+    "asof_join": ("SELECT t.a FROM t ASOF JOIN u ON t.a >= u.a", "ASOF join"),
+    "lateral": (
+        "SELECT t.a, l.z FROM t, LATERAL (SELECT t.a + 1 AS z) AS l",
+        "(?i)lateral",
+    ),
+    "values": ("SELECT * FROM (VALUES (1, 'a')) AS v(n, s)", "(?i)values"),
+    "unnest": ("SELECT * FROM UNNEST([1, 2]) AS x(v)", "(?i)unnest"),
+    "recursive_cte": (
+        "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 3) SELECT n FROM r",
+        "RECURSIVE",
+    ),
+    "sum_distinct": ("SELECT SUM(DISTINCT a) FROM t", "(?i)distinct"),
+    "limit_subquery": ("SELECT a FROM t LIMIT (SELECT 1)", "LIMIT"),
+    "outer_join_subquery_on": (
+        "SELECT t.a FROM t LEFT JOIN u ON t.a = u.a AND t.c > (SELECT AVG(c) FROM t)",
+        "outer join",
+    ),
+    "unknown_function": ("SELECT MD5(b) FROM t", "MD5"),
+    "unknown_anonymous_function": ("SELECT FOO(b) FROM t", "FOO"),
+    "any_lt": ("SELECT a FROM t WHERE a < ANY (SELECT a FROM u)", "ANY"),
+    "substring_from_zero": ("SELECT SUBSTRING(b, 0, 2) FROM t", "SUBSTRING"),
+    "substring_from_negative": ("SELECT SUBSTRING(b, -1, 2) FROM t", "SUBSTRING"),
+    "split_part_zero": ("SELECT SPLIT_PART(b, 'a', 0) FROM t", "SPLIT_PART"),
+    "extract_decade": ("SELECT EXTRACT(decade FROM d) FROM t", "(?i)decade"),
+    "regexp_flags": ("SELECT REGEXP_MATCHES(b, 'A', 'i') FROM t", "(?i)flags"),
+    "trim_characters": ("SELECT TRIM('f' FROM b) FROM t", "TRIM"),
+    "limit_percent": ("SELECT a FROM t LIMIT 10%", "PERCENT"),
+    "fetch_with_ties": (
+        "SELECT a FROM t ORDER BY a FETCH FIRST 2 ROWS WITH TIES",
+        "TIES",
+    ),
+    "window_exclude": (
+        "SELECT SUM(c) OVER (ORDER BY a ROWS BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE CURRENT ROW) FROM t",
+        "EXCLUDE",
+    ),
+    "count_distinct_two": ("SELECT COUNT(DISTINCT a, b) FROM t", "COUNT"),
+    "between_symmetric": (
+        "SELECT a FROM t WHERE a BETWEEN SYMMETRIC 2 AND 1",
+        "SYMMETRIC",
+    ),
+    "interval_unit": ("SELECT d + INTERVAL '1' FORTNIGHT FROM t", "(?i)fortnight"),
+    "interval_without_unit": ("SELECT d + INTERVAL '1 day 2 hours' FROM t", "(?i)unit"),
+    "date_trunc_unit": ("SELECT DATE_TRUNC('decade', d) FROM t", "(?i)decade"),
+    "distinct_order_by_other": ("SELECT DISTINCT a FROM t ORDER BY c", "DISTINCT"),
+    "collate": ("SELECT a FROM t WHERE b COLLATE NOCASE = 'X'", "(?i)collate"),
+    "like_escape": ("SELECT a FROM t WHERE b LIKE 'x%' ESCAPE 'x'", "(?i)escape"),
+    "bitwise_and": ("SELECT a & 1 FROM t", "(?i)bitwise"),
+    "parameter": ("SELECT a FROM t WHERE b = $1", "(?i)placeholder"),
+    "insert": ("INSERT INTO t VALUES (1)", "(?i)insert"),
+}
 
-# the cases the planner-based ``parse_sql`` translates today; every other case
-# is a strict xfail until the converter that replaces the planner lands
-TRANSLATED_CASES = frozenset(
-    {
-        "aggregate_of_expression",
-        "anti",
-        "arithmetic_alias",
-        "between",
-        "cast",
-        "comma_join_where_or",
-        "count_distinct",
-        "count_star",
-        "count_star_group_by",
-        "cross_join",
-        "cte",
-        "date_arithmetic",
-        "decimal_column_literal_scale",
-        "decimal_literal",
-        "decimal_literal_arithmetic",
-        "decimal_literal_scale",
-        "derived_computed",
-        "derived_table",
-        "derived_where_alias",
-        "distinct",
-        "distinct_order_by",
-        "having",
-        "having_alias",
-        "having_count_not_selected",
-        "having_without_group_by",
-        "join",
-        "join_on_subquery_eq",
-        "left_join_filter_right",
-        "nested_derived",
-        "or",
-        "order_by_agg_not_selected",
-        "order_by_desc_nulls_last",
-        "order_by_nonprojected",
-        "order_by_ordinal",
-        "order_limit_offset",
-        "reductions",
-        "right_join",
-        "scalar_subquery",
-        "select_where",
-        "semi",
-        "star_exclude_replace",
-        "subq_in_join_source",
-        "try_cast",
-    }
-)
-
-_DECIMAL_LITERAL = (
-    "parse_sql turns a decimal literal into a float, which DuckDB reads back "
-    "at the scale of its digits"
-)
-_DISTINCT = "parse_sql drops SELECT DISTINCT"
-_HAVING = "parse_sql selects the HAVING condition as a column instead of filtering"
-
-# translated cases whose result still differs, and why
-MISTRANSLATED_CASES = {
-    "anti": "parse_sql turns an anti join into an inner join",
-    "count_distinct": "parse_sql turns COUNT(DISTINCT x) into COUNT(*)",
-    "decimal_column_literal_scale": _DECIMAL_LITERAL,
-    "decimal_literal": _DECIMAL_LITERAL,
-    "decimal_literal_scale": _DECIMAL_LITERAL,
-    "distinct": _DISTINCT,
-    "distinct_order_by": _DISTINCT,
-    "having": _HAVING,
-    "having_alias": _HAVING,
-    "having_count_not_selected": _HAVING,
-    "having_without_group_by": _HAVING,
-    "order_limit_offset": "parse_sql drops OFFSET",
-    "try_cast": "parse_sql compiles TRY_CAST as CAST, which fails on a bad value",
+# SQL that is invalid, or that Ibis cannot type, raises an input error
+INVALID = {
+    "unknown_column": ("SELECT zzz FROM t", "zzz"),
+    "unknown_table": ("SELECT a FROM nope", "nope"),
+    "ambiguous_column": ("SELECT a FROM t JOIN u ON t.a = u.a", "'a'"),
+    "duplicate_alias": ("SELECT * FROM t AS x, u AS x", "x"),
+    "duplicate_cte": (
+        "WITH x AS (SELECT 1 AS a), x AS (SELECT 2 AS a) SELECT a FROM x",
+        "defined twice",
+    ),
+    "aggregate_in_where": ("SELECT a FROM t WHERE SUM(c) > 1", "not allowed in WHERE"),
+    "window_in_where": (
+        "SELECT a FROM t WHERE ROW_NUMBER() OVER () = 1",
+        "not allowed in WHERE",
+    ),
+    "aggregate_in_group_by": (
+        "SELECT a FROM t GROUP BY SUM(c)",
+        "not allowed in GROUP BY",
+    ),
+    "aggregate_in_join": (
+        "SELECT t.a FROM t JOIN u ON t.a = MAX(u.a)",
+        "not allowed in a join condition",
+    ),
+    "window_in_having": (
+        "SELECT a FROM t GROUP BY a HAVING ROW_NUMBER() OVER () = 1",
+        "not allowed in HAVING",
+    ),
+    "named_window_repartitioned": (
+        "SELECT SUM(c) OVER (w PARTITION BY a) FROM t WINDOW w AS (PARTITION BY b)",
+        "PARTITION BY",
+    ),
+    "named_window_reordered": (
+        "SELECT SUM(c) OVER (w ORDER BY a) FROM t WINDOW w AS (ORDER BY c)",
+        "ORDER BY",
+    ),
+    "named_window_reframed": (
+        "SELECT SUM(c) OVER (w ROWS CURRENT ROW) FROM t WINDOW w AS (ORDER BY a ROWS 1 PRECEDING)",
+        "frame",
+    ),
+    "nested_aggregate": ("SELECT SUM(MAX(c)) FROM t", "nested"),
+    "column_outside_group_by": ("SELECT a, b FROM t GROUP BY a", "GROUP BY"),
+    "set_operation_widths": (
+        "SELECT a FROM t UNION SELECT a, x FROM u",
+        "1 and 2 columns",
+    ),
+    "set_operation_types": ("SELECT a FROM t UNION SELECT x FROM u", "Cannot align"),
+    "scalar_subquery_width": (
+        "SELECT a FROM t WHERE a = (SELECT a, x FROM u)",
+        "one column",
+    ),
+    "incomparable_types": ("SELECT a FROM t WHERE a = 'x'", "t.a = 'x'"),
+    "string_arithmetic": ("SELECT a + b FROM t", r"t.a \+ t.b"),
+    "length_of_null": (
+        "SELECT LENGTH(NULL) FROM t",
+        r"Cannot translate .*LENGTH\(NULL\)",
+    ),
+    "aggregate_of_scalar_subquery": (
+        "SELECT SUM((SELECT COUNT(*) FROM u)) FROM t",
+        r"Cannot translate .*SUM\(",
+    ),
+    "where_not_boolean": ("SELECT a FROM t WHERE b", "not boolean"),
+    "join_not_boolean": ("SELECT t.a FROM t JOIN u ON u.x", "not boolean"),
+    "syntax_error": ("SELEC a FROM t", "Cannot parse"),
+    "two_statements": ("SELECT a FROM t; SELECT a FROM u", "one statement"),
+    "empty": ("", "one statement"),
 }
 
 
-def _params(table, translated, mistranslated):
-    """Parametrize over ``table``; a case not in ``translated`` is a strict xfail.
+# ``parse_sql`` raises for these on the oldest sqlglot releases the declared
+# range admits, so they are skipped there
+OLD_SQLGLOT = {
+    name: pytest.mark.skipif(
+        vparse(sqlglot.__version__) < vparse("27.11"),
+        reason="sqlglot has no ranking function classes before 27.11",
+    )
+    for name in (
+        "ranking_empty_window",
+        "window_rank",
+        "window_ntile",
+        "rank_over_sum_group",
+    )
+}
+OLD_SQLGLOT["limit_percent"] = pytest.mark.skipif(
+    vparse(sqlglot.__version__) < vparse("28"),
+    reason="sqlglot rejects LIMIT n% as syntax before 28.0",
+)
 
-    So is a case in ``mistranslated``, for the reason it gives.
-    """
+# the SQL Ibis compiles these to returns a different result, for the reason given
+MISCOMPILED = {
+    "decimal_literal": pytest.mark.xfail(
+        reason=(
+            "Ibis compiles the float 1e2 as 100.0, which DuckDB reads as a decimal: "
+            "https://github.com/ibis-project/ibis/issues/10890"
+        ),
+        strict=True,
+    )
+}
+
+
+def _params(table):
+    """Parametrize over ``table`` with the marks of ``OLD_SQLGLOT`` and ``MISCOMPILED``."""
     return [
         pytest.param(
-            value,
+            *(value if isinstance(value, tuple) else (value,)),
             id=name,
             marks=[
-                pytest.mark.xfail(
-                    reason=mistranslated.get(
-                        name, "parse_sql cannot translate this yet"
-                    ),
-                    strict=True,
-                )
-            ]
-            if name not in translated or name in mistranslated
-            else [],
+                marks[name] for marks in (OLD_SQLGLOT, MISCOMPILED) if name in marks
+            ],
         )
         for name, value in table.items()
     ]
@@ -303,17 +384,31 @@ def assert_matches_duckdb(duck, expr, sql):
     )
 
 
-@pytest.mark.parametrize("sql", _params(CASES, TRANSLATED_CASES, MISTRANSLATED_CASES))
+@pytest.mark.parametrize("sql", _params(CASES))
 def test_parse_sql_matches_duckdb(duck, sql):
     expr = ibis.parse_sql(sql, CATALOG, dialect="duckdb")
     assert_matches_duckdb(duck, expr, sql)
 
 
-@pytest.mark.parametrize("sql", _params(CASES, TRANSLATED_CASES, MISTRANSLATED_CASES))
+@pytest.mark.parametrize("sql", _params(CASES))
 def test_decompile_roundtrip_matches_duckdb(duck, sql):
     """Parsed SQL decompiles to Python that rebuilds an equivalent expression."""
     expr = decompile_roundtrip(ibis.parse_sql(sql, CATALOG, dialect="duckdb"))
     assert_matches_duckdb(duck, expr, sql)
+
+
+@pytest.mark.parametrize(("sql", "message"), _params(UNSUPPORTED))
+def test_parse_sql_unsupported(sql, message):
+    """SQL `parse_sql` cannot translate raises instead of dropping a clause."""
+    with pytest.raises(com.UnsupportedOperationError, match=message):
+        ibis.parse_sql(sql, CATALOG, dialect="duckdb")
+
+
+@pytest.mark.parametrize(("sql", "message"), list(INVALID.values()), ids=list(INVALID))
+def test_parse_sql_invalid(sql, message):
+    """Invalid SQL raises an input error that names the offending SQL."""
+    with pytest.raises(com.IbisInputError, match=message):
+        ibis.parse_sql(sql, CATALOG, dialect="duckdb")
 
 
 def test_comparator_checks_row_order(duck):
