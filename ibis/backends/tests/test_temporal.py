@@ -42,6 +42,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
+from ibis.conftest import IS_PYFLINK_1X
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -557,6 +558,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 ),
                 pytest.mark.notyet(
                     ["flink"],
+                    condition=IS_PYFLINK_1X,
                     raises=Py4JJavaError,
                     reason="ParseException: Encountered 'WEEK'. Was expecting one of: DAY, DAYS, HOUR",
                 ),
@@ -689,8 +691,9 @@ def test_integer_to_interval_timestamp(
                 ),
                 pytest.mark.notimpl(
                     ["flink"],
+                    condition=IS_PYFLINK_1X,
                     raises=Py4JJavaError,
-                    reason="week is not a valid unit in Flink",
+                    reason="week is not a valid unit in Flink 1.x",
                 ),
                 sqlite_without_ymd_intervals,
             ],
@@ -1605,6 +1608,19 @@ def test_now_from_projection(alltypes):
     assert not pd.isna(ts.iat[0])
 
 
+@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
+@pytest.mark.notimpl(
+    ["clickhouse", "mysql"],
+    raises=AssertionError,
+    reason="non-empty results have second resolution, empty ones nanosecond",
+)
+def test_now_from_empty_projection(alltypes):
+    nonempty = alltypes.select(now=ibis.now()).limit(1).execute()
+    empty = alltypes.filter(alltypes.int_col < 0).select(now=ibis.now()).execute()
+    assert empty.empty
+    assert empty.dtypes["now"] == nonempty.dtypes["now"]
+
+
 def test_today(con):
     result = con.execute(ibis.today())
     assert isinstance(result, datetime.date)
@@ -2052,7 +2068,12 @@ def test_subsecond_cast_to_timestamp(con, dtype):
     reason="returns a value with a timezone, which the test doesn't expect",
     raises=AssertionError,
 )
-@pytest.mark.notimpl(["flink"], raises=ArrowInvalid)
+@pytest.mark.notimpl(
+    ["flink"],
+    condition=IS_PYFLINK_1X,
+    raises=ArrowInvalid,
+    reason="pyarrow<12 casts the result to nanoseconds, which overflow",
+)
 @pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
 def test_big_timestamp(con):
     # TODO: test with a timezone
@@ -2124,8 +2145,9 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
 @pytest.mark.notimpl(["polars"], raises=PolarsInvalidOperationError)
 @pytest.mark.notyet(
     ["flink"],
-    reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",
+    condition=IS_PYFLINK_1X,
     raises=ArrowInvalid,
+    reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",
 )
 def test_large_timestamp(con):
     huge_timestamp = datetime.datetime(year=4567, month=1, day=1)

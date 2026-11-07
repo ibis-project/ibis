@@ -238,29 +238,30 @@ jobs:
             services:
               - oracle
           - name: flink
-            title: Flink
+            title: Flink 1.20
             serial: true
             extras:
               - --extra flink
             additional_deps:
-              - "'apache-flink==1.20.2'"
+              - "'apache-flink==1.20.5'"
               - "'pandas<2.2'"
               - setuptools
+            flink-version: "1.20.5"
             services:
               - flink
         include:
           - os: ubuntu-latest
-            python-version: "3.11"
+            python-version: "3.12"
             backend:
               name: flink
-              title: Flink
+              title: Flink 2.3
               serial: true
               extras:
                 - --extra flink
               additional_deps:
-                - "'apache-flink==1.20.2'"
-                - "'pandas<2.2'"
+                - "'apache-flink==2.3.0'"
                 - setuptools
+              flink-version: "2.3.0"
               services:
                 - flink
           - os: ubuntu-latest
@@ -461,27 +462,29 @@ jobs:
             python-version: "3.14"
             backend:
               name: flink
-              title: Flink
+              title: Flink 1.20
               serial: true
               extras:
                 - --extra flink
               additional_deps:
-                - "'apache-flink==1.20.2'"
+                - "'apache-flink==1.20.5'"
                 - "'pandas<2.2'"
                 - setuptools
+              flink-version: "1.20.5"
               services:
                 - flink
           - os: windows-latest
             backend:
               name: flink
-              title: Flink
+              title: Flink 1.20
               serial: true
               extras:
                 - --extra flink
               additional_deps:
-                - "'apache-flink==1.20.2'"
+                - "'apache-flink==1.20.5'"
                 - "'pandas<2.2'"
                 - setuptools
+              flink-version: "1.20.5"
               services:
                 - flink
           - os: windows-latest
@@ -529,6 +532,8 @@ jobs:
       - name: start services
         if: matrix.backend.services != null
         run: just up ${{ join(matrix.backend.services, ' ') }}
+        env:
+          FLINK_VERSION: ${{ matrix.backend.flink-version }}
 
       - name: install python
         uses: actions/setup-python@v7

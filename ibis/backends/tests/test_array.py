@@ -38,6 +38,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
+from ibis.conftest import IS_PYFLINK_1X
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -744,6 +745,7 @@ def test_array_filter_with_index_lambda(con, input, output, predicate):
             marks=[
                 pytest.mark.notimpl(
                     ["flink"],
+                    condition=IS_PYFLINK_1X,
                     raises=Py4JJavaError,
                     reason="unknown; NPE during execution",
                 )
@@ -1766,6 +1768,17 @@ def test_table_unnest_array_of_struct_of_array(con):
     result = con.execute(expr)
     expected = pd.DataFrame({"x": [1, 1, 1, 2, 2, 2, 3, 3, 3]})
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notimpl(["postgres", "materialize"], raises=PsycoPgSyntaxError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+def test_empty_result_with_array_of_struct(alltypes):
+    expr = alltypes.filter(alltypes.int_col < 0).select(
+        a=ibis.array([ibis.struct({"x": 1})])
+    )
+    result = expr.execute()
+    assert result.empty
+    assert list(result.columns) == ["a"]
 
 
 notimpl_aggs = pytest.mark.notimpl(
