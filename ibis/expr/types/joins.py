@@ -16,7 +16,11 @@ from ibis.common.exceptions import (
     InputTypeError,
     IntegrityError,
 )
-from ibis.expr.rewrites import flatten_predicates, peel_join_field
+from ibis.expr.rewrites import (
+    flatten_predicates,
+    peel_join_field,
+    rewrite_project_input,
+)
 from ibis.expr.types.generic import Value
 from ibis.expr.types.relations import (
     DerefMap,
@@ -397,7 +401,9 @@ class Join(Table):
         for k, v in values.items():
             # ensure that there's only a single thing returned from dereferencing
             (new_value,) = derefmap.dereference(v)
-            new_values[k] = new_value
+            # analytic functions and reductions over the joined tables have to
+            # be turned into window functions, the same way as in Table.select
+            new_values[k] = rewrite_project_input(new_value, chain.first, *links)
 
         node = chain.copy(values=new_values)
         return Table(node)
