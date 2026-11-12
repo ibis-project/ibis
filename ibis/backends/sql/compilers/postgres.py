@@ -506,7 +506,7 @@ $$""".format(
         return self.if_(
             self.json_typeof(op, arg).eq(sge.convert("number")),
             self.cast(
-                self.if_(self.f.regexp_like(text, r"^\d+$", "g"), text, NULL), op.dtype
+                self.if_(self.f.regexp_like(text, r"^\d+$"), text, NULL), op.dtype
             ),
             NULL,
         )
