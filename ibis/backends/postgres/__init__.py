@@ -31,7 +31,7 @@ from ibis.backends import (
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers._compat import Drop
-from ibis.backends.sql.compilers.base import TRUE, C, ColGen
+from ibis.backends.sql.compilers.base import TRUE, C, ColGen, SQLGlotCompiler
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -619,7 +619,12 @@ ORDER BY a.attnum ASC"""
 
             self._run_pre_execute_hooks(table)
 
-            query = self.compiler.to_sqlglot(table)
+            # compile without the output conversions of
+            # PostgresCompiler.to_sqlglot (maps/json to strings,
+            # geospatial to EWKB): those shape results for the client,
+            # but here the server consumes the query, so the source
+            # column types must be preserved
+            query = SQLGlotCompiler.to_sqlglot(self.compiler, table)
         else:
             query = None
 
