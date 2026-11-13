@@ -482,6 +482,20 @@ def test_create_table_overwrite(con, tmp_db):
     assert t.schema() == ibis.schema({"id": dt.int32})
 
 
+def test_create_table_from_json_column(con):
+    source = gen_name("json_source")
+    target = gen_name("json_target")
+    con.raw_sql(f'CREATE TABLE "{source}" (payload JSONB)')
+    con.raw_sql(f"""INSERT INTO "{source}" VALUES ('{{"answer": 42}}'::jsonb)""")
+    try:
+        t = con.create_table(target, obj=con.table(source))
+        assert t.schema() == ibis.schema({"payload": dt.JSON(binary=True)})
+        assert t.execute()["payload"].iloc[0] == {"answer": 42}
+    finally:
+        con.drop_table(source, force=True)
+        con.drop_table(target, force=True)
+
+
 @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
 @pytest.mark.parametrize(
     ("insert_overwrite", "expected_count"),
