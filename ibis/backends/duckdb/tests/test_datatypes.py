@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from datetime import time
+
 import numpy as np
+import pyarrow as pa
 import pytest
+import sqlglot as sg
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -56,11 +61,78 @@ from ibis.backends.sql.datatypes import DuckDBType
             ("TIMESTAMP_MS", dt.Timestamp(scale=3)),
             ("TIMESTAMP_NS", dt.Timestamp(scale=9)),
         ]
+    ]
+    + [
+        param(
+            "TIME_NS",
+            dt.time,
+            marks=pytest.mark.xfail(
+                vparse(sg.__version__) < vparse("28.1.0"),
+                reason="TIME_NS was added in sqlglot 28.1.0",
+            ),
+            id="time_ns",
+        ),
     ],
 )
 def test_parser(typ, expected):
     ty = DuckDBType.from_string(typ)
     assert ty == expected
+
+
+def test_time_ns():
+    import duckdb
+
+    if vparse(duckdb.__version__) < vparse("1.5"):
+        pytest.skip("DuckDB TIME_NS was added in DuckDB 1.5")
+
+    con = ibis.duckdb.connect()
+
+    # Null-free with sub-microsecond nanoseconds
+    t1 = con.sql("SELECT '12:30:00.123456789'::TIME_NS AS t")
+    assert t1.schema() == ibis.schema({"t": "time"})
+
+    # PyArrow preserves exact nanosecond precision
+    arrow_t1 = t1.to_pyarrow()
+    assert arrow_t1.schema.field("t").type == pa.time64("ns")
+    assert arrow_t1["t"][0].value == 45_000_123_456_789
+
+    # Table with NULL
+    t2 = con.sql("SELECT '12:30:00.123456789'::TIME_NS AS t UNION ALL SELECT NULL")
+    assert t2.schema() == ibis.schema({"t": "time"})
+    arrow_t2 = t2.to_pyarrow()
+    assert arrow_t2.schema.field("t").type == pa.time64("ns")
+    assert arrow_t2["t"][0].value == 45_000_123_456_789
+    assert arrow_t2["t"][1].value is None
+
+    # Polars preserves exact nanosecond precision when available
+    pl = pytest.importorskip("polars")
+    assert t1.to_polars()["t"].cast(pl.Int64).to_list() == [45_000_123_456_789]
+    assert t2.to_polars()["t"].cast(pl.Int64).to_list() == [45_000_123_456_789, None]
+
+
+@pytest.mark.filterwarnings("ignore::pandas.errors.Pandas4Warning")
+def test_time_ns_execute():
+    import duckdb
+
+    if vparse(duckdb.__version__) < vparse("1.5"):
+        pytest.skip("DuckDB TIME_NS was added in DuckDB 1.5")
+
+    con = ibis.duckdb.connect()
+
+    # Null-free: execute() truncates sub-microsecond digits to microseconds without error
+    t1 = con.sql("SELECT '12:30:00.123456789'::TIME_NS AS t")
+    assert t1.execute()["t"].tolist() == [time(12, 30, 0, 123456)]
+
+    # With NULL: execute() also handles null rows alongside truncated times
+    t2 = con.sql("SELECT '12:30:00.123456789'::TIME_NS AS t UNION ALL SELECT NULL")
+    assert t2.execute()["t"].tolist() == [time(12, 30, 0, 123456), None]
+
+    # Temporal field extractions
+    assert t1.t.hour().execute().tolist() == [12]
+    assert t1.t.minute().execute().tolist() == [30]
+    assert t1.t.second().execute().tolist() == [0]
+    assert t1.t.millisecond().execute().tolist() == [123]
+    assert t1.t.microsecond().execute().tolist() == [123456]
 
 
 @pytest.mark.parametrize("uint_type", ["uint8", "uint16", "uint32", "uint64"])

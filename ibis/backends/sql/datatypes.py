@@ -76,6 +76,7 @@ for _attr, _ibis_type in (
     ("BLOB", dt.Binary),
     ("DATETIME2", dt.Timestamp),
     ("SMALLDATETIME", dt.Timestamp),
+    ("TIME_NS", dt.Time),
 ):
     if (_sg_type := getattr(typecode, _attr, None)) is not None:
         _from_sqlglot_types[_sg_type] = _ibis_type
