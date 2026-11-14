@@ -27,15 +27,22 @@ if TYPE_CHECKING:
     import pyarrow as pa
     from pandas.api.extensions import ExtensionDtype
 
-_DEFAULT_DATETIME_RESOLUTION = "ns" if vparse(pd.__version__) < vparse("3") else "us"
+_PANDAS_V3 = vparse(pd.__version__) >= vparse("3")
+_DEFAULT_DATETIME_RESOLUTION = "us" if _PANDAS_V3 else "ns"
 
 geospatial_supported = _find_spec("geopandas") is not None
+
+
+def _infer_string() -> bool:
+    # pandas >= 3.0 infers strings by default; pandas >= 3.1 deprecates future.infer_string
+    # and emits Pandas4Warning when accessed.
+    return _PANDAS_V3 or bool(pd.options.future.infer_string)
 
 
 class PandasType(NumpyType):
     @classmethod
     def to_ibis(cls, typ, nullable=True):
-        if pd.options.future.infer_string and isinstance(typ, pd.StringDtype):
+        if _infer_string() and isinstance(typ, pd.StringDtype):
             return dt.String(nullable=nullable)
         elif isinstance(typ, pdt.DatetimeTZDtype):
             return dt.Timestamp(timezone=str(typ.tz), nullable=nullable)
@@ -57,7 +64,7 @@ class PandasType(NumpyType):
 
     @classmethod
     def from_ibis(cls, dtype) -> np.dtype | pd.Ex:
-        if pd.options.future.infer_string and dtype.is_string():
+        if _infer_string() and dtype.is_string():
             return pd.StringDtype(na_value=np.nan)
         elif dtype.is_timestamp():
             if dtype.timezone:

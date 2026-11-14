@@ -498,3 +498,12 @@ def test_schema_doesnt_match_input_columns():
     schema = sch.Schema({"a": "int64", "b": "int64"})
     with pytest.raises(ValueError, match="schema names don't match"):
         PandasData.convert_table(df, schema)
+
+
+def test_pandas_infer_string_no_warning():
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert PandasType.to_ibis(pd.StringDtype()) == dt.String()
+        assert PandasType.from_ibis(dt.string) is not None
