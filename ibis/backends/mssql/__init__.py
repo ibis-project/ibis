@@ -334,16 +334,20 @@ class Backend(
         # SQLGlot has a bug that forces capitalization of
         # `dm_exec_describe_first_result_set`, so we can't even use its builder
         # APIs. That doesn't really solve the injection problem though.
+        # `system_type_name` is NULL for user-defined types, so fall back to
+        # the underlying system type name from `sys.types`.
         query = f"""
         SELECT
-          name,
-          is_nullable,
-          system_type_name,
-          precision,
-          scale,
-          error_number,
-          error_message
-        FROM sys.dm_exec_describe_first_result_set(N{tsql}, NULL, 0)
+          r.name,
+          r.is_nullable,
+          COALESCE(r.system_type_name, st.name),
+          r.precision,
+          r.scale,
+          r.error_number,
+          r.error_message
+        FROM sys.dm_exec_describe_first_result_set(N{tsql}, NULL, 0) r
+        LEFT JOIN sys.types st
+          ON r.system_type_id = st.user_type_id AND st.is_user_defined = 0
         ORDER BY column_ordinal
         """  # noqa: S608
         with self._safe_raw_sql(query) as cur:
@@ -362,9 +366,14 @@ class Backend(
             if err_num is not None:
                 raise com.IbisInputError(f".sql failed with message: {err_msg}")
 
-            newtyp = self.compiler.type_mapper.from_string(
-                system_type_name, nullable=nullable
-            )
+            if system_type_name is None:
+                # The underlying system type could not be resolved;
+                # keep the column instead of crashing on `None.lower()`.
+                newtyp = dt.Unknown(nullable=nullable)
+            else:
+                newtyp = self.compiler.type_mapper.from_string(
+                    system_type_name, nullable=nullable
+                )
 
             if system_type_name == "float":
                 newcls = dt.Float64 if precision == 53 else dt.Float32
