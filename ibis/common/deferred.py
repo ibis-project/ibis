@@ -409,8 +409,25 @@ class Call(FrozenSlotted, Resolver):
 
     def resolve(self, context):
         func = self.func.resolve(context)
-        args = tuple(arg.resolve(context) for arg in self.args)
-        kwargs = {k: v.resolve(context) for k, v in self.kwargs.items()}
+        # some callables rebind `_` for (some of) their arguments, for
+        # example `ArrayValue.map` and `ArrayValue.filter` resolve their
+        # function argument with `_` bound to the array element rather
+        # than the surrounding table; pass such arguments through as
+        # `Deferred` objects so the callable can resolve them itself
+        # in the right context
+        deferred = getattr(func, "__deferred_arguments__", ())
+        args = tuple(
+            Deferred(arg)
+            if i in deferred and not isinstance(arg, (Just, JustUnhashable))
+            else arg.resolve(context)
+            for i, arg in enumerate(self.args)
+        )
+        kwargs = {
+            k: Deferred(v)
+            if k in deferred and not isinstance(v, (Just, JustUnhashable))
+            else v.resolve(context)
+            for k, v in self.kwargs.items()
+        }
         return func(*args, **kwargs)
 
     def __repr__(self):
@@ -574,6 +591,35 @@ def _contains_deferred(obj: Any) -> bool:
 
 
 F = TypeVar("F", bound=Callable)
+
+
+def deferred_arguments(*args: int | str) -> Callable[[F], F]:
+    """Mark arguments of a callable to stay deferred when it is called.
+
+    When a callable marked with this decorator is invoked through a
+    `Deferred` expression, the marked arguments are passed to the callable
+    as `Deferred` objects instead of being resolved in the surrounding
+    context. This allows the callable to resolve them itself, in a
+    different context, for example `ArrayValue.map` and
+    `ArrayValue.filter`, where `_` refers to the array element rather
+    than the surrounding table.
+
+    Arguments are identified by their position (for positional arguments)
+    or by their name (for keyword arguments). Constant arguments (plain
+    values and callables such as lambdas) are still resolved normally.
+
+    Parameters
+    ----------
+    args
+        Positions and/or names of the arguments to keep deferred.
+
+    """
+
+    def wrapper(func):
+        func.__deferred_arguments__ = frozenset(args)
+        return func
+
+    return wrapper
 
 
 @overload
