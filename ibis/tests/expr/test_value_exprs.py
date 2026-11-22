@@ -1572,6 +1572,33 @@ def test_array_filter():
         arr.filter(arr[0])
 
 
+def test_array_filter_map_deferred_nested():
+    # https://github.com/ibis-project/ibis/issues/11798
+    # `_` inside `filter`/`map` refers to the array element, even when the
+    # array itself is selected with `_`
+    t = ibis.table(
+        {"id": "int64", "arr": "array<struct<x: int64, y: int64>>"}, name="t"
+    )
+
+    expr = t.select(foo=_["arr"].filter(_["x"] == 1))
+    op = expr.op().values["foo"]
+    assert isinstance(op, ops.ArrayFilter)
+    assert isinstance(op.body, ops.Equals)
+    assert op.param.dtype == dt.Struct({"x": dt.int64, "y": dt.int64})
+
+    expr = t.mutate(foo=_["arr"].map(_["x"] + 1))
+    op = expr.op().values["foo"]
+    assert isinstance(op, ops.ArrayMap)
+    assert isinstance(op.body, ops.Add)
+    assert op.param.dtype == dt.Struct({"x": dt.int64, "y": dt.int64})
+
+    # lambdas passed through a deferred call still work
+    expr = t.mutate(foo=_["arr"].filter(lambda r: r["x"] == 1))
+    op = expr.op().values["foo"]
+    assert isinstance(op, ops.ArrayFilter)
+    assert isinstance(op.body, ops.Equals)
+
+
 @pytest.mark.parametrize(
     ("func", "expected_type"),
     [

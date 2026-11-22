@@ -24,6 +24,7 @@ from ibis.common.deferred import (
     const,
     deferrable,
     deferred,
+    deferred_arguments,
     resolver,
     var,
 )
@@ -545,6 +546,38 @@ def test_deferrable_repr():
         return x + 1
 
     assert repr(myfunc(_.a)) == "<test>"
+
+
+def test_deferred_arguments():
+    @deferred_arguments(0)
+    def apply(func):
+        # the marked argument arrives as a Deferred, so it can be resolved
+        # against a different context than the outer one
+        assert isinstance(func, Deferred)
+        return func.resolve(10)
+
+    expr = Deferred(Call(apply, _ + 1))
+    assert expr.resolve(1) == 11
+
+    # marked arguments can also be identified by keyword name
+    @deferred_arguments("fn")
+    def apply_kw(*, fn):
+        assert isinstance(fn, Deferred)
+        return fn.resolve(10)
+
+    expr = Deferred(Call(apply_kw, fn=_ + 1))
+    assert expr.resolve(1) == 11
+
+    # constant arguments are still resolved in the outer context
+    @deferred_arguments(0)
+    def identity(func):
+        return func
+
+    expr = Deferred(Call(identity, 5))
+    assert expr.resolve(1) == 5
+
+    expr = Deferred(Call(identity, lambda x: x + 1))
+    assert expr.resolve(1)(10) == 11
 
 
 def test_deferred_set_raises():

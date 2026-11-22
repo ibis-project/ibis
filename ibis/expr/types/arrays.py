@@ -8,7 +8,7 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import EMPTY
-from ibis.common.deferred import Deferred, deferrable
+from ibis.common.deferred import Deferred, deferrable, deferred_arguments
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
@@ -418,6 +418,7 @@ class ArrayValue(Value):
         body = resolve(**kwargs)
         return parameter, index, body
 
+    @deferred_arguments(0)
     def map(
         self,
         func: Deferred
@@ -529,6 +530,7 @@ class ArrayValue(Value):
         param, index, body = self._construct_array_func_inputs(func)
         return ops.ArrayMap(self, param=param, index=index, body=body).to_expr()
 
+    @deferred_arguments(0)
     def filter(
         self,
         predicate: Deferred
