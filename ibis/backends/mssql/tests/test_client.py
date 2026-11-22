@@ -271,6 +271,24 @@ def test_dot_sql_with_unnamed_columns(con):
     assert len(df) == 1
 
 
+def test_dot_sql_with_user_defined_type(con):
+    # https://github.com/ibis-project/ibis/issues/11837
+    udt = gen_name("ibis_udt")
+    table = gen_name("ibis_udt_table")
+    with con.begin() as c:
+        c.execute(f"CREATE TYPE {udt} FROM VARCHAR(10)")
+        c.execute(f"CREATE TABLE [{table}] (x {udt})")
+
+    try:
+        assert con.sql(f"SELECT * FROM [{table}]").schema() == ibis.schema(
+            dict(x=dt.string)
+        )
+    finally:
+        with con.begin() as c:
+            c.execute(f"DROP TABLE [{table}]")
+            c.execute(f"DROP TYPE {udt}")
+
+
 def test_dot_sql_error_handling(con):
     with pytest.raises(com.IbisInputError, match="Invalid column name"):
         con.sql("SELECT not_a_column")
