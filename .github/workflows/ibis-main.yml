@@ -118,6 +118,11 @@ jobs:
           # at 3.13 for now
           python-version: "3.13"
 
+      - uses: actions/setup-java@v6
+        with:
+          distribution: microsoft
+          java-version: 17
+
       - name: install uv
         uses: astral-sh/setup-uv@v10.3.0
 
