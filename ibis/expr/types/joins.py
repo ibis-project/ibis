@@ -7,7 +7,6 @@ from public import public
 
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.common.deferred import Deferred
 from ibis.common.egraph import DisjointSet
 from ibis.common.exceptions import (
     ExpressionError,
@@ -168,7 +167,7 @@ def prepare_predicates(
 
     left, right = chain.to_expr(), right.to_expr()
     for pred in util.promote_list(predicates):
-        if isinstance(pred, (Value, Deferred, bool)):
+        if isinstance(pred, (Value, bool)):
             for bound in bind(left, pred):
                 yield from deref_both.dereference(bound.op())
         else:
