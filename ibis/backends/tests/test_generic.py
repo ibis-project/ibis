@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import decimal
+import importlib.metadata
 import sqlite3
 from collections import Counter
 from itertools import permutations
@@ -10,6 +11,7 @@ from operator import invert, methodcaller
 
 import pytest
 import toolz
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -2123,6 +2125,13 @@ def test_try_cast_null(con, from_val, to_type):
     assert pd.isna(con.execute(ibis.literal(from_val).try_cast(to_type)))
 
 
+def _datafusion_version():
+    try:
+        return vparse(importlib.metadata.version("datafusion"))
+    except importlib.metadata.PackageNotFoundError:
+        return vparse("0")
+
+
 @pytest.mark.notimpl(
     [
         "druid",
@@ -2135,6 +2144,12 @@ def test_try_cast_null(con, from_val, to_type):
         "sqlite",
         "exasol",
     ]
+)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=ValueError,
+    reason="ORDER BY on an aliased TRY_CAST is ambiguous in datafusion < 55",
+    condition=_datafusion_version() < vparse("55"),
 )
 @pytest.mark.notimpl(
     ["materialize"],
