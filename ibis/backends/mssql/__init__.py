@@ -753,13 +753,13 @@ GO"""
             ),
         )
 
-        df = op.data.to_frame()
-        data = df.itertuples(index=False)
+        table = op.data.to_pyarrow(schema)
+        rows = list(zip(*table.to_pydict().values()))
 
         insert_stmt = self._build_insert_template(name, schema=schema, columns=True)
         with self._safe_ddl(create_stmt) as cur:
-            if not df.empty:
-                cur.executemany(insert_stmt, data)
+            if rows:
+                cur.executemany(insert_stmt, rows)
 
     def _cursor_batches(
         self,

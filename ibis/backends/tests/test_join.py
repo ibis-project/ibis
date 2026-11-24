@@ -178,7 +178,10 @@ def test_semi_join_topk(con, batting, awards_players, func):
     assert not expr.limit(5).execute().empty
 
 
-@pytest.mark.notimpl(["druid", "exasol", "oracle"])
+@pytest.mark.notimpl(["druid"])
+@pytest.mark.notimpl(
+    ["exasol", "oracle"], condition=vparse(pd.__version__) < vparse("3")
+)
 @pytest.mark.notimpl(
     ["postgres", "risingwave", "materialize"],
     condition=vparse(pd.__version__) < vparse("3"),
@@ -187,11 +190,13 @@ def test_semi_join_topk(con, batting, awards_players, func):
 )
 @pytest.mark.notimpl(
     ["mssql", "singlestoredb"],
+    condition=vparse(pd.__version__) < vparse("3"),
     raises=com.IbisTypeError,
     reason="postgres can't handle null types columns",
 )
 @pytest.mark.notimpl(
     ["mysql"],
+    condition=vparse(pd.__version__) < vparse("3"),
     raises=com.IbisTypeError,
     reason="MySQL cannot reliably handle null-typed columns",
 )

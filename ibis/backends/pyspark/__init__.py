@@ -6,7 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-import pandas as pd  # noqa: TC002, necessary for pyspark to evaluate type hints for UDFs
+import pandas as pd
 import pyspark
 import pyspark.sql.functions as F
 import sqlglot as sg
@@ -461,6 +461,22 @@ class Backend(
         # this is a workaround for PySpark's lack of support for arrow input
         # prior to PySpark 4.0
         data = op.data.to_frame()
+
+        # PySpark mishandles the pandas string dtype: a missing value becomes
+        # the text "NaN", and Spark Connect cannot convert a column that is
+        # backed by more than one pyarrow chunk. An object column of strings
+        # and None works in both.
+        if string_columns := [
+            name
+            for name, dtype in data.dtypes.items()
+            if isinstance(dtype, pd.StringDtype)
+        ]:
+            data = data.assign(
+                **{
+                    col: data[col].astype(object).where(data[col].notna(), None)
+                    for col in string_columns
+                }
+            )
 
         if decimal_columns := [
             name for name, dtype in schema.items() if dtype.is_decimal()

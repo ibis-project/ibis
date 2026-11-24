@@ -4,7 +4,16 @@ import datetime
 import json
 from functools import partial
 
+import pandas as pd
+import pandas.api.types as pdt
+
 from ibis.formats.pandas import PandasData
+
+
+def _holds_objects_or_strings(s: pd.Series) -> bool:
+    # a column of strings and NULLs has the object dtype on pandas < 3 and a
+    # string dtype on pandas >= 3
+    return pdt.is_object_dtype(s.dtype) or isinstance(s.dtype, pd.StringDtype)
 
 
 class SingleStoreDBPandasData(PandasData):
@@ -13,7 +22,6 @@ class SingleStoreDBPandasData(PandasData):
     @classmethod
     def convert_Time(cls, s, dtype, pandas_type):
         """Convert SingleStoreDB TIME values to Python time objects."""
-        import pandas as pd
 
         def convert(value):
             if value is None:
@@ -76,7 +84,6 @@ class SingleStoreDBPandasData(PandasData):
     @classmethod
     def convert_Timestamp(cls, s, dtype, pandas_type):
         """Convert SingleStoreDB TIMESTAMP/DATETIME values."""
-        import pandas as pd
 
         def convert_timestamp(value):
             if value is None:
@@ -96,7 +103,7 @@ class SingleStoreDBPandasData(PandasData):
 
             return value
 
-        if s.dtype == "object":
+        if _holds_objects_or_strings(s):
             # Handle SingleStoreDB zero timestamps and bytes
             s = s.map(convert_timestamp, na_action="ignore")
 
@@ -105,7 +112,6 @@ class SingleStoreDBPandasData(PandasData):
     @classmethod
     def convert_Date(cls, s, dtype, pandas_type):
         """Convert SingleStoreDB DATE values."""
-        import pandas as pd
 
         def convert_date(value):
             if value is None:
@@ -134,7 +140,7 @@ class SingleStoreDBPandasData(PandasData):
 
             return value
 
-        if s.dtype == "object":
+        if _holds_objects_or_strings(s):
             # Handle SingleStoreDB zero dates and bytes
             s = s.map(convert_date, na_action="ignore")
             return s
@@ -193,7 +199,7 @@ class SingleStoreDBPandasData(PandasData):
     def convert_Decimal(cls, s, dtype, pandas_type):
         """Convert SingleStoreDB DECIMAL/NUMERIC values with proper NULL handling."""
         # Handle SingleStoreDB NULL decimals
-        if s.dtype == "object":
+        if _holds_objects_or_strings(s):
             s = s.replace("", None)  # Empty strings as NULL
         return super().convert_Decimal(s, dtype, pandas_type)
 
@@ -222,6 +228,9 @@ class SingleStoreDBPandasData(PandasData):
 
             return value
 
+        # NULL is NaN in a column of strings on pandas >= 3; keep it None, as it
+        # is in the object column that every other array arrives in
+        s = s.astype(object).where(s.notna(), None)
         return s.map(convert_set, na_action="ignore")
 
     def handle_null_value(self, value, dtype):

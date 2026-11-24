@@ -145,7 +145,10 @@ class BaseSparkTestConf(abc.ABC):
             )
         ).createOrReplaceTempView("udf_random")
 
-        s.createDataFrame(json_types).createOrReplaceTempView("json_t")
+        # PySpark turns a missing value of the pandas string dtype into "NaN"
+        s.createDataFrame(
+            json_types.astype(object).where(json_types.notna(), None)
+        ).createOrReplaceTempView("json_t")
         s.createDataFrame(win).createOrReplaceTempView("win")
         s.createDataFrame(topk.to_pandas()).createOrReplaceTempView("topk")
 

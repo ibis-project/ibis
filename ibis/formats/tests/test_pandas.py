@@ -493,8 +493,23 @@ def test_convert_array_of_int(data, expected):
             assert value is None or isinstance(value, (int, list))
 
 
+@pytest.mark.parametrize("null", [None, float("nan")], ids=["none", "nan"])
+def test_dataframe_to_pyarrow_null_decimal(null):
+    df = pd.DataFrame({"a": [Decimal("1.10"), null]}, dtype="object")
+    schema = sch.Schema({"a": dt.Decimal(3, 2)})
+
+    result = ibis.memtable(df, schema=schema).op().data.to_pyarrow(schema)
+
+    assert result.to_pydict() == {"a": [Decimal("1.10"), None]}
+
+
 def test_schema_doesnt_match_input_columns():
     df = pd.DataFrame({"x": [1], "y": [2]})
     schema = sch.Schema({"a": "int64", "b": "int64"})
     with pytest.raises(ValueError, match="schema names don't match"):
         PandasData.convert_table(df, schema)
+
+
+def test_pandas_infer_string_no_warning():
+    assert PandasType.to_ibis(pd.StringDtype()) == dt.String()
+    assert PandasType.from_ibis(dt.string) is not None

@@ -164,15 +164,4 @@ in
       '';
     }
   );
-
-  thrift = prev.thrift.overrideAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
-    # avoid extremely premature optimization so that we don't have to
-    # deal with a useless dependency on distutils
-    postPatch =
-      attrs.postPatch or ""
-      + lib.optionalString (final.python.pythonAtLeast "3.12") ''
-        substituteInPlace setup.cfg --replace 'optimize = 1' 'optimize = 0'
-      '';
-  });
 }

@@ -120,7 +120,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     expr = method().name(attr)
     result = expr.execute()
     expected = backend.default_series_rename(
-        getattr(df.timestamp_col.dt, attr.replace("_", "")).astype("int32")
+        getattr(df.timestamp_col.dt, attr).astype("int32")
     ).rename(attr)
     backend.assert_series_equal(result, expected)
 
@@ -1537,7 +1537,7 @@ def test_day_of_week_column(backend, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
 
     result_index = expr.index().name("tmp").execute()
-    expected_index = df.timestamp_col.dt.dayofweek.astype("int16")
+    expected_index = df.timestamp_col.dt.day_of_week.astype("int16")
 
     backend.assert_series_equal(result_index, expected_index, check_names=False)
 
@@ -1552,7 +1552,7 @@ def test_day_of_week_column(backend, alltypes, df):
     [
         param(
             lambda t: t.timestamp_col.day_of_week.index().count(),
-            lambda s: s.dt.dayofweek.count(),
+            lambda s: s.dt.day_of_week.count(),
             id="day_of_week_index",
             marks=[
                 pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
