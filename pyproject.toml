@@ -500,6 +500,13 @@ filterwarnings = [
   "ignore:.*psycopg\\.Connection.+was deleted while still open:ResourceWarning",
   # `Pandas4Warning`s coming directly from the way ClickHouse and PySpark use pandas
   "ignore:The copy keyword is deprecated and will be removed in a future version:DeprecationWarning",
+  # `Pandas4Warning`s that pandas 3.1 raises for calls made by other libraries
+  # geopandas (through 1.2.0) reads the deprecated option when imported; scoped
+  # to geopandas, so that ibis reading the same option still fails
+  "ignore:The 'future\\.infer_string' option is deprecated:DeprecationWarning:geopandas\\._compat",
+  # pyarrow (before 26.0.0), polars and pyspark call `.values` on tz-aware data;
+  # pandas attributes this warning to itself, so the caller can't be singled out
+  "ignore:Series\\.values returning an ndarray that drops timezone information:DeprecationWarning",
   # pyspark connect 4.0 warns about ignored arguments
   "ignore:'.+' is ignored:UserWarning",
 ]
