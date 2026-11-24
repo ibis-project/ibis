@@ -2071,7 +2071,6 @@ def test_try_cast(con, from_val, to_type, expected):
 
 @pytest.mark.notimpl(
     [
-        "datafusion",
         "druid",
         "exasol",
         "singlestoredb",
@@ -2112,6 +2111,9 @@ def test_try_cast(con, from_val, to_type, expected):
                 pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
                 pytest.mark.notimpl(["polars"], reason="casts to 1672531200000000000"),
+                pytest.mark.notimpl(
+                    ["datafusion"], reason="casts to 1672531200000000 (microseconds)"
+                ),
             ],
         ),
     ],
@@ -2123,7 +2125,6 @@ def test_try_cast_null(con, from_val, to_type):
 
 @pytest.mark.notimpl(
     [
-        "datafusion",
         "druid",
         "mysql",
         "singlestoredb",
@@ -2153,7 +2154,6 @@ def test_try_cast_table(backend, con):
 
 @pytest.mark.notimpl(
     [
-        "datafusion",
         "mysql",
         "singlestoredb",
         "oracle",
@@ -2187,6 +2187,9 @@ def test_try_cast_table(backend, con):
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
+                pytest.mark.notimpl(
+                    ["datafusion"], reason="casts this to a number (microseconds)"
+                ),
             ],
             id="datetime-to-float",
         ),

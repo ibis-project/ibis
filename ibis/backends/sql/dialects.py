@@ -58,6 +58,9 @@ class DataFusion(Postgres):
             sge.Array: rename_func("make_array"),
             sge.ArrayContains: rename_func("array_has"),
             sge.ArraySize: rename_func("array_length"),
+            # DataFusion has a native TRY_CAST; don't inherit Postgres's
+            # lossy fallback to CAST
+            sge.TryCast: lambda self, e: self.cast_sql(e, safe_prefix="TRY_"),
         }
 
 

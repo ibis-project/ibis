@@ -209,7 +209,10 @@ class SQLiteCompiler(SQLGlotCompiler):
         return arg
 
     def visit_RandomScalar(self, op):
-        return 0.5 + self.f.random() / sge.Literal.number(float(-1 << 64))
+        # use an anonymous function: sqlglot >= 30.34 renders exp.Rand (what
+        # `self.f.random` builds) as a float in [0, 1) in SQLite, but we need
+        # SQLite's native RANDOM(), a signed 64-bit integer
+        return 0.5 + self.f.anon.random() / sge.Literal.number(float(-1 << 64))
 
     def visit_Cot(self, op, *, arg):
         return 1.0 / self.f.tan(arg)
