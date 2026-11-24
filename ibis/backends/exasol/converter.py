@@ -2,20 +2,29 @@ from __future__ import annotations
 
 import datetime
 
+import pandas as pd
+import pandas.api.types as pdt
+
 from ibis.formats.pandas import PandasData
+
+
+def _holds_objects_or_strings(s: pd.Series) -> bool:
+    # a column of strings and NULLs has the object dtype on pandas < 3 and a
+    # string dtype on pandas >= 3
+    return pdt.is_object_dtype(s.dtype) or isinstance(s.dtype, pd.StringDtype)
 
 
 class ExasolPandasData(PandasData):
     @classmethod
     def convert_String(cls, s, dtype, pandas_type):
-        if s.dtype != "object":
+        if not _holds_objects_or_strings(s):
             return s.map(str)
         else:
             return s
 
     @classmethod
     def convert_Int64(cls, s, dtype, pandas_dtype):
-        if s.dtype == "object":
+        if _holds_objects_or_strings(s):
             # exasol returns BIGINT types as strings (or None for NULL).
             # s.astype("int64") will fail in this case, using `Series.map`
             # is the best we can do.
