@@ -299,20 +299,21 @@ class Backend(SQLBackend, CanCreateDatabase, NoExampleLoader):
         )
         create_stmt_sql = create_stmt.sql(self.name)
 
-        df = op.data.to_frame()
-        data = df.itertuples(index=False, name=None)
+        table = op.data.to_pyarrow(schema)
 
         def process_item(item: Any):
             """Handle inserting timestamps with timezones."""
             if isinstance(item, datetime.datetime):
                 if item.tzinfo is not None:
-                    item = item.tz_convert("UTC").tz_localize(None)
+                    item = item.astimezone(datetime.timezone.utc).replace(tzinfo=None)
                 return item.isoformat(sep=" ", timespec="milliseconds")
             return item
 
-        rows = (tuple(map(process_item, row)) for row in data)
+        rows = [
+            tuple(map(process_item, row)) for row in zip(*table.to_pydict().values())
+        ]
         with self._safe_raw_sql(create_stmt_sql):
-            if not df.empty:
+            if rows:
                 self.con.ext.insert_multi(name, rows)
 
     def _clean_up_tmp_table(self, name: str) -> None:

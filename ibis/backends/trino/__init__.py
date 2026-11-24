@@ -550,9 +550,9 @@ class Backend(
             ),
         ).sql(self.name)
 
-        data = op.data.to_frame().itertuples(index=False)
+        table = op.data.to_pyarrow(schema)
         insert_stmt = self._build_insert_template(name, schema=schema)
         with self.begin() as cur:
             cur.execute(create_stmt)
-            for row in data:
+            for row in zip(*table.to_pydict().values()):
                 cur.execute(insert_stmt, row)

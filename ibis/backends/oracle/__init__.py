@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import math
 import re
 import warnings
 from functools import cached_property
@@ -521,16 +522,21 @@ class Backend(
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         ).sql(self.name)
 
-        data = op.data.to_frame().replace(float("nan"), None)
+        def nan_to_null(value: Any):
+            # FLOAT and DOUBLE PRECISION are NUMBERs, which cannot hold NaN
+            return None if isinstance(value, float) and math.isnan(value) else value
+
+        table = op.data.to_pyarrow(schema)
+        rows = [
+            tuple(map(nan_to_null, row)) for row in zip(*table.to_pydict().values())
+        ]
         insert_stmt = self._build_insert_template(
             name, schema=schema, placeholder=":{i:d}"
         )
         with self.begin() as cur:
             cur.execute(create_stmt)
-            for start, end in util.chunks(len(data), chunk_size=128):
-                cur.executemany(
-                    insert_stmt, list(data.iloc[start:end].itertuples(index=False))
-                )
+            for start, end in util.chunks(len(rows), chunk_size=128):
+                cur.executemany(insert_stmt, rows[start:end])
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name("oracle_metadata")

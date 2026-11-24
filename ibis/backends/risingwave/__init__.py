@@ -624,14 +624,14 @@ class Backend(
         )
         create_stmt_sql = create_stmt.sql(self.dialect)
 
-        df = op.data.to_frame()
-        data = df.itertuples(index=False)
+        table = op.data.to_pyarrow(schema)
+        rows = list(zip(*table.to_pydict().values()))
         sql = self._build_insert_template(
             name, schema=schema, columns=True, placeholder="%s"
         )
         with self.begin() as cur:
             cur.execute(create_stmt_sql)
-            extras.execute_batch(cur, sql, data, 128)
+            extras.execute_batch(cur, sql, rows, 128)
 
     def list_databases(
         self, *, like: str | None = None, catalog: str | None = None

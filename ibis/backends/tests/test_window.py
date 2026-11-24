@@ -21,6 +21,7 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkPythonException,
     SingleStoreDBOperationalError,
+    SingleStoreDBProgrammingError,
     SnowflakeProgrammingError,
 )
 from ibis.conftest import IS_SPARK_REMOTE
@@ -1156,8 +1157,8 @@ def test_first_last(backend):
 )
 @pytest.mark.notyet(
     ["singlestoredb"],
-    raises=SingleStoreDBOperationalError,
-    reason="not supported by MySQL",
+    raises=SingleStoreDBProgrammingError,
+    reason="not supported by SingleStoreDB",
 )
 @pytest.mark.notyet(
     ["sqlite"],

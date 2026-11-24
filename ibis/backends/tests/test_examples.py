@@ -4,7 +4,7 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.backends.tests.errors import ClickHouseDatabaseError, PyODBCProgrammingError
+from ibis.backends.tests.errors import ClickHouseDatabaseError
 from ibis.conftest import LINUX, MACOS, SANDBOXED
 
 pytestmark = pytest.mark.examples
@@ -61,7 +61,6 @@ pytest.importorskip("pins")
                 "year",
             ],
             id="has-null-integer-values",
-            marks=pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
         ),
     ],
 )
