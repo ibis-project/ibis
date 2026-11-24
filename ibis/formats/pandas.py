@@ -475,7 +475,12 @@ class PandasDataFrameProxy(TableProxy[pd.DataFrame]):
         if decimal_cols := [
             name for name, dtype in schema.items() if dtype.is_decimal()
         ]:
-            obj = obj.assign(**{col: obj[col].map(Decimal) for col in decimal_cols})
+            obj = obj.assign(
+                **{
+                    col: obj[col].map(Decimal, na_action="ignore")
+                    for col in decimal_cols
+                }
+            )
 
         return pa.Table.from_pandas(obj, schema=pyarrow_schema)
 
