@@ -36,3 +36,11 @@ def test_to_sql_knows_every_sql_backend(dialect):
     # every SQL backend's compiler module has to be imported there
     expr = ibis.table({"a": "int64"}, name="t")
     assert ibis.to_sql(expr, dialect=dialect)
+
+
+@pytest.mark.parametrize("dialect", sorted(_get_backend_names(exclude=("polars",))))
+def test_notnull_renders_is_not_null(dialect):
+    # building `IS NOT NULL` as `x IS (NOT NULL)` is invalid SQL
+    expr = ibis.table({"a": "int64"}, name="t").a.notnull()
+    sql = ibis.to_sql(expr, dialect=dialect)
+    assert "IS (" not in sql

@@ -156,7 +156,7 @@ class PySparkCompiler(SQLGlotCompiler):
             return is_null
 
     def visit_NotNull(self, op, *, arg):
-        is_not_null = arg.is_(sg.not_(NULL))
+        is_not_null = self.is_not_null(arg)
         is_not_nan = sg.not_(self.f.isnan(arg))
         if op.arg.dtype.is_floating():
             return sg.and_(is_not_null, is_not_nan)
@@ -676,7 +676,7 @@ class PySparkCompiler(SQLGlotCompiler):
             sge.Struct.from_arg_list(
                 [
                     x + self.f.coalesce(s_sum, 0),
-                    s_count + self.if_(x.is_(sg.not_(NULL)), 1, 0),
+                    s_count + self.if_(self.is_not_null(x), 1, 0),
                 ]
             ),
             state_dtype,

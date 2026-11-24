@@ -100,7 +100,7 @@ class RisingWaveCompiler(PostgresCompiler):
                 "RisingWave requires an `order_by` be specified in `first`"
             )
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.first_value(arg, where=where, order_by=order_by)
 
@@ -110,7 +110,7 @@ class RisingWaveCompiler(PostgresCompiler):
                 "RisingWave requires an `order_by` be specified in `last`"
             )
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.last_value(arg, where=where, order_by=order_by)
 

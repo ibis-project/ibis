@@ -168,7 +168,7 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         if distinct:
             arg = sge.Distinct(expressions=[arg])
@@ -234,7 +234,7 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_ArrayRemove(self, op, *, arg, other):
         x = sg.to_identifier(util.gen_name("x"))
-        should_keep_null = sg.and_(x.is_(NULL), other.is_(sg.not_(NULL)))
+        should_keep_null = sg.and_(x.is_(NULL), self.is_not_null(other))
         cond = sg.or_(x.neq(other), should_keep_null)
         return self.f.list_filter(arg, sge.Lambda(this=cond, expressions=[x]))
 
@@ -537,13 +537,13 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.first(arg, where=where, order_by=order_by)
 
     def visit_Last(self, op, *, arg, where, order_by, include_null):
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.last(arg, where=where, order_by=order_by)
 

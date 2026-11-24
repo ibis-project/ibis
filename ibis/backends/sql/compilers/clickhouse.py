@@ -655,7 +655,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_ArrayRemove(self, op, *, arg, other):
         x = sg.to_identifier(util.gen_name("x"))
-        should_keep_null = sg.and_(x.is_(NULL), other.is_(sg.not_(NULL)))
+        should_keep_null = sg.and_(x.is_(NULL), self.is_not_null(other))
         cond = sg.or_(x.neq(other), should_keep_null)
         return self.f.arrayFilter(sge.Lambda(this=cond, expressions=[x]), arg)
 
@@ -843,7 +843,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def _array_reduction(self, arg):
         x = sg.to_identifier("x", quoted=self.quoted)
-        not_null = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        not_null = sge.Lambda(this=self.is_not_null(x), expressions=[x])
         return self.f.arrayFilter(not_null, arg)
 
     def visit_ArrayMin(self, op, *, arg):

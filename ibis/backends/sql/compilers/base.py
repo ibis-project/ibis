@@ -563,6 +563,11 @@ class SQLGlotCompiler(abc.ABC):
             false=None if false is None else sge.convert(false),
         )
 
+    def is_not_null(self, arg: sge.Expression) -> sge.Is:
+        # Build `IS NOT NULL` directly: `arg.is_(sg.not_(NULL))` makes newer
+        # versions of sqlglot render `IS (NOT NULL)`, which is invalid SQL
+        return sge.Is(this=arg.copy(), expression=sge.Not(this=sge.Null()))
+
     def cast(self, arg, to: dt.DataType) -> sge.Cast:
         return sge.Cast(
             this=sge.convert(arg), to=self.type_mapper.from_ibis(to), copy=False
@@ -1065,7 +1070,7 @@ class SQLGlotCompiler(abc.ABC):
         return arg.is_(NULL)
 
     def visit_NotNull(self, op, *, arg):
-        return arg.is_(sg.not_(NULL, copy=False))
+        return self.is_not_null(arg)
 
     def visit_InValues(self, op, *, value, options):
         return value.isin(*options)

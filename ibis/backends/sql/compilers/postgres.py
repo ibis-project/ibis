@@ -221,7 +221,7 @@ $$""".format(
         return expr
 
     def _argminmax(self, op, *, arg, key, where, desc: bool):
-        cond = key.is_(sg.not_(NULL))
+        cond = self.is_not_null(key)
         where = cond if where is None else sge.And(this=cond, expression=where)
 
         agg = self.agg.array_agg(
@@ -325,7 +325,7 @@ $$""".format(
         step_dtype = op.step.dtype
         return self.if_(
             sg.and_(
-                self.f.nullif(step, zero_value(step_dtype)).is_(sg.not_(NULL)),
+                self.is_not_null(self.f.nullif(step, zero_value(step_dtype))),
                 _sign(step, step_dtype).eq(_sign(stop - start, step_dtype)),
             ),
             self.f.array_remove(
@@ -423,7 +423,7 @@ $$""".format(
 
     def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         if distinct:
             arg = sge.Distinct(expressions=[arg])

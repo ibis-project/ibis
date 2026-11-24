@@ -239,7 +239,7 @@ class MaterializeCompiler(PostgresCompiler):
         dtype = op.dtype
         return self.if_(
             sg.and_(
-                self.f.nullif(step, zero_value(step_dtype)).is_(sg.not_(NULL)),
+                self.is_not_null(self.f.nullif(step, zero_value(step_dtype))),
                 _sign(step, step_dtype).eq(_sign(stop - start, step_dtype)),
             ),
             self.cast(array_result, dtype),

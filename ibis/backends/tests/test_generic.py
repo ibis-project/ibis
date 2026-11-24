@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import decimal
+import importlib.metadata
 import sqlite3
 from collections import Counter
 from itertools import permutations
@@ -10,6 +11,7 @@ from operator import invert, methodcaller
 
 import pytest
 import toolz
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -2071,7 +2073,6 @@ def test_try_cast(con, from_val, to_type, expected):
 
 @pytest.mark.notimpl(
     [
-        "datafusion",
         "druid",
         "exasol",
         "singlestoredb",
@@ -2112,6 +2113,9 @@ def test_try_cast(con, from_val, to_type, expected):
                 pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
                 pytest.mark.notimpl(["polars"], reason="casts to 1672531200000000000"),
+                pytest.mark.notimpl(
+                    ["datafusion"], reason="casts to 1672531200000000 (microseconds)"
+                ),
             ],
         ),
     ],
@@ -2121,9 +2125,15 @@ def test_try_cast_null(con, from_val, to_type):
     assert pd.isna(con.execute(ibis.literal(from_val).try_cast(to_type)))
 
 
+def _datafusion_version():
+    try:
+        return vparse(importlib.metadata.version("datafusion"))
+    except importlib.metadata.PackageNotFoundError:
+        return vparse("0")
+
+
 @pytest.mark.notimpl(
     [
-        "datafusion",
         "druid",
         "mysql",
         "singlestoredb",
@@ -2134,6 +2144,12 @@ def test_try_cast_null(con, from_val, to_type):
         "sqlite",
         "exasol",
     ]
+)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=ValueError,
+    reason="ORDER BY on an aliased TRY_CAST is ambiguous in datafusion < 55",
+    condition=_datafusion_version() < vparse("55"),
 )
 @pytest.mark.notimpl(
     ["materialize"],
@@ -2153,7 +2169,6 @@ def test_try_cast_table(backend, con):
 
 @pytest.mark.notimpl(
     [
-        "datafusion",
         "mysql",
         "singlestoredb",
         "oracle",
@@ -2187,6 +2202,9 @@ def test_try_cast_table(backend, con):
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
+                pytest.mark.notimpl(
+                    ["datafusion"], reason="casts this to a number (microseconds)"
+                ),
             ],
             id="datetime-to-float",
         ),
@@ -2656,6 +2674,16 @@ def test_isnull_equality(con, backend, monkeypatch):
     result = expr.to_pandas()
 
     expected = pd.DataFrame({"out": [True, False, True]})
+
+    backend.assert_frame_equal(result, expected)
+
+
+def test_notnull_filter(con, backend, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    t = ibis.memtable({"x": [None, 1, 1], "z": [1, 2, 3]})
+    result = t.filter(t.x.notnull()).order_by("z").select("z").to_pandas()
+
+    expected = pd.DataFrame({"z": [2, 3]})
 
     backend.assert_frame_equal(result, expected)
 

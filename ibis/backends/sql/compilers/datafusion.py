@@ -356,7 +356,7 @@ class DataFusionCompiler(SQLGlotCompiler):
                 "`collect` with `distinct=True` is not supported"
             )
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.array_agg(arg, where=where, order_by=order_by)
 
@@ -388,7 +388,7 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.agg.corr(left, right, where=where)
 
     def visit_IsNan(self, op, *, arg):
-        return sg.and_(arg.is_(sg.not_(NULL)), self.f.isnan(arg))
+        return sg.and_(self.is_not_null(arg), self.f.isnan(arg))
 
     def visit_ArrayStringJoin(self, op, *, sep, arg):
         return self.if_(self.f.array_length(arg) > 0, self.f.array_join(arg, sep), NULL)
@@ -456,13 +456,13 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.first_value(arg, where=where, order_by=order_by)
 
     def visit_Last(self, op, *, arg, where, order_by, include_null):
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.last_value(arg, where=where, order_by=order_by)
 
