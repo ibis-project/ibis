@@ -1068,9 +1068,13 @@ def tz(request):
 @pytest.fixture
 def tzone_compute(con, temp_table, tz):
     n = 10
+    ts = pd.date_range("2017-04-01", periods=n, tz=tz)
+    if tz is not None:
+        # the UTC values without the time zone
+        ts = ts.tz_convert(None)
     df = pd.DataFrame(
         {
-            "ts": pd.date_range("2017-04-01", periods=n, tz=tz).values,
+            "ts": ts.to_numpy(),
             "b": np.arange(n).astype("float64"),
             "c": list(string.ascii_lowercase[:n]),
         }

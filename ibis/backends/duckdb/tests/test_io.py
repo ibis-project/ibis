@@ -124,15 +124,13 @@ def test_read_geo_from_url(monkeypatch):
     assert "httpfs" in loaded_exts
 
 
-@pytest.mark.filterwarnings(
-    "ignore:The default 'epoch' date format is deprecated and will be "
-    "removed in a future version:DeprecationWarning"
-)
 def test_read_json(con, data_dir, tmp_path):
     pqt = con.read_parquet(data_dir / "parquet" / "functional_alltypes.parquet")
 
     path = tmp_path.joinpath("ft.json")
-    path.write_text(pqt.execute().to_json(orient="records", lines=True))
+    path.write_text(
+        pqt.execute().to_json(orient="records", lines=True, date_format="iso")
+    )
 
     jst = con.read_json(path)
 
