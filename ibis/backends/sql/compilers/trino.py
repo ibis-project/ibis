@@ -248,14 +248,14 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def visit_ArrayContains(self, op, *, arg, other):
         return self.if_(
-            arg.is_(sg.not_(NULL)),
+            self.is_not_null(arg),
             self.f.coalesce(self.f.contains(arg, other), FALSE),
             NULL,
         )
 
     def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         if distinct:
             arg = sge.Distinct(expressions=[arg])
@@ -463,7 +463,7 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.f.element_at(
             self.agg.array_agg(arg, where=where, order_by=order_by), 1
@@ -471,14 +471,14 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def visit_Last(self, op, *, arg, where, order_by, include_null):
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.f.element_at(
             self.agg.array_agg(arg, where=where, order_by=order_by), -1
         )
 
     def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
-        cond = arg.is_(sg.not_(NULL, copy=False))
+        cond = self.is_not_null(arg)
         where = cond if where is None else sge.And(this=cond, expression=where)
         array = self.agg.array_agg(
             self.cast(arg, dt.string), where=where, order_by=order_by
@@ -575,7 +575,7 @@ class TrinoCompiler(SQLGlotCompiler):
         zero = zero_value(step_dtype)
         return self.if_(
             sg.and_(
-                self.f.nullif(step, zero).is_(sg.not_(NULL)),
+                self.is_not_null(self.f.nullif(step, zero)),
                 _sign(step, step_dtype).eq(_sign(stop - start, step_dtype)),
             ),
             self.f.array_remove(self.f.sequence(start, stop, step), stop),
@@ -700,7 +700,7 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_ArrayAny(self, op, *, arg):
         x = sg.to_identifier("x", quoted=self.quoted)
         identity = sge.Lambda(this=x, expressions=[x])
-        is_not_null = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        is_not_null = sge.Lambda(this=self.is_not_null(x), expressions=[x])
         return self.f.any_match(
             self.f.nullif(self.f.filter(arg, is_not_null), self.f.array()), identity
         )
@@ -708,19 +708,19 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_ArrayAll(self, op, *, arg):
         x = sg.to_identifier("x", quoted=self.quoted)
         identity = sge.Lambda(this=x, expressions=[x])
-        is_not_null = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        is_not_null = sge.Lambda(this=self.is_not_null(x), expressions=[x])
         return self.f.all_match(
             self.f.nullif(self.f.filter(arg, is_not_null), self.f.array()), identity
         )
 
     def visit_ArrayMin(self, op, *, arg):
         x = sg.to_identifier("x", quoted=self.quoted)
-        func = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        func = sge.Lambda(this=self.is_not_null(x), expressions=[x])
         return self.f.array_min(self.f.filter(arg, func))
 
     def visit_ArrayMax(self, op, *, arg):
         x = sg.to_identifier("x", quoted=self.quoted)
-        func = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        func = sge.Lambda(this=self.is_not_null(x), expressions=[x])
         return self.f.array_max(self.f.filter(arg, func))
 
     def visit_ArraySumAgg(self, op, *, arg, output):
@@ -741,7 +741,7 @@ class TrinoCompiler(SQLGlotCompiler):
             sge.Struct.from_arg_list(
                 [
                     x + self.f.coalesce(s_sum, 0),
-                    s_count + self.if_(x.is_(sg.not_(NULL)), 1, 0),
+                    s_count + self.if_(self.is_not_null(x), 1, 0),
                 ]
             ),
             state_dtype,

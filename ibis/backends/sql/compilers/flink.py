@@ -628,7 +628,7 @@ class FlinkCompiler(SQLGlotCompiler):
                 "not supported for this backend"
             )
         if not include_null:
-            cond = arg.is_(sg.not_(NULL, copy=False))
+            cond = self.is_not_null(arg)
             where = cond if where is None else sge.And(this=cond, expression=where)
         out = self.f.array_agg(arg)
         if where is not None:

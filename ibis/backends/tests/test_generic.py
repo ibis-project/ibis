@@ -2660,6 +2660,16 @@ def test_isnull_equality(con, backend, monkeypatch):
     backend.assert_frame_equal(result, expected)
 
 
+def test_notnull_filter(con, backend, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    t = ibis.memtable({"x": [None, 1, 1], "z": [1, 2, 3]})
+    result = t.filter(t.x.notnull()).order_by("z").select("z").to_pandas()
+
+    expected = pd.DataFrame({"z": [2, 3]})
+
+    backend.assert_frame_equal(result, expected)
+
+
 @pytest.mark.never(
     ["druid"],
     raises=PyDruidProgrammingError,
