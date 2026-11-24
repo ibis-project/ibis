@@ -110,3 +110,23 @@ def test_create_table_from_in_memory_data(temp):
     con.create_table("foo", pd.DataFrame({"id": [1, 2, 3]}), temp=temp)
 
     assert con.list_tables() == ["foo"]
+
+
+@pytest.mark.parametrize(
+    "df",
+    [
+        param(
+            pd.DataFrame({"x": pd.to_datetime(["2020-01-31 10:11:12", None])}),
+            id="timestamp",
+        ),
+        param(pd.DataFrame({"x": pd.array([1, None], dtype="Int64")}), id="Int64"),
+        param(
+            pd.DataFrame({"x": pd.array([True, None], dtype="boolean")}),
+            id="boolean",
+        ),
+        param(pd.DataFrame({"x": pd.array(["a", None], dtype="string")}), id="string"),
+    ],
+)
+def test_memtable_with_pandas_missing_values(con, df):
+    result = con.to_pandas(ibis.memtable(df).x.isnull())
+    assert result.tolist() == [False, True]

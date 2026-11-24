@@ -374,6 +374,7 @@ class Backend(
             self.dialect
         )
         df = op.data.to_frame()
+        df = df.astype(object).where(df.notna(), None)
 
         data = df.itertuples(index=False)
         insert_stmt = self._build_insert_template(
