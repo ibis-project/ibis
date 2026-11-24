@@ -209,6 +209,8 @@ def test_zero_timestamp_data(con):
     import pandas as pd
     import pandas.testing as tm
 
+    from ibis.formats.pandas import _DEFAULT_DATETIME_RESOLUTION
+
     table_def = """
     (
         name      CHAR(10) NULL,
@@ -233,8 +235,11 @@ def test_zero_timestamp_data(con):
                 "name": ["C", "B", "C"],
                 "tradedate": pd.to_datetime(
                     [date(2018, 10, 22), date(2017, 6, 7), date(2022, 12, 21)]
+                ).as_unit(_DEFAULT_DATETIME_RESOLUTION),
+                "date": pd.array(
+                    [pd.NaT, pd.NaT, pd.NaT],
+                    dtype=f"datetime64[{_DEFAULT_DATETIME_RESOLUTION}]",
                 ),
-                "date": [pd.NaT, pd.NaT, pd.NaT],
             }
         )
         # Sort both DataFrames by tradedate to ensure consistent ordering

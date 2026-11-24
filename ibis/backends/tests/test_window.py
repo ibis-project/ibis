@@ -331,11 +331,11 @@ def test_grouped_bounded_expanding_window(
         )
     )
 
-    result = expr.execute().set_index("id").sort_index()
+    result = expr.execute().sort_values("id").reset_index(drop=True)
     column = expected_fn(df.sort_values("id").groupby("string_col", group_keys=True))
     if column.index.nlevels > 1:
         column = column.droplevel(0)
-    expected = df.assign(val=column).set_index("id").sort_index()
+    expected = df.assign(val=column).sort_values("id").reset_index(drop=True)
 
     left, right = result.val, expected.val
 
@@ -409,10 +409,10 @@ def test_ungrouped_bounded_expanding_window(
             win=ibis.window(following=0, order_by=[alltypes.id]),
         )
     )
-    result = expr.execute().set_index("id").sort_index()
+    result = expr.execute().sort_values("id").reset_index(drop=True)
 
     column = expected_fn(df.sort_values("id"))
-    expected = df.assign(val=column).set_index("id").sort_index()
+    expected = df.assign(val=column).sort_values("id").reset_index(drop=True)
 
     left, right = result.val, expected.val
 
@@ -438,7 +438,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
 
     expr = alltypes.mutate(val=alltypes.id.mean().over(window))
 
-    result = expr.execute().set_index("id").sort_index()
+    result = expr.execute().sort_values("id").reset_index(drop=True)
 
     # shift id column before applying Pandas rolling window summarizer to
     # simulate forward looking window aggregation
@@ -451,8 +451,8 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
             .sort_index(level=1)
             .reset_index(drop=True)
         )
-        .set_index("id")
-        .sort_index()
+        .sort_values("id")
+        .reset_index(drop=True)
     )
 
     # discard first 2 rows of each group to account for the shift
@@ -525,7 +525,7 @@ def test_grouped_bounded_preceding_window(
     window = window_fn(alltypes)
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
 
-    result = expr.execute().set_index("id").sort_index()
+    result = expr.execute().sort_values("id").reset_index(drop=True)
     gdf = df.sort_values("id").groupby("string_col")
     expected = (
         df.assign(
@@ -534,8 +534,8 @@ def test_grouped_bounded_preceding_window(
             .sort_index(level=1)
             .reset_index(drop=True)
         )
-        .set_index("id")
-        .sort_index()
+        .sort_values("id")
+        .reset_index(drop=True)
     )
 
     left, right = result.val, expected.val
@@ -598,12 +598,12 @@ def test_grouped_unbounded_window(backend, alltypes, df, result_fn, expected_fn)
     # 3) Unbounded
     window = ibis.window(group_by=[alltypes.string_col])
     expr = alltypes.mutate(val=result_fn(alltypes, win=window))
-    result = expr.execute().set_index("id").sort_index()
+    result = expr.execute().sort_values("id").reset_index(drop=True)
 
     expected = (
         df.assign(val=expected_fn(df.groupby("string_col")))
-        .set_index("id")
-        .sort_index()
+        .sort_values("id")
+        .reset_index(drop=True)
     )
 
     left, right = result.val, expected.val
@@ -950,14 +950,14 @@ def test_ungrouped_unbounded_window(
     window = ibis.window(order_by=order_by)
     expr = alltypes.mutate(val=result_fn(alltypes, win=window))
     result = expr.execute()
-    result = result.set_index("id").sort_index()
+    result = result.sort_values("id").reset_index(drop=True)
 
     # Apply `expected_fn` onto a DataFrame that is
     # 1) Ungrouped
     # 2) Ordered if `ordered` is True
     df = df.sort_values("id") if ordered else df
     expected = df.assign(val=expected_fn(df))
-    expected = expected.set_index("id").sort_index()
+    expected = expected.sort_values("id").reset_index(drop=True)
 
     left, right = result.val, expected.val
 
@@ -1001,7 +1001,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
         group_by="string_col",
     )
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
-    result = expr.execute().set_index("id").sort_index()
+    result = expr.execute().sort_values("id").reset_index(drop=True)
 
     def gb_fn(df, **_):
         indices = np.searchsorted(df.id, [df["prec"], df["foll"]], side="left")
@@ -1025,8 +1025,8 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
             # Mimic our range window spec using .apply()
             val=res
         )
-        .set_index("id")
-        .sort_index()
+        .sort_values("id")
+        .reset_index(drop=True)
     )
 
     backend.assert_series_equal(result.val, expected.val)
@@ -1053,9 +1053,9 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expr = alltypes.mutate(val=lambda t: t.id.percent_rank())
 
-    result = expr.execute().set_index("id").sort_index()
+    result = expr.execute().sort_values("id").reset_index(drop=True)
     column = df.id.rank(method="min").sub(1).div(len(df) - 1)
-    expected = df.assign(val=column).set_index("id").sort_index()
+    expected = df.assign(val=column).sort_values("id").reset_index(drop=True)
 
     backend.assert_series_equal(result.val, expected.val)
 
