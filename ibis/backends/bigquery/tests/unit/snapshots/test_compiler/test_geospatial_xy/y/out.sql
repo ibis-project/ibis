@@ -1,3 +1,3 @@
 SELECT
-  st_y(`t0`.`pt`) AS `tmp`
+  ST_Y(`t0`.`pt`) AS `tmp`
 FROM `t` AS `t0`
