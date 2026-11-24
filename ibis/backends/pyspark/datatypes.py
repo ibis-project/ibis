@@ -1,18 +1,11 @@
 from __future__ import annotations
 
-import pyspark
 import pyspark.sql.types as pt
-from packaging.version import parse as vparse
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats import SchemaMapper, TypeMapper
-
-# DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
-# PySpark until version 3.3
-PYSPARK_35 = vparse(pyspark.__version__) >= vparse("3.5")
-
 
 _from_pyspark_dtypes = {
     pt.BinaryType: dt.Binary,
