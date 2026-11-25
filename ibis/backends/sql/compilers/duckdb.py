@@ -400,6 +400,16 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_ExtractMicrosecond(self, op, *, arg):
         return self.f.mod(self.f.extract("us", arg), 1_000_000)
 
+    def visit_ExtractEpochSeconds(self, op, *, arg):
+        # DuckDB's ``epoch`` returns a floating point value that retains
+        # sub-second precision, but ``ExtractEpochSeconds`` is typed as an
+        # integer. Floor to whole seconds and cast to the declared type so the
+        # result matches the schema instead of silently carrying a fractional
+        # part (https://github.com/ibis-project/ibis/issues/11928).
+        return self.cast(
+            self.f.floor(self.f.epoch(self.cast(arg, dt.timestamp))), op.dtype
+        )
+
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
         unit = unit.short
         if unit == "ms":
