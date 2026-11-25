@@ -2349,6 +2349,13 @@ class Table(Expr, FixedTextJupyterMixin):
         mutations
             Named expressions using keyword arguments
 
+        Notes
+        -----
+        As in [`select()`][ibis.expr.types.relations.Table.select], a bare string
+        refers to a column by name, and a bare integer is a literal, not a
+        column position. Use `ibis.literal("text")` to add a constant string
+        column rather than referring to an existing column.
+
         Returns
         -------
         Table
@@ -2469,6 +2476,14 @@ class Table(Expr, FixedTextJupyterMixin):
             strings.
         named_exprs
             Column expressions
+
+        Notes
+        -----
+        A bare string refers to a column by name, including when supplied as
+        a keyword argument value. A bare integer is a literal, not a column
+        position. For example, `t.select(value="x")` selects column `x`,
+        `t.select(value=1)` produces a column of ones, and
+        `t.select(value=ibis.literal("x"))` produces a column of the string `"x"`.
 
         Returns
         -------
