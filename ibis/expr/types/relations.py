@@ -3578,7 +3578,12 @@ class Table(Expr, FixedTextJupyterMixin):
         right
             Right table to join
         predicates
-            Condition(s) to join on. See examples for details.
+            Condition(s) to join on. A string matches columns with that name
+            in both tables. To match differently named columns for equality,
+            use a list of `(left_name, right_name)` pairs, such as
+            `[("customer_id", "id")]`. Use a Boolean expression, such as
+            `left.start < right.end`, for a comparison other than equality.
+            Multiple conditions are combined with AND.
         how
             Join method, e.g. `"inner"` or `"left"`.
         lname
