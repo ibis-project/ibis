@@ -7,7 +7,6 @@ from itertools import starmap
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from packaging.version import parse as vparse
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -611,22 +610,19 @@ class DataFusionCompiler(SQLGlotCompiler):
         unit = unit.name.lower()
         return sg.cast(self.f.concat(self.cast(arg, dt.string), f" {unit}"), "interval")
 
-    if (version := util.version("datafusion")) is not None and vparse(
-        version
-    ) >= vparse("48.0.0"):
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if (version := util.version("datafusion")) is not None:
+            from packaging.version import parse as vparse
 
-        def visit_ApproxQuantile(self, op, *, arg, quantile, where):
-            expr = sge.WithinGroup(
-                this=self.f.approx_percentile_cont(quantile),
-                expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
-            )
-            if where is not None:
-                return sge.Filter(this=expr, expression=sge.Where(this=where))
-            return expr
-    else:
-
-        def visit_ApproxQuantile(self, op, *, arg, quantile, where):
-            return self.agg.approx_percentile_cont(arg, quantile, where=where)
+            if vparse(version) >= vparse("48.0.0"):
+                expr = sge.WithinGroup(
+                    this=self.f.approx_percentile_cont(quantile),
+                    expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+                )
+                if where is not None:
+                    return sge.Filter(this=expr, expression=sge.Where(this=where))
+                return expr
+        return self.agg.approx_percentile_cont(arg, quantile, where=where)
 
     def visit_Strftime(self, op, *, arg, format_str):
         return self.f.date_format(arg, format_str)
