@@ -1069,6 +1069,26 @@ expr = t.mutate(group_demeaned=t.two - t.two.mean().over(w))
 ibis.to_sql(expr)
 ```
 
+For a windowed aggregate, omitting frame bounds in `ibis.window()` is
+equivalent to specifying `rows=(None, None)`: both ends are unbounded, so
+the aggregate sees the whole partition even when the window has an order.
+Use `rows=(None, 0)` to include rows from the start of the partition through
+the current row, in window order.
+
+```{python}
+values = ibis.memtable({"x": [1, 2, 3]})
+frames = {
+    "unspecified": ibis.window(order_by=values.x),
+    "unbounded": ibis.window(order_by=values.x, rows=(None, None)),
+    "running": ibis.window(order_by=values.x, rows=(None, 0)),
+}
+values.mutate(
+    **{name: values.x.sum().over(frame) for name, frame in frames.items()}
+).order_by("x")
+```
+
+The first two sums are `6` for every row; the running sum is `1`, `3`, `6`.
+
 ## Top-K operations
 
 A common SQL idiom is the "top-K" or "top-N" operation: subsetting a
