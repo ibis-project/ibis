@@ -54,6 +54,13 @@ chDB runs one engine per process: the first connection fixes the on-disk path,
 and connecting to a different path raises until the open connections are closed.
 :::
 
+::: {.callout-warning}
+Queries against the shared engine aren't safe to run concurrently, so don't
+issue them from multiple threads at once, even through different connections.
+Running a query on a connection also ends any `to_pyarrow_batches` reader on it
+that hasn't been fully read; reading from that reader afterwards raises an error.
+:::
+
 ### Connection Parameters
 
 ```{python}
