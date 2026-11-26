@@ -287,9 +287,36 @@ class Backend(
     ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
 
+        # A table name may be fully qualified, e.g. "catalog.database.table"
+        # (this is what `Table.get_name()` returns). Parse it the same way
+        # `_to_sqlglot_table` parses dotted database strings: quote each part
+        # first so names containing `-` survive parsing.
+        quoted = self.compiler.quoted
+        name_loc = sg.parse_one(
+            ".".join(
+                sg.to_identifier(part, quoted=quoted).sql(self.dialect)
+                for part in name.split(".")
+            ),
+            into=sge.Table,
+            dialect=self.dialect,
+        )
+
+        # Raise if there are path specifications in both the name and as a kwarg
+        name_catalog = name_loc.catalog or None
+        if name_catalog is not None and table_loc.catalog:
+            raise exc.IbisInputError(
+                "Cannot specify catalog both in the table name and as an argument"
+            )
+        name_db = name_loc.db or None
+        if name_db is not None and table_loc.db:
+            raise exc.IbisInputError(
+                "Cannot specify database both in the table name and as an argument"
+            )
+
         # TODO: set these to better defaults
-        catalog = table_loc.catalog or None
-        database = table_loc.db or None
+        catalog = name_catalog or table_loc.catalog or None
+        database = name_db or table_loc.db or None
+        name = name_loc.name
 
         table_schema = self.get_schema(name, catalog=catalog, database=database)
         # load geospatial only if geo columns
