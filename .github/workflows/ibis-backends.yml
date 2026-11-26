@@ -114,7 +114,7 @@ jobs:
               - --extra chdb
               - --extra examples
             additional_deps:
-              - "'chdb>=4.2.1'"
+              - "'chdb>=4.5.0'"
           - name: clickhouse
             title: ClickHouse
             services:

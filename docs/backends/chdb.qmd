@@ -17,7 +17,7 @@ Ibis's ClickHouse SQL compiler and type system.
 Install Ibis and the chDB engine:
 
 ```{.bash}
-pip install 'ibis-framework[chdb]' chdb
+pip install 'ibis-framework[chdb]' 'chdb>=4.5.0'
 ```
 
 ::: {.callout-note}

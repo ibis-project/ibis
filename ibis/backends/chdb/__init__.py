@@ -237,28 +237,20 @@ class _Con:
     ``close`` disconnects.
     """
 
-    # chDB's embedded engine keeps one process-global Arrow output buffer.
-    # Two situations leave it dirty and corrupt the *next* ArrowTable query
-    # ("Unexpected empty message" / "metadata too long" / a 0-row result):
-    #   * a query that raised -- flushed with a throwaway query, and
-    #   * a streaming query (``send_query``) left un-drained -- only its own
-    #     cancellation clears the buffer, so the last stream is tracked at
-    #     class level (the buffer is shared by every connection) and cancelled
-    #     before the next query if the caller abandoned it.
-    _active_stream = None
-
     def __init__(self, session):
         self._session = session
 
-    def _flush(self) -> None:
-        with contextlib.suppress(Exception):
-            self._session.query("SELECT 1", "CSV")
+    @property
+    def stream(self):
+        """The open ``send_query`` stream; any later query on the session ends it.
 
-    def _cancel_active_stream(self) -> None:
-        stream, _Con._active_stream = _Con._active_stream, None
-        if stream is not None:
-            with contextlib.suppress(Exception):
-                stream.close()
+        Kept on the session so that every ``_Con`` wrapping it agrees.
+        """
+        return getattr(self._session, "_ibis_stream", None)
+
+    @stream.setter
+    def stream(self, stream):
+        self._session._ibis_stream = stream
 
     def raw_query(self, sql, *, external_data=None, **_):
         return self.query(sql)
@@ -266,21 +258,12 @@ class _Con:
     command = raw_query
 
     def query(self, sql, *, external_data=None, fmt="CSV", **_):
-        self._cancel_active_stream()
-        try:
-            return _memtables._query(self._session, sql, fmt)
-        except Exception:
-            self._flush()
-            raise
+        self.stream = None
+        return _memtables._query(self._session, sql, fmt)
 
     def send_query(self, sql, fmt="Arrow"):
-        self._cancel_active_stream()
-        try:
-            _Con._active_stream = _memtables._send_query(self._session, sql, fmt)
-        except Exception:
-            self._flush()
-            raise
-        return _Con._active_stream
+        self.stream = _memtables._send_query(self._session, sql, fmt)
+        return self.stream
 
     def cursor(self):
         return self._session.cursor()
@@ -365,9 +348,6 @@ class Backend(UrlFromPath, CHBackend):
         self._run_pre_execute_hooks(table)
         sql = self.compile(table, **kwargs)
         self._log(sql)
-        # Materialize via the non-streaming ArrowTable format: it returns a
-        # pyarrow.Table directly, leaving no open stream to poison the shared
-        # connection if type conversion raises.
         result = self.con.query(sql, fmt="ArrowTable")
         return ChdbArrowConverter.convert_table(result, table.schema())
 
@@ -385,23 +365,31 @@ class Backend(UrlFromPath, CHBackend):
         schema = table_expr.schema()
         arrow_schema = schema.to_pyarrow()
 
-        # chDB's embedded engine is a process-global singleton, so a streaming
-        # query left open (partially consumed and abandoned, or drained but not
-        # cancelled) corrupts the Arrow buffer of the *next* query on any
-        # connection. Always cancel it in ``finally`` -- this runs on normal
-        # exhaustion and on GeneratorExit when the reader is dropped early.
-        stream = self.con.send_query(sql, "Arrow")
-        reader = stream.record_batch(chunk_size)
+        con = self.con
+        stream = con.send_query(sql, "Arrow")
+        # iter(): pyarrow<14 readers aren't iterators themselves
+        reader = iter(stream.record_batch(chunk_size))
 
         def batches():
+            # A later query on the session ends this stream, and fetching from
+            # or closing it after that would end whichever stream is open now.
             try:
-                for batch in reader:
+                while True:
+                    if con.stream is not stream:
+                        raise com.IbisError(
+                            "This to_pyarrow_batches reader was interrupted by "
+                            "another query on the same connection"
+                        )
+                    if (batch := next(reader, None)) is None:
+                        return
                     converted = ChdbArrowConverter.convert_table(
                         pa.Table.from_batches([batch], schema=batch.schema), schema
                     )
                     yield from converted.to_batches()
             finally:
-                stream.close()
+                if con.stream is stream:
+                    con.stream = None
+                    stream.close()
 
         return pa.ipc.RecordBatchReader.from_batches(arrow_schema, batches())
 
