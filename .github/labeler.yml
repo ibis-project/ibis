@@ -8,6 +8,11 @@ bigquery:
       - any-glob-to-any-file: "ibis/backends/bigquery/**"
       - any-glob-to-any-file: "ibis/backends/sql/compilers/bigquery/**"
 
+chdb:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/chdb/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/chdb.py"
+
 clickhouse:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/clickhouse/**"

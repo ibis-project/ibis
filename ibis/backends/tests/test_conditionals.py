@@ -132,7 +132,9 @@ def test_ibis_cases_column(batting):
     assert Counter(result) == Counter(expected)
 
 
-@pytest.mark.notimpl("clickhouse", reason="special case this and returns 'oops'")
+@pytest.mark.notimpl(
+    ["clickhouse", "chdb"], reason="special case this and returns 'oops'"
+)
 def test_value_cases_null(con):
     """CASE x WHEN NULL never gets hit"""
     e = ibis.literal(5).nullif(5).cases((None, "oops"), else_="expected")

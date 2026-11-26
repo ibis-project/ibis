@@ -9,6 +9,7 @@ from textwrap import dedent
 
 backends = [
     {"name": "BigQuery", "module": "bigquery"},
+    {"name": "chDB", "module": "chdb"},
     {"name": "ClickHouse", "module": "clickhouse"},
     {"name": "DataFusion", "module": "datafusion"},
     {"name": "Druid", "module": "druid"},
@@ -53,6 +54,10 @@ for installer in installers:
         backend_name = backend["name"]
         mod = backend["module"]
 
+        # chdb isn't on conda-forge
+        if backend_name == "chDB" and installer_name != "pip":
+            continue
+
         print(f"## {backend_name}")
         print()
 
@@ -60,6 +65,11 @@ for installer in installers:
             print("Install alongside the `apache-flink` package:")
             print()
             print(f"```bash\npip install ibis-framework apache-flink\n```")
+
+        elif backend_name == "chDB":
+            print("Install alongside the `chdb` package:")
+            print()
+            print("```bash\npip install 'ibis-framework[chdb]' 'chdb>=4.5.0'\n```")
 
         else:
             extra = backend.get("extra", mod)

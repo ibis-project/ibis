@@ -33,6 +33,7 @@ pd = pytest.importorskip("pandas")
             {
                 "bigquery": "STRING",
                 "clickhouse": "String",
+                "chdb": "String",
                 "snowflake": "VARCHAR",
                 "sqlite": "text",
                 "trino": "varchar(6)",
@@ -52,6 +53,7 @@ pd = pytest.importorskip("pandas")
             {
                 "bigquery": "STRING",
                 "clickhouse": "String",
+                "chdb": "String",
                 "snowflake": "VARCHAR",
                 "sqlite": "text",
                 "trino": "varchar(7)",
@@ -83,6 +85,7 @@ pd = pytest.importorskip("pandas")
             {
                 "bigquery": "STRING",
                 "clickhouse": "String",
+                "chdb": "String",
                 "snowflake": "VARCHAR",
                 "sqlite": "text",
                 "trino": "varchar(7)",
@@ -772,7 +775,7 @@ def test_substr_with_null_values(backend, alltypes, df):
             "user:pass",
             marks=[
                 pytest.mark.notyet(
-                    ["bigquery", "clickhouse", "trino", "athena"],
+                    ["bigquery", "chdb", "clickhouse", "trino", "athena"],
                     raises=com.OperationNotDefinedError,
                     reason="doesn't support `USERINFO`",
                 )
@@ -790,7 +793,7 @@ def test_substr_with_null_values(backend, alltypes, df):
                     reason="host is netloc",
                 ),
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["chdb", "clickhouse"],
                     reason="Backend is foiled by the presence of a password",
                     raises=AssertionError,
                 ),
@@ -955,6 +958,7 @@ def test_multiple_subs(con):
 
 @pytest.mark.notimpl(
     [
+        "chdb",
         "clickhouse",
         "druid",
         "impala",
@@ -1071,6 +1075,11 @@ def test_re_split_column(alltypes):
     ["clickhouse"],
     raises=ClickHouseDatabaseError,
     reason="clickhouse only supports pattern constants",
+)
+@pytest.mark.notyet(
+    ["chdb"],
+    raises=RuntimeError,
+    reason="chdb only supports pattern constants",
 )
 @pytest.mark.notyet(
     ["polars"],
@@ -1271,7 +1280,7 @@ def string_temp_table(backend, con):
                     reason="thinks emoji are 4 characters long, double-counts accented characters",
                 ),
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["chdb", "clickhouse"],
                     raises=AssertionError,
                     reason="Can use lengthUTF8 instead",
                 ),
@@ -1313,6 +1322,7 @@ def string_temp_table(backend, con):
             marks=[
                 pytest.mark.notyet(
                     [
+                        "chdb",
                         "clickhouse",
                         "datafusion",
                         "duckdb",
@@ -1370,7 +1380,7 @@ def string_temp_table(backend, con):
                     reason="no upper on accented characters",
                 ),
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["chdb", "clickhouse"],
                     raises=AssertionError,
                     reason="no upper on accented characters, can use upperUTF8 instead",
                 ),
@@ -1387,7 +1397,7 @@ def string_temp_table(backend, con):
                     reason="no lower on accented characters",
                 ),
                 pytest.mark.notyet(
-                    ["clickhouse"],
+                    ["chdb", "clickhouse"],
                     raises=AssertionError,
                     reason="no lower on accented characters, can use lowerUTF8 instead",
                 ),

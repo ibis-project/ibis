@@ -81,7 +81,7 @@ def test_literal(backend, con):
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
-    ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
+    ["clickhouse", "chdb"], reason="clickhouse doesn't support nullable nested types"
 )
 def test_null_literal(backend, con, field):
     query = _NULL_STRUCT_LITERAL[field]
@@ -151,7 +151,7 @@ def test_field_access_after_case(con):
         param(
             True,
             marks=pytest.mark.notyet(
-                ["clickhouse"],
+                ["clickhouse", "chdb"],
                 raises=AssertionError,
                 reason="clickhouse doesn't allow nullable nested types",
             ),

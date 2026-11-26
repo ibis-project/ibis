@@ -1,0 +1,596 @@
+"""chDB backend: the ClickHouse backend running against the embedded engine."""
+
+from __future__ import annotations
+
+import contextlib
+import datetime
+import functools
+import ipaddress
+import re
+import uuid
+from typing import TYPE_CHECKING
+
+import pyarrow as pa
+import pyarrow.compute as pc
+import pyarrow_hotfix  # noqa: F401
+import sqlglot as sg
+import sqlglot.expressions as sge
+from packaging.version import parse as vparse
+
+import ibis
+import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
+from ibis import util
+from ibis.backends import UrlFromPath
+from ibis.backends.chdb import _memtables
+from ibis.backends.clickhouse import Backend as CHBackend
+from ibis.backends.clickhouse import _to_memtable
+from ibis.backends.sql.compilers import ChdbCompiler
+from ibis.backends.sql.compilers.base import C
+from ibis.common.temporal import normalize_timezone
+from ibis.expr.operations.udf import InputType
+from ibis.formats.pyarrow import PyArrowData, PyArrowType
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import chdb
+
+
+def _import_chdb():
+    # chdb is intentionally not in the ``ibis-framework[chdb]`` extra (it pins
+    # pyarrow>=13, which is incompatible with the flink extra), so it may be
+    # absent even after installing the extra. Fail with an actionable message.
+    try:
+        import chdb
+    except ImportError as e:
+        raise ImportError(
+            "The chdb backend requires the `chdb` package, which is not "
+            "installed. Install it with `python -m pip install 'chdb>=4.5.0'`."
+        ) from e
+    else:
+        return chdb
+
+
+def _check_chdb_core() -> None:
+    # older engines corrupt the next query after an abandoned stream
+    version = util.version("chdb-core")
+    if version is None or vparse(version) < vparse("26.11.1"):
+        found = f"chdb-core {version}" if version else "no chdb-core package"
+        raise ImportError(
+            "The chdb backend requires chdb>=4.5.0 (chdb-core>=26.11.1), but "
+            f"found {found}. Upgrade with `python -m pip install -U 'chdb>=4.5.0'`."
+        )
+
+
+def _relabel_fields(arr, dtype: dt.DataType):
+    """Relabel chDB's positional struct field names to the declared Ibis names.
+
+    Descends through arrays and structs so a name-based cast lines up at every
+    nesting depth (chDB emits anonymous tuples as fields '1', '2', ...).
+    """
+    if dtype.is_struct() and pa.types.is_struct(arr.type):
+        children = [
+            _relabel_fields(arr.field(i), typ) for i, typ in enumerate(dtype.types)
+        ]
+        return pa.StructArray.from_arrays(
+            children, names=list(dtype.names), mask=arr.is_null()
+        )
+    if dtype.is_array() and pa.types.is_list(arr.type):
+        return pa.ListArray.from_arrays(
+            arr.offsets,
+            _relabel_fields(arr.values, dtype.value_type),
+            mask=arr.is_null(),
+        )
+    return arr
+
+
+def _combined(col):
+    return col.combine_chunks() if isinstance(col, pa.ChunkedArray) else col
+
+
+def _fmt_uuid(v):
+    if v is None or isinstance(v, str):
+        return v
+    if isinstance(v, uuid.UUID):
+        return str(v)
+    return str(uuid.UUID(bytes=bytes(v)))
+
+
+def _fmt_ip(v):
+    if v is None or isinstance(v, str):
+        return v
+    if isinstance(v, (bytes, bytearray)):
+        return str(ipaddress.ip_address(bytes(v)))
+    return str(ipaddress.ip_address(v))
+
+
+class ChdbArrowConverter(PyArrowData):
+    """Restore the declared Ibis types on chDB's raw Arrow output.
+
+    chDB's Arrow output diverges from the declared types in several ways --
+    scale-less ``DateTime`` arrives as uint32 seconds, structs carry positional
+    field names, UUID/INET arrive as binary, nullable scalars as unions -- so
+    each column is coerced back to the type Ibis expects.
+    """
+
+    @classmethod
+    def convert_column(cls, column: pa.ChunkedArray, dtype: dt.DataType):
+        pa_type = PyArrowType.from_ibis(dtype)
+        if column.type == pa_type:
+            return column
+
+        n = len(column)
+        # dt.null and all-null columns: chDB may return them as binary/other,
+        # which Arrow won't cast; rebuild directly as nulls of the target type.
+        if (
+            dtype.is_null()
+            or pa.types.is_null(pa_type)
+            or (n and column.null_count == n)
+        ):
+            return pa.nulls(n, type=pa_type)
+
+        # scale-less DateTime arrives as uint32 seconds; uint32->timestamp is
+        # not a legal Arrow cast, so route through int64.
+        if dtype.is_timestamp() and pa.types.is_integer(column.type):
+            unit = "s" if dtype.scale is None else pa_type.unit
+            target = pa.timestamp(unit, tz=dtype.timezone)
+            return column.cast(pa.int64()).cast(target).cast(pa_type)
+
+        if dtype.is_interval() and pa.types.is_integer(column.type):
+            return column.cast(pa.int64()).cast(pa_type)
+
+        # UUID arrives as fixed_size_binary(16) / arrow.uuid extension.
+        if dtype.is_uuid():
+            return pa.array(
+                [_fmt_uuid(v) for v in _combined(column).to_pylist()], type=pa_type
+            )
+
+        # INET arrives as uint32 (IPv4) or fixed_size_binary(16) (IPv6).
+        if dtype.is_inet():
+            return pa.array(
+                [_fmt_ip(v) for v in _combined(column).to_pylist()], type=pa_type
+            )
+
+        # chDB emits anonymous tuples with positional field names ('1','2',...);
+        # relabel to the declared field names at every nesting depth (Arrow
+        # matches struct fields by name, incl. structs nested inside arrays).
+        if dtype.is_struct() and pa.types.is_struct(column.type):
+            column = _relabel_fields(_combined(column), dtype)
+            if column.type == pa_type:
+                return column
+
+        if (
+            dtype.is_array()
+            and dtype.value_type.is_timestamp()
+            and pa.types.is_list(column.type)
+            and pa.types.is_integer(column.type.value_type)
+        ):
+            value = dtype.value_type
+            unit = "s" if value.scale is None else pa_type.value_type.unit
+            inner = pa.timestamp(unit, tz=value.timezone)
+            return column.cast(pa.list_(pa.int64())).cast(pa.list_(inner)).cast(pa_type)
+
+        # nullable values come back as a dense union; resolve to plain values.
+        if pa.types.is_union(column.type):
+            return pa.array(_combined(column).to_pylist(), type=pa_type)
+
+        # same-width signedness flip (e.g. bitNot yields unsigned): a two's
+        # complement reinterpretation, so an unsafe cast is value-preserving.
+        if (
+            pa.types.is_integer(column.type)
+            and pa.types.is_integer(pa_type)
+            and column.type.bit_width == pa_type.bit_width
+        ):
+            return pc.cast(column, pa_type, safe=False)
+
+        # generic: safe cast, then a value-checked rebuild; fail loudly rather
+        # than returning a mistyped or silently truncated column.
+        with contextlib.suppress(pa.ArrowInvalid, pa.ArrowNotImplementedError):
+            return column.cast(pa_type)
+        try:
+            return pa.array(_combined(column).to_pylist(), type=pa_type)
+        except Exception as e:
+            raise com.IbisError(
+                f"chDB returned Arrow type {column.type}, which cannot be "
+                f"converted to the expected type {pa_type}"
+            ) from e
+
+    @classmethod
+    def convert_table(cls, table: pa.Table, schema: sch.Schema) -> pa.Table:
+        target = schema.to_pyarrow()
+        # chDB returns a zero-column table for an empty result.
+        if table.num_columns != len(schema):
+            if table.num_rows == 0:
+                return target.empty_table()
+            raise com.IbisError(
+                f"chDB returned {table.num_columns} columns, expected {len(schema)}"
+            )
+        columns = [
+            cls.convert_column(table.column(i), dtype)
+            for i, dtype in enumerate(schema.values())
+        ]
+        # schema= aligns field nullability (chDB columns are non-nullable).
+        return pa.Table.from_arrays(columns, schema=target)
+
+
+def _chdb_sqltype(dtype: dt.DataType):
+    from chdb import sqltypes as st
+
+    if dtype.is_timestamp():
+        # chDB otherwise gives UDF DateTime values the process's timezone; fall
+        # back to UTC for zones ClickHouse can't parse, such as "+05:00"
+        try:
+            return st.ChdbType(f"DateTime('{dtype.timezone or 'UTC'}')")
+        except RuntimeError:
+            return st.ChdbType("DateTime('UTC')")
+
+    mapping = {
+        dt.Int8: st.INT8,
+        dt.Int16: st.INT16,
+        dt.Int32: st.INT32,
+        dt.Int64: st.INT64,
+        dt.UInt8: st.UINT8,
+        dt.UInt16: st.UINT16,
+        dt.UInt32: st.UINT32,
+        dt.UInt64: st.UINT64,
+        dt.Float32: st.FLOAT32,
+        dt.Float64: st.FLOAT64,
+        dt.String: st.STRING,
+        dt.Boolean: st.BOOL,
+        dt.Date: st.DATE,
+    }
+    for ibis_type, chdb_type in mapping.items():
+        if isinstance(dtype, ibis_type):
+            return chdb_type
+    raise com.UnsupportedBackendType(
+        f"chDB Python UDFs do not support the type {dtype}"
+    )
+
+
+def _localize_naive(func, timezone: str | None):
+    # chDB converts a naive datetime with the process's timezone; read it in
+    # the declared one instead
+    tzinfo = normalize_timezone(timezone or "UTC") or datetime.timezone.utc
+
+    @functools.wraps(func)
+    def wrapper(*args):
+        result = func(*args)
+        if isinstance(result, datetime.datetime) and result.tzinfo is None:
+            return result.replace(tzinfo=tzinfo)
+        return result
+
+    return wrapper
+
+
+class _Con:
+    """Adapt the chDB connection to a ``clickhouse_connect``-shaped surface.
+
+    The inherited ClickHouse DDL methods call these directly: ``raw_query`` /
+    ``command`` run DDL, ``query`` / ``send_query`` / ``cursor`` back execution,
+    ``close`` disconnects.
+    """
+
+    def __init__(self, session):
+        self._session = session
+
+    @property
+    def stream(self):
+        """The open ``send_query`` stream; any later query on the session ends it.
+
+        Kept on the session so that every ``_Con`` wrapping it agrees.
+        """
+        return getattr(self._session, "_ibis_stream", None)
+
+    @stream.setter
+    def stream(self, stream):
+        self._session._ibis_stream = stream
+
+    def raw_query(self, sql, *, external_data=None, **_):
+        return self.query(sql)
+
+    command = raw_query
+
+    def query(self, sql, *, external_data=None, fmt="CSV", **_):
+        self.stream = None
+        return _memtables._query(self._session, sql, fmt)
+
+    def send_query(self, sql, fmt="Arrow"):
+        self.stream = _memtables._send_query(self._session, sql, fmt)
+        return self.stream
+
+    def cursor(self):
+        return self._session.cursor()
+
+    def close(self):
+        with contextlib.suppress(Exception):
+            self._session.close()
+
+
+class Backend(UrlFromPath, CHBackend):
+    # UrlFromPath first: its path-based _from_url (chdb://<path>) must win over
+    # ClickHouse's host/port one.
+    name = "chdb"
+    compiler = ChdbCompiler()
+
+    @classmethod
+    def register_options(cls) -> None:
+        """The chDB backend exposes no configurable options."""
+
+    @property
+    def version(self) -> str:
+        return _import_chdb().__version__
+
+    def do_connect(self, database: str | Path = ":memory:") -> None:
+        """Create an Ibis client connected to an embedded chDB engine.
+
+        Parameters
+        ----------
+        database
+            Directory for a persistent database; defaults to in-memory. chDB is
+            one engine per process: the first connection fixes the path, and
+            connecting to a different path raises until all are disconnected.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.chdb.connect()
+        >>> con
+        <ibis.backends.chdb.Backend object at 0x...>
+        """
+        chdb = _import_chdb()
+        _check_chdb_core()
+        self.con = _Con(chdb.connect(str(database)))
+        self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: chdb.state.sqlitelike.Connection, /) -> Backend:
+        """Create an Ibis client from an existing chDB connection.
+
+        Parameters
+        ----------
+        con
+            An existing connection returned by `chdb.connect`.
+        """
+        _check_chdb_core()
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = _Con(con)
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self) -> None:
+        # chDB defaults to the host's timezone, but the converter reads
+        # scale-less DateTime as UTC
+        self.con.command("SET session_timezone = 'UTC'")
+
+    def raw_sql(self, query, external_tables=None, fmt: str = "CSV", **kwargs):
+        with contextlib.suppress(AttributeError):
+            query = query.sql(dialect=self.dialect)
+        names = self._register_in_memory_tables_from_mapping(external_tables)
+        self._log(query)
+        try:
+            return self.con.query(query, fmt=fmt)
+        finally:
+            for name in names:
+                _memtables._unregister(name)
+
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, query, external_tables=None, **kwargs):
+        yield self.raw_sql(query, external_tables=external_tables, **kwargs)
+
+    def _fetch_arrow(self, expr, /, **kwargs) -> pa.Table:
+        table = expr.as_table()
+        self._run_pre_execute_hooks(table)
+        sql = self.compile(table, **kwargs)
+        self._log(sql)
+        result = self.con.query(sql, fmt="ArrowTable")
+        return ChdbArrowConverter.convert_table(result, table.schema())
+
+    def to_pyarrow(self, expr, /, **kwargs) -> pa.Table:
+        table = self._fetch_arrow(expr, **_filter_arrow_kwargs(kwargs))
+        return expr.__pyarrow_result__(table, data_mapper=ChdbArrowConverter)
+
+    def to_pyarrow_batches(
+        self, expr, /, *, chunk_size: int = 1_000_000, **kwargs
+    ) -> pa.ipc.RecordBatchReader:
+        table_expr = expr.as_table()
+        self._run_pre_execute_hooks(table_expr)
+        sql = self.compile(table_expr, **_filter_arrow_kwargs(kwargs))
+        self._log(sql)
+        schema = table_expr.schema()
+        arrow_schema = schema.to_pyarrow()
+
+        con = self.con
+        stream = con.send_query(sql, "Arrow")
+        # iter(): pyarrow<14 readers aren't iterators themselves
+        reader = iter(stream.record_batch(chunk_size))
+
+        def batches():
+            # A later query on the session ends this stream, and fetching from
+            # or closing it after that would end whichever stream is open now.
+            try:
+                while True:
+                    if con.stream is not stream:
+                        raise com.IbisError(
+                            "This to_pyarrow_batches reader was interrupted by "
+                            "another query on the same connection"
+                        )
+                    if (batch := next(reader, None)) is None:
+                        return
+                    converted = ChdbArrowConverter.convert_table(
+                        pa.Table.from_batches([batch], schema=batch.schema), schema
+                    )
+                    yield from converted.to_batches(max_chunksize=chunk_size)
+            finally:
+                if con.stream is stream:
+                    con.stream = None
+                    stream.close()
+
+        return pa.ipc.RecordBatchReader.from_batches(arrow_schema, batches())
+
+    def execute(self, expr, /, **kwargs):
+        table = self._fetch_arrow(expr, **_filter_arrow_kwargs(kwargs))
+        df = table.to_pandas(timestamp_as_object=True)
+        return expr.__pandas_result__(df, schema=expr.as_table().schema())
+
+    def get_schema(
+        self, table_name, *, catalog: str | None = None, database: str | None = None
+    ) -> sch.Schema:
+        if catalog is not None:
+            raise com.UnsupportedOperationError(
+                "`catalog` namespaces are not supported by chdb"
+            )
+        query = sge.Describe(this=sg.table(table_name, db=database))
+        try:
+            table = self.raw_sql(query, fmt="ArrowTable")
+        except Exception as e:
+            if re.search(r"\bUNKNOWN_TABLE\b", str(e)):
+                raise com.TableNotFound(table_name) from e
+            raise
+        names = table["name"].to_pylist()
+        types = table["type"].to_pylist()
+        type_mapper = self.compiler.type_mapper
+        return sch.Schema(dict(zip(names, map(type_mapper.from_string, types))))
+
+    def create_view(
+        self,
+        name: str,
+        /,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        # chDB can't resolve Python() table functions through a view
+        if obj.op().find(ops.InMemoryTable):
+            raise com.UnsupportedOperationError(
+                "chDB views can't reference in-memory tables; "
+                "use `create_table` to copy the data instead"
+            )
+        return super().create_view(name, obj, database=database, overwrite=overwrite)
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        name = util.gen_name("chdb_metadata")
+        self.raw_sql(f"CREATE OR REPLACE VIEW {name} AS {query}")
+        try:
+            return self.get_schema(name)
+        finally:
+            self.raw_sql(f"DROP VIEW IF EXISTS {name}")
+
+    def list_tables(
+        self, *, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        query = sg.select(C.name).from_(sg.table("tables", db="system"))
+        if database is None:
+            database = self.compiler.f.currentDatabase()
+        else:
+            database = sge.convert(database)
+        query = query.where(C.database.eq(database).or_(C.is_temporary))
+        result = self.raw_sql(query, fmt="ArrowTable")
+        return self._filter_with_like(result["name"].to_pylist(), like)
+
+    def list_databases(self, *, like: str | None = None) -> list[str]:
+        query = sg.select(C.name).from_(sg.table("databases", db="system"))
+        result = self.raw_sql(query, fmt="ArrowTable")
+        return self._filter_with_like(result["name"].to_pylist(), like)
+
+    @property
+    def current_database(self) -> str:
+        # Override ClickHouse's implementation: it reads clickhouse_connect's
+        # ``result_rows``, which the embedded chDB result object doesn't expose.
+        query = sg.select(self.compiler.f.currentDatabase())
+        result = self.raw_sql(query, fmt="ArrowTable")
+        return result.column(0).to_pylist()[0]
+
+    # The inherited ClickHouse readers stream files over clickhouse_connect;
+    # the embedded engine instead reads the local path via file() directly.
+    def _read_file(self, path, *, table_name, fmt, engine):
+        name = table_name or util.gen_name("read")
+        quoted = sg.table(name, quoted=self.compiler.quoted).sql(self.dialect)
+        path = sge.convert(str(path)).sql(self.dialect)
+        # the engine cannot be quoted: ClickHouse rejects e.g. `File(Native)`
+        sql = f"CREATE TABLE {quoted} ENGINE = {engine} AS SELECT * FROM file({path}, '{fmt}')"  # noqa: S608
+        self.raw_sql(sql)
+        return self.table(name)
+
+    def read_parquet(
+        self, path, /, *, table_name=None, engine: str = "MergeTree"
+    ) -> ir.Table:
+        return self._read_file(
+            path, table_name=table_name, fmt="Parquet", engine=engine
+        )
+
+    def read_csv(
+        self, path, /, *, table_name=None, engine: str = "MergeTree"
+    ) -> ir.Table:
+        return self._read_file(
+            path, table_name=table_name, fmt="CSVWithNames", engine=engine
+        )
+
+    def insert(self, name, /, obj, *, database=None, overwrite=False):
+        # The embedded engine has no clickhouse_connect insert transport; route
+        # pandas/pyarrow/etc. through the Python() memtable path via INSERT SELECT.
+        if overwrite:
+            self.truncate_table(name, database=database)
+        if not isinstance(obj, ir.Table):
+            obj = ibis.memtable(obj)
+        self._run_pre_execute_hooks(obj)
+        query = self._build_insert_from_table(target=name, source=obj, db=database)
+        self.raw_sql(query)
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        _memtables._register(op.name, op.data.to_pyarrow(op.schema))
+
+    def _register_in_memory_tables_from_mapping(self, external_tables) -> list[str]:
+        external_tables = external_tables or {}
+        if reserved := sorted(_memtables._reserved().intersection(external_tables)):
+            raise com.IbisInputError(
+                f"external_tables names {reserved} are reserved by the chdb "
+                "backend; use different names"
+            )
+        names = []
+        for name, obj in external_tables.items():
+            memtable = _to_memtable(obj)
+            _memtables._register(name, memtable.data.to_pyarrow(memtable.schema))
+            names.append(name)
+        return names
+
+    def _normalize_external_tables(self, external_tables=None):
+        # No external-table transport: register for Python() scanning instead,
+        # and ship nothing (return None).
+        self._register_in_memory_tables_from_mapping(external_tables)
+
+    def _make_memtable_finalizer(self, name: str):
+        return lambda: _memtables._unregister(name)
+
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        chdb = _import_chdb()
+
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            if udf_node.__input_type__ != InputType.PYTHON:
+                # builtins need no registration; pandas/pyarrow are unsupported.
+                continue
+            name = type(udf_node).__name__
+            arg_types = [
+                _chdb_sqltype(param.annotation.pattern.dtype)
+                for param in udf_node.__signature__.parameters.values()
+            ]
+            return_type = _chdb_sqltype(udf_node.dtype)
+            func = udf_node.__func__
+            if udf_node.dtype.is_timestamp():
+                func = _localize_naive(func, udf_node.dtype.timezone)
+            with contextlib.suppress(Exception):
+                chdb.drop_function(name)
+            chdb.create_function(
+                name, func, arg_types=arg_types, return_type=return_type
+            )
+
+
+def _filter_arrow_kwargs(kwargs: dict) -> dict:
+    """Keep only the ``params``/``limit`` kwargs the compiler accepts."""
+    return {k: kwargs[k] for k in ("params", "limit") if k in kwargs}

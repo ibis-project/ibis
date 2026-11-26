@@ -293,6 +293,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
     [
         "bigquery",
         "clickhouse",
+        "chdb",
         "datafusion",
         "impala",
         "materialize",
@@ -382,6 +383,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
         "athena",
         "bigquery",
         "clickhouse",
+        "chdb",
         "databricks",
         "datafusion",
         "druid",
