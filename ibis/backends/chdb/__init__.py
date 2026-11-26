@@ -6,7 +6,7 @@ import contextlib
 import ipaddress
 import re
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -287,7 +287,7 @@ class Backend(UrlFromPath, CHBackend):
     def version(self) -> str:
         return _import_chdb().__version__
 
-    def do_connect(self, database: str | Path = ":memory:", **_: Any) -> None:
+    def do_connect(self, database: str | Path = ":memory:") -> None:
         """Create an Ibis client connected to an embedded chDB engine.
 
         Parameters
@@ -474,25 +474,25 @@ class Backend(UrlFromPath, CHBackend):
         quoted = sg.table(name, quoted=self.compiler.quoted).sql(self.dialect)
         path = sge.convert(str(path)).sql(self.dialect)
         # the engine cannot be quoted: ClickHouse rejects e.g. `File(Native)`
-        sql = f"CREATE OR REPLACE TABLE {quoted} ENGINE = {engine} AS SELECT * FROM file({path}, '{fmt}')"  # noqa: S608
+        sql = f"CREATE TABLE {quoted} ENGINE = {engine} AS SELECT * FROM file({path}, '{fmt}')"  # noqa: S608
         self.raw_sql(sql)
         return self.table(name)
 
     def read_parquet(
-        self, path, /, *, table_name=None, engine: str = "MergeTree", **_: Any
+        self, path, /, *, table_name=None, engine: str = "MergeTree"
     ) -> ir.Table:
         return self._read_file(
             path, table_name=table_name, fmt="Parquet", engine=engine
         )
 
     def read_csv(
-        self, path, /, *, table_name=None, engine: str = "MergeTree", **_: Any
+        self, path, /, *, table_name=None, engine: str = "MergeTree"
     ) -> ir.Table:
         return self._read_file(
             path, table_name=table_name, fmt="CSVWithNames", engine=engine
         )
 
-    def insert(self, name, /, obj, *, database=None, overwrite=False, **_: Any):
+    def insert(self, name, /, obj, *, database=None, overwrite=False):
         # The embedded engine has no clickhouse_connect insert transport; route
         # pandas/pyarrow/etc. through the Python() memtable path via INSERT SELECT.
         if overwrite:

@@ -90,6 +90,20 @@ def test_connect_via_url(chdb_path):
         con.disconnect()
 
 
+def test_connect_rejects_unknown_kwargs():
+    with pytest.raises(TypeError, match="path"):
+        ibis.chdb.connect(path="/some/path")
+
+
+def test_read_csv_keeps_existing_table(mem, tmp_path):
+    path = tmp_path / "t.csv"
+    path.write_text("x\n1\n")
+    mem.create_table("t", obj=ibis.memtable({"x": [1, 2]}), engine="Memory")
+    with pytest.raises(RuntimeError, match="TABLE_ALREADY_EXISTS"):
+        mem.read_csv(path, table_name="t")
+    assert mem.table("t").count().execute() == 2
+
+
 def test_get_schema_rejects_catalog(mem):
     mem.create_table("c", obj=ibis.memtable({"x": [1]}), engine="Memory")
     with pytest.raises(com.UnsupportedOperationError):
