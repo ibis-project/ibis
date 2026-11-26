@@ -40,3 +40,13 @@ def test_memtable_cleaned_up_after_finalize(mem):
     assert name in vars(_memtables)
     mem._make_memtable_finalizer(name)()
     assert name not in vars(_memtables)
+
+
+@pytest.mark.parametrize(
+    "name", ["_query", "sql", "query", "format", "Optional", "StreamingResult"]
+)
+def test_external_tables_reject_reserved_names(mem, name):
+    # chDB resolves Python(name) from the frame that issues the query
+    with pytest.raises(com.IbisInputError, match=name):
+        mem.raw_sql(f"SELECT * FROM Python({name})", external_tables={name: {"a": [1]}})
+    assert mem.execute(ibis.memtable({"a": [1, 2]}).a.sum()) == 3

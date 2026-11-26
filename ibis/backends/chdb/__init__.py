@@ -507,8 +507,14 @@ class Backend(UrlFromPath, CHBackend):
         _memtables._register(op.name, op.data.to_pyarrow(op.schema))
 
     def _register_in_memory_tables_from_mapping(self, external_tables) -> list[str]:
+        external_tables = external_tables or {}
+        if reserved := sorted(_memtables._reserved().intersection(external_tables)):
+            raise com.IbisInputError(
+                f"external_tables names {reserved} are reserved by the chdb "
+                "backend; use different names"
+            )
         names = []
-        for name, obj in (external_tables or {}).items():
+        for name, obj in external_tables.items():
             memtable = _to_memtable(obj)
             _memtables._register(name, memtable.data.to_pyarrow(memtable.schema))
             names.append(name)
