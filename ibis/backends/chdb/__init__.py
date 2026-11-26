@@ -33,6 +33,8 @@ from ibis.formats.pyarrow import PyArrowData, PyArrowType
 if TYPE_CHECKING:
     from pathlib import Path
 
+    import chdb
+
 
 def _import_chdb():
     # chdb is intentionally not in the ``ibis-framework[chdb]`` extra (it pins
@@ -321,6 +323,22 @@ class Backend(UrlFromPath, CHBackend):
         """
         self.con = _Con(_import_chdb().connect(str(database)))
         self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: chdb.state.sqlitelike.Connection, /) -> Backend:
+        """Create an Ibis client from an existing chDB connection.
+
+        Parameters
+        ----------
+        con
+            An existing connection returned by `chdb.connect`.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = _Con(con)
+        new_backend._post_connect()
+        return new_backend
 
     def _post_connect(self) -> None:
         # chDB defaults to the host's timezone, but the converter reads

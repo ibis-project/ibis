@@ -10,7 +10,7 @@ import re
 import string
 import subprocess
 import sys
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 from typing import TYPE_CHECKING
 
 import pytest
@@ -1931,7 +1931,12 @@ def test_insert_using_col_name_not_position(con, first_row, second_row, monkeypa
     con.drop_table(table_name)
 
 
-CON_ATTR = {"bigquery": "client", "flink": "_table_env", "pyspark": "_session"}
+CON_ATTR = {
+    "bigquery": "client",
+    "chdb": "con._session",
+    "flink": "_table_env",
+    "pyspark": "_session",
+}
 DEFAULT_CON_ATTR = "con"
 
 
@@ -1939,7 +1944,7 @@ DEFAULT_CON_ATTR = "con"
 @pytest.mark.never(["polars"], reason="don't have a connection concept")
 def test_from_connection(con, top_level):
     backend = getattr(ibis, con.name) if top_level else type(con)
-    new_con = backend.from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
+    new_con = backend.from_connection(attrgetter(CON_ATTR.get(con.name, "con"))(con))
     result = int(new_con.execute(ibis.literal(1, type="int")))
     assert result == 1
 
