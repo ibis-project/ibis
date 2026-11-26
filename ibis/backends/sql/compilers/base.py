@@ -1041,7 +1041,7 @@ class SQLGlotCompiler(abc.ABC):
         if start is not None:
             arg = self.f.substr(arg, start + 1)
             pos = self.f.strpos(arg, substr)
-            return self.if_(pos > 0, pos + start, 0)
+            return self.if_(pos > 0, pos + start, pos)
 
         return self.f.strpos(arg, substr)
 
