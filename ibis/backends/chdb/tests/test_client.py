@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import textwrap
@@ -30,6 +31,31 @@ def test_imports_without_clickhouse_connect():
     )
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip() == "ok"
+
+
+def test_timestamps_ignore_local_timezone():
+    # chDB's session timezone defaults to the host's, which CI (UTC) never sees
+    code = textwrap.dedent(
+        """
+        import pandas as pd
+
+        import ibis
+
+        con = ibis.chdb.connect()
+        t = ibis.memtable({"ts": pd.to_datetime(["2026-07-22 01:02:03"])})
+        print(con.execute(ibis.timestamp("2026-07-22 01:02:03")))
+        print(con.execute(t.ts.hour()).tolist())
+        """
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "TZ": "America/New_York"},
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.splitlines() == ["2026-07-22 01:02:03", "[1]"]
 
 
 def test_raw_sql(mem):

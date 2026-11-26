@@ -320,6 +320,12 @@ class Backend(UrlFromPath, CHBackend):
         <ibis.backends.chdb.Backend object at 0x...>
         """
         self.con = _Con(_import_chdb().connect(str(database)))
+        self._post_connect()
+
+    def _post_connect(self) -> None:
+        # chDB defaults to the host's timezone, but the converter reads
+        # scale-less DateTime as UTC
+        self.con.command("SET session_timezone = 'UTC'")
 
     def raw_sql(self, query, external_tables=None, fmt: str = "CSV", **kwargs):
         with contextlib.suppress(AttributeError):
