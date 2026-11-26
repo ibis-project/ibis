@@ -11,6 +11,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
+from ibis import util
 
 
 def test_imports_without_clickhouse_connect():
@@ -120,9 +121,28 @@ def test_current_database(chdb_path):
         con.disconnect()
 
 
+@pytest.mark.parametrize("from_connection", [False, True])
+@pytest.mark.parametrize(
+    ("version", "found"),
+    [("26.11.1rc1", "chdb-core 26.11.1rc1"), (None, "no chdb-core package")],
+)
+def test_old_chdb_core_raises_actionable_error(
+    monkeypatch, chdb_path, version, found, from_connection
+):
+    import chdb
+
+    monkeypatch.setattr(util, "version", lambda _: version)
+    with pytest.raises(ImportError, match=f"chdb>=4\\.5\\.0.*found {found}"):
+        if from_connection:
+            ibis.chdb.from_connection(chdb.connect(chdb_path))
+        else:
+            ibis.chdb.connect(chdb_path)
+
+
 def test_missing_chdb_raises_actionable_error(monkeypatch):
     # chdb is intentionally absent from the extra; a missing engine must point
-    # the user at `pip install chdb`, not raise a bare ModuleNotFoundError.
+    # the user at `pip install 'chdb>=4.5.0'`, not raise a bare
+    # ModuleNotFoundError.
     monkeypatch.setitem(sys.modules, "chdb", None)
-    with pytest.raises(ImportError, match="pip install chdb"):
+    with pytest.raises(ImportError, match=r"pip install 'chdb>=4\.5\.0'"):
         ibis.chdb.connect()

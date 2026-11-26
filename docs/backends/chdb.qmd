@@ -22,8 +22,8 @@ pip install 'ibis-framework[chdb]' 'chdb>=4.5.0'
 
 ::: {.callout-note}
 Unlike other backends, the `chdb` package is not pulled in by the `chdb`
-extra, so install it separately as shown above. If it is missing, connecting
-raises an error pointing you at `pip install chdb`.
+extra, so install it separately as shown above. If it is missing or older than
+4.5.0, connecting raises an error with the command to install or upgrade it.
 :::
 
 And connect:

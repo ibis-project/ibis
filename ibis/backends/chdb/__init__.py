@@ -13,6 +13,7 @@ import pyarrow.compute as pc
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
+from packaging.version import parse as vparse
 
 import ibis
 import ibis.common.exceptions as com
@@ -45,10 +46,21 @@ def _import_chdb():
     except ImportError as e:
         raise ImportError(
             "The chdb backend requires the `chdb` package, which is not "
-            "installed. Install it with `python -m pip install chdb`."
+            "installed. Install it with `python -m pip install 'chdb>=4.5.0'`."
         ) from e
     else:
         return chdb
+
+
+def _check_chdb_core() -> None:
+    # older engines corrupt the next query after an abandoned stream
+    version = util.version("chdb-core")
+    if version is None or vparse(version) < vparse("26.11.1"):
+        found = f"chdb-core {version}" if version else "no chdb-core package"
+        raise ImportError(
+            "The chdb backend requires chdb>=4.5.0 (chdb-core>=26.11.1), but "
+            f"found {found}. Upgrade with `python -m pip install -U 'chdb>=4.5.0'`."
+        )
 
 
 def _relabel_fields(arr, dtype: dt.DataType):
@@ -304,7 +316,9 @@ class Backend(UrlFromPath, CHBackend):
         >>> con
         <ibis.backends.chdb.Backend object at 0x...>
         """
-        self.con = _Con(_import_chdb().connect(str(database)))
+        chdb = _import_chdb()
+        _check_chdb_core()
+        self.con = _Con(chdb.connect(str(database)))
         self._post_connect()
 
     @util.experimental
@@ -317,6 +331,7 @@ class Backend(UrlFromPath, CHBackend):
         con
             An existing connection returned by `chdb.connect`.
         """
+        _check_chdb_core()
         new_backend = cls()
         new_backend._can_reconnect = False
         new_backend.con = _Con(con)
