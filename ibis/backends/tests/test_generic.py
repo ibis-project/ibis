@@ -1916,7 +1916,7 @@ bool_to_string_notimpl = [
             marks=[
                 *NO_TIME_SUPPORT_MARKS,
                 pytest.mark.notimpl(
-                    ["mysql", "singlestoredb", "flink"],
+                    ["mysql", "singlestoredb", "flink", "chdb"],
                     raises=AssertionError,
                     reason="casts to TIME, which defaults to second precision",
                 ),
@@ -1984,7 +1984,7 @@ def test_cast(con, from_type, to_type, from_val, expected):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "impala", "singlestoredb"],
+    ["clickhouse", "chdb", "impala", "singlestoredb"],
     raises=AssertionError,
     reason="renders 1/0",
 )
