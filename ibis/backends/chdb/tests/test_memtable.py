@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+
 import ibis
+import ibis.common.exceptions as com
 from ibis.backends.chdb import _memtables
 
 
@@ -18,6 +21,14 @@ def test_two_memtables_one_query(mem):
     b = ibis.memtable({"x": [3, 4]})
     expr = a.union(b).order_by("x")
     assert mem.execute(expr)["x"].tolist() == [1, 2, 3, 4]
+
+
+def test_create_view_over_memtable_raises(mem):
+    # fail up front rather than when the view is queried
+    t = ibis.memtable({"x": [1, 2, 3]})
+    with pytest.raises(com.UnsupportedOperationError, match="create_table"):
+        mem.create_view("v", t)
+    assert "v" not in mem.list_tables()
 
 
 def test_memtable_cleaned_up_after_finalize(mem):

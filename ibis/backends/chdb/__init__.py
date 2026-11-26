@@ -417,6 +417,23 @@ class Backend(UrlFromPath, CHBackend):
         type_mapper = self.compiler.type_mapper
         return sch.Schema(dict(zip(names, map(type_mapper.from_string, types))))
 
+    def create_view(
+        self,
+        name: str,
+        /,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        # chDB can't resolve Python() table functions through a view
+        if obj.op().find(ops.InMemoryTable):
+            raise com.UnsupportedOperationError(
+                "chDB views can't reference in-memory tables; "
+                "use `create_table` to copy the data instead"
+            )
+        return super().create_view(name, obj, database=database, overwrite=overwrite)
+
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name("chdb_metadata")
         self.raw_sql(f"CREATE OR REPLACE VIEW {name} AS {query}")
