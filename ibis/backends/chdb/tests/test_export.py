@@ -10,13 +10,12 @@ from ibis import _, util
 
 
 def test_to_pyarrow_batches_multiple_batches(mem):
-    # chDB is notyet on the shared chunk-size tests, so this is the only
-    # coverage that streaming yields more than one batch.
     n = 200_000
     t = mem.sql(f"SELECT number AS n FROM numbers({n})")
     reader = mem.to_pyarrow_batches(t, chunk_size=65_536)
     batches = list(reader)
     assert len(batches) > 1
+    assert all(b.num_rows <= 65_536 for b in batches)
     assert sum(b.num_rows for b in batches) == n
 
 

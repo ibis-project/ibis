@@ -144,7 +144,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
 
 @pytest.mark.notimpl(["datafusion", "flink"])
 @pytest.mark.notyet(
-    ["clickhouse", "chdb", "athena"],
+    ["clickhouse", "athena"],
     raises=AssertionError,
     reason="backend doesn't respect chunk_size parameter",
 )
@@ -159,7 +159,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
 
 @pytest.mark.notimpl(["datafusion", "flink"])
 @pytest.mark.notyet(
-    ["clickhouse", "chdb", "athena"],
+    ["clickhouse", "athena"],
     raises=AssertionError,
     reason="backend doesn't respect chunk_size parameter",
 )

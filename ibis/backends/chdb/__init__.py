@@ -385,7 +385,7 @@ class Backend(UrlFromPath, CHBackend):
                     converted = ChdbArrowConverter.convert_table(
                         pa.Table.from_batches([batch], schema=batch.schema), schema
                     )
-                    yield from converted.to_batches()
+                    yield from converted.to_batches(max_chunksize=chunk_size)
             finally:
                 if con.stream is stream:
                     con.stream = None
