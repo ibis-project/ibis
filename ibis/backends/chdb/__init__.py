@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import contextlib
+import datetime
+import functools
 import ipaddress
 import re
 import uuid
@@ -28,6 +30,7 @@ from ibis.backends.clickhouse import Backend as CHBackend
 from ibis.backends.clickhouse import _to_memtable
 from ibis.backends.sql.compilers import ChdbCompiler
 from ibis.backends.sql.compilers.base import C
+from ibis.common.temporal import normalize_timezone
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowData, PyArrowType
 
@@ -217,6 +220,14 @@ class ChdbArrowConverter(PyArrowData):
 def _chdb_sqltype(dtype: dt.DataType):
     from chdb import sqltypes as st
 
+    if dtype.is_timestamp():
+        # chDB otherwise gives UDF DateTime values the process's timezone; fall
+        # back to UTC for zones ClickHouse can't parse, such as "+05:00"
+        try:
+            return st.ChdbType(f"DateTime('{dtype.timezone or 'UTC'}')")
+        except RuntimeError:
+            return st.ChdbType("DateTime('UTC')")
+
     mapping = {
         dt.Int8: st.INT8,
         dt.Int16: st.INT16,
@@ -231,7 +242,6 @@ def _chdb_sqltype(dtype: dt.DataType):
         dt.String: st.STRING,
         dt.Boolean: st.BOOL,
         dt.Date: st.DATE,
-        dt.Timestamp: st.DATETIME,
     }
     for ibis_type, chdb_type in mapping.items():
         if isinstance(dtype, ibis_type):
@@ -239,6 +249,21 @@ def _chdb_sqltype(dtype: dt.DataType):
     raise com.UnsupportedBackendType(
         f"chDB Python UDFs do not support the type {dtype}"
     )
+
+
+def _localize_naive(func, timezone: str | None):
+    # chDB converts a naive datetime with the process's timezone; read it in
+    # the declared one instead
+    tzinfo = normalize_timezone(timezone or "UTC") or datetime.timezone.utc
+
+    @functools.wraps(func)
+    def wrapper(*args):
+        result = func(*args)
+        if isinstance(result, datetime.datetime) and result.tzinfo is None:
+            return result.replace(tzinfo=tzinfo)
+        return result
+
+    return wrapper
 
 
 class _Con:
@@ -556,10 +581,13 @@ class Backend(UrlFromPath, CHBackend):
                 for param in udf_node.__signature__.parameters.values()
             ]
             return_type = _chdb_sqltype(udf_node.dtype)
+            func = udf_node.__func__
+            if udf_node.dtype.is_timestamp():
+                func = _localize_naive(func, udf_node.dtype.timezone)
             with contextlib.suppress(Exception):
                 chdb.drop_function(name)
             chdb.create_function(
-                name, udf_node.__func__, arg_types=arg_types, return_type=return_type
+                name, func, arg_types=arg_types, return_type=return_type
             )
 
 

@@ -35,17 +35,43 @@ def test_imports_without_clickhouse_connect():
 
 
 def test_timestamps_ignore_local_timezone():
-    # chDB's session timezone defaults to the host's, which CI (UTC) never sees
+    # chDB defaults to the host's timezone for the session and for Python UDF
+    # values, which CI (UTC) never sees
     code = textwrap.dedent(
         """
+        import datetime
+
         import pandas as pd
 
         import ibis
+        import ibis.expr.datatypes as dt
+
+
+        @ibis.udf.scalar.python
+        def naive(x: int) -> datetime.datetime:
+            return datetime.datetime(2026, 7, 22, 1, 2, 3)
+
+
+        @ibis.udf.scalar.python(
+            signature=((dt.int64,), dt.Timestamp(timezone="America/New_York"))
+        )
+        def naive_ny(x):
+            return datetime.datetime(2026, 7, 22, 1, 2, 3)
+
+
+        @ibis.udf.scalar.python
+        def ident(x: datetime.datetime) -> datetime.datetime:
+            return x
+
 
         con = ibis.chdb.connect()
+        ts = ibis.timestamp("2026-07-22 01:02:03")
         t = ibis.memtable({"ts": pd.to_datetime(["2026-07-22 01:02:03"])})
-        print(con.execute(ibis.timestamp("2026-07-22 01:02:03")))
+        print(con.execute(ts))
         print(con.execute(t.ts.hour()).tolist())
+        print(con.execute(naive(ibis.literal(1))))
+        print(con.execute(ident(ts).hour()))
+        print(con.execute(naive_ny(ibis.literal(1))))
         """
     )
     proc = subprocess.run(
@@ -56,7 +82,13 @@ def test_timestamps_ignore_local_timezone():
         env={**os.environ, "TZ": "America/New_York"},
     )
     assert proc.returncode == 0, proc.stderr
-    assert proc.stdout.splitlines() == ["2026-07-22 01:02:03", "[1]"]
+    assert proc.stdout.splitlines() == [
+        "2026-07-22 01:02:03",
+        "[1]",
+        "2026-07-22 01:02:03",
+        "1",
+        "2026-07-22 01:02:03-04:00",
+    ]
 
 
 def test_raw_sql(mem):
