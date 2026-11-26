@@ -953,6 +953,14 @@ def test_multiple_subs(con):
     assert result == "FOO"
 
 
+@pytest.mark.parametrize("start", [None, 1], ids=["no_start", "start"])
+def test_find_null_string(con, start):
+    t = ibis.memtable({"s": ["hello", "abc", None]})
+    expr = t.s.find("l", start)
+    result = con.to_pyarrow(expr).to_pylist()
+    assert sorted(result, key=lambda x: (x is None, x)) == [-1, 2, None]
+
+
 @pytest.mark.notimpl(
     [
         "clickhouse",

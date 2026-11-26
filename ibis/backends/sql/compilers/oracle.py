@@ -271,7 +271,7 @@ class OracleCompiler(SQLGlotCompiler):
             arg = self.f.substr(arg, start + 1)
             pos = self.f.instr(arg, sub_string)
             # TODO(gil): why, oh why, does this need an extra +1 on the end?
-            return sg.case().when(pos > 0, pos - 1 + start).else_(-1) + 1
+            return sg.case().when(pos > 0, pos - 1 + start).else_(pos - 1) + 1
 
         return self.f.instr(arg, sub_string)
 

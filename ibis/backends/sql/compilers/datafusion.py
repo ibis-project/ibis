@@ -197,7 +197,7 @@ class DataFusionCompiler(SQLGlotCompiler):
 
         if start is not None:
             pos = self.f.strpos(self.f.substr(arg, start + 1), substr)
-            return self.f.coalesce(self.f.nullif(pos + start, start), 0)
+            return self.if_(pos > 0, pos + start, pos)
 
         return self.f.strpos(arg, substr)
 

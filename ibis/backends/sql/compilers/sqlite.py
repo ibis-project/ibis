@@ -172,7 +172,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         if op.start is not None:
             arg = self.f.substr(arg, start + 1)
             pos = self.f.instr(arg, substr)
-            return sg.case().when(pos > 0, pos + start).else_(0)
+            return sg.case().when(pos > 0, pos + start).else_(pos)
 
         return self.f.instr(arg, substr)
 
