@@ -518,3 +518,26 @@ def test_basic_enum_schema_inference(con, converter):
     t = con.table(name)
     assert t.e.type() == dt.string
     assert set(converter(t.e)) == {"a", "b"}
+
+
+@pytest.mark.parametrize(
+    ("value", "dtype", "shift"),
+    [
+        param(1, "int64", 62, id="int64"),
+        param(3, "int16", 40, id="int16"),
+    ],
+)
+def test_left_shift_literal_computes_in_int64(value, dtype, shift):
+    con = ibis.duckdb.connect()
+    expr = ibis.literal(value, dtype) << shift
+    assert expr.type() == dt.int64
+    assert con.execute(expr) == value << shift
+
+
+@pytest.mark.parametrize("dtype", ["int8", "uint8"])
+def test_left_shift_column_computes_in_int64(dtype):
+    con = ibis.duckdb.connect()
+    t = ibis.memtable({"x": [1, 3]}, schema={"x": dtype})
+    expr = (t.x << 10).name("y")
+    assert expr.type() == dt.int64
+    assert con.to_pyarrow(expr).to_pylist() == [1 << 10, 3 << 10]

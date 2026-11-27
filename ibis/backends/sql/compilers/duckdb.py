@@ -421,6 +421,11 @@ class DuckDBCompiler(SQLGlotCompiler):
 
         return self.f[func](*args)
 
+    def visit_BitwiseLeftShift(self, op, *, left, right):
+        # DuckDB computes the shift in the type of the left operand, so
+        # narrower integers (including untyped integer literals) overflow
+        return sge.BitwiseLeftShift(this=self.cast(left, op.dtype), expression=right)
+
     def visit_Cast(self, op, *, arg, to):
         dtype = op.arg.dtype
         if to.is_interval():
