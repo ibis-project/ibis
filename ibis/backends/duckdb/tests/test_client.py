@@ -338,6 +338,41 @@ def test_create_table_quoting(database_file, tmp_path):
     assert result == {0, 1, 2}
 
 
+def test_table_with_fully_qualified_name(con):
+    t = ibis.memtable({"x": [1]})
+    created = con.create_table(gen_name("my-table"), obj=t, temp=True)
+    result = con.table(created.get_name())
+    assert result.schema() == t.schema()
+    assert result.execute().equals(t.execute())
+
+
+def test_table_with_fully_qualified_name_and_database_kwarg(con):
+    with pytest.raises(
+        com.IbisInputError,
+        match="Cannot specify database both in the table name and as an argument",
+    ):
+        con.table("temp.main.my-table", database="main")
+
+
+def test_table_with_dotted_name(con):
+    # a table name may legitimately contain dots, e.g. `create_table("a.b")`;
+    # `table()` must resolve the literal name before trying to parse it as
+    # a fully qualified `catalog.database.table` path (#9502)
+    t = ibis.memtable({"x": [1]})
+    created = con.create_table("a.b", obj=t, temp=True)
+    result = con.table("a.b")
+    assert result.schema() == t.schema()
+    assert result.execute().equals(t.execute())
+    # note: `get_name()` of a dotted table is a four-part name, which is
+    # ambiguous as a qualified path, so it does not round-trip through
+    # `table()`; the literal name itself is what resolves
+    assert created.get_name() == "temp.main.a.b"
+
+    con.create_table("c.d", obj=t)
+    assert con.table("c.d").schema() == t.schema()
+    assert con.table("c.d", database="memory.main").schema() == t.schema()
+
+
 @pytest.mark.parametrize(
     ("url", "method_name"),
     [
