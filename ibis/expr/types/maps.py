@@ -80,6 +80,7 @@ class MapValue(Value):
     └───────────────────┘
     """
 
+    @deferrable
     def get(self, key: ir.Value, default: ir.Value | None = None, /) -> ir.Value:
         """Return the value for `key` from `expr`.
 
@@ -88,7 +89,7 @@ class MapValue(Value):
         Parameters
         ----------
         key
-            Expression to use for key
+            Expression to use for the key. A deferred key is resolved against the table.
         default
             Expression to return if `key` is not a key in `expr`
 
@@ -255,7 +256,7 @@ class MapValue(Value):
         │                 NULL │
         └──────────────────────┘
         """
-        return ops.MapGet(self, key).to_expr()
+        return self.get(key)
 
     def contains(
         self, key: int | str | ir.IntegerValue | ir.StringValue, /

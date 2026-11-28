@@ -1142,6 +1142,36 @@ def test_map_get_broadcast():
     assert isinstance(expr, ir.IntegerColumn)
 
 
+@pytest.mark.parametrize(
+    "lookup",
+    [lambda m, k: m.get(k), lambda m, k: m.get(k, -1), operator.getitem],
+    ids=["get", "get-default", "getitem"],
+)
+def test_map_get_deferred_key(lookup):
+    mapping = ibis.map({1: 2})
+    expr = lookup(mapping, _["foo"])
+
+    t = ibis.table({"foo": "int64"})
+    assert expr.resolve(t).equals(lookup(mapping, t.foo))
+
+
+@pytest.mark.parametrize(
+    "lookup",
+    [
+        param(lambda m, row: m.get(row.bar + 1), id="compound-key"),
+        param(lambda m, row: m[row.bar + 1], id="compound-subscript"),
+        param(lambda m, row: m.get(1, row.foo), id="deferred-default"),
+        param(lambda m, row: m.get(row.bar, row.foo), id="deferred-key-and-default"),
+    ],
+)
+def test_map_get_deferred_in_select(lookup):
+    t = ibis.table({"m": "map<int64, int64>", "foo": "int64", "bar": "int64"})
+
+    result = t.select(value=lookup(t.m, _))
+    expected = t.select(value=lookup(t.m, t))
+    assert result.equals(expected)
+
+
 def test_map_getitem_broadcast():
     t = ibis.table([("a", "string")], name="t")
     lookup_table = ibis.literal({"a": 1, "b": 2})
